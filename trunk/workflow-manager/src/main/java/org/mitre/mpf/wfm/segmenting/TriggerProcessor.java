@@ -48,7 +48,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class TriggerProcessor {
 
-    public static final Predicate<Track> ALL_MATCH = t -> true;
+    private static final Predicate<Track> ALL_MATCH = t -> true;
 
     private static final Predicate<Track> NONE_MATCH = t -> false;
 

@@ -31,6 +31,7 @@ import static java.util.stream.Collectors.toCollection;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
@@ -80,43 +81,57 @@ public class TrackOutputHelper {
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
         boolean isSuppressed = isSuppressed(job, media, taskIdx);
         boolean isMergeTarget = isMergeTarget(job, media, taskIdx);
-        boolean needToCheckTrackTriggers
-                = isSuppressed && needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean needToGetTracks = !isMergeTarget && (!isSuppressed || needToCheckTrackTriggers);
+        boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
+        boolean isMergeSource = isMergeSource(job, media, taskIdx, actionIdx);
 
-        SortedSet<Track> tracks;
-        int trackCount;
-        var trackType = JsonActionOutputObject.NO_TRACKS_TYPE;
-        if (needToGetTracks) {
-            tracks = _inProgressBatchJobsService.getTracks(
-                    job.getId(), media.getId(), taskIdx, actionIdx);
-            trackCount = tracks.size();
-            if (trackCount > 0) {
-                trackType = tracks.iterator().next().getType();
-                if (needToCheckTrackTriggers) {
-                    tracks = findUntriggered(job, media, taskIdx, tracks);
-                    if (!tracks.isEmpty()) {
-                        // Since there are un-triggered tracks, this task is the last task that
-                        // processed those tracks.
-                        isSuppressed = false;
-                    }
-                }
+        boolean canAvoidGettingTracks =
+                isMergeTarget || (isSuppressed && !needToCheckTrackTriggers);
+        if (canAvoidGettingTracks) {
+            return getTrackCountAndType(
+                    job, media, taskIdx, actionIdx, isSuppressed, isMergeSource, isMergeTarget);
+        }
+
+        var tracks = _inProgressBatchJobsService.getTracks(
+                job.getId(), media.getId(), taskIdx, actionIdx);
+        var trackType = tracks.stream()
+                .findAny()
+                .map(Track::getType)
+                .orElse(JsonActionOutputObject.NO_TRACKS_TYPE);
+
+        if (needToCheckTrackTriggers) {
+            tracks = findUntriggered(job, media, taskIdx, tracks);
+            if (!tracks.isEmpty()) {
+                // Since there are un-triggered tracks, this task is the last task that
+                // processed those tracks.
+                isSuppressed = false;
             }
+        }
+        return new TrackInfo(
+                tracks.size(), trackType, isSuppressed, isMergeSource, isMergeTarget, tracks);
+    }
+
+
+    private TrackInfo getTrackCountAndType(
+            BatchJob job,
+            Media media,
+            int taskIdx,
+            int actionIdx,
+            boolean isSuppressed,
+            boolean isMergeSource,
+            boolean isMergeTarget) {
+        int trackCount = _inProgressBatchJobsService.getTrackCount(
+                job.getId(), media.getId(), taskIdx, actionIdx);
+        String trackType;
+        if (trackCount > 0) {
+            trackType = _inProgressBatchJobsService.getTrackType(
+                    job.getId(), media.getId(), taskIdx, actionIdx)
+                .orElse(JsonActionOutputObject.NO_TRACKS_TYPE);
         }
         else {
-            tracks = null;
-            trackCount = _inProgressBatchJobsService.getTrackCount(
-                    job.getId(), media.getId(), taskIdx, actionIdx);
-            if (trackCount > 0) {
-                trackType = _inProgressBatchJobsService.getTrackType(
-                        job.getId(), media.getId(), taskIdx, actionIdx)
-                    .orElse(JsonActionOutputObject.NO_TRACKS_TYPE);
-            }
+            trackType = JsonActionOutputObject.NO_TRACKS_TYPE;
         }
-
-        boolean isMergeSource = isMergeSource(job, media, taskIdx, actionIdx);
         return new TrackInfo(
-                trackCount, trackType, isSuppressed, isMergeSource, isMergeTarget, tracks);
+                trackCount, trackType, isSuppressed, isMergeSource, isMergeTarget, null);
     }
 
 
@@ -168,33 +183,21 @@ public class TrackOutputHelper {
 
 
     private boolean needToCheckSuppressedTriggers(BatchJob job, Media media, int taskIdx) {
-        if (!_aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)) {
+        if (!isSuppressed(job, media, taskIdx)) {
             return false;
         }
 
         var pipelineElements = job.getPipelineElements();
-        int lastDetectionTaskIdx = getLastDetectionTaskIdx(job);
-        if (taskIdx == lastDetectionTaskIdx) {
-            return false;
-        }
-
-        for (var futureTaskIdx = taskIdx + 1;
-                futureTaskIdx <= lastDetectionTaskIdx;
-                futureTaskIdx++) {
-
-            var futureTask = pipelineElements.getTask(futureTaskIdx);
-            for (var action : pipelineElements.getActionsInOrder(futureTask)) {
-                var trigger = _aggregateJobPropertiesUtil.getValue(
-                        MpfConstants.TRIGGER, job, media, action);
-                if (trigger == null || trigger.isBlank()) {
-                    // A task later in the pipeline does not have a trigger set. When a trigger
-                    // is not set all tracks are passed as input to the task. That means that all
-                    // of the tracks created in current task were input to a task.
-                    return false;
-                }
-            }
-        }
-        return true;
+        boolean futureTaskMissingTrigger = IntStream
+            .rangeClosed(taskIdx + 1, getLastDetectionTaskIdx(job))
+            .mapToObj(pipelineElements::getTask)
+            .flatMap(pipelineElements::getActionStreamInOrder)
+            .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
+            .anyMatch(t -> t == null || t.isBlank());
+        // A task later in the pipeline does not have a trigger set. When a trigger
+        // is not set all tracks are passed as input to the task. That means that all
+        // of the tracks created in current task were input to a task.
+        return !futureTaskMissingTrigger;
     }
 
 
@@ -220,6 +223,7 @@ public class TrackOutputHelper {
             return taskCount - 1;
         }
         else {
+            // The last algorithm is markup and there can only be one markup task.
             return taskCount - 2;
         }
     }

@@ -121,8 +121,10 @@ public class TriggerProcessor {
     private Stream<Track> findPreviousUnTriggered(
             Media media, DetectionContext context) {
 
+        record TriggerEntry(int task, Predicate<Track> trigger) { }
+
         var job = _inProgressJobs.getJob(context.getJobId());
-        var tracks = Stream.<Track>empty();
+        var triggerEntries = Stream.<TriggerEntry>builder();
 
         for (var creationTaskIdx = context.getTaskIndex() - 2; creationTaskIdx >= 0;
                 creationTaskIdx--) {
@@ -134,12 +136,10 @@ public class TriggerProcessor {
                 // un-triggered tracks from earlier in the pipeline.
                 break;
             }
-
-            var taskTracks = getTracks(creationTaskIdx, media, context)
-                .filter(triggerFilter.negate());
-            tracks = Stream.concat(tracks, taskTracks);
+            triggerEntries.add(new TriggerEntry(creationTaskIdx, triggerFilter));
         }
-        return tracks;
+        return triggerEntries.build()
+            .flatMap(te -> getTracks(te.task, media, context).filter(te.trigger.negate()));
     }
 
 

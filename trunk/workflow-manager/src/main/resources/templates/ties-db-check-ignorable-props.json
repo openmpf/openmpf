@@ -71,7 +71,8 @@
             "AUTO_ROTATE",
             "AUTO_FLIP",
             "DETECTION_PADDING_X",
-            "DETECTION_PADDING_Y"
+            "DETECTION_PADDING_Y",
+            "DETECTION_REGION_ASPECT_RATIO"
         ]
     }
 ]

@@ -101,17 +101,19 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
+                    String aspectRatio = combinedProperties.apply(MpfConstants.DETECTION_REGION_ASPECT_RATIO);
+
                     Collection<Track> updatedTracks = removeIllFormedDetections(
                         trackCache, media.getId(), actionIndex, frameWidth, frameHeight, tracks);
 
                     try {
-                        if (requiresPadding(combinedProperties)) {
+                        if (requiresPadding(combinedProperties) || aspectRatio == "square") {
 
                             String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
 
                             padTracks(trackCache, media.getId(), actionIndex,
-                                    xPadding, yPadding, frameWidth, frameHeight, updatedTracks);
+                                    xPadding, yPadding, aspectRatio, frameWidth, frameHeight, updatedTracks);
                         }
                     } catch (DetectionTransformationException e) {
                         // This should not happen because we checked that the detection properties were valid when the
@@ -330,8 +332,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     }
 
     private void padTracks(TrackCache trackCache, long mediaId, int actionIndex,
-                           String xPadding, String yPadding, int frameWidth,
-                           int frameHeight, Collection<Track> tracks) {
+                           String xPadding, String yPadding, String aspectRatio,
+                           int frameWidth, int frameHeight, Collection<Track> tracks) {
         var newTracks = new TreeSet<Track>();
         var shrunkToNothingFrames = IntStream.builder();
 
@@ -339,7 +341,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             SortedSet<Detection> newDetections = new TreeSet<>();
 
             for (Detection detection : track.getDetections()) {
-                Detection newDetection = padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
+                Detection newDetection = padDetection(xPadding, yPadding, aspectRatio, frameWidth, frameHeight, detection);
                 if (newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING")) {
                     shrunkToNothingFrames.add(newDetection.getMediaOffsetFrame());
                 }
@@ -390,12 +392,12 @@ public class DetectionTransformationProcessor extends WfmProcessor {
      * (50% of 100 px is 50 px, which is padded on the left and right, respectively).
      * If the detection width or height is shrunk to nothing, use a 1-pixel width or height, respectively.
      */
-    public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
+    public static Detection padDetection(String xPadding, String yPadding, String aspectRatio, int frameWidth, int frameHeight,
                                          Detection detection) {
         AffineTransform transform = getTransform(detection);
 
         Rectangle2D.Double correctedDetectionRect = transformToRect(detection, transform);
-        Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding);
+        Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding, aspectRatio);
         Rectangle2D.Double clippedDetectionRect = clip(grownDetectionRect, frameWidth, frameHeight, transform);
         Rectangle2D.Double detectionRectMappedBack = inverseTransform(clippedDetectionRect, transform);
 
@@ -424,7 +426,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     }
 
 
-    private static Rectangle2D.Double grow(Rectangle2D.Double rect, String xPadding, String yPadding) {
+    private static Rectangle2D.Double grow(Rectangle2D.Double rect, String xPadding, String yPadding, String aspectRatio) {
         double changeInWidth = getPaddingPixelCount(xPadding, rect.getWidth());
         double changeInHeight = getPaddingPixelCount(yPadding, rect.getHeight());
 
@@ -432,6 +434,19 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         double newY = rect.getY() - changeInHeight;
         double newWidth = rect.getWidth() + 2 * changeInWidth;
         double newHeight = rect.getHeight() + 2 * changeInHeight;
+
+        if (aspectRatio == "square") {
+            double diff = Math.floor(Math.abs(newWidth - newHeight) / 2.0);
+            if (newWidth < newHeight) {
+                newX = newX - diff;
+                newWidth = newHeight;
+            }
+            else {
+                newY = newY - diff;
+                newHeight = newWidth;
+            }
+        }
+
         return new Rectangle2D.Double(newX, newY, newWidth, newHeight);
     }
 

@@ -252,6 +252,13 @@
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
+        "name": "DETECTION_REGION_ASPECT_RATIO",
+        "description": "Specifies",
+        "type": "STRING",
+        "propertiesKey": "detection.region.aspect.ratio",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
         "name": "ROTATION_THRESHOLD",
         "description": "The minimum number of degrees required to actually perform frame rotation. When the amount of rotation is less than ROTATION_THRESHOLD, components will behave as if there is no rotation.",
         "type": "DOUBLE",

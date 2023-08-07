@@ -253,7 +253,7 @@
     },
     {
         "name": "DETECTION_REGION_ASPECT_RATIO",
-        "description": "Specifies",
+        "description": "Specifies the aspect ratio of the detection regions. Must be 'square' or 'unconstrained', with 'unconstrained' being the default value.",
         "type": "STRING",
         "propertiesKey": "detection.region.aspect.ratio",
         "mediaTypes": ["VIDEO", "IMAGE"]

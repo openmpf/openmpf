@@ -138,6 +138,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         // Both will throw if property is invalid.
         requiresPadding(properties, MpfConstants.DETECTION_PADDING_X);
         requiresPadding(properties, MpfConstants.DETECTION_PADDING_Y);
+        requiresAspectRatio(properties);
     }
 
 
@@ -174,6 +175,20 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                             "with \"%%\". Percentages can be decimal values. Negative values are allowed in both " +
                             "cases, but percentages must be > -50%%.",
                     propertyName, padding), e);
+        }
+    }
+
+    private static boolean requiresAspectRatio(Function<String, String> properties)
+            throws DetectionTransformationException {
+        String aspectRatio = properties.apply(MpfConstants.DETECTION_REGION_ASPECT_RATIO);
+        if (aspectRatio.equals("square")) {
+            return true;
+        }
+        else if (aspectRatio.equals("unconstrained")) {
+            return false;
+        }
+        else {
+            throw DetectionTransformationException("Unacceptable input for aspectRatio.")
         }
     }
 
@@ -397,9 +412,9 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         AffineTransform transform = getTransform(detection);
 
         Rectangle2D.Double correctedDetectionRect = transformToRect(detection, transform);
-        Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding, aspectRatio);
+        Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding);
         Rectangle2D.Double clippedDetectionRect = new Rectangle2D.Double();
-        if (aspectRatio == "square") {
+        if (aspectRatio.equals("square")) {
             clippedDetectionRect = enforceAspectRatio(grownDetectionRect);
         }
         else {
@@ -432,7 +447,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     }
 
 
-    private static Rectangle2D.Double grow(Rectangle2D.Double rect, String xPadding, String yPadding, String aspectRatio) {
+    private static Rectangle2D.Double grow(Rectangle2D.Double rect, String xPadding, String yPadding) {
         double changeInWidth = getPaddingPixelCount(xPadding, rect.getWidth());
         double changeInHeight = getPaddingPixelCount(yPadding, rect.getHeight());
 

@@ -398,7 +398,13 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
         Rectangle2D.Double correctedDetectionRect = transformToRect(detection, transform);
         Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding, aspectRatio);
-        Rectangle2D.Double clippedDetectionRect = clip(grownDetectionRect, frameWidth, frameHeight, transform);
+        Rectangle2D.Double clippedDetectionRect = new Rectangle2D.Double();
+        if (aspectRatio == "square") {
+            clippedDetectionRect = enforceAspectRatio(grownDetectionRect);
+        }
+        else {
+            clippedDetectionRect = clip(grownDetectionRect, frameWidth, frameHeight, transform);
+        }
         Rectangle2D.Double detectionRectMappedBack = inverseTransform(clippedDetectionRect, transform);
 
         Detection retvalDetection = rectToDetection(detectionRectMappedBack, detection);
@@ -434,19 +440,6 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         double newY = rect.getY() - changeInHeight;
         double newWidth = rect.getWidth() + 2 * changeInWidth;
         double newHeight = rect.getHeight() + 2 * changeInHeight;
-
-        if (aspectRatio == "square") {
-            double diff = Math.floor(Math.abs(newWidth - newHeight) / 2.0);
-            if (newWidth < newHeight) {
-                newX = newX - diff;
-                newWidth = newHeight;
-            }
-            else {
-                newY = newY - diff;
-                newHeight = newWidth;
-            }
-        }
-
         return new Rectangle2D.Double(newX, newY, newWidth, newHeight);
     }
 
@@ -472,6 +465,27 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         Rectangle2D.Double result = new Rectangle2D.Double();
         Rectangle2D.intersect(detectionRect, frameRect, result);
         return result;
+    }
+
+
+    private static Rectangle2D.Double enforceAspectRatio(Rectangle2D.Double grownRect) {
+        double x = grownRect.getX();
+        double y = grownRect.getY();
+        double width = grownRect.getWidth();
+        double height = grownRect.getHeight();
+        
+        double diff = Math.floor(Math.abs(width - height) / 2.0);
+
+        if (width < height) {
+            x = x - diff;
+            width = height;
+        }
+        else {
+            y = y - diff;
+            height = width;
+        }
+
+        return new Rectangle2D.Double(x, y, width, height);
     }
 
 

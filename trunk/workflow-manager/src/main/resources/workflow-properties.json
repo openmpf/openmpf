@@ -253,9 +253,16 @@
     },
     {
         "name": "DETECTION_REGION_ASPECT_RATIO",
-        "description": "Specifies the aspect ratio of the detection regions. Must be 'square' or 'unconstrained', with 'unconstrained' being the default value.",
+        "description": "Specifies the aspect ratio of the detection regions. Must be set to 'square' or 'unconstrained'. If set to 'square'",
         "type": "STRING",
         "propertiesKey": "detection.region.aspect.ratio",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "INCLUDE_PRE_TRANSFORMED_BOX",
+        "description": "Some description...",
+        "type": "BOOLEAN",
+        "propertiesKey": "include.pre.transformed.box",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {

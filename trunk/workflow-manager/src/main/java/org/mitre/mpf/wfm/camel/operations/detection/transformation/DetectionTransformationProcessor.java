@@ -102,18 +102,19 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
                     String aspectRatio = combinedProperties.apply(MpfConstants.DETECTION_REGION_ASPECT_RATIO);
+                    boolean includePreTransformedBox = combinedProperties.apply(MpfConstants.INCLUDE_PRE_TRANSFORMED_BOX);
 
                     Collection<Track> updatedTracks = removeIllFormedDetections(
                         trackCache, media.getId(), actionIndex, frameWidth, frameHeight, tracks);
 
                     try {
-                        if (requiresPadding(combinedProperties) || aspectRatio == "square") {
+                        if (requiresPadding(combinedProperties) || requiresAspectRatio(combinedProperties) || includePreTransformedBox) {
 
                             String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
 
                             padTracks(trackCache, media.getId(), actionIndex,
-                                    xPadding, yPadding, aspectRatio, frameWidth, frameHeight, updatedTracks);
+                                    xPadding, yPadding, aspectRatio, includePreTransformedBox, frameWidth, frameHeight, updatedTracks);
                         }
                     } catch (DetectionTransformationException e) {
                         // This should not happen because we checked that the detection properties were valid when the
@@ -188,7 +189,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             return false;
         }
         else {
-            throw DetectionTransformationException("Unacceptable input for aspectRatio.")
+            throw new DetectionTransformationException("Unacceptable input for aspectRatio.");
         }
     }
 
@@ -347,7 +348,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     }
 
     private void padTracks(TrackCache trackCache, long mediaId, int actionIndex,
-                           String xPadding, String yPadding, String aspectRatio,
+                           String xPadding, String yPadding, String aspectRatio, boolean includePreTransformedBox,
                            int frameWidth, int frameHeight, Collection<Track> tracks) {
         var newTracks = new TreeSet<Track>();
         var shrunkToNothingFrames = IntStream.builder();
@@ -356,7 +357,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             SortedSet<Detection> newDetections = new TreeSet<>();
 
             for (Detection detection : track.getDetections()) {
-                Detection newDetection = padDetection(xPadding, yPadding, aspectRatio, frameWidth, frameHeight, detection);
+                Detection newDetection = padDetection(xPadding, yPadding, aspectRatio, includePreTransformedBox, frameWidth, frameHeight, detection);
                 if (newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING")) {
                     shrunkToNothingFrames.add(newDetection.getMediaOffsetFrame());
                 }
@@ -407,7 +408,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
      * (50% of 100 px is 50 px, which is padded on the left and right, respectively).
      * If the detection width or height is shrunk to nothing, use a 1-pixel width or height, respectively.
      */
-    public static Detection padDetection(String xPadding, String yPadding, String aspectRatio, int frameWidth, int frameHeight,
+    public static Detection padDetection(String xPadding, String yPadding, String aspectRatio, boolean includePreTransformedBox, int frameWidth, int frameHeight,
                                          Detection detection) {
         AffineTransform transform = getTransform(detection);
 
@@ -415,14 +416,14 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding);
         Rectangle2D.Double clippedDetectionRect = new Rectangle2D.Double();
         if (aspectRatio.equals("square")) {
-            clippedDetectionRect = enforceAspectRatio(grownDetectionRect);
+            clippedDetectionRect = enforceSquareAspectRatio(grownDetectionRect);
         }
         else {
             clippedDetectionRect = clip(grownDetectionRect, frameWidth, frameHeight, transform);
         }
         Rectangle2D.Double detectionRectMappedBack = inverseTransform(clippedDetectionRect, transform);
 
-        Detection retvalDetection = rectToDetection(detectionRectMappedBack, detection);
+        Detection retvalDetection = rectToDetection(detectionRectMappedBack, includePreTransformedBox, detection);
 
         /*
         if (false) { // if true show visualization
@@ -483,7 +484,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     }
 
 
-    private static Rectangle2D.Double enforceAspectRatio(Rectangle2D.Double grownRect) {
+    private static Rectangle2D.Double enforceSquareAspectRatio(Rectangle2D.Double grownRect) {
         double x = grownRect.getX();
         double y = grownRect.getY();
         double width = grownRect.getWidth();
@@ -517,7 +518,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     }
 
 
-    private static Detection rectToDetection(Rectangle2D.Double rect, Detection originalDetection) {
+    private static Detection rectToDetection(Rectangle2D.Double rect, boolean includePreTransformedBox, Detection originalDetection) {
         int x = (int) Math.round(rect.getX());
         int y = (int) Math.round(rect.getY());
         int width = (int) Math.ceil(rect.getWidth());
@@ -540,6 +541,17 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         }
         else {
             detectionProperties = originalDetection.getDetectionProperties();
+        }
+
+        if (includePreTransformedBox) {
+            String preX = Integer.toString(originalDetection.getX());
+            String preY = Integer.toString(originalDetection.getY());
+            String preWidth = Integer.toString(originalDetection.getWidth());
+            String preHeight = Integer.toString(originalDetection.getHeight());
+            detectionProperties.put("PRE_TRANSFORMED_BOX_X", preX);
+            detectionProperties.put("PRE_TRANSFORMED_BOX_Y", preY);
+            detectionProperties.put("PRE_TRANSFORMED_BOX_WIDTH", preWidth);
+            detectionProperties.put("PRE_TRANSFORMED_BOX_HEIGHT", preHeight);
         }
 
         return new Detection(

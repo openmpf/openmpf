@@ -26,25 +26,35 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+
+import javax.inject.Inject;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import javax.inject.Inject;
-import java.util.*;
-
-import static java.util.stream.Collectors.toList;
 
 @Component(VideoMediaSegmenter.REF)
 public class VideoMediaSegmenter implements MediaSegmenter {
@@ -55,15 +65,21 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private final TriggerProcessor _triggerProcessor;
 
+    private final TaskMergingManager _taskMergingManager;
+
     @Inject
-    VideoMediaSegmenter(CamelContext camelContext, TriggerProcessor triggerProcessor) {
+    VideoMediaSegmenter(
+            CamelContext camelContext,
+            TriggerProcessor triggerProcessor,
+            TaskMergingManager taskMergingManager) {
         _camelContext = camelContext;
         _triggerProcessor = triggerProcessor;
+        _taskMergingManager = taskMergingManager;
     }
 
     @Override
     public List<Message> createDetectionRequestMessages(
-            Media media, DetectionContext context) {
+            BatchJob job, Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
             Set<MediaRange> framesToProcess = UserSpecifiedRangesUtil.getCombinedRanges(media);
             // Process each range separately to prevent createMediaRangeMessages from filling
@@ -74,7 +90,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     .collect(toList());
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {
-            return createFeedForwardMessages(media, context);
+            return createFeedForwardMessages(job, media, context);
         }
         else {
             List<MediaRange> trackMediaRanges = MediaSegmenter.createRangesForTracks(context.getPreviousTracks());
@@ -128,7 +144,10 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     }
 
 
-    private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
+    private List<Message> createFeedForwardMessages(
+            BatchJob job, Media media, DetectionContext context) {
+        var taskMergingContext = _taskMergingManager.getRequestContext(
+                job, media, context.getTaskIndex(), context.getActionIndex());
         int topConfidenceCount = getTopConfidenceCount(context);
         return _triggerProcessor.getTriggeredTracks(media, context)
                 .filter(t -> {
@@ -139,13 +158,14 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     }
                     return true;
                 })
-                .map(t -> createFeedForwardVideoRequest(t, topConfidenceCount))
-                .map(vr -> createProtobufMessage(media, context, vr))
+                .map(t -> taskMergingContext.addBreadCrumb(
+                        createFeedForwardMessage(t, topConfidenceCount, media, context), t))
                 .toList();
     }
 
 
-    private static VideoRequest createFeedForwardVideoRequest(Track track, int topConfidenceCount) {
+    private Message createFeedForwardMessage(
+            Track track, int topConfidenceCount, Media media, DetectionContext context) {
         Collection<Detection> includedDetections;
         int startFrame;
         int stopFrame;
@@ -182,11 +202,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     .setImageLocation(MediaSegmenter.createImageLocation(detection));
         }
 
-        return VideoRequest.newBuilder()
+        var videoRequest = VideoRequest.newBuilder()
                 .setStartFrame(startFrame)
                 .setStopFrame(stopFrame)
                 .setFeedForwardTrack(protobufTrackBuilder)
                 .build();
+        return createProtobufMessage(media, context, videoRequest);
     }
 
 

@@ -37,8 +37,10 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.springframework.stereotype.Component;
 
 @Component(ImageMediaSegmenter.REF)
@@ -49,21 +51,31 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 
     private final TriggerProcessor _triggerProcessor;
 
+    private final TaskMergingManager _taskMergingManager;
+
 	@Inject
-	ImageMediaSegmenter(CamelContext camelContext, TriggerProcessor triggerProcessor) {
+	ImageMediaSegmenter(
+            CamelContext camelContext,
+            TriggerProcessor triggerProcessor,
+            TaskMergingManager taskMergingManager) {
 		_camelContext = camelContext;
         _triggerProcessor = triggerProcessor;
+        _taskMergingManager = taskMergingManager;
 	}
 
 	@Override
-	public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
+	public List<Message> createDetectionRequestMessages(
+            BatchJob job, Media media, DetectionContext context) {
 
 		if (context.isFirstDetectionTask()) {
 			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
 		}
 		else if (MediaSegmenter.feedForwardIsEnabled(context)) {
+            var taskMergingContext = _taskMergingManager.getRequestContext(
+                    job, media, context.getTaskIndex(), context.getActionIndex());
             return _triggerProcessor.getTriggeredTracks(media, context)
-                    .map(t -> createFeedForwardMessage(t, media, context))
+                    .map(t -> taskMergingContext.addBreadCrumb(
+                            createFeedForwardMessage(t, media, context), t))
                     .toList();
 		}
 		else if (!context.getPreviousTracks().isEmpty()) {

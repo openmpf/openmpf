@@ -64,6 +64,8 @@ public class TestMarkupSplitter {
                          5000,    // startOffsetTime
                          10000,   // endOffsetTime
                          "type",  // type
+                         "",
+                         "",
                          7.7777f, // confidence
                          List.of(createDetection(detectionProperties)),
                          trackProperties,

@@ -355,6 +355,8 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 _trackId--,
                 -1,
                 "type",
+                "",
+                "",
                 -1,
                 List.of(),
                 trackProps,

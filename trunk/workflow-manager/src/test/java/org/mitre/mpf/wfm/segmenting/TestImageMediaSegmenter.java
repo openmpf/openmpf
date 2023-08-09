@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mockito.Mock;
 
 import java.net.URI;
@@ -56,6 +57,9 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
     @Mock
     private TriggerProcessor _mockTriggerProcessor;
+
+    @Mock
+    private TaskMergingManager _mockTaskMergingManager;
 
 	@Test
 	public void canCreateFirstStageMessages() {
@@ -107,6 +111,9 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
+        when(_mockTaskMergingManager.getRequestContext(
+                null, media, context.getTaskIndex(), context.getActionIndex()))
+                .thenReturn((m, t) -> m);
 
 		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
@@ -145,8 +152,9 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
 	private List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
 		MediaSegmenter segmenter = new ImageMediaSegmenter(
-                mock(CamelContext.class), _mockTriggerProcessor);
-		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
+                mock(CamelContext.class), _mockTriggerProcessor,
+                _mockTaskMergingManager);
+		List<Message> messages = segmenter.createDetectionRequestMessages(null, media, context);
 		return unwrapMessages(messages);
 	}
 

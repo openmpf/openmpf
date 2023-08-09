@@ -121,7 +121,7 @@ public class TriggerProcessor {
     private Stream<Track> findPreviousUnTriggered(
             Media media, DetectionContext context) {
 
-        record TriggerEntry(int task, Predicate<Track> trigger) { }
+        record TriggerEntry(int taskIdx, Predicate<Track> trigger) { }
 
         var job = _inProgressJobs.getJob(context.getJobId());
         var triggerEntries = Stream.<TriggerEntry>builder();
@@ -139,7 +139,7 @@ public class TriggerProcessor {
             triggerEntries.add(new TriggerEntry(creationTaskIdx, triggerFilter));
         }
         return triggerEntries.build()
-            .flatMap(te -> getTracks(te.task, media, context).filter(te.trigger.negate()));
+            .flatMap(te -> getTracks(te.taskIdx, media, context).filter(te.trigger.negate()));
     }
 
 

@@ -112,6 +112,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 
 @Component(JobCompleteProcessorImpl.REF)
@@ -509,7 +510,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             JsonMediaOutputObject mediaOutputObject,
             TrackCounter trackCounter) {
         var stateKeyBuilder = new StringBuilder("+");
-        String prevUnmergedTaskType = null;
         String prevUnmergedAlgorithm = null;
         for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);
@@ -567,20 +567,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             action.getAlgorithm(), mediaOutputObject);
                 }
                 else {
-                    int trackIndex = 0;
+                    var algoCounts = HashMultiset.<String>create();
                     for (Track track : trackInfo.tracks()) {
-                        var type = track.getType();
-                        var algo = action.getAlgorithm();
-                        if (trackInfo.isMergeSource()) {
-                            // The first task will never be a merge source, so the initial null
-                            // values of prevUnmergedTaskType and prevUnmergedAlgorithm are never
-                            // used.
-                            type = prevUnmergedTaskType;
-                            algo = prevUnmergedAlgorithm;
-                        }
-
-                        JsonTrackOutputObject jsonTrackOutputObject
-                                = createTrackOutputObject(track, trackIndex, stateKey, type, action, media, job);
+                        var type = track.getMergedType();
+                        var algo = track.getMergedAlgorithm();
+                        var jsonTrackOutputObject = createTrackOutputObject(
+                                track, algoCounts.count(algo), stateKey, type, action, media, job);
 
                         if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
                             mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
@@ -590,7 +582,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 mediaOutputObject.getDetectionTypes().get(type);
                         boolean stateFound = false;
                         for (JsonActionOutputObject jsonAction : actionSet) {
-                            if (stateKey.equals(jsonAction.getSource())) {
+                            if (stateKey.equals(jsonAction.getSource())
+                                    && jsonAction.getAlgorithm().equals(algo)) {
                                 stateFound = true;
                                 jsonAction.getTracks().add(jsonTrackOutputObject);
                                 break;
@@ -601,14 +594,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             actionSet.add(jsonAction);
                             jsonAction.getTracks().add(jsonTrackOutputObject);
                         }
-                        trackIndex++;
+                        algoCounts.add(algo);
                     }
                 }
 
                 if (!trackInfo.isMergeSource()) {
                     // NOTE: If and when we support parallel actions in tasks other then the final
                     // one in a pipeline, this code will need to be updated.
-                    prevUnmergedTaskType = trackInfo.trackType();
                     prevUnmergedAlgorithm = action.getAlgorithm();
                 }
 

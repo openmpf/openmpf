@@ -168,7 +168,8 @@ public class DetectionTaskSplitter {
                             segmentingPlan);
 
                     // get detection request messages from ActiveMQ
-                    List<Message> detectionRequestMessages = createDetectionRequestMessages(media, detectionContext);
+                    List<Message> detectionRequestMessages = createDetectionRequestMessages(
+                            job, media, detectionContext);
 
                     ActionType actionType = job.getPipelineElements()
                             .getAlgorithm(action.getAlgorithm())
@@ -222,9 +223,10 @@ public class DetectionTaskSplitter {
         }
     }
 
-    private List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext) {
+    private List<Message> createDetectionRequestMessages(
+            BatchJob job, Media media, DetectionContext detectionContext) {
         MediaSegmenter segmenter = getSegmenter(media.getType().orElse(MediaType.UNKNOWN));
-        return segmenter.createDetectionRequestMessages(media, detectionContext);
+        return segmenter.createDetectionRequestMessages(job, media, detectionContext);
     }
 
     private MediaSegmenter getSegmenter(MediaType mediaType) {

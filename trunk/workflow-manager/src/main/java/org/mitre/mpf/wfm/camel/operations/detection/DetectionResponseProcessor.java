@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,14 +68,18 @@ public class DetectionResponseProcessor
 
     private final MediaInspectionHelper _mediaInspectionHelper;
 
+    private final TaskMergingManager _taskMergingManager;
+
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
-                                      MediaInspectionHelper mediaInspectionHelper) {
+                                      MediaInspectionHelper mediaInspectionHelper,
+                                      TaskMergingManager taskMergingManager) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
+        _taskMergingManager = taskMergingManager;
     }
 
     @Override
@@ -91,40 +96,61 @@ public class DetectionResponseProcessor
                     // Camel will print out the exchange, including the message body content, in the stack trace.
                     String.format("Unsupported operation. More than one DetectionResponse sub-message found for job %d.", jobId));
         }
-
-        BatchJob job = _inProgressJobs.getJob(jobId);
-
-        if (totalResponses != 0) {
-            Media media = job.getMedia()
-                    .stream()
-                    .filter(m -> m.getId() == detectionResponse.getMediaId())
-                    .findAny()
-                    .orElseThrow(() -> new IllegalStateException("Unable to locate media with id: " +
-                            detectionResponse.getMediaId()));
-            Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
-            double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
-
-            if (detectionResponse.getVideoResponsesCount() != 0) {
-                var exemplarPolicy = _aggregateJobPropertiesUtil.getValue(
-                        ExemplarPolicyUtil.PROPERTY, job, media, action);
-                processVideoResponse(jobId,
-                                     detectionResponse,
-                                     detectionResponse.getVideoResponses(0),
-                                     confidenceThreshold,
-                                     media,
-                                     exemplarPolicy);
-            } else if (detectionResponse.getAudioResponsesCount() != 0) {
-                processAudioResponse(jobId, detectionResponse, detectionResponse.getAudioResponses(0), confidenceThreshold);
-            } else if (detectionResponse.getImageResponsesCount() != 0) {
-                processImageResponse(jobId, detectionResponse, detectionResponse.getImageResponses(0), confidenceThreshold);
-            } else {
-                processGenericResponse(jobId, detectionResponse, detectionResponse.getGenericResponses(0), confidenceThreshold);
-            }
-        }
-        else {
+        if (totalResponses == 0) {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
             log.warn("Response received, but no tracks were found for {}.", mediaLabel);
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
+            return null;
+        }
+
+        BatchJob job = _inProgressJobs.getJob(jobId);
+
+        Media media = job.getMedia()
+                .stream()
+                .filter(m -> m.getId() == detectionResponse.getMediaId())
+                .findAny()
+                .orElseThrow(() -> new IllegalStateException("Unable to locate media with id: " +
+                        detectionResponse.getMediaId()));
+        Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
+        double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
+
+        try (var taskMergingCtx = getTaskMergingContext(job, media, detectionResponse, headers)) {
+            if (detectionResponse.getVideoResponsesCount() != 0) {
+                var exemplarPolicy = _aggregateJobPropertiesUtil.getValue(
+                        ExemplarPolicyUtil.PROPERTY, job, media, action);
+                processVideoResponse(
+                        jobId,
+                        detectionResponse,
+                        detectionResponse.getVideoResponses(0),
+                        confidenceThreshold,
+                        media,
+                        exemplarPolicy,
+                        taskMergingCtx);
+            }
+            else if (detectionResponse.getAudioResponsesCount() != 0) {
+                processAudioResponse(
+                        jobId,
+                        detectionResponse,
+                        detectionResponse.getAudioResponses(0),
+                        confidenceThreshold,
+                        taskMergingCtx);
+            }
+            else if (detectionResponse.getImageResponsesCount() != 0) {
+                processImageResponse(
+                        jobId,
+                        detectionResponse,
+                        detectionResponse.getImageResponses(0),
+                        confidenceThreshold,
+                        taskMergingCtx);
+            }
+            else {
+                processGenericResponse(
+                        jobId,
+                        detectionResponse,
+                        detectionResponse.getGenericResponses(0),
+                        confidenceThreshold,
+                        taskMergingCtx);
+            }
         }
 
         return null;
@@ -144,12 +170,14 @@ public class DetectionResponseProcessor
         }
     }
 
-    private void processVideoResponse(long jobId,
-                                      DetectionProtobuf.DetectionResponse detectionResponse,
-                                      DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
-                                      double confidenceThreshold,
-                                      Media media,
-                                      String exemplarPolicy) {
+    private void processVideoResponse(
+            long jobId,
+            DetectionProtobuf.DetectionResponse detectionResponse,
+            DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
+            double confidenceThreshold,
+            Media media,
+            String exemplarPolicy,
+            TaskMergingManager.ResponseTaskMergingContext taskMergingContext) {
         int startFrame = videoResponse.getStartFrame();
         int stopFrame = videoResponse.getStopFrame();
         var frameTimeInfo = media.getFrameTimeInfo();
@@ -202,6 +230,8 @@ public class DetectionResponseProcessor
                         startOffsetTime,
                         stopOffsetTime,
                         videoResponse.getDetectionType(),
+                        taskMergingContext.getDetectionType(),
+                        taskMergingContext.getAlgorithm(),
                         objectTrack.getConfidence(),
                         detections,
                         trackProperties,
@@ -211,10 +241,12 @@ public class DetectionResponseProcessor
         }
     }
 
-    private void processAudioResponse(long jobId,
-                                      DetectionProtobuf.DetectionResponse detectionResponse,
-                                      DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
-                                      double confidenceThreshold) {
+    private void processAudioResponse(
+            long jobId,
+            DetectionProtobuf.DetectionResponse detectionResponse,
+            DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
+            double confidenceThreshold,
+            TaskMergingManager.ResponseTaskMergingContext taskMergingContext) {
 
         int startTime = audioResponse.getStartTime();
         int stopTime = audioResponse.getStopTime();
@@ -261,6 +293,8 @@ public class DetectionResponseProcessor
                         objectTrack.getStartTime(),
                         objectTrack.getStopTime(),
                         audioResponse.getDetectionType(),
+                        taskMergingContext.getDetectionType(),
+                        taskMergingContext.getAlgorithm(),
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         trackProperties,
@@ -271,10 +305,12 @@ public class DetectionResponseProcessor
         }
     }
 
-    private void processImageResponse(long jobId,
-                                      DetectionProtobuf.DetectionResponse detectionResponse,
-                                      DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
-                                      double confidenceThreshold) {
+    private void processImageResponse(
+            long jobId,
+            DetectionProtobuf.DetectionResponse detectionResponse,
+            DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
+            double confidenceThreshold,
+            TaskMergingManager.ResponseTaskMergingContext taskMergingContext) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
         log.debug("Response received for {}.", mediaLabel);
 
@@ -303,6 +339,8 @@ public class DetectionResponseProcessor
                         0,
                         0,
                         imageResponse.getDetectionType(),
+                        taskMergingContext.getDetectionType(),
+                        taskMergingContext.getAlgorithm(),
                         location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
@@ -312,10 +350,12 @@ public class DetectionResponseProcessor
         }
     }
 
-    private void processGenericResponse(long jobId,
-                                        DetectionProtobuf.DetectionResponse detectionResponse,
-                                        DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
-                                        double confidenceThreshold) {
+    private void processGenericResponse(
+            long jobId,
+            DetectionProtobuf.DetectionResponse detectionResponse,
+            DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
+            double confidenceThreshold,
+            TaskMergingManager.ResponseTaskMergingContext taskMergingContext) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
         log.debug("Response received for {}.", mediaLabel);
 
@@ -334,17 +374,19 @@ public class DetectionResponseProcessor
             }
 
             processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
-                    trackProperties);
+                    trackProperties, taskMergingContext);
         }
     }
 
 
-    private void processGenericTrack(long jobId,
-                                     DetectionProtobuf.DetectionResponse detectionResponse,
-                                     DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
-                                     DetectionProtobuf.GenericTrack objectTrack,
-                                     double confidenceThreshold,
-                                     SortedMap<String, String> trackProperties) {
+    private void processGenericTrack(
+            long jobId,
+            DetectionProtobuf.DetectionResponse detectionResponse,
+            DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
+            DetectionProtobuf.GenericTrack objectTrack,
+            double confidenceThreshold,
+            SortedMap<String, String> trackProperties,
+            TaskMergingManager.ResponseTaskMergingContext taskMergingContext) {
         if (objectTrack.getConfidence() >= confidenceThreshold) {
             Detection detection = new Detection(
                     0,
@@ -366,6 +408,8 @@ public class DetectionResponseProcessor
                     0,
                     0,
                     genericResponse.getDetectionType(),
+                    taskMergingContext.getDetectionType(),
+                    taskMergingContext.getAlgorithm(),
                     objectTrack.getConfidence(),
                     ImmutableSortedSet.of(detection),
                     trackProperties,
@@ -471,5 +515,30 @@ public class DetectionResponseProcessor
         }
 
         return trackProperties;
+    }
+
+
+    private TaskMergingManager.ResponseTaskMergingContext getTaskMergingContext(
+            BatchJob job,
+            Media media,
+            DetectionProtobuf.DetectionResponse detectionResponse,
+            Map<String, Object> headers) {
+
+        String detectionType;
+        if (detectionResponse.getVideoResponsesCount() == 1) {
+            detectionType = detectionResponse.getVideoResponses(0).getDetectionType();
+        }
+        else if (detectionResponse.getImageResponsesCount() == 1) {
+            detectionType = detectionResponse.getImageResponses(0).getDetectionType();
+        }
+        else if (detectionResponse.getAudioResponsesCount() == 1) {
+            detectionType = detectionResponse.getAudioResponses(0).getDetectionType();
+        }
+        else {
+            detectionType = detectionResponse.getGenericResponses(0).getDetectionType();
+        }
+        return _taskMergingManager.getResponseContext(
+                job, media, detectionResponse.getTaskIndex(), detectionResponse.getActionIndex(),
+                detectionType, headers);
     }
 }

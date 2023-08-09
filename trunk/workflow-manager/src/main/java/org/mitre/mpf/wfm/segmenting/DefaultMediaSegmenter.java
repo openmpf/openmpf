@@ -37,9 +37,11 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -58,21 +60,31 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
     private final TriggerProcessor _triggerProcessor;
 
+    private final TaskMergingManager _taskMergingManager;
+
     @Inject
-    DefaultMediaSegmenter(CamelContext camelContext, TriggerProcessor triggerProcessor) {
+    DefaultMediaSegmenter(
+            CamelContext camelContext,
+            TriggerProcessor triggerProcessor,
+            TaskMergingManager taskMergingManager) {
         _camelContext = camelContext;
         _triggerProcessor = triggerProcessor;
+        _taskMergingManager = taskMergingManager;
     }
 
     @Override
-    public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
+    public List<Message> createDetectionRequestMessages(
+            BatchJob job, Media media, DetectionContext context) {
         log.warn("Media {} is of the MIME type '{}' and will be processed generically.",
                  media.getId(),
                  media.getMimeType());
 
         if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
+            var taskMergingContext = _taskMergingManager.getRequestContext(
+                    job, media, context.getTaskIndex(), context.getActionIndex());
             return _triggerProcessor.getTriggeredTracks(media, context)
-                    .map(t -> createFeedForwardMessage(t, media, context))
+                    .map(t -> taskMergingContext.addBreadCrumb(
+                            createFeedForwardMessage(t, media, context), t))
                     .toList();
         }
 

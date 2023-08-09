@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
-import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.*;
 
@@ -90,6 +89,21 @@ public class Track implements Comparable<Track> {
     private final String _type;
     public String getType() { return _type; }
 
+    /**
+     * The type of this track after applying task merging. If task merging does not apply to this
+     * track, this field will be the same as _type.
+     */
+    private final String _mergedType;
+    public String getMergedType() { return _mergedType; }
+
+    /**
+     * The name of the algorithm that should be reported after applying task merging. If task
+     * merging does not apply to this track, this field will contain the name of the algorithm that
+     * actually generated this track.
+     */
+    private final String _mergedAlgorithm;
+    public String getMergedAlgorithm() { return _mergedAlgorithm; }
+
     private final float _confidence;
     public float getConfidence() { return _confidence; }
 
@@ -144,6 +158,8 @@ public class Track implements Comparable<Track> {
             @JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
             @JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
             @JsonProperty("type") String type,
+            @JsonProperty("mergedType") String mergedType,
+            @JsonProperty("mergedAlgorithm") String mergedAlgorithm,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
@@ -157,6 +173,8 @@ public class Track implements Comparable<Track> {
         _startOffsetTimeInclusive = startOffsetTimeInclusive;
         _endOffsetTimeInclusive = endOffsetTimeInclusive;
         _type = StringUtils.upperCase(StringUtils.trimToNull(type));
+        _mergedType = mergedType;
+        _mergedAlgorithm = mergedAlgorithm;
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
@@ -172,9 +190,11 @@ public class Track implements Comparable<Track> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(_jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
-                            _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
-                            TextUtils.nullSafeHashCode(_type), _confidence, _trackProperties, _exemplar, _detections);
+        return Objects.hash(
+                _jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
+                _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
+                _type, _mergedType, _mergedAlgorithm, _confidence, _trackProperties, _exemplar,
+                _detections);
     }
 
     @Override
@@ -210,6 +230,8 @@ public class Track implements Comparable<Track> {
                 .thenComparingInt(Track::getStartOffsetTimeInclusive)
                 .thenComparingInt(Track::getEndOffsetTimeInclusive)
                 .thenComparing(Track::getType, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(Track::getMergedType, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(Track::getMergedAlgorithm, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparingDouble(Track::getConfidence)
                 .thenComparing(Track::getTrackProperties, CompareUtils.MAP_COMPARATOR)
                 .thenComparing(Track::getExemplar, Comparator.nullsFirst(Comparator.naturalOrder()))
@@ -234,4 +256,3 @@ public class Track implements Comparable<Track> {
                 _endOffsetTimeInclusive);
     }
 }
-

@@ -26,8 +26,11 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -67,10 +70,12 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
@@ -89,6 +94,9 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
 
     @Mock
     private MediaInspectionHelper mockMediaInspectionHelper;
+
+    @Mock
+    private TaskMergingManager mockTaskMergingManager;
 
     private DetectionResponseProcessor detectionResponseProcessor;
 
@@ -116,7 +124,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         detectionResponseProcessor = new DetectionResponseProcessor(
                 mockAggregateJobPropertiesUtil,
                 mockInProgressJobs,
-                mockMediaInspectionHelper);
+                mockMediaInspectionHelper,
+                mockTaskMergingManager);
 
         Algorithm algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
@@ -180,12 +189,12 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
 
     @Test
     public void testHappyPath() {
-
+        var trackType = "TEST_TYPE";
         DetectionProtobuf.DetectionResponse detectionResponse =
                 DetectionProtobuf.DetectionResponse.newBuilder()
                 .setMediaId(MEDIA_ID)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                                   .setDetectionType("TEST")
+                                   .setDetectionType(trackType)
                                    .setStartFrame(START_FRAME)
                                    .setStopFrame(STOP_FRAME)
                                    .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
@@ -217,18 +226,45 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
         exchange.getIn().setBody(detectionResponse);
 
+
+        var mergedType = "MERGED_TYPE";
+        var mergedAlgo = "MERGED_ALGO";
+        var taskMergeRespCtx = mock(TaskMergingManager.ResponseTaskMergingContext.class);
+        when(taskMergeRespCtx.getDetectionType())
+                .thenReturn(mergedType);
+        when(taskMergeRespCtx.getAlgorithm())
+                .thenReturn(mergedAlgo);
+
+        when(mockTaskMergingManager.getResponseContext(
+                argThat(j -> j.getId() == JOB_ID),
+                argThat(m -> m.getId() == MEDIA_ID),
+                eq(1),
+                eq(1),
+                eq(trackType),
+                eq(exchange.getIn().getHeaders())))
+            .thenReturn(taskMergeRespCtx);
+
         detectionResponseProcessor.wfmProcess(exchange);
         Assert.assertEquals(JOB_ID, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
         Assert.assertEquals(1, exchange.getOut().getHeader(MpfHeaders.TASK_INDEX));
 
+        verify(taskMergeRespCtx).close();
         verify(mockInProgressJobs, never())
                 .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point
         verify(mockInProgressJobs, never())
                 .addDetectionProcessingError(any());
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
+
+        var trackCaptor = ArgumentCaptor.forClass(Track.class);
         verify(mockInProgressJobs, times(1))
-                .addTrack(track(JOB_ID, 5));
+                .addTrack(trackCaptor.capture());
+        var track = trackCaptor.getValue();
+        assertEquals(JOB_ID, track.getJobId());
+        assertEquals(5, track.getStartOffsetFrameInclusive());
+        assertEquals(trackType, track.getType());
+        assertEquals(mergedType, track.getMergedType());
+        assertEquals(mergedAlgo, track.getMergedAlgorithm());
     }
 
     @Test

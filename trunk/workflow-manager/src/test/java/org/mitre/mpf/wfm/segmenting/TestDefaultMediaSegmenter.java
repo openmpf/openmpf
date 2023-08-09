@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mockito.Mock;
 
 import java.net.URI;
@@ -56,6 +57,9 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
     @Mock
     private TriggerProcessor _mockTriggerProcessor;
+
+    @Mock
+    private TaskMergingManager _mockTaskMergingManager;
 
 	@Test
 	public void canCreateFirstStageMessages() {
@@ -107,6 +111,9 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
+        when(_mockTaskMergingManager.getRequestContext(
+                null, media, context.getTaskIndex(), context.getActionIndex()))
+                .thenReturn((m, t) -> m);
 
 		List<DetectionRequest> detectionRequests = runDefaultSegmenter(media, context);
 
@@ -136,8 +143,9 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
 	private List<DetectionRequest> runDefaultSegmenter(Media media, DetectionContext context) {
 		MediaSegmenter segmenter = new DefaultMediaSegmenter(
-                mock(CamelContext.class), _mockTriggerProcessor);
-		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
+                mock(CamelContext.class), _mockTriggerProcessor,
+               _mockTaskMergingManager);
+		List<Message> messages = segmenter.createDetectionRequestMessages(null, media, context);
 		return unwrapMessages(messages);
 	}
 
@@ -167,13 +175,13 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(0.00f);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", 0,
+		                         -1, 0, 0, "", "", "", 0,
 		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
 		                         "");
 
 		Detection detection2 = createDetection(0.10f);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", 0.10f,
+		                         -1, 0, 0, "", "", "", 0.10f,
 		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
 		                         "");
 

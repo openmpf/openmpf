@@ -229,9 +229,7 @@ public class DetectionResponseProcessor
                         objectTrack.getStopFrame(),
                         startOffsetTime,
                         stopOffsetTime,
-                        videoResponse.getDetectionType(),
-                        taskMergingContext.getDetectionType(),
-                        taskMergingContext.getAlgorithm(),
+                        taskMergingContext.getAlgorithm().getName(),
                         objectTrack.getConfidence(),
                         detections,
                         trackProperties,
@@ -292,9 +290,7 @@ public class DetectionResponseProcessor
                         0,
                         objectTrack.getStartTime(),
                         objectTrack.getStopTime(),
-                        audioResponse.getDetectionType(),
-                        taskMergingContext.getDetectionType(),
-                        taskMergingContext.getAlgorithm(),
+                        taskMergingContext.getAlgorithm().getName(),
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         trackProperties,
@@ -338,9 +334,7 @@ public class DetectionResponseProcessor
                         0,
                         0,
                         0,
-                        imageResponse.getDetectionType(),
-                        taskMergingContext.getDetectionType(),
-                        taskMergingContext.getAlgorithm(),
+                        taskMergingContext.getAlgorithm().getName(),
                         location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
@@ -407,9 +401,7 @@ public class DetectionResponseProcessor
                     0,
                     0,
                     0,
-                    genericResponse.getDetectionType(),
-                    taskMergingContext.getDetectionType(),
-                    taskMergingContext.getAlgorithm(),
+                    taskMergingContext.getAlgorithm().getName(),
                     objectTrack.getConfidence(),
                     ImmutableSortedSet.of(detection),
                     trackProperties,
@@ -523,22 +515,8 @@ public class DetectionResponseProcessor
             Media media,
             DetectionProtobuf.DetectionResponse detectionResponse,
             Map<String, Object> headers) {
-
-        String detectionType;
-        if (detectionResponse.getVideoResponsesCount() == 1) {
-            detectionType = detectionResponse.getVideoResponses(0).getDetectionType();
-        }
-        else if (detectionResponse.getImageResponsesCount() == 1) {
-            detectionType = detectionResponse.getImageResponses(0).getDetectionType();
-        }
-        else if (detectionResponse.getAudioResponsesCount() == 1) {
-            detectionType = detectionResponse.getAudioResponses(0).getDetectionType();
-        }
-        else {
-            detectionType = detectionResponse.getGenericResponses(0).getDetectionType();
-        }
         return _taskMergingManager.getResponseContext(
                 job, media, detectionResponse.getTaskIndex(), detectionResponse.getActionIndex(),
-                detectionType, headers);
+                headers);
     }
 }

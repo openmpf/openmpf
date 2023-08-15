@@ -35,6 +35,7 @@ import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createDetection;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTestDetectionContext;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTrack;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.unwrapMessages;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -217,16 +218,14 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         Set<Track> tracks = createTestTracks();
 
-        DetectionContext context = createTestDetectionContext(
+        var detectionContext = createTestDetectionContext(
                 1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
 
-        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+        when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
                 .thenReturn(tracks.stream());
-        when(_mockTaskMergingManager.getRequestContext(
-                null, media, context.getTaskIndex(), context.getActionIndex()))
-                .thenReturn((m, t) -> m);
+        setUpMockTaskMergingContext(media, detectionContext);
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        List<DetectionRequest> detectionRequests = runSegmenter(media, detectionContext);
 
         assertEquals(2, detectionRequests.size());
         assertContainsExpectedMediaMetadata(detectionRequests);
@@ -270,18 +269,16 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         Set<Track> tracks = createTestTracks();
 
-        DetectionContext context = createTestDetectionContext(
+        var detectionContext = createTestDetectionContext(
                 1,
                 ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_TOP_CONFIDENCE_COUNT", "2"),
                 tracks);
 
-        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+        when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
                 .thenReturn(tracks.stream());
-        when(_mockTaskMergingManager.getRequestContext(
-                null, media, context.getTaskIndex(), context.getActionIndex()))
-                .thenReturn((m, t) -> m);
+        setUpMockTaskMergingContext(media, detectionContext);
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        List<DetectionRequest> detectionRequests = runSegmenter(media, detectionContext);
 
         assertEquals(2, detectionRequests.size());
         assertContainsExpectedMediaMetadata(detectionRequests);
@@ -317,6 +314,14 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertEquals(5, shortTrack.getStopFrame());
     }
 
+    private void setUpMockTaskMergingContext(Media media, DetectionContext detectionContext) {
+        var mockContext = mock(TaskMergingManager.RequestTaskMergingContext.class);
+        when(mockContext.addBreadCrumbIfNeeded(any(Message.class), any(Track.class)))
+                .then(inv -> inv.getArgument(0, Message.class));
+        when(_mockTaskMergingManager.getRequestContext(
+                null, media, detectionContext.getTaskIndex(), detectionContext.getActionIndex()))
+                .thenReturn(mockContext);
+    }
 
 
     @Test

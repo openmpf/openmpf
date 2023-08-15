@@ -127,8 +127,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
                 mockMediaInspectionHelper,
                 mockTaskMergingManager);
 
-        Algorithm algorithm = new Algorithm(
-                DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
+        var algorithm = new Algorithm(
+                DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION, "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
@@ -227,11 +227,11 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         exchange.getIn().setBody(detectionResponse);
 
 
-        var mergedType = "MERGED_TYPE";
-        var mergedAlgo = "MERGED_ALGO";
+        var mergedAlgoName = "MERGED_ALGO";
+        var mergedAlgo = mock(Algorithm.class);
+        when(mergedAlgo.getName())
+                .thenReturn(mergedAlgoName);
         var taskMergeRespCtx = mock(TaskMergingManager.ResponseTaskMergingContext.class);
-        when(taskMergeRespCtx.getDetectionType())
-                .thenReturn(mergedType);
         when(taskMergeRespCtx.getAlgorithm())
                 .thenReturn(mergedAlgo);
 
@@ -240,7 +240,6 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
                 argThat(m -> m.getId() == MEDIA_ID),
                 eq(1),
                 eq(1),
-                eq(trackType),
                 eq(exchange.getIn().getHeaders())))
             .thenReturn(taskMergeRespCtx);
 
@@ -262,9 +261,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         var track = trackCaptor.getValue();
         assertEquals(JOB_ID, track.getJobId());
         assertEquals(5, track.getStartOffsetFrameInclusive());
-        assertEquals(trackType, track.getType());
-        assertEquals(mergedType, track.getMergedType());
-        assertEquals(mergedAlgo, track.getMergedAlgorithm());
+        assertEquals(mergedAlgoName, track.getMergedAlgorithm());
     }
 
     @Test

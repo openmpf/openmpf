@@ -111,7 +111,7 @@ public interface Media {
 
     public ImmutableSet<MediaRange> getTimeRanges();
 
-    public List<TiesDbInfo> getTiesDbInfo();
+    public Optional<TiesDbInfo> getTiesDbInfo();
 
     public Optional<String> getLinkedHash();
 }

@@ -270,11 +270,6 @@ public class InProgressBatchJobsService {
         return _redis.getTrackCount(jobId, mediaId, taskIndex, actionIndex);
     }
 
-    public synchronized Optional<String> getTrackType(
-            long jobId, long mediaId, int taskIndex, int actionIndex) {
-        return _redis.getTrackType(jobId, mediaId, taskIndex, actionIndex);
-    }
-
     public synchronized void addTrack(Track track) {
         LOG.debug("Storing new track for job {}'s media {}.", track.getJobId(), track.getMediaId());
         _redis.addTrack(track);
@@ -547,7 +542,7 @@ public class InProgressBatchJobsService {
 
     public synchronized void addTiesDbInfo(long jobId, long mediaId, TiesDbInfo tiesDbInfo) {
         getMediaImpl(jobId, mediaId)
-                .addTiesDbInfo(tiesDbInfo);
+                .setTiesDbInfo(tiesDbInfo);
     }
 
 

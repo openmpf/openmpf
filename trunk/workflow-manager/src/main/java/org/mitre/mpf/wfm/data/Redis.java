@@ -48,7 +48,5 @@ public interface Redis {
 
     int getTrackCount(long jobId, long mediaId, int taskIndex, int actionIndex);
 
-    Optional<String> getTrackType(long jobId, long mediaId, int taskIndex, int actionIndex);
-
     void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
 }

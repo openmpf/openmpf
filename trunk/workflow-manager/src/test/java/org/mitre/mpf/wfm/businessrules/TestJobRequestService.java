@@ -143,7 +143,7 @@ public class TestJobRequestService {
 
 
     private static JobPipelineElements createJobPipelineElements() {
-        var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION,
+        var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION, "TEST",
                                       OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),

@@ -29,15 +29,18 @@ package org.mitre.mpf.wfm.service;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
 import org.apache.camel.Message;
-import org.mitre.mpf.interop.JsonActionOutputObject;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -58,24 +61,19 @@ public class TaskMergingManager {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    private final Redis _redis;
-
-    private record AlgoTrackType(String algorithm, String trackType) {}
-    private final ConcurrentMap<Long, ConcurrentMap<UUID, AlgoTrackType>> _algoTrackTypes
+    private final ConcurrentMap<Long, ConcurrentMap<UUID, String>> _trackSourceAlgos
             = new ConcurrentHashMap<>();
 
     @Inject
     TaskMergingManager(
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            Redis redis) {
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _redis = redis;
     }
 
 
     public RequestTaskMergingContext getRequestContext(
             BatchJob job, Media media, int taskIdx, int actionIdx) {
-        if (mergeEnabled(job, media, taskIdx, actionIdx)) {
+        if (needsBreadCrumb(job, media, taskIdx, actionIdx)) {
             return (m, t) -> addBreadCrumb(m, t, job.getId());
         }
         else {
@@ -89,7 +87,6 @@ public class TaskMergingManager {
             Media media,
             int taskIdx,
             int actionIdx,
-            String responseDetectionType,
             Map<String, Object> headers) {
 
         var breadCrumbCtx = getBreadCrumbContext(job, headers);
@@ -97,34 +94,80 @@ public class TaskMergingManager {
             return breadCrumbCtx.get();
         }
 
-        var mergeTarget = getMergeTarget(job, media, taskIdx, actionIdx, responseDetectionType);
-        return new ResponseTaskMergingContext(mergeTarget.algorithm, mergeTarget.trackType);
+        var pipelineElements = job.getPipelineElements();
+        var algo = getTransitiveMergeTargets(job, media, taskIdx, actionIdx)
+                .min()
+                .stream()
+                .mapToObj(ti -> pipelineElements.getAlgorithm(ti, 0))
+                .findAny()
+                .orElseGet(() -> pipelineElements.getAlgorithm(taskIdx, actionIdx));
+        return new ResponseTaskMergingContext(algo);
     }
 
 
     public void clearJob(long jobId) {
         // When no errors occur, there will not be an entry by the time this method is called.
-        _algoTrackTypes.remove(jobId);
+        _trackSourceAlgos.remove(jobId);
     }
 
 
-    private boolean mergeEnabled(BatchJob job, Media media, int taskIdx, int actionIdx) {
+    public boolean isMergeSource(BatchJob job, Media media, int taskIdx, int actionIdx) {
         if (taskIdx == 0) {
             return false;
         }
         var action = job.getPipelineElements().getAction(taskIdx, actionIdx);
+        return isMergeSource(job, media, action);
+    }
+
+
+    private boolean isMergeSource(BatchJob job, Media media, Action action) {
         var mergeProperty = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, job, media, action);
         return Boolean.parseBoolean(mergeProperty);
     }
 
 
+    public boolean isMergeTarget(BatchJob job, Media media, int taskIdx) {
+        var pipelineElements = job.getPipelineElements();
+        int lastDetectionTaskIdx = pipelineElements.getLastDetectionTaskIdx();
+
+        for (int futureTaskIdx = taskIdx + 1;
+                futureTaskIdx < lastDetectionTaskIdx;
+                futureTaskIdx++) {
+            var futureTask = pipelineElements.getTask(futureTaskIdx);
+            var taskAppliesToMedia = false;
+            for (var futureAction : pipelineElements.getActionsInOrder(futureTask)) {
+                if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, futureAction)) {
+                    taskAppliesToMedia = true;
+                    if (isMergeSource(job, media, futureAction)) {
+                        return true;
+                    }
+                }
+            }
+            if (taskAppliesToMedia) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+
+    public IntStream getTransitiveMergeTargets(
+            BatchJob job, Media media, int srcTaskIdx, int srcActionIdx) {
+        return Stream.iterate(
+                getDirectMergeTarget(job, media, srcTaskIdx, srcActionIdx),
+                OptionalInt::isPresent,
+                p -> getDirectMergeTarget(job, media, p.getAsInt(), 0))
+            .mapToInt(OptionalInt::getAsInt);
+    }
+
+
     private Message addBreadCrumb(
             Message message, Track feedForwardTrack, long jobId) {
-        var jobMap = _algoTrackTypes.computeIfAbsent(jobId, k -> new ConcurrentHashMap<>());
         var trackId = UUID.randomUUID();
-        jobMap.put(trackId, new AlgoTrackType(
-                feedForwardTrack.getMergedAlgorithm(), feedForwardTrack.getMergedType()));
+        _trackSourceAlgos
+                .computeIfAbsent(jobId, k -> new ConcurrentHashMap<>())
+                .put(trackId, feedForwardTrack.getMergedAlgorithm());
         message.setHeader(BREAD_CRUMB_ID, CUSTOM_BREAD_CRUMB_PREFIX + trackId);
         return message;
     }
@@ -153,23 +196,23 @@ public class TaskMergingManager {
         if (uuid == null) {
             return Optional.empty();
         }
-        var jobMap = _algoTrackTypes.get(job.getId());
+        var jobMap = _trackSourceAlgos.get(job.getId());
         if (jobMap == null)  {
             return Optional.empty();
         }
-        var algoTrackType = jobMap.get(uuid);
-        if (algoTrackType == null) {
+        var algoName = jobMap.get(uuid);
+        if (algoName == null) {
             return Optional.empty();
         }
+        var algo = job.getPipelineElements().getAlgorithm(algoName);
 
-        var result = new ResponseTaskMergingContext(
-                    algoTrackType.algorithm, algoTrackType.trackType) {
+        var result = new ResponseTaskMergingContext(algo) {
             @Override
             public void close() {
                 jobMap.remove(uuid);
                 // Need to use computeIfPresent so that checking if the job specific sub-map is
-                // empty and removal from _algoTrackTypes occur atomically.
-                _algoTrackTypes.computeIfPresent(
+                // empty and removal from _trackSourceAlgos occur atomically.
+                _trackSourceAlgos.computeIfPresent(
                         job.getId(),
                         // Returning null causes the entry to be removed from the map.
                         (k, v) -> v.isEmpty() ? null : v);
@@ -179,59 +222,54 @@ public class TaskMergingManager {
     }
 
 
-    private AlgoTrackType getMergeTarget(
-            BatchJob job, Media media, int taskIdx, int actionIdx, String responseDetectionType) {
-        var pipelineElements = job.getPipelineElements();
-        var algorithm = pipelineElements.getAlgorithm(taskIdx, actionIdx).getName();
-        var trackType = responseDetectionType;
-
-        if (!mergeEnabled(job, media, taskIdx, actionIdx)) {
-            return new AlgoTrackType(algorithm, trackType);
-        }
-
-        for (int prevTaskIdx = taskIdx - 1; prevTaskIdx >= 0; prevTaskIdx--) {
-            var prevAction = pipelineElements.getAction(prevTaskIdx, 0);
-            if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, prevAction)
-                    && !mergeEnabled(job, media, prevTaskIdx, 0)) {
-
-                algorithm = pipelineElements.getAlgorithm(prevTaskIdx, 0)
-                        .getName();
-                trackType = _redis.getTrackType(job.getId(), media.getId(), prevTaskIdx, 0)
-                        .orElse(JsonActionOutputObject.NO_TRACKS_TYPE);
-                break;
-            }
-        }
-        return new AlgoTrackType(algorithm, trackType);
-    }
 
 
     public interface RequestTaskMergingContext {
-        public Message addBreadCrumb(Message message, Track track);
+        public Message addBreadCrumbIfNeeded(Message message, Track track);
     }
 
 
     public static class ResponseTaskMergingContext implements AutoCloseable {
 
-        private final String _algorithm;
+        private final Algorithm _algorithm;
 
-        private final String _responseDetectionType;
-
-        public ResponseTaskMergingContext(String algorithm, String responseDetectionType) {
+        public ResponseTaskMergingContext(Algorithm algorithm) {
             _algorithm = algorithm;
-            _responseDetectionType = responseDetectionType;
         }
 
-
-        public String getAlgorithm() {
+        public Algorithm getAlgorithm() {
             return _algorithm;
-        }
-
-        public String getDetectionType() {
-            return _responseDetectionType;
         }
 
         @Override
         public void close() {
+            // Overridden to get rid of "throws Exception" from the base AutoCloseable.close().
         }
+    }
+
+
+    private OptionalInt getDirectMergeTarget(
+            BatchJob job, Media media, int srcTaskIdx, int srcActionIdx) {
+        if (!isMergeSource(job, media, srcTaskIdx, srcActionIdx)) {
+            return OptionalInt.empty();
+        }
+
+        for (int prevTaskIdx = srcTaskIdx - 1; prevTaskIdx >= 0; prevTaskIdx--) {
+            var prevAction = job.getPipelineElements().getAction(prevTaskIdx, 0);
+            if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, prevAction)) {
+                return OptionalInt.of(prevTaskIdx);
+            }
+        }
+        return OptionalInt.of(0);
+    }
+
+
+    private boolean needsBreadCrumb(BatchJob job, Media media, int taskIdx, int actionIdx) {
+        return getTransitiveMergeTargets(job, media, taskIdx, actionIdx)
+            .min()
+            .stream()
+            .mapToObj(ti -> job.getPipelineElements().getAction(ti, 0))
+            .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
+            .anyMatch(t -> t != null && !t.isBlank());
     }
 }

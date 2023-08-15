@@ -171,6 +171,7 @@ public class JsonComponentDescriptor {
                     algorithm.getName(),
                     algorithm.getDescription(),
                     algorithm.getActionType(),
+                    algorithm.getTrackType(),
                     algorithm.getOutputChangedCounter(),
                     algorithm.getRequiresCollection(),
                     algorithm.getProvidesCollection(),

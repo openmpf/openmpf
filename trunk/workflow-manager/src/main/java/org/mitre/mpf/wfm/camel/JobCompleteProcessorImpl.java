@@ -36,7 +36,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -112,8 +111,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
 
 @Component(JobCompleteProcessorImpl.REF)
 public class JobCompleteProcessorImpl extends WfmProcessor implements JobCompleteProcessor {
@@ -511,13 +510,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             TrackCounter trackCounter) {
         var stateKeyBuilder = new StringBuilder("+");
         String prevUnmergedAlgorithm = null;
+        int lastDetectionTaskIdx = job.getPipelineElements().getLastDetectionTaskIdx();
         for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);
 
+            int numTracksForTask = 0;
             for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
                 String actionName = task.getActions().get(actionIndex);
                 Action action = job.getPipelineElements().getAction(actionName);
-                var trackInfo = trackOutputHelper.getTrackInfo(job, media, taskIndex, actionIndex);
 
                 if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
                     continue;
@@ -544,11 +544,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     }
                 }
 
-                trackCounter.set(
-                        media.getId(), taskIndex, actionIndex, trackInfo.trackType(),
-                        trackInfo.trackCount());
+                var trackInfo = trackOutputHelper.getTrackInfo(job, media, taskIndex, actionIndex);
+                numTracksForTask += trackInfo.tracksGroupedByAlgo().size();
 
-                if (trackInfo.trackCount() == 0) {
+                if (!trackInfo.hadAnyTracks()) {
                     var algo = trackInfo.isMergeSource()
                             ? prevUnmergedAlgorithm
                             : action.getAlgorithm();
@@ -567,35 +566,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             action.getAlgorithm(), mediaOutputObject);
                 }
                 else {
-                    var algoCounts = HashMultiset.<String>create();
-                    for (Track track : trackInfo.tracks()) {
-                        var type = track.getMergedType();
-                        var algo = track.getMergedAlgorithm();
-                        var jsonTrackOutputObject = createTrackOutputObject(
-                                track, algoCounts.count(algo), stateKey, type, action, media, job);
-
-                        if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
-                            mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
-                        }
-
-                        SortedSet<JsonActionOutputObject> actionSet =
-                                mediaOutputObject.getDetectionTypes().get(type);
-                        boolean stateFound = false;
-                        for (JsonActionOutputObject jsonAction : actionSet) {
-                            if (stateKey.equals(jsonAction.getSource())
-                                    && jsonAction.getAlgorithm().equals(algo)) {
-                                stateFound = true;
-                                jsonAction.getTracks().add(jsonTrackOutputObject);
-                                break;
-                            }
-                        }
-                        if (!stateFound) {
-                            JsonActionOutputObject jsonAction = new JsonActionOutputObject(stateKey, algo);
-                            actionSet.add(jsonAction);
-                            jsonAction.getTracks().add(jsonTrackOutputObject);
-                        }
-                        algoCounts.add(algo);
-                    }
+                    addJsonTracks(
+                            mediaOutputObject, job, media, action, stateKey,
+                            trackInfo.tracksGroupedByAlgo());
                 }
 
                 if (!trackInfo.isMergeSource()) {
@@ -608,6 +581,35 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     stateKeyBuilder.append('#').append(action.getName());
                 }
             }
+            if (taskIndex == lastDetectionTaskIdx) {
+                long parentMediaId = media.isDerivative() ? media.getParentId() : media.getId();
+                trackCounter.add(parentMediaId, numTracksForTask);
+            }
+        }
+    }
+
+
+    private void addJsonTracks(
+            JsonMediaOutputObject mediaOutputObject,
+            BatchJob job,
+            Media media,
+            Action action,
+            String stateKey,
+            Multimap<String, Track> tracks) {
+        for (var entry : tracks.asMap().entrySet()) {
+            var algo = job.getPipelineElements().getAlgorithm(entry.getKey());
+            var jsonAction = new JsonActionOutputObject(stateKey, algo.getName());
+            int trackIndex = 0;
+            for (var track : entry.getValue()) {
+                var jsonTrackOutputObject = createTrackOutputObject(
+                        track, trackIndex++, stateKey,
+                        algo.getTrackType(),
+                        action, media, job);
+                jsonAction.getTracks().add(jsonTrackOutputObject);
+            }
+            mediaOutputObject.getTrackTypes()
+                    .computeIfAbsent(algo.getTrackType(), k -> new TreeSet<>())
+                    .add(jsonAction);
         }
     }
 
@@ -720,7 +722,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private static void addMissingTrackInfo(String missingTrackKey, String stateKey, String algorithm,
                                             JsonMediaOutputObject mediaOutputObject) {
-        Set<JsonActionOutputObject> trackSet = mediaOutputObject.getDetectionTypes().computeIfAbsent(
+        Set<JsonActionOutputObject> trackSet = mediaOutputObject.getTrackTypes().computeIfAbsent(
             missingTrackKey, k -> new TreeSet<>());
         boolean stateMissing = trackSet.stream().noneMatch(a -> stateKey.equals(a.getSource()));
         if (stateMissing) {

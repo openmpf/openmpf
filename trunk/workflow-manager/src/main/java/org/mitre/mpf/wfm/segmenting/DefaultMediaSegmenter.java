@@ -83,7 +83,7 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
             var taskMergingContext = _taskMergingManager.getRequestContext(
                     job, media, context.getTaskIndex(), context.getActionIndex());
             return _triggerProcessor.getTriggeredTracks(media, context)
-                    .map(t -> taskMergingContext.addBreadCrumb(
+                    .map(t -> taskMergingContext.addBreadCrumbIfNeeded(
                             createFeedForwardMessage(t, media, context), t))
                     .toList();
         }

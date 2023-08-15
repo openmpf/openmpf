@@ -158,7 +158,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     }
                     return true;
                 })
-                .map(t -> taskMergingContext.addBreadCrumb(
+                .map(t -> taskMergingContext.addBreadCrumbIfNeeded(
                         createFeedForwardMessage(t, topConfidenceCount, media, context), t))
                 .toList();
     }

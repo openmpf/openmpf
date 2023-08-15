@@ -116,14 +116,6 @@ public class RedisImpl implements Redis {
     }
 
 
-    public synchronized Optional<String> getTrackType(
-            long jobId, long mediaId, int taskIndex, int actionIndex) {
-        var trackListOps = getTrackListOps(jobId, mediaId, taskIndex, actionIndex);
-        return Optional.ofNullable(trackListOps.index(0))
-                .map(b -> jsonUtils.deserialize(b, Track.class).getType());
-    }
-
-
     @Override
     public void clearTracks(BatchJob job) {
         var trackKeys = JobPartsIter.stream(job)

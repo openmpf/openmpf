@@ -85,17 +85,6 @@ public class Track implements Comparable<Track> {
     private final int _endOffsetTimeInclusive;
     public int getEndOffsetTimeInclusive() { return _endOffsetTimeInclusive; }
 
-    /** The type of object associated with this track (for example, FACE). */
-    private final String _type;
-    public String getType() { return _type; }
-
-    /**
-     * The type of this track after applying task merging. If task merging does not apply to this
-     * track, this field will be the same as _type.
-     */
-    private final String _mergedType;
-    public String getMergedType() { return _mergedType; }
-
     /**
      * The name of the algorithm that should be reported after applying task merging. If task
      * merging does not apply to this track, this field will contain the name of the algorithm that
@@ -140,8 +129,7 @@ public class Track implements Comparable<Track> {
      *                                      Time is given in milliseconds, and is relevant for video and audio files.
      * @param endOffsetTimeInclusive The zero-based and inclusive stop index where the track ends in the medium.
      *                                      Time is given in milliseconds, and is relevant for video and audio files.
-     * @param type The type of object associated with this track.
-     *                  This value is trimmed (to null) and converted to uppercase for convenience.
+     * @param mergedAlgorithm The name of the algorithm that should be reported after applying task merging.
      * @param confidence The track confidence
      * @param detections The collection of detections which correspond to the position of the object as it
      *                   moves through the track.
@@ -157,8 +145,6 @@ public class Track implements Comparable<Track> {
             @JsonProperty("endOffsetFrameInclusive") int endOffsetFrameInclusive,
             @JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
             @JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
-            @JsonProperty("type") String type,
-            @JsonProperty("mergedType") String mergedType,
             @JsonProperty("mergedAlgorithm") String mergedAlgorithm,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
@@ -172,8 +158,6 @@ public class Track implements Comparable<Track> {
         _endOffsetFrameInclusive = endOffsetFrameInclusive;
         _startOffsetTimeInclusive = startOffsetTimeInclusive;
         _endOffsetTimeInclusive = endOffsetTimeInclusive;
-        _type = StringUtils.upperCase(StringUtils.trimToNull(type));
-        _mergedType = mergedType;
         _mergedAlgorithm = mergedAlgorithm;
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
@@ -193,7 +177,7 @@ public class Track implements Comparable<Track> {
         return Objects.hash(
                 _jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
                 _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
-                _type, _mergedType, _mergedAlgorithm, _confidence, _trackProperties, _exemplar,
+                _mergedAlgorithm, _confidence, _trackProperties, _exemplar,
                 _detections);
     }
 
@@ -229,8 +213,6 @@ public class Track implements Comparable<Track> {
                 .thenComparingInt(Track::getEndOffsetFrameInclusive)
                 .thenComparingInt(Track::getStartOffsetTimeInclusive)
                 .thenComparingInt(Track::getEndOffsetTimeInclusive)
-                .thenComparing(Track::getType, Comparator.nullsFirst(Comparator.naturalOrder()))
-                .thenComparing(Track::getMergedType, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(Track::getMergedAlgorithm, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparingDouble(Track::getConfidence)
                 .thenComparing(Track::getTrackProperties, CompareUtils.MAP_COMPARATOR)

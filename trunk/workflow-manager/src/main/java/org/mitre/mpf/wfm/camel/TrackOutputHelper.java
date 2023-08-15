@@ -35,17 +35,19 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
-import org.mitre.mpf.interop.JsonActionOutputObject;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.springframework.stereotype.Component;
+
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 
 
 @Component
@@ -57,46 +59,46 @@ public class TrackOutputHelper {
 
     private final TriggerProcessor _triggerProcessor;
 
+    private final TaskMergingManager _taskMergingManager;
+
     @Inject
     TrackOutputHelper(
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobsService,
-            TriggerProcessor triggerProcessor) {
+            TriggerProcessor triggerProcessor,
+            TaskMergingManager taskMergingManager) {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobsService = inProgressBatchJobsService;
         _triggerProcessor = triggerProcessor;
+        _taskMergingManager = taskMergingManager;
     }
 
-
     public record TrackInfo(
-            int trackCount,
-            String trackType,
             boolean isSuppressed,
             boolean isMergeSource,
             boolean isMergeTarget,
-            SortedSet<Track> tracks) {
-    }
+            boolean hadAnyTracks,
+            Multimap<String, Track> tracksGroupedByAlgo) { }
 
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
         boolean isSuppressed = isSuppressed(job, media, taskIdx);
-        boolean isMergeTarget = isMergeTarget(job, media, taskIdx);
+        boolean isMergeTarget = _taskMergingManager.isMergeTarget(job, media, taskIdx);
         boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean isMergeSource = isMergeSource(job, media, taskIdx, actionIdx);
+        boolean isMergeSource = _taskMergingManager.isMergeSource(job, media, taskIdx, actionIdx);
 
         boolean canAvoidGettingTracks =
                 isMergeTarget || (isSuppressed && !needToCheckTrackTriggers);
         if (canAvoidGettingTracks) {
-            return getTrackCountAndType(
-                    job, media, taskIdx, actionIdx, isSuppressed, isMergeSource, isMergeTarget);
+            int trackCount = _inProgressBatchJobsService.getTrackCount(
+                    job.getId(), media.getId(), taskIdx, actionIdx);
+            return new TrackInfo(
+                    isSuppressed, isMergeSource, isMergeTarget, trackCount > 0,
+                    ImmutableMultimap.of());
         }
 
         var tracks = _inProgressBatchJobsService.getTracks(
                 job.getId(), media.getId(), taskIdx, actionIdx);
-        var trackType = tracks.stream()
-                .findAny()
-                .map(Track::getType)
-                .orElse(JsonActionOutputObject.NO_TRACKS_TYPE);
 
         if (needToCheckTrackTriggers) {
             tracks = findUntriggered(job, media, taskIdx, tracks);
@@ -106,79 +108,16 @@ public class TrackOutputHelper {
                 isSuppressed = false;
             }
         }
+        var indexedTracks = Multimaps.index(tracks, Track::getMergedAlgorithm);
         return new TrackInfo(
-                tracks.size(), trackType, isSuppressed, isMergeSource, isMergeTarget, tracks);
-    }
-
-
-    private TrackInfo getTrackCountAndType(
-            BatchJob job,
-            Media media,
-            int taskIdx,
-            int actionIdx,
-            boolean isSuppressed,
-            boolean isMergeSource,
-            boolean isMergeTarget) {
-        int trackCount = _inProgressBatchJobsService.getTrackCount(
-                job.getId(), media.getId(), taskIdx, actionIdx);
-        String trackType;
-        if (trackCount > 0) {
-            trackType = _inProgressBatchJobsService.getTrackType(
-                    job.getId(), media.getId(), taskIdx, actionIdx)
-                .orElse(JsonActionOutputObject.NO_TRACKS_TYPE);
-        }
-        else {
-            trackType = JsonActionOutputObject.NO_TRACKS_TYPE;
-        }
-        return new TrackInfo(
-                trackCount, trackType, isSuppressed, isMergeSource, isMergeTarget, null);
-    }
-
-
-    private boolean isMergeSource(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        var action = job.getPipelineElements().getAction(taskIdx, actionIdx);
-        return isMergeSource(job, media, action);
-    }
-
-
-    private boolean isMergeSource(BatchJob job, Media media, Action action) {
-        var propValue = _aggregateJobPropertiesUtil.getValue(
-            MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY,
-            job, media, action);
-        return Boolean.parseBoolean(propValue);
-    }
-
-
-    private boolean isMergeTarget(BatchJob job, Media media, int taskIdx) {
-        int lastDetectionTaskIdx = getLastDetectionTaskIdx(job);
-        var pipelineElements = job.getPipelineElements();
-        for (int futureTaskIdx = taskIdx + 1;
-                futureTaskIdx <= lastDetectionTaskIdx;
-                futureTaskIdx++) {
-            var futureTask = pipelineElements.getTask(futureTaskIdx);
-            boolean taskAppliesToMedia = false;
-            for (var futureAction : pipelineElements.getActionsInOrder(futureTask)) {
-                if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, futureAction)) {
-                    taskAppliesToMedia = true;
-                    if (isMergeSource(job, media, futureAction)) {
-                        return true;
-                    }
-                }
-            }
-            if (taskAppliesToMedia) {
-                // We only want to check the next task that applies to the media. If task merging
-                // is enabled for the pipeline, the merge chain would end with the next task or
-                // some later task.
-                return false;
-            }
-        }
-        return false;
+                isSuppressed, isMergeSource, isMergeTarget,
+                !indexedTracks.isEmpty(), indexedTracks);
     }
 
 
     private boolean isSuppressed(BatchJob job, Media media, int taskIdx) {
         return _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)
-                && taskIdx < getLastDetectionTaskIdx(job);
+                && taskIdx < job.getPipelineElements().getLastDetectionTaskIdx();
     }
 
 
@@ -189,7 +128,7 @@ public class TrackOutputHelper {
 
         var pipelineElements = job.getPipelineElements();
         boolean futureTaskMissingTrigger = IntStream
-            .rangeClosed(taskIdx + 1, getLastDetectionTaskIdx(job))
+            .rangeClosed(taskIdx + 1, pipelineElements.getLastDetectionTaskIdx())
             .mapToObj(pipelineElements::getTask)
             .flatMap(pipelineElements::getActionStreamInOrder)
             .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
@@ -203,7 +142,7 @@ public class TrackOutputHelper {
 
     private SortedSet<Track> findUntriggered(
             BatchJob job, Media media, int taskIdx, SortedSet<Track> tracks) {
-        int lastDetectionTaskIdx = getLastDetectionTaskIdx(job);
+        int lastDetectionTaskIdx = job.getPipelineElements().getLastDetectionTaskIdx();
         if (taskIdx == lastDetectionTaskIdx) {
             return tracks;
         }
@@ -212,19 +151,5 @@ public class TrackOutputHelper {
         return tracks.stream()
             .filter(wasTriggeredFilter.negate())
             .collect(toCollection(TreeSet::new));
-    }
-
-
-    private int getLastDetectionTaskIdx(BatchJob job) {
-        var pipelineElements = job.getPipelineElements();
-        int taskCount = pipelineElements.getTaskCount();
-        var lastTaskAlgo = pipelineElements.getAlgorithm(taskCount - 1, 0);
-        if (lastTaskAlgo.getActionType() == ActionType.DETECTION) {
-            return taskCount - 1;
-        }
-        else {
-            // The last algorithm is markup and there can only be one markup task.
-            return taskCount - 2;
-        }
     }
 }

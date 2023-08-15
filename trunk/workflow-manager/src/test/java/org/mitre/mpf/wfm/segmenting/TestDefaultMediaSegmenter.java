@@ -175,13 +175,13 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(0.00f);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", "", "", 0,
+		                         -1, 0, 0, "", 0,
 		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
 		                         "");
 
 		Detection detection2 = createDetection(0.10f);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", "", "", 0.10f,
+		                         -1, 0, 0, "", 0.10f,
 		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
 		                         "");
 

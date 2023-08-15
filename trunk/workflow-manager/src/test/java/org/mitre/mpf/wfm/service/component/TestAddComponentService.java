@@ -434,6 +434,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
                 existingAlgo.getName(),
                 existingAlgo.getDescription(),
                 existingAlgo.getActionType(),
+                existingAlgo.getTrackType(),
                 existingAlgo.getOutputChangedCounter(),
                 // Just pick a random field to change
                 new Algorithm.Requires(Collections.singleton("asdf")),

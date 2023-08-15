@@ -92,13 +92,13 @@ public class TestPipelineService {
                 new AlgorithmProperty("PROP2", "PROP2 description", ValueType.STRING,
                                       null, "prop2.value"));
         _algo1 = new Algorithm(
-                "ALGO1", "algo1 description", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO1", "algo1 description", ActionType.DETECTION, "TEST1", OptionalInt.empty(),
                 new Algorithm.Requires(List.of("STATE1", "STATE2")),
                 new Algorithm.Provides(List.of("STATE3", "STATE3"), algo1Properties),
                 true, true);
 
         _algo2 = new Algorithm(
-                "ALGO2", "algo2 description", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO2", "algo2 description", ActionType.DETECTION, "TEST2", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);

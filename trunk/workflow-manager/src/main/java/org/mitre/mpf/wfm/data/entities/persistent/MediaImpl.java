@@ -27,11 +27,9 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -218,13 +216,13 @@ public class MediaImpl implements Media {
     @Override
     public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
 
-    private final List<TiesDbInfo> _tiesDbInfo = new ArrayList<>();
+    private TiesDbInfo _tiesDbInfo;
     @Override
-    public List<TiesDbInfo> getTiesDbInfo() {
-        return Collections.unmodifiableList(_tiesDbInfo);
+    public Optional<TiesDbInfo> getTiesDbInfo() {
+        return Optional.ofNullable(_tiesDbInfo);
     }
-    public void addTiesDbInfo(TiesDbInfo info) {
-        _tiesDbInfo.add(info);
+    public void setTiesDbInfo(TiesDbInfo info) {
+        _tiesDbInfo = info;
     }
 
     @Override
@@ -301,7 +299,7 @@ public class MediaImpl implements Media {
             @JsonProperty("metadata") Map<String, String> metadata,
             @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
             @JsonProperty("timeRanges") Collection<MediaRange> timeRanges,
-            @JsonProperty("tiesDbInfo") Collection<TiesDbInfo> tiesDbInfo) {
+            @JsonProperty("tiesDbInfo") TiesDbInfo tiesDbInfo) {
         this(id,
              parentId,
              creationTaskIndex,
@@ -316,9 +314,7 @@ public class MediaImpl implements Media {
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
-        if (tiesDbInfo != null) {
-            _tiesDbInfo.addAll(tiesDbInfo);
-        }
+        _tiesDbInfo = tiesDbInfo;
     }
 
 

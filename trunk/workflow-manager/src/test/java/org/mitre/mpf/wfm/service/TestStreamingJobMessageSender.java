@@ -127,6 +127,7 @@ public class TestStreamingJobMessageSender extends MockitoTest.Lenient {
                 "TEST ALGO",
                 "Algo Description",
                 ActionType.DETECTION,
+                "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), algoProperties),

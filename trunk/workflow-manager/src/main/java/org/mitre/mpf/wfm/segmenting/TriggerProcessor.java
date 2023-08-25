@@ -27,6 +27,8 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -166,8 +168,61 @@ public class TriggerProcessor {
                 "The \"TRIGGER\" property did not contain any text to the "
                             + "left of the \"=\" character.");
         }
-        var triggerValue = triggerParts[1];
-        return t -> triggerValue.equals(t.getTrackProperties().get(triggerKey));
+        var triggerValues = parseTriggerValue(triggerParts[1]);
+        if (triggerValues.size() == 1) {
+            var triggerValue = triggerValues.iterator().next();
+            return track -> triggerValue.equals(getTrackTrigger(track, triggerKey));
+        }
+        else {
+            return track -> triggerValues.contains(getTrackTrigger(track, triggerKey));
+        }
+    }
+
+
+    private static String getTrackTrigger(Track track, String triggerKey) {
+        var propValue = track.getTrackProperties().get(triggerKey);
+        if (propValue == null) {
+            return null;
+        }
+        return propValue.strip();
+    }
+
+
+    private static Set<String> parseTriggerValue(String trigger) {
+        if (!trigger.contains(";") && !trigger.contains("\\")) {
+            return Set.of(trigger.strip());
+        }
+
+        var values = new HashSet<String>();
+        var currentSegment = new StringBuilder();
+        boolean inEscapeSequence = false;
+        for (int i = 0; i < trigger.length(); i++) {
+            char ch = trigger.charAt(i);
+            if (inEscapeSequence) {
+                inEscapeSequence = false;
+                currentSegment.append(ch);
+                continue;
+            }
+            switch (ch) {
+                case '\\' -> inEscapeSequence = true;
+                case ';' -> {
+                    var newValue = currentSegment.toString().strip();
+                    if (!newValue.isBlank()) {
+                        values.add(newValue);
+                    }
+                    currentSegment.setLength(0);
+                }
+                default -> currentSegment.append(ch);
+            }
+        }
+
+        if (!currentSegment.isEmpty()) {
+            var newValue = currentSegment.toString().strip();
+            if (!newValue.isBlank()) {
+                values.add(newValue);
+            }
+        }
+        return values;
     }
 
 

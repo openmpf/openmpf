@@ -252,6 +252,59 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
 
 
     @Test
+    public void testMultipleTriggerValues() {
+        var tracks = builder()
+            .addTrack(1, "EN", 0)
+            .addTrack(2, "RU", 0)
+            .addTrack(3, "ES", 0)
+            .addTrack("ZH", 0)
+
+            .setCurrentTask(1)
+            .setLangTrigger("EN;RU; ES", 1)
+            .getTriggeredTracks();
+
+        assertContainsTracks(tracks, 1, 2, 3);
+    }
+
+
+    @Test
+    public void testTriggerEscaping() {
+        // In the string literals below, a forward slash is used instead of a backslash to avoid
+        // having to double escape each backslash. It would be hard to tell which backslashes
+        // were used for the Java string literal escaping and which were used for the escaping
+        // used by TriggerProcessor.
+        var tracks = builder()
+            .addTrack(1, reverseSlashes("E/N"), 0)
+            .addTrack(2, reverseSlashes(" E/N "), 0)
+            .addTrack("EN", 0)
+
+            .addTrack(3, "R;U", 0)
+            .addTrack("RU", 0)
+
+            .addTrack(4, "ES", 0)
+
+            .addTrack(5, reverseSlashes("A//B"), 0)
+            .addTrack(reverseSlashes("A/B"), 0)
+            .addTrack("AB", 0)
+
+            .addTrack("ZH", 0)
+
+            .setCurrentTask(1)
+            // After parsing the trigger we get:
+            // {"E\N", "R;U", "ES", "A\\B"}
+            .setLangTrigger(reverseSlashes("E//N;R/;U;ES ; A////B; "), 1)
+            .getTriggeredTracks();
+
+        assertContainsTracks(tracks, 1, 2, 3, 4, 5);
+    }
+
+
+    private static String reverseSlashes(String s) {
+        return s.replace('/', '\\');
+    }
+
+
+    @Test
     public void doesNotPassForwardPreviouslyTriggeredTracks() {
         var tracks = initDoesNotPassForwardPreviouslyTriggeredTracks()
             .setCurrentTask(4)

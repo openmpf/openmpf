@@ -204,8 +204,7 @@ message DetectionResponse {
 
 
     message GenericResponse {
-        required string detection_type = 1;
-        repeated GenericTrack generic_tracks = 2;
+        repeated GenericTrack generic_tracks = 1;
     }
     repeated GenericResponse generic_responses = 500;
 
@@ -213,8 +212,7 @@ message DetectionResponse {
         optional int32 start_frame = 1 [default = -1];
         optional int32 stop_frame = 2 [default = -1];
 
-        required string detection_type = 3;
-        repeated VideoTrack video_tracks = 4;
+        repeated VideoTrack video_tracks = 3;
     }
     repeated VideoResponse video_responses = 501;
 
@@ -222,14 +220,12 @@ message DetectionResponse {
         optional int32 start_time = 1 [default = -1];
         optional int32 stop_time = 2 [default = -1];
 
-        required string detection_type = 3;
-        repeated AudioTrack audio_tracks = 4;
+        repeated AudioTrack audio_tracks = 3;
     }
     repeated AudioResponse audio_responses = 502;
 
     message ImageResponse {
-        required string detection_type = 1;
-        repeated ImageLocation image_locations = 2;
+        repeated ImageLocation image_locations = 1;
     }
     repeated ImageResponse image_responses = 503;
 }

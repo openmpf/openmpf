@@ -93,8 +93,8 @@ public class OutputChecker {
 
         _errorCollector.checkThat("MarkupResult", actMedia.getMarkupResult() != null, is(expMedia.getMarkupResult() != null));
 
-        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getDetectionTypes();
-        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getDetectionTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getTrackTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getTrackTypes();
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ActionOutputs size", actExtrResults.size(), is(expExtrResults.size()));
 
@@ -368,4 +368,3 @@ public class OutputChecker {
         return overlap;
     }
 }
-

@@ -69,23 +69,19 @@ public abstract class BaseDetectionStatusProcessor implements Processor {
 
         if (detectionRequest.hasVideoRequest()) {
             builder.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                    .setDetectionType(error.toString())
                     .setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
                     .setStopFrame(detectionRequest.getVideoRequest().getStopFrame()));
 
         } else if (detectionRequest.hasAudioRequest()) {
             builder.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
-                    .setDetectionType(error.toString())
                     .setStartTime(detectionRequest.getAudioRequest().getStartTime())
                     .setStopTime(detectionRequest.getAudioRequest().getStopTime()));
 
         } else if (detectionRequest.hasImageRequest()) {
-            builder.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
-                    .setDetectionType(error.toString()));
+            builder.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder());
 
         } else if (detectionRequest.hasGenericRequest()) {
-            builder.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
-                    .setDetectionType(error.toString()));
+            builder.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder());
         }
 
         exchange.getOut().setBody(builder.build().toByteArray());

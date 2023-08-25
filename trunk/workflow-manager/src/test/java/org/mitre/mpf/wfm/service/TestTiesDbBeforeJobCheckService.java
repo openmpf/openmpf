@@ -886,7 +886,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var action2 = JsonActionOutputObject.factory(
                 "source2", "algo2", ImmutableSortedSet.of(track2));
 
-        var detectionTypeMap = ImmutableSortedMap.<String, SortedSet<JsonActionOutputObject>>of(
+        var trackTypeMap = ImmutableSortedMap.<String, SortedSet<JsonActionOutputObject>>of(
                 "type1", ImmutableSortedSet.of(action1),
                 "type2", ImmutableSortedSet.of(action2));
 
@@ -906,7 +906,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ImmutableSortedMap.of("META1", "META1VALUE"),
                 ImmutableSortedMap.of("MEDIA_PROP1", "MEDIA_PROP1_VALUE"),
                 new JsonMarkupOutputObject(35, "http://localhost/bucket/markup", "complete", null),
-                detectionTypeMap,
+                trackTypeMap,
                 ImmutableSortedMap.of("ALGO", ImmutableSortedSet.of(detectionError)));
 
 

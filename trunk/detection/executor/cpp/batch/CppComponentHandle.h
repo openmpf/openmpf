@@ -47,8 +47,6 @@ namespace MPF::COMPONENT {
 
         bool Init();
 
-        std::string GetDetectionType();
-
         bool Supports(MPFDetectionDataType data_type);
 
         std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);

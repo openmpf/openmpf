@@ -189,12 +189,10 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
 
     @Test
     public void testHappyPath() {
-        var trackType = "TEST_TYPE";
         DetectionProtobuf.DetectionResponse detectionResponse =
                 DetectionProtobuf.DetectionResponse.newBuilder()
                 .setMediaId(MEDIA_ID)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                                   .setDetectionType(trackType)
                                    .setStartFrame(START_FRAME)
                                    .setStopFrame(STOP_FRAME)
                                    .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
@@ -295,7 +293,6 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
                 .setError(error)
                 .setMediaId(MEDIA_ID)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                        .setDetectionType("TEST")
                         .setStartFrame(START_FRAME)
                         .setStopFrame(STOP_FRAME))
                 .setTaskName(DETECTION_RESPONSE_TASK_NAME)
@@ -320,7 +317,6 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
                 .setError(error)
                 .setMediaId(MEDIA_ID)
                 .addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
-                        .setDetectionType("TEST")
                         .setStartTime(START_TIME)
                         .setStopTime(STOP_TIME))
                 .setTaskName(DETECTION_RESPONSE_TASK_NAME)
@@ -349,8 +345,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
-                        .setDetectionType("TEST"))
+                .addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder())
                 .setTaskName(DETECTION_RESPONSE_TASK_NAME)
                 .setTaskIndex(1)
                 .setActionName(DETECTION_RESPONSE_ACTION_NAME)
@@ -377,8 +372,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
-                        .setDetectionType("TEST"))
+                .addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder())
                 .setTaskName(DETECTION_RESPONSE_TASK_NAME)
                 .setTaskIndex(1)
                 .setActionName(DETECTION_RESPONSE_ACTION_NAME)

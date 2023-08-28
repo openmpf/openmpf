@@ -132,7 +132,7 @@ public class TaskMergingManager {
         int lastDetectionTaskIdx = pipelineElements.getLastDetectionTaskIdx();
 
         for (int futureTaskIdx = taskIdx + 1;
-                futureTaskIdx < lastDetectionTaskIdx;
+                futureTaskIdx <= lastDetectionTaskIdx;
                 futureTaskIdx++) {
             var futureTask = pipelineElements.getTask(futureTaskIdx);
             var taskAppliesToMedia = false;

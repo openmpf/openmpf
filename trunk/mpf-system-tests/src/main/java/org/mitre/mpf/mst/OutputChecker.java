@@ -136,11 +136,21 @@ public class OutputChecker {
         // affect the sort order.
         // Copy to a temporary unsorted collection because we are changing the value of comparison
         // criteria.
-        var tracks = new ArrayList<JsonTrackOutputObject>(actionOutput.getTracks());
+        var tracks = new ArrayList<>(actionOutput.getTracks());
         for (var track : tracks) {
             for (var propName : PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES) {
                 track.getTrackProperties().remove(propName);
+                track.getExemplar().getDetectionProperties().remove(propName);
             }
+
+            var detections = new ArrayList<>(track.getDetections());
+            track.getDetections().clear();
+            for (var detection : detections) {
+                for (var propName : PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES) {
+                    detection.getDetectionProperties().remove(propName);
+                }
+            }
+            track.getDetections().addAll(detections);
         }
         return new TreeSet<>(tracks);
     }

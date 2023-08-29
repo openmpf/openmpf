@@ -121,10 +121,28 @@ public class OutputChecker {
             log.debug("Comparing expected actions at Source={} to actual actions at Source={}",
                     expTrackOutput.getSource(), actTrackOutput.getSource());
             compareJsonTrackOutputObjects(
-                    expTrackOutput.getTracks(),
-                    actTrackOutput.getTracks(),
+                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expTrackOutput),
+                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actTrackOutput),
                     pipeline);
         }
+    }
+
+    private SortedSet<JsonTrackOutputObject> sortJsonActionOutputObjectSets(
+            String trackType, JsonActionOutputObject actionOutput) {
+        if (!trackType.equals("MEDIA")) {
+            return actionOutput.getTracks();
+        }
+        // Remove PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES from track properties so they don't
+        // affect the sort order.
+        // Copy to a temporary unsorted collection because we are changing the value of comparison
+        // criteria.
+        var tracks = new ArrayList<JsonTrackOutputObject>(actionOutput.getTracks());
+        for (var track : tracks) {
+            for (var propName : PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES) {
+                track.getTrackProperties().remove(propName);
+            }
+        }
+        return new TreeSet<>(tracks);
     }
 
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,

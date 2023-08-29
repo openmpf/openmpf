@@ -1055,10 +1055,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    private void runFeedForwardRegionTest(String pipelineName, String mediaPath, String detectionType,
+    private void runFeedForwardRegionTest(String pipelineName, String mediaPath, String trackType,
                                           int firstDetectionFrame, int maxXDetection) {
 
-        List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, detectionType,
+        List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, trackType,
                                                                         firstDetectionFrame);
 
         assertTrue("Found detection in stage 2 in region without a detection from stage 1.",
@@ -1067,10 +1067,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    private void runFeedForwardFullFrameTest(String pipelineName, String mediaPath, String detectionType,
+    private void runFeedForwardFullFrameTest(String pipelineName, String mediaPath, String trackType,
                                              int firstDetectionFrame, int maxXLeftDetection, int minXRightDetection) {
 
-        List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, detectionType,
+        List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, trackType,
                                                                         firstDetectionFrame);
         boolean foundLeftDetection = detections.stream()
                 .anyMatch(d -> d.getX() + d.getWidth() <= maxXLeftDetection);
@@ -1084,8 +1084,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     private List<JsonDetectionOutputObject> runFeedForwardTest(
-            String pipelineName, String mediaPath, String detectionType, int firstDetectionFrame) {
-        return runFeedForwardTest(pipelineName, mediaPath, Collections.emptyMap(), detectionType, firstDetectionFrame);
+            String pipelineName, String mediaPath, String trackType, int firstDetectionFrame) {
+        return runFeedForwardTest(pipelineName, mediaPath, Collections.emptyMap(), trackType, firstDetectionFrame);
     }
 
 
@@ -1096,36 +1096,36 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     private List<JsonDetectionOutputObject> runFeedForwardTest(
             String pipelineName, String mediaPath, Map<String, String> jobProperties,
-            String detectionType, int firstDetectionFrame) {
+            String trackType, int firstDetectionFrame) {
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile(mediaPath));
 
         long jobId = runPipelineOnMedia(pipelineName, media, jobProperties);
-        return processFeedForwardTestOutput(jobId, detectionType, firstDetectionFrame);
+        return processFeedForwardTestOutput(jobId, trackType, firstDetectionFrame);
     }
 
 
     private List<JsonDetectionOutputObject> runFeedForwardTest(
             TransientPipelineDefinition pipeline, String mediaPath, Map<String, String> jobProperties,
-            String detectionType, int firstDetectionFrame) {
+            String trackType, int firstDetectionFrame) {
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile(mediaPath));
 
         long jobId = runPipelineOnMedia(pipeline, media, jobProperties, 4);
-        return processFeedForwardTestOutput(jobId, detectionType, firstDetectionFrame);
+        return processFeedForwardTestOutput(jobId, trackType, firstDetectionFrame);
     }
 
 
     private List<JsonDetectionOutputObject> processFeedForwardTestOutput(
-            long jobId, String detectionType, int firstDetectionFrame) {
+            long jobId, String trackType, int firstDetectionFrame) {
 
         JsonOutputObject outputObject = getJobOutputObject(jobId);
 
         assertEquals(1, outputObject.getMedia().size());
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get(detectionType);
-        assertNotNull("Output object did not contain expected detection type: " + detectionType,
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get(trackType);
+        assertNotNull("Output object did not contain expected detection type: " + trackType,
                       actionOutputObjects);
 
         List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()

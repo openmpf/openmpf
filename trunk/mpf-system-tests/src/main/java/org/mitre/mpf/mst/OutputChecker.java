@@ -210,7 +210,7 @@ public class OutputChecker {
         _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
                 closeTo(expExtrResult.getConfidence(), 0.01));
 
-        compareProperties("Track", actExtrResult.getTrackProperties(), expExtrResult.getTrackProperties());
+        compareProperties("Track", expExtrResult.getTrackProperties(), actExtrResult.getTrackProperties());
 
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
@@ -293,8 +293,8 @@ public class OutputChecker {
                         is(expObjLocation.getOffsetFrame()));
                 _errorCollector.checkThat("X", actObjLocation.getX(), is(expObjLocation.getX()));
                 _errorCollector.checkThat("Y", actObjLocation.getY(), is(expObjLocation.getY()));
-                compareProperties("Detection", actObjLocation.getDetectionProperties(),
-                        expObjLocation.getDetectionProperties());
+                compareProperties("Detection", expObjLocation.getDetectionProperties(),
+                        actObjLocation.getDetectionProperties());
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
                         closeTo(expObjLocation.getConfidence(), confidenceDelta));
         }

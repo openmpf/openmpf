@@ -146,7 +146,7 @@ public class TrackOutputHelper {
         if (taskIdx == lastDetectionTaskIdx) {
             return tracks;
         }
-        var wasTriggeredFilter = _triggerProcessor.createWasTriggeredFilter(
+        var wasTriggeredFilter = _triggerProcessor.createWasEverTriggeredFilter(
                 job, media, taskIdx, lastDetectionTaskIdx);
         return tracks.stream()
             .filter(wasTriggeredFilter.negate())

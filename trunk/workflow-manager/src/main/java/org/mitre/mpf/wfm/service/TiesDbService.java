@@ -279,13 +279,14 @@ public class TiesDbService {
                     lastDetectionTaskIdx, pipelineElements.getTaskCount() - 1);
 
             var lastDetectionTask = pipelineElements.getTask(lastDetectionTaskIdx);
+            // Include the track types that were merged away.
             var mergedTaskIdxs = IntStream.range(0, lastDetectionTask.getActions().size())
                     .flatMap(ai -> _taskMergingManager.getTransitiveMergeTargets(
                             job, media, lastDetectionTaskIdx, ai));
 
             tasks = IntStream.concat(endingTaskIdxs, mergedTaskIdxs)
-                .distinct()
-                .mapToObj(pipelineElements::getTask);
+                    .distinct()
+                    .mapToObj(pipelineElements::getTask);
         }
         else {
             tasks = pipelineElements.getTaskStreamInOrder();

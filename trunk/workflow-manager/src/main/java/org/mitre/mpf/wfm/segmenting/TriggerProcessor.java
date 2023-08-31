@@ -68,7 +68,7 @@ public class TriggerProcessor {
 
 
     public static void validateTrigger(UnaryOperator<String> properties) {
-        createTriggerFilter(properties.apply(MpfConstants.TRIGGER));
+        parseTriggerProperty(properties.apply(MpfConstants.TRIGGER));
     }
 
 
@@ -84,39 +84,7 @@ public class TriggerProcessor {
         return Stream.concat(
                     context.getPreviousTracks().stream(),
                     findPreviousUnTriggered(media, context))
-            .filter(createTriggerFilter(trigger));
-    }
-
-
-    public Predicate<Track> createWasTriggeredFilter(
-            BatchJob job, Media media, int creationTaskIdx, int lastTaskIdx) {
-        var fullTrigger = NONE_MATCH;
-        for (int taskIdx = creationTaskIdx + 1; taskIdx <= lastTaskIdx; taskIdx++) {
-            var taskFilter = getTaskFilter(job, media, taskIdx);
-            if (taskFilter == ALL_MATCH) {
-                return ALL_MATCH;
-            }
-            fullTrigger = taskFilter.or(fullTrigger);
-        }
-        return fullTrigger;
-    }
-
-
-    private Predicate<Track> getTaskFilter(BatchJob job, Media media, int taskIdx) {
-        var task = job.getPipelineElements().getTask(taskIdx);
-        var taskFilter = NONE_MATCH;
-        for (var action : job.getPipelineElements().getActionsInOrder(task)) {
-            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
-            if (algo.getActionType() == ActionType.MARKUP) {
-                continue;
-            }
-            var filter = createTriggerFilter(job, media, action);
-            if (filter == ALL_MATCH) {
-                return ALL_MATCH;
-            }
-            taskFilter = filter.or(taskFilter);
-        }
-        return taskFilter;
+            .filter(parseTriggerProperty(trigger));
     }
 
 
@@ -128,10 +96,11 @@ public class TriggerProcessor {
         var job = _inProgressJobs.getJob(context.getJobId());
         var triggerEntries = Stream.<TriggerEntry>builder();
 
-        for (var creationTaskIdx = context.getTaskIndex() - 2; creationTaskIdx >= 0;
+        for (var creationTaskIdx = context.getTaskIndex() - 2;
+                creationTaskIdx >= 0;
                 creationTaskIdx--) {
 
-            var triggerFilter = createWasTriggeredFilter(
+            var triggerFilter = createWasEverTriggeredFilter(
                     job, media, creationTaskIdx, context.getTaskIndex() - 1);
             if (triggerFilter == ALL_MATCH) {
                 // Since the previous task didn't use a trigger, it would have processed all
@@ -145,15 +114,46 @@ public class TriggerProcessor {
     }
 
 
-    private Predicate<Track> createTriggerFilter(
-            BatchJob job, Media media, Action action) {
-        var trigger = _aggregateJobPropertiesUtil.getValue(
-                MpfConstants.TRIGGER, job, media, action);
-        return createTriggerFilter(trigger);
+    public Predicate<Track> createWasEverTriggeredFilter(
+            BatchJob job, Media media, int creationTaskIdx, int lastTaskIdx) {
+        var fullTrigger = NONE_MATCH;
+        for (int taskIdx = creationTaskIdx + 1; taskIdx <= lastTaskIdx; taskIdx++) {
+            var taskFilter = combineTaskTriggers(job, media, taskIdx);
+            if (taskFilter == ALL_MATCH) {
+                return ALL_MATCH;
+            }
+            fullTrigger = taskFilter.or(fullTrigger);
+        }
+        return fullTrigger;
     }
 
 
-    private static Predicate<Track> createTriggerFilter(String triggerProperty) {
+    private Predicate<Track> combineTaskTriggers(BatchJob job, Media media, int taskIdx) {
+        var task = job.getPipelineElements().getTask(taskIdx);
+        var taskFilter = NONE_MATCH;
+        for (var action : job.getPipelineElements().getActionsInOrder(task)) {
+            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
+            if (algo.getActionType() == ActionType.MARKUP) {
+                continue;
+            }
+            var filter = parseTriggerProperty(job, media, action);
+            if (filter == ALL_MATCH) {
+                return ALL_MATCH;
+            }
+            taskFilter = filter.or(taskFilter);
+        }
+        return taskFilter;
+    }
+
+
+    private Predicate<Track> parseTriggerProperty(
+            BatchJob job, Media media, Action action) {
+        var trigger = _aggregateJobPropertiesUtil.getValue(
+                MpfConstants.TRIGGER, job, media, action);
+        return parseTriggerProperty(trigger);
+    }
+
+    private static Predicate<Track> parseTriggerProperty(String triggerProperty) {
         if (triggerProperty == null || triggerProperty.isBlank()) {
             return ALL_MATCH;
         }

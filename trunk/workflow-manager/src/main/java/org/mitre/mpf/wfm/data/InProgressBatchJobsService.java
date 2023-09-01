@@ -71,7 +71,6 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaRange;
@@ -102,8 +101,6 @@ public class InProgressBatchJobsService {
 
     private final MediaTypeUtils _mediaTypeUtils;
 
-    private final TaskMergingManager _taskMergingManager;
-
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
     private final Collection<Long> _jobsWithCallbacksInProgress = new HashSet<>();
@@ -115,14 +112,12 @@ public class InProgressBatchJobsService {
             Redis redis,
             JobRequestDao jobRequestDao,
             JobStatusBroadcaster jobStatusBroadcaster,
-            MediaTypeUtils mediaTypeUtils,
-            TaskMergingManager taskMergingManager) {
+            MediaTypeUtils mediaTypeUtils) {
         _propertiesUtil = propertiesUtil;
         _redis = redis;
         _jobRequestDao = jobRequestDao;
         _jobStatusBroadcaster = jobStatusBroadcaster;
         _mediaTypeUtils = mediaTypeUtils;
-        _taskMergingManager = taskMergingManager;
     }
 
 
@@ -202,7 +197,6 @@ public class InProgressBatchJobsService {
         _redis.clearTracks(job);
         _jobs.remove(jobId);
         _jobsWithCallbacksInProgress.remove(jobId);
-        _taskMergingManager.clearJob(jobId);
 
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {

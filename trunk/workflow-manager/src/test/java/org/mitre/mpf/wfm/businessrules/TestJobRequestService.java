@@ -93,7 +93,7 @@ public class TestJobRequestService {
 
     private final InProgressBatchJobsService _inProgressJobs = new InProgressBatchJobsService(
             _mockPropertiesUtil, null, _mockJobRequestDao, _mockJobStatusBroadcaster,
-            _mockMediaTypeUtils, null);
+            _mockMediaTypeUtils);
 
     private final MarkupResultDao _mockMarkupResultDao = mock(MarkupResultDao.class);
 

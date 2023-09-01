@@ -26,24 +26,18 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.AudioTrack;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AudioRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -53,57 +47,44 @@ public class AudioMediaSegmenter implements MediaSegmenter {
     private static final Logger log = LoggerFactory.getLogger(AudioMediaSegmenter.class);
     public static final String REF = "audioMediaSegmenter";
 
-    private final CamelContext _camelContext;
-
     private final TriggerProcessor _triggerProcessor;
 
-    private final TaskMergingManager _taskMergingManager;
-
     @Inject
-    AudioMediaSegmenter(
-            CamelContext camelContext,
-            TriggerProcessor triggerProcessor,
-            TaskMergingManager taskMergingManager) {
-        _camelContext = camelContext;
+    AudioMediaSegmenter(TriggerProcessor triggerProcessor) {
         _triggerProcessor = triggerProcessor;
-        _taskMergingManager = taskMergingManager;
     }
+
 
     @Override
-    public List<Message> createDetectionRequestMessages(
-            BatchJob job, Media media, DetectionContext context) {
-        log.warn("Media #{} is an audio file and will not be segmented.", media.getId());
-
+    public List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context) {
+        log.info("Media #{} is an audio file and will not be segmented.", media.getId());
         if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
-            var taskMergingContext = _taskMergingManager.getRequestContext(
-                    job, media, context.getTaskIndex(), context.getActionIndex());
             return _triggerProcessor.getTriggeredTracks(media, context)
-                .map(t -> taskMergingContext.addBreadCrumbIfNeeded(
-                            createFeedForwardMessage(t, media, context), t))
-                .toList();
+                    .map(t -> createFeedForwardRequest(t, media, context))
+                    .toList();
         }
 
-        return Collections.singletonList(
-                createProtobufMessage(media, context,
-                                      AudioRequest.newBuilder().setStartTime(0).setStopTime(-1).build()));
+        var audioRequest = AudioRequest.newBuilder()
+                .setStartTime(0)
+                .setStopTime(-1)
+                .build();
+        var protobuf = createProtobuf(media, context, audioRequest);
+        return List.of(new DetectionRequest(protobuf));
     }
 
 
-    private Message createProtobufMessage(Media media, DetectionContext context,
-                                                 AudioRequest audioRequest) {
-        DetectionProtobuf.DetectionRequest request = MediaSegmenter
+    private static DetectionProtobuf.DetectionRequest createProtobuf(
+            Media media, DetectionContext context, AudioRequest audioRequest) {
+        return MediaSegmenter
                 .initializeRequest(media, context)
                 .setDataType(DetectionProtobuf.DetectionRequest.DataType.AUDIO)
                 .setAudioRequest(audioRequest)
                 .build();
-
-        Message message = new DefaultMessage(_camelContext);
-        message.setBody(request);
-        return message;
     }
 
 
-    private Message createFeedForwardMessage(Track track, Media media, DetectionContext ctx) {
+    private static DetectionRequest createFeedForwardRequest(
+            Track track, Media media, DetectionContext ctx) {
         AudioRequest.Builder audioRequest = AudioRequest.newBuilder()
                 .setStartTime(track.getStartOffsetTimeInclusive())
                 .setStopTime(track.getEndOffsetTimeInclusive());
@@ -120,6 +101,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                     .setKey(entry.getKey())
                     .setValue(entry.getValue());
         }
-        return createProtobufMessage(media, ctx, audioRequest.build());
+        var protobuf = createProtobuf(media, ctx, audioRequest.build());
+        return new DetectionRequest(protobuf, track);
     }
 }

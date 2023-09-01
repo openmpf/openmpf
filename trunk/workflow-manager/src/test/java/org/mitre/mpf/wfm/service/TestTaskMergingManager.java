@@ -27,8 +27,8 @@
 package org.mitre.mpf.wfm.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -44,7 +44,6 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultHeadersMapFactory;
 import org.apache.camel.impl.DefaultMessage;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -121,52 +120,20 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
             List.of(_testMedia), Map.of(), Map.of(), false);
     }
 
-    @After
-    public void assertCleanedUp() {
-        try {
-            var field = TaskMergingManager.class
-                    .getDeclaredField("_trackSourceAlgos");
-            field.setAccessible(true);
-            var trackSourceAlgos = (Map<?, ?>) field.get(_taskMergingManager);
-            // If entries are not removed from the map, it will cause a memory leak.
-            // While it is not typical to access to private fields in a test, the danger of a
-            // memory leak warrants breaking that rule in this case.
-            assertTrue(trackSourceAlgos.isEmpty());
-        }
-        catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new IllegalStateException(e);
-        }
+
+    @Test
+    public void testFirstTask() {
+        assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 0, 0));
+        var algo = _taskMergingManager.getMergedAlgorithm(_testJob, _testMedia, 0, 0, Map.of());
+        assertEquals("ALGO1", algo);
     }
 
 
     @Test
-    public void isNoOpOnFirstTask() {
-        var requestCtx = _taskMergingManager.getRequestContext(
-                _testJob, _testMedia, 0, 0);
-        var message = createMessage();
-        var updatedMsg = requestCtx.addBreadCrumbIfNeeded(message, null);
-        assertSame(message, updatedMsg);
-        assertTrue(updatedMsg.getHeaders().isEmpty());
-
-        try (var respCtx = _taskMergingManager.getResponseContext(
-                _testJob, _testMedia, 0, 0, Map.of())) {
-            assertEquals("ALGO1", respCtx.getAlgorithm().getName());
-        }
-    }
-
-    @Test
-    public void isNoOpWhenTaskMergingDisabled() {
-        var requestCtx = _taskMergingManager.getRequestContext(
-                _testJob, _testMedia, 1, 0);
-        var message = createMessage();
-        var updatedMsg = requestCtx.addBreadCrumbIfNeeded(message, null);
-        assertSame(message, updatedMsg);
-        assertTrue(updatedMsg.getHeaders().isEmpty());
-
-        try (var respCtx = _taskMergingManager.getResponseContext(
-                _testJob, _testMedia, 1, 0, Map.of())) {
-            assertEquals("ALGO2", respCtx.getAlgorithm().getName());
-        }
+    public void testTaskMergingDisabled() {
+        assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 1, 0));
+        var algo = _taskMergingManager.getMergedAlgorithm(_testJob, _testMedia, 1, 0, Map.of());
+        assertEquals("ALGO2", algo);
     }
 
 
@@ -184,34 +151,31 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                     argThat(a -> a.getName().equals("ACTION1"))))
                 .thenReturn("TEST=TRUE");
 
-        var requestCtx = _taskMergingManager.getRequestContext(
-                _testJob, _testMedia, 3, 0);
+        assertTrue(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 3, 0));
 
         var track1 = createTrack("ALGO2");
         var message1 = createMessage();
-        var updatedMsg1 = requestCtx.addBreadCrumbIfNeeded(message1, track1);
-        assertSame(message1, updatedMsg1);
-        assertTrue(updatedMsg1.getHeader("breadcrumbId").toString().startsWith("mpf-"));
+        _taskMergingManager.addBreadCrumb(message1, track1);
+
+        var breadCrumb1 = message1.getHeader("breadcrumbId", String.class);
+        assertTrue(breadCrumb1.startsWith("mpf-"));
+        assertTrue(breadCrumb1.endsWith("-ALGO2"));
+        assertEquals("ALGO2", _taskMergingManager.getMergedAlgorithm(
+                _testJob, _testMedia, -1, -1, message1.getHeaders()));
+
 
         var track2 = createTrack("ALGO3");
         var message2 = createMessage();
-        var updatedMsg2 = requestCtx.addBreadCrumbIfNeeded(message2, track2);
-        assertSame(message2, updatedMsg2);
-        assertTrue(updatedMsg2.getHeader("breadcrumbId").toString().startsWith("mpf-"));
-        assertNotEquals(
-            updatedMsg1.getHeader("breadcrumbId"),
-            updatedMsg2.getHeader("breadcrumbId"));
+        _taskMergingManager.addBreadCrumb(message2, track2);
+        var breadCrumb2 = message2.getHeader("breadcrumbId", String.class);
+        assertTrue(breadCrumb2.startsWith("mpf-"));
+        assertTrue(breadCrumb2.endsWith("-ALGO3"));
+        assertEquals("ALGO3", _taskMergingManager.getMergedAlgorithm(
+                _testJob, _testMedia, -1, -1, message2.getHeaders()));
 
-
-        try (var respCtx = _taskMergingManager.getResponseContext(
-                _testJob, _testMedia, 3, 0, updatedMsg1.getHeaders())) {
-            assertEquals("ALGO2", respCtx.getAlgorithm().getName());
-        }
-
-        try (var respCtx = _taskMergingManager.getResponseContext(
-                _testJob, _testMedia, 3, 0, updatedMsg2.getHeaders())) {
-            assertEquals("ALGO3", respCtx.getAlgorithm().getName());
-        }
+        var prefixAndUuid1 = breadCrumb1.substring(0, breadCrumb1.lastIndexOf('-'));
+        var prefixAndUuid2 = breadCrumb2.substring(0, breadCrumb2.lastIndexOf('-'));
+        assertNotEquals(prefixAndUuid1, prefixAndUuid2);
     }
 
 
@@ -228,46 +192,9 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                 eq(_testJob), eq(_testMedia), any(Action.class)))
             .thenReturn(true);
 
-        // The RequestContext is only used on feed forward jobs, so only the ResponseContext is
-        // being tested.
-        try (var respCtx = _taskMergingManager.getResponseContext(
-                _testJob, _testMedia, 3, 0, Map.of())) {
-            assertEquals("ALGO2", respCtx.getAlgorithm().getName());
-        }
-    }
-
-
-    @Test
-    public void testClearJob() {
-        when(_mockAggJobPropUtil.getValue(
-                eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
-                eq(_testJob), eq(_testMedia),
-                argThat(a -> a.getName().equals("ACTION4"))))
-            .thenReturn("TRUE");
-
-        when(_mockAggJobPropUtil.getValue(
-                eq(MpfConstants.TRIGGER),
-                eq(_testJob), eq(_testMedia),
-                argThat(a -> a.getName().equals("ACTION1"))))
-            .thenReturn("TEST=TRUE");
-
-        var requestCtx = _taskMergingManager.getRequestContext(
-                _testJob, _testMedia, 3, 0);
-
-        var track1 = createTrack("ALGO2");
-        var message1 = requestCtx.addBreadCrumbIfNeeded(createMessage(), track1);
-        assertTrue(message1.getHeader("breadcrumbId").toString().startsWith("mpf-"));
-
-        var track2 = createTrack("ALGO3");
-        var message2 = requestCtx.addBreadCrumbIfNeeded(createMessage(), track2);
-        assertTrue(message2.getHeader("breadcrumbId").toString().startsWith("mpf-"));
-
-        var respCtx = _taskMergingManager.getResponseContext(
-                _testJob, _testMedia, 3, 0, message1.getHeaders());
-        respCtx.close();
-
-        _taskMergingManager.clearJob(_testJob.getId());
-        assertCleanedUp();
+        var algo = _taskMergingManager.getMergedAlgorithm(
+            _testJob, _testMedia, 3, 0, Map.of());
+        assertEquals("ALGO2", algo);
     }
 
 

@@ -27,14 +27,12 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.camel.Message;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.slf4j.Logger;
@@ -56,11 +54,7 @@ public interface MediaSegmenter {
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
 
-
-    List<Message> createDetectionRequestMessages(
-            BatchJob job, Media media, DetectionContext detectionContext);
-
-
+    List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context);
 
 
     public static DetectionProtobuf.DetectionRequest.Builder initializeRequest(

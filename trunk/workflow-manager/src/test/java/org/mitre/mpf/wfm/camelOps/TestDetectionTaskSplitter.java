@@ -472,7 +472,7 @@ public class TestDetectionTaskSplitter {
             testMedia.addMetadata("FPS", "30");
         }
 
-        BatchJob testJob = new BatchJobImpl(
+        var testJob = new BatchJobImpl(
                 testJobId,
                 testExternalId,
                 systemPropertiesSnapshot,
@@ -484,7 +484,7 @@ public class TestDetectionTaskSplitter {
                 jobProperties,
                 Collections.emptyMap(),
                 false);
-
+        testJob.setCurrentTaskIndex(0);
         return testJob;
     }
 
@@ -943,6 +943,7 @@ public class TestDetectionTaskSplitter {
                 null, null, List.of(parentMedia),
                 Map.of(), Map.of(), false);
 
+        job.setCurrentTaskIndex(0);
         List<Message> responseList = detectionSplitter.performSplit(job, task1);
         Assert.assertEquals(1, responseList.size()); // parent only
 

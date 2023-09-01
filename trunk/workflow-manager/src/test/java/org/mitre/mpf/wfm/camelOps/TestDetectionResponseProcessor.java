@@ -81,7 +81,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 
 
-public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
+public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
     @Mock
     private PipelineService mockPipelineService;
@@ -134,13 +134,9 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
 
-        when(mockPipelineService.getAlgorithm(algorithm.getName()))
-                .thenReturn(algorithm);
 
         Action action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.getName(),
                                    Collections.emptyList());
-        when(mockPipelineService.getAction(action.getName()))
-                .thenReturn(action);
 
         Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline(DETECTION_RESPONSE_PIPELINE_NAME, "pipeline description",
@@ -224,28 +220,18 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
         exchange.getIn().setBody(detectionResponse);
 
-
-        var mergedAlgoName = "MERGED_ALGO";
-        var mergedAlgo = mock(Algorithm.class);
-        when(mergedAlgo.getName())
-                .thenReturn(mergedAlgoName);
-        var taskMergeRespCtx = mock(TaskMergingManager.ResponseTaskMergingContext.class);
-        when(taskMergeRespCtx.getAlgorithm())
-                .thenReturn(mergedAlgo);
-
-        when(mockTaskMergingManager.getResponseContext(
+        when(mockTaskMergingManager.getMergedAlgorithm(
                 argThat(j -> j.getId() == JOB_ID),
                 argThat(m -> m.getId() == MEDIA_ID),
                 eq(1),
                 eq(1),
                 eq(exchange.getIn().getHeaders())))
-            .thenReturn(taskMergeRespCtx);
+                .thenReturn("MERGED_ALGO");
 
         detectionResponseProcessor.wfmProcess(exchange);
         Assert.assertEquals(JOB_ID, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
         Assert.assertEquals(1, exchange.getOut().getHeader(MpfHeaders.TASK_INDEX));
 
-        verify(taskMergeRespCtx).close();
         verify(mockInProgressJobs, never())
                 .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point
         verify(mockInProgressJobs, never())
@@ -259,7 +245,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
         var track = trackCaptor.getValue();
         assertEquals(JOB_ID, track.getJobId());
         assertEquals(5, track.getStartOffsetFrameInclusive());
-        assertEquals(mergedAlgoName, track.getMergedAlgorithm());
+        assertEquals("MERGED_ALGO", track.getMergedAlgorithm());
     }
 
     @Test

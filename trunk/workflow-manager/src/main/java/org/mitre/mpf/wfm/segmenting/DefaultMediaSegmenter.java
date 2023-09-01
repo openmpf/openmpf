@@ -26,22 +26,16 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -56,57 +50,44 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
     public static final String REF = "defaultMediaSegmenter";
 
-    private final CamelContext _camelContext;
-
     private final TriggerProcessor _triggerProcessor;
 
-    private final TaskMergingManager _taskMergingManager;
-
     @Inject
-    DefaultMediaSegmenter(
-            CamelContext camelContext,
-            TriggerProcessor triggerProcessor,
-            TaskMergingManager taskMergingManager) {
-        _camelContext = camelContext;
+    DefaultMediaSegmenter(TriggerProcessor triggerProcessor) {
         _triggerProcessor = triggerProcessor;
-        _taskMergingManager = taskMergingManager;
     }
 
+
     @Override
-    public List<Message> createDetectionRequestMessages(
-            BatchJob job, Media media, DetectionContext context) {
-        log.warn("Media {} is of the MIME type '{}' and will be processed generically.",
+    public List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context) {
+        log.info("Media {} is of the MIME type '{}' and will be processed generically.",
                  media.getId(),
                  media.getMimeType());
 
         if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
-            var taskMergingContext = _taskMergingManager.getRequestContext(
-                    job, media, context.getTaskIndex(), context.getActionIndex());
             return _triggerProcessor.getTriggeredTracks(media, context)
-                    .map(t -> taskMergingContext.addBreadCrumbIfNeeded(
-                            createFeedForwardMessage(t, media, context), t))
+                    .map(t -> createFeedForwardRequest(t, media, context))
                     .toList();
         }
 
-        return Collections.singletonList(
-                createProtobufMessage(media, context,
-                                      DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder().build()));
+        var genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder().build();
+        var protobuf = createProtobuf(media, context, genericRequest);
+        return List.of(new DetectionRequest(protobuf));
     }
 
-    private Message createProtobufMessage(Media media, DetectionContext context,
-                                          DetectionProtobuf.DetectionRequest.GenericRequest genericRequest) {
-        DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
+
+    private static DetectionProtobuf.DetectionRequest createProtobuf(
+            Media media, DetectionContext context,
+            DetectionProtobuf.DetectionRequest.GenericRequest genericRequest) {
+        return MediaSegmenter.initializeRequest(media, context)
                 .setDataType(DetectionProtobuf.DetectionRequest.DataType.UNKNOWN)
                 .setGenericRequest(genericRequest)
                 .build();
-
-        Message message = new DefaultMessage(_camelContext);
-        message.setBody(detectionRequest);
-        return message;
     }
 
 
-    private Message createFeedForwardMessage(Track track, Media media, DetectionContext ctx) {
+    private static DetectionRequest createFeedForwardRequest(
+            Track track, Media media, DetectionContext ctx) {
         var genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder();
 
         Detection exemplar = track.getExemplar();
@@ -119,6 +100,7 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
                     .setKey(entry.getKey())
                     .setValue(entry.getValue());
         }
-        return createProtobufMessage(media, ctx, genericRequest.build());
+        var protobuf = createProtobuf(media, ctx, genericRequest.build());
+        return new DetectionRequest(protobuf, track);
     }
 }

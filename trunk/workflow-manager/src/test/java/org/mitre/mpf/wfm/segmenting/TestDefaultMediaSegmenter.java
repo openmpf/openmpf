@@ -28,19 +28,16 @@ package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.net.URI;
@@ -50,7 +47,6 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
@@ -58,8 +54,9 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
     @Mock
     private TriggerProcessor _mockTriggerProcessor;
 
-    @Mock
-    private TaskMergingManager _mockTaskMergingManager;
+    @InjectMocks
+    private DefaultMediaSegmenter _defaultMediaSegmenter;
+
 
 	@Test
 	public void canCreateFirstStageMessages() {
@@ -67,16 +64,17 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		DetectionContext context = createTestDetectionContext(
 				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
-		List<DetectionRequest> detectionRequests = runDefaultSegmenter(media, context);
+		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
 
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		// Verify FEED_FORWARD_TYPE has been removed
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -88,15 +86,16 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
 		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
 
-		List<DetectionRequest> detectionRequests = runDefaultSegmenter(media, context);
+		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
 
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -111,17 +110,14 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
-        when(_mockTaskMergingManager.getRequestContext(
-                null, media, context.getTaskIndex(), context.getActionIndex()))
-                .thenReturn((m, t) -> m);
 
-		List<DetectionRequest> detectionRequests = runDefaultSegmenter(media, context);
+		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 
 		assertEquals(2, detectionRequests.size());
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 3));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 3));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
@@ -129,6 +125,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
 		assertContainsExpectedTrack(0.00f, detectionRequests);
 		assertContainsExpectedTrack(0.10f, detectionRequests);
+        assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -137,22 +134,13 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		Media media = createTestMedia();
 		DetectionContext feedForwardContext = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
-		assertTrue(runDefaultSegmenter(media, feedForwardContext).isEmpty());
-	}
-
-
-	private List<DetectionRequest> runDefaultSegmenter(Media media, DetectionContext context) {
-		MediaSegmenter segmenter = new DefaultMediaSegmenter(
-                mock(CamelContext.class), _mockTriggerProcessor,
-               _mockTaskMergingManager);
-		List<Message> messages = segmenter.createDetectionRequestMessages(null, media, context);
-		return unwrapMessages(messages);
+		assertTrue(_defaultMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
 	}
 
 
 	private static void assertContainsExpectedTrack(float confidence, Collection<DetectionRequest> requests) {
 		DetectionProtobuf.GenericTrack genericTrack = requests.stream()
-				.map(dr -> dr.getGenericRequest().getFeedForwardTrack())
+				.map(dr -> dr.protobuf().getGenericRequest().getFeedForwardTrack())
 				.filter(gt -> gt.getConfidence() == confidence)
 				.findAny()
 				.get();

@@ -71,11 +71,11 @@ public class TaskMergingManager {
 
     public boolean needsBreadCrumb(BatchJob job, Media media, int taskIdx, int actionIdx) {
         return getTransitiveMergeTargets(job, media, taskIdx, actionIdx)
-            .min()
-            .stream()
-            .mapToObj(ti -> job.getPipelineElements().getAction(ti, 0))
-            .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
-            .anyMatch(t -> t != null && !t.isBlank());
+                .min()
+                .stream()
+                .mapToObj(ti -> job.getPipelineElements().getAction(ti, 0))
+                .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
+                .anyMatch(t -> t != null && !t.isBlank());
     }
 
 

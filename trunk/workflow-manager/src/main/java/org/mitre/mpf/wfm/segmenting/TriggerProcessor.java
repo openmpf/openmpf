@@ -118,31 +118,31 @@ public class TriggerProcessor {
             BatchJob job, Media media, int creationTaskIdx, int lastTaskIdx) {
         var fullTrigger = NONE_MATCH;
         for (int taskIdx = creationTaskIdx + 1; taskIdx <= lastTaskIdx; taskIdx++) {
-            var taskFilter = combineTaskTriggers(job, media, taskIdx);
-            if (taskFilter == ALL_MATCH) {
+            var taskTrigger = createTaskTrigger(job, media, taskIdx);
+            if (taskTrigger == ALL_MATCH) {
                 return ALL_MATCH;
             }
-            fullTrigger = taskFilter.or(fullTrigger);
+            fullTrigger = taskTrigger.or(fullTrigger);
         }
         return fullTrigger;
     }
 
 
-    private Predicate<Track> combineTaskTriggers(BatchJob job, Media media, int taskIdx) {
+    private Predicate<Track> createTaskTrigger(BatchJob job, Media media, int taskIdx) {
         var task = job.getPipelineElements().getTask(taskIdx);
-        var taskFilter = NONE_MATCH;
+        var taskTrigger = NONE_MATCH;
         for (var action : job.getPipelineElements().getActionsInOrder(task)) {
             var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
             if (algo.getActionType() == ActionType.MARKUP) {
                 continue;
             }
-            var filter = parseTriggerProperty(job, media, action);
-            if (filter == ALL_MATCH) {
+            var actionTrigger = parseTriggerProperty(job, media, action);
+            if (actionTrigger == ALL_MATCH) {
                 return ALL_MATCH;
             }
-            taskFilter = filter.or(taskFilter);
+            taskTrigger = actionTrigger.or(taskTrigger);
         }
-        return taskFilter;
+        return taskTrigger;
     }
 
 

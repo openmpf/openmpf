@@ -607,12 +607,16 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                     MediaType.VIDEO, "VIDEO_HASH_" + _media.size(), frameRanges, timeRanges);
         }
 
+        private long _mediaIds = 0;
+
         private JobBuilder addMediaInternal(
                 MediaType mediaType,
                 String hash,
                 Set<MediaRange> frameRanges,
                 Set<MediaRange> timeRanges) {
             var media = mock(Media.class);
+            when(media.getId())
+                    .thenReturn(++_mediaIds);
             when(media.getLinkedHash())
                 .thenReturn(Optional.of(hash));
 
@@ -632,6 +636,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             return addAction(algorithm, OptionalInt.empty());
         }
 
+        private long _actionNames = 0;
+
         public JobBuilder addAction(String algorithm, OptionalInt outputChangedCounter) {
             if (_taskContents.isEmpty()) {
                 newTask();
@@ -641,6 +647,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             assertTrue(prev == null || prev.equals(outputChangedCounter));
 
             var action = mock(Action.class);
+            when(action.getName())
+                .thenReturn(String.valueOf(++_actionNames));
             when(action.getAlgorithm())
                 .thenReturn(algorithm);
             _taskContents.get(_taskContents.size() - 1).add(action);

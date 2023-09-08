@@ -30,6 +30,7 @@ package org.mitre.mpf.wfm.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Maps;
@@ -54,6 +55,7 @@ public class WorkflowPropertyService {
 
     private final ImmutableMultimap<MediaType, WorkflowProperty> _indexedByMediaType;
 
+    private final ImmutableList<WorkflowProperty> _supportAllMediaTypes;
 
     @Inject
     public WorkflowPropertyService(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) throws IOException {
@@ -76,6 +78,11 @@ public class WorkflowPropertyService {
             }
         }
         _indexedByMediaType = multimapBuilder.build();
+
+        var allMediaTypes = List.of(MediaType.values());
+        _supportAllMediaTypes = workflowPropertiesList.stream()
+                .filter(p -> p.getMediaTypes().containsAll(allMediaTypes))
+                .collect(ImmutableList.toImmutableList());
     }
 
 
@@ -131,6 +138,10 @@ public class WorkflowPropertyService {
 
     public ImmutableCollection<WorkflowProperty> getProperties(MediaType mediaType) {
         return _indexedByMediaType.get(mediaType);
+    }
+
+    public ImmutableList<WorkflowProperty> getPropertiesSupportedByAllMediaTypes() {
+        return _supportAllMediaTypes;
     }
 
 

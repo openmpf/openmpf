@@ -268,8 +268,9 @@ public class AggregateJobPropertiesUtil {
                 .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
                 .forEach(allKeys::add);
 
-        mediaType.stream()
-                .flatMap(mt -> _workflowPropertyService.getProperties(mt).stream())
+        mediaType.map(_workflowPropertyService::getProperties)
+                .orElseGet(_workflowPropertyService::getPropertiesSupportedByAllMediaTypes)
+                .stream()
                 .map(WorkflowProperty::getName)
                 .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
                 .forEach(allKeys::add);

@@ -40,7 +40,7 @@ public class MediaActionProps {
 
     private final BiFunction<Media, Action, Map<String, String>> _propMapGetter;
 
-    private final Table<Media, Action, Map<String, String>> _propMapCache = HashBasedTable.create();
+    private final Table<Long, String, Map<String, String>> _propMapCache = HashBasedTable.create();
 
 
     public MediaActionProps(BiFunction<Media, Action, Map<String, String>> propMapGetter) {
@@ -48,12 +48,12 @@ public class MediaActionProps {
     }
 
     public Map<String, String> get(Media media, Action action) {
-        var cached = _propMapCache.get(media, action);
+        var cached = _propMapCache.get(media.getId(), action.getName());
         if (cached != null) {
             return cached;
         }
         var props = _propMapGetter.apply(media, action);
-        _propMapCache.put(media, action, props);
+        _propMapCache.put(media.getId(), action.getName(), props);
         return props;
     }
 

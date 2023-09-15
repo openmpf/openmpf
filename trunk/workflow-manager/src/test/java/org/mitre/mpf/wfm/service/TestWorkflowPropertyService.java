@@ -206,6 +206,18 @@ public class TestWorkflowPropertyService {
     }
 
 
+    @Test
+    public void canGetPropertiesSupportedByAllMediaTypes() throws IOException {
+        var propertyService = getServiceWithPropertyJson(
+            propertyJson("PROP1", "desc", "STRING", "A", null, "VIDEO"),
+            propertyJson("PROP2", "desc", "STRING", "B", null, "VIDEO", "IMAGE"),
+            propertyJson("PROP3", "desc", "STRING", "C", null, "VIDEO", "IMAGE", "AUDIO", "UNKNOWN")
+        );
+        var supportedByAll = propertyService.getPropertiesSupportedByAllMediaTypes();
+        assertEquals(1, supportedByAll.size());
+        assertEquals("C", supportedByAll.get(0).getDefaultValue());
+    }
+
 
     @Test
     public void throwsWhenPropertyNameIsEmpty() {

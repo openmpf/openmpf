@@ -188,15 +188,22 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testMediaMissingHash() {
+        var action = mock(Action.class);
+        when(action.getName())
+            .thenReturn("action");
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(mock(Action.class)));
+            .thenReturn(ImmutableList.of(action));
 
         var media1 = mock(Media.class);
+        when(media1.getId())
+                .thenReturn(111L);
         when(media1.getLinkedHash())
                 .thenReturn(Optional.of("HASH"));
 
         var media2 = mock(Media.class);
+        when(media2.getId())
+                .thenReturn(222L);
         when(media2.getLinkedHash())
                 .thenReturn(Optional.empty());
 
@@ -218,9 +225,12 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testMediaMissingMimeType() {
+        var action = mock(Action.class);
+        when(action.getName())
+            .thenReturn("action");
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(mock(Action.class)));
+            .thenReturn(ImmutableList.of(action));
 
         var media1 = mock(Media.class);
         when(media1.getLinkedHash())
@@ -251,9 +261,12 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testNoTiesDbUrl() {
+        var action = mock(Action.class);
+        when(action.getName())
+            .thenReturn("action");
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(mock(Action.class)));
+            .thenReturn(ImmutableList.of(action));
 
         var media = mock(Media.class);
         when(media.getLinkedHash())

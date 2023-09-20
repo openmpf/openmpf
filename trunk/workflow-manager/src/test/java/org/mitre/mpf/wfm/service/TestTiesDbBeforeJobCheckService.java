@@ -151,6 +151,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 _mockAggJobProps,
                 _mockJobConfigHasher,
                 _mockHttpClientUtils,
+                null,
                 _objectMapper,
                 _mockInProgressJobs,
                 _mockS3StorageBackend);

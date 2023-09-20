@@ -40,6 +40,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.TiesDbRepostResponse;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -90,6 +91,8 @@ public class TiesDbService {
 
     private final HttpClientUtils _httpClientUtils;
 
+    private final OAuthClientTokenProvider _oAuthClientTokenProvider;
+
     private final JobRequestDao _jobRequestDao;
 
     private final InProgressBatchJobsService _inProgressJobs;
@@ -103,6 +106,7 @@ public class TiesDbService {
                   ObjectMapper objectMapper,
                   JsonUtils jsonUtils,
                   HttpClientUtils httpClientUtils,
+                  OAuthClientTokenProvider oAuthClientTokenProvider,
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs,
                   JobConfigHasher jobConfigHasher) {
@@ -110,6 +114,7 @@ public class TiesDbService {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
         _httpClientUtils = httpClientUtils;
+        _oAuthClientTokenProvider = oAuthClientTokenProvider;
         _jsonUtils = jsonUtils;
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
@@ -212,8 +217,12 @@ public class TiesDbService {
     public CompletableFuture<Void> postAssertions(BatchJob job) {
         var futures = new ArrayList<CompletableFuture<Void>>();
         for (var media : job.getMedia()) {
+            boolean useOidc = Boolean.parseBoolean(
+                    _aggregateJobPropertiesUtil.getValue(
+                            MpfConstants.TIES_DB_USE_OIDC, job, media));
             for (var tiesDbInfo : media.getTiesDbInfo()) {
-                futures.add(postAssertion(tiesDbInfo, media.getLinkedHash().orElseThrow()));
+                futures.add(postAssertion(
+                        tiesDbInfo, media.getLinkedHash().orElseThrow(), useOidc));
             }
         }
 
@@ -392,7 +401,8 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<Void> postAssertion(TiesDbInfo tiesDbInfo, String mediaSha) {
+    private CompletableFuture<Void> postAssertion(
+            TiesDbInfo tiesDbInfo, String mediaSha, boolean useOidc) {
         URI fullUrl;
         try {
             var baseUrl = new URI(tiesDbInfo.tiesDbUrl());
@@ -425,6 +435,9 @@ public class TiesDbService {
                     .build();
             postRequest.setConfig(requestConfig);
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
+            if (useOidc) {
+                _oAuthClientTokenProvider.addToken(postRequest);
+            }
 
             var responseChecker = new ResponseChecker();
             return _httpClientUtils.executeRequest(

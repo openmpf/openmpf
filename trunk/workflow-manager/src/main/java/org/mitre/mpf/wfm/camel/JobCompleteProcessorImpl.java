@@ -40,6 +40,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -115,6 +116,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private HttpClientUtils httpClientUtils;
+
+    @Autowired
+    private OAuthClientTokenProvider oAuthClientTokenProvider;
 
     @Autowired
     private JmsUtils jmsUtils;
@@ -294,6 +298,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         try {
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
+            if (shouldUseOidc(job)) {
+                oAuthClientTokenProvider.addToken(request);
+            }
             return httpClientUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
                     .thenAccept(resp -> checkResponse(job.getId(), resp))
                     .exceptionally(err -> handleFailedCallback(job, err));
@@ -303,6 +310,19 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return ThreadUtil.completedFuture(null);
         }
     }
+
+    private boolean shouldUseOidc(BatchJob job) {
+        for (var media : job.getMedia()) {
+            boolean useOidc = Boolean.parseBoolean(
+                    aggregateJobPropertiesUtil.getValue(
+                            MpfConstants.CALLBACK_USE_OIDC, job, media));
+            if (useOidc) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private void checkResponse(long jobId, HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();

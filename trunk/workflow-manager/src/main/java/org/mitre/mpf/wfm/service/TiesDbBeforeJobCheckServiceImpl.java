@@ -68,6 +68,7 @@ import org.mitre.mpf.interop.JsonMediaOutputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.interop.util.TimeUtils;
+import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -116,6 +117,8 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private final HttpClientUtils _httpClientUtils;
 
+    private final OAuthClientTokenProvider _oAuthClientTokenProvider;
+
     private final ObjectMapper _objectMapper;
 
     private final InProgressBatchJobsService _inProgressJobs;
@@ -128,6 +131,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             JobConfigHasher jobConfigHasher,
             HttpClientUtils httpClientUtils,
+            OAuthClientTokenProvider oAuthClientTokenProvider,
             ObjectMapper objectMapper,
             InProgressBatchJobsService inProgressJobs,
             S3StorageBackend s3StorageBackend) {
@@ -135,6 +139,7 @@ public class TiesDbBeforeJobCheckServiceImpl
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _jobConfigHasher = jobConfigHasher;
         _httpClientUtils = httpClientUtils;
+        _oAuthClientTokenProvider = oAuthClientTokenProvider;
         _objectMapper = objectMapper;
         _inProgressJobs = inProgressJobs;
         _s3StorageBackend = s3StorageBackend;
@@ -241,13 +246,16 @@ public class TiesDbBeforeJobCheckServiceImpl
             throw new WfmProcessingException(e);
         }
 
+        boolean useOidc = Boolean.parseBoolean(combinedJobProps.apply(
+                MpfConstants.TIES_DB_USE_OIDC));
+
         // There may be multiple matching supplementals in TiesDb, so we don't want to report
         // an error if there was a problem getting one supplemental, but we were able to get a
         // different matching supplemental. Use an AtomicReference because some errors can occur
         // on threads belonging to the HTTP client.
         var lastException = new AtomicReference<Throwable>(null);
         var optCheckInfo = getCheckInfo(
-                mediaHashToBaseUris, jobHash, s3CopyEnabled, lastException);
+                mediaHashToBaseUris, jobHash, s3CopyEnabled, useOidc, lastException);
         if (optCheckInfo.isPresent()) {
             return new TiesDbCheckResult(
                     TiesDbCheckStatus.FOUND_MATCH,
@@ -313,6 +321,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             Multimap<String, String> mediaHashToBaseUris,
             String expectedJobHash,
             boolean s3CopyEnabled,
+            boolean useOidc,
             AtomicReference<Throwable> lastException) {
         // Need a temporary list so that all of the futures are created before we start calling
         // join on any of the futures.
@@ -320,7 +329,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             .stream()
             .map(u -> getSupplementals(
                         u, 0, expectedJobHash, Optional.empty(), s3CopyEnabled,
-                        lastException))
+                        useOidc, lastException))
             .toList();
         return futures
                 .stream()
@@ -361,11 +370,16 @@ public class TiesDbBeforeJobCheckServiceImpl
             URI unpagedUri, int offset, String jobHash,
             Optional<TiesDbCheckResult.CheckInfo> prevBest,
             boolean s3CopyEnabled,
+            boolean useOidc,
             AtomicReference<Throwable> lastException) {
         int limit = 100;
         var uri = addPaginationParams(unpagedUri, offset, limit);
+        var request = new HttpGet(uri);
+        if (useOidc) {
+            _oAuthClientTokenProvider.addToken(request);
+        }
         return _httpClientUtils.executeRequest(
-                new HttpGet(uri),
+                request,
                 _propertiesUtil.getHttpCallbackRetryCount())
             .thenApply(resp -> checkResponse(unpagedUri, resp))
             .thenCompose(resp -> {
@@ -378,7 +392,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                 }
                 return getSupplementals(
                             unpagedUri, offset + limit, jobHash, bestMatch, s3CopyEnabled,
-                            lastException);
+                            useOidc, lastException);
             }).exceptionally(e -> {
                 lastException.set(e.getCause());
                 return prevBest;

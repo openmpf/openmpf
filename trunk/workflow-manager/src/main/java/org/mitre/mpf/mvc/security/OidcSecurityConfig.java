@@ -39,10 +39,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -199,7 +202,25 @@ public class OidcSecurityConfig {
         getOptionalEnv(Keys.USER_NAME_ATTR)
                 .ifPresent(registration::userNameAttributeName);
 
-        return new InMemoryClientRegistrationRepository(registration.build());
+        var clientCredentialsRegistration = ClientRegistrations
+                .fromOidcIssuerLocation(getRequiredEnv(Keys.ISSUER_URI))
+                .registrationId(OAuthClientTokenProvider.REGISTRATION_ID)
+                .clientId(getRequiredEnv(Keys.CLIENT_ID))
+                .clientSecret(getRequiredEnv(Keys.CLIENT_SECRET))
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS);
+
+        return new InMemoryClientRegistrationRepository(
+                registration.build(), clientCredentialsRegistration.build());
+    }
+
+
+    @Bean
+    public AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceAndManager(
+            ClientRegistrationRepository clientRegistrationRepository) {
+        var authorizedClientService = new InMemoryOAuth2AuthorizedClientService(
+                clientRegistrationRepository);
+        return new AuthorizedClientServiceOAuth2AuthorizedClientManager(
+                clientRegistrationRepository, authorizedClientService);
     }
 
 

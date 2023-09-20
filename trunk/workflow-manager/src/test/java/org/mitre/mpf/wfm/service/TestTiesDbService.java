@@ -112,6 +112,7 @@ public class TestTiesDbService {
                 _objectMapper,
                 _jsonUtils,
                 _mockHttpClientUtils,
+                null,
                 _mockJobRequestDao,
                 _mockInProgressJobs,
                 _mockJobConfigHasher);

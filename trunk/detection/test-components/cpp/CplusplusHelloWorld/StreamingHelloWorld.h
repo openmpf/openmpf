@@ -45,8 +45,6 @@ public:
 
     ~StreamingHelloWorld() override;
 
-    std::string GetDetectionType() override;
-
     void BeginSegment(const MPF::COMPONENT::VideoSegmentInfo &segment_info) override;
 
     bool ProcessFrame(const cv::Mat &frame, int frame_number) override;

@@ -202,7 +202,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackVideoResponse(
         const MPFDetectionDataType data_type,
         const int start_frame,
         const int stop_frame,
-        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
 
@@ -212,7 +211,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackVideoResponse(
     DetectionResponse_VideoResponse *video_response = detection_response.add_video_responses();
     video_response->set_start_frame(start_frame);
     video_response->set_stop_frame(stop_frame);
-    video_response->set_detection_type(detection_type);
 
     for (vector<MPFVideoTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {
         MPFVideoTrack track = *tracks_iter;
@@ -258,7 +256,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackAudioResponse(
         const MPFDetectionDataType data_type,
         const int start_time,
         const int stop_time,
-        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
 
@@ -268,7 +265,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackAudioResponse(
     DetectionResponse_AudioResponse *audio_response = detection_response.add_audio_responses();
     audio_response->set_start_time(start_time);
     audio_response->set_stop_time(stop_time);
-    audio_response->set_detection_type(detection_type);
 
     for (vector<MPFAudioTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {
         MPFAudioTrack track = *tracks_iter;
@@ -290,7 +286,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackImageResponse(
         const vector<MPFImageLocation> &locations,
         const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
-        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
 
@@ -298,7 +293,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackImageResponse(
     PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
 
     DetectionResponse_ImageResponse *image_response = detection_response.add_image_responses();
-    image_response->set_detection_type(detection_type);
 
     for (vector<MPFImageLocation>::const_iterator locations_iter = locations.begin(); locations_iter != locations.end(); locations_iter++) {
         MPFImageLocation detection = *(locations_iter);
@@ -323,7 +317,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackGenericResponse(
         const vector<MPFGenericTrack> &tracks,
         const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
-        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
 
@@ -331,7 +324,6 @@ std::vector<unsigned char> MPFDetectionBuffer::PackGenericResponse(
     PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
 
     DetectionResponse_GenericResponse *generic_response = detection_response.add_generic_responses();
-    generic_response->set_detection_type(detection_type);
 
     for (vector<MPFGenericTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {
         MPFGenericTrack track = *tracks_iter;

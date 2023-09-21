@@ -24,46 +24,22 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.wfm.segmenting;
 
-package org.mitre.mpf.wfm.data.entities.transients;
+import java.util.Optional;
 
-public class TrackCountEntry {
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 
-    private final long _mediaId;
+public record DetectionRequest(
+        DetectionProtobuf.DetectionRequest protobuf, Optional<Track> feedForwardTrack) {
 
-    private final int _taskIdx;
-
-    private final int _actionIdx;
-
-    private final String _trackType;
-
-    private final int _count;
-
-    public TrackCountEntry(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {
-        _mediaId = mediaId;
-        _taskIdx = taskIdx;
-        _actionIdx = actionIdx;
-        _trackType = trackType;
-        _count = count;
+    public DetectionRequest(DetectionProtobuf.DetectionRequest protobuf) {
+        this(protobuf, Optional.empty());
     }
 
-    public long getMediaId() {
-        return _mediaId;
-    }
-
-    public int getTaskIdx() {
-        return _taskIdx;
-    }
-
-    public int getActionIdx() {
-        return _actionIdx;
-    }
-
-    public String getTrackType() {
-        return _trackType;
-    }
-
-    public int getCount() {
-        return _count;
+    public DetectionRequest(
+            DetectionProtobuf.DetectionRequest protobuf, Track feedForwardTrack) {
+        this(protobuf, Optional.of(feedForwardTrack));
     }
 }

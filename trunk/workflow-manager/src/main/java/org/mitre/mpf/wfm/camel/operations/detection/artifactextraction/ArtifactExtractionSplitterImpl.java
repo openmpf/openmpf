@@ -58,6 +58,7 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,13 +74,17 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
+    private final TaskMergingManager _taskMergingManager;
+
     @Inject
     ArtifactExtractionSplitterImpl(
             InProgressBatchJobsService inProgressBatchJobs,
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            TaskMergingManager taskMergingManager) {
         super(inProgressBatchJobs);
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _taskMergingManager = taskMergingManager;
     }
 
     @Override
@@ -131,8 +136,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
             // If the user has requested that this task be merged with one that follows, then skip artifact extraction.
             // Artifact extraction will be performed for the next task this one is merged with.
-            Map<Integer, Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
-            if (tasksToMerge.containsValue(taskIndex)) {
+            if (_taskMergingManager.isMergeTarget(job, media, taskIndex)) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to being merged with a following task.",
                         pipelineElements.getTask(taskIndex).getName(), media.getId());
@@ -191,8 +195,14 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
     private SortedSet<Track> processTracks(
             ArtifactExtractionRequest request, SortedSet<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
+        if (policy == ArtifactExtractionPolicy.VISUAL_TYPES_ONLY) {
+            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
+            if (_aggregateJobPropertiesUtil.isNonVisualObjectType(algo.getTrackType())) {
+                return tracks;
+            }
+        }
 
-        Integer trackIndex = 0;
+        int trackIndex = 0;
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractableDetectionsMap = request.getExtractionsMap();
         for (Track track : tracks) {
 
@@ -207,10 +217,6 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                     break;
                 }
                 case VISUAL_TYPES_ONLY:
-                    if (_aggregateJobPropertiesUtil.isNonVisualObjectType(track.getType())) {
-                        break;
-                    }
-                    // fall through
                 case ALL_TYPES: {
                     SortedSet<JsonDetectionOutputObject> extractableDetections = processExtractionsInTrack(job, track, media, action,
                             actionIndex);

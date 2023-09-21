@@ -51,7 +51,6 @@ struct MPFSegmentSummaryMessage : MPFMessage {
     int segment_number_;
     int segment_start_frame_;
     int segment_stop_frame_;
-    std::string detection_type_;  // such as: "FACE", "PERSON", "MOTION"
     MPF::COMPONENT::MPFDetectionError segment_error_;
     std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
     MPFSegmentSummaryMessage() = default;
@@ -60,14 +59,12 @@ struct MPFSegmentSummaryMessage : MPFMessage {
                              const int seg_num,
                              const int start_frame,
                              const int stop_frame,
-                             const std::string type,
                              MPF::COMPONENT::MPFDetectionError error,
                              const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
             : MPFMessage(job_name, job_number),
               segment_number_(seg_num),
               segment_start_frame_(start_frame),
               segment_stop_frame_(stop_frame),
-              detection_type_(type),
               segment_error_(error),
               tracks_(tracks) {}
     ~MPFSegmentSummaryMessage() = default;

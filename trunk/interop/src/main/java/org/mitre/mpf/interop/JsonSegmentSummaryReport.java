@@ -33,7 +33,7 @@ import java.util.*;
 
 @JsonTypeName("SegmentSummaryReport")
 @JsonPropertyOrder({ "reportDate", "jobId", "externalId", "segmentId", "segmentStartFrame", "segmentStopFrame",
-        "errorMessage", "detectionType", "tracks" })
+        "errorMessage", "trackType", "tracks" })
 public class JsonSegmentSummaryReport {
 
     @JsonProperty("reportDate")
@@ -74,9 +74,9 @@ public class JsonSegmentSummaryReport {
     public String getErrorMessage() { return errorMessage; }
 
     @JsonProperty("output")
-    @JsonPropertyDescription("Mapping of detection types to tracks.")
-    private SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> detectionTypes = new TreeMap<>();
-    public SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> getDetectionTypes() { return detectionTypes; }
+    @JsonPropertyDescription("Mapping of track types to tracks.")
+    private SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> trackTypes = new TreeMap<>();
+    public SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> getTrackTypes() { return trackTypes; }
 
     @JsonCreator
     public JsonSegmentSummaryReport(@JsonProperty("reportDate") Instant reportDate,
@@ -84,7 +84,7 @@ public class JsonSegmentSummaryReport {
                                     @JsonProperty("segmentId") long segmentId,
                                     @JsonProperty("segmentStartFrame") long segmentStartFrame,
                                     @JsonProperty("segmentStopFrame") long segmentStopFrame,
-                                    @JsonProperty("detectionType") String detectionType,
+                                    @JsonProperty("trackType") String trackType,
                                     @JsonProperty("tracks") List<JsonStreamingTrackOutputObject> tracks,
                                     @JsonProperty("errorMessage") String errorMessage) {
         this.reportDate = reportDate;
@@ -95,9 +95,9 @@ public class JsonSegmentSummaryReport {
         this.errorMessage = errorMessage;
 
         if (tracks == null || tracks.isEmpty()) {
-            detectionTypes.put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
+            trackTypes.put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
         } else {
-            detectionTypes.put(detectionType, new TreeSet<>(tracks));
+            trackTypes.put(trackType, new TreeSet<>(tracks));
         }
     }
 }

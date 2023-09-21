@@ -276,7 +276,7 @@ public class TestMovingTrackLabelProcessor {
                 endFrame,   //endOffsetFrameInclusive
                 0, //startOffsetTimeInclusive
                 1, //endOffsetTimeInclusive
-                "VIDEO", //type
+                "",
                 -1, //confidence
                 detections, //detections
                 Map.of(), //trackProperties

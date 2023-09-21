@@ -109,14 +109,14 @@ public class TestPipelineController {
 
         var algorithm1 = new Algorithm(
                 "TEST_DETECTION_ALG", "Test algorithm for detection.", ActionType.DETECTION,
-                OptionalInt.empty(),
+                "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(testAlgoProp)),
                 true, false);
         pipelineService.save(algorithm1);
 
         var markupAlgo = new Algorithm(
-                "TEST_MARKUP_ALG", "Test algorithm for markup.", ActionType.MARKUP,
+                "TEST_MARKUP_ALG", "Test algorithm for markup.", ActionType.MARKUP, "MARKUP",
                 OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),

@@ -85,6 +85,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             Action action = job.getPipelineElements().getAction(trackCache.getTaskIndex(), actionIndex);
+            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
 
             for (Media media : job.getMedia()) {
                 if (media.isFailed() || !media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
@@ -102,7 +103,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
                     Collection<Track> updatedTracks = removeIllFormedDetections(
-                        trackCache, media.getId(), actionIndex, frameWidth, frameHeight, tracks);
+                        trackCache, media.getId(), actionIndex, frameWidth, frameHeight,
+                        algo.getTrackType(), tracks);
 
                     try {
                         if (requiresPadding(combinedProperties)) {
@@ -177,12 +179,12 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
     public Collection<Track> removeIllFormedDetections(
             TrackCache trackCache, long mediaId, int actionIndex, int frameWidth, int frameHeight,
-            Collection<Track> tracks) {
+            String trackType, Collection<Track> tracks) {
         // Remove any detections with zero width/height, or that are entirely outside of the frame.
         // If the number of detections goes to 0, drop the track.
         // Do not remove ill-formed detections for those types that are exempted, because they normally do not generate
         // bounding boxes for detections.
-        if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(tracks.iterator().next().getType())) {
+        if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(trackType)) {
             return tracks;
         }
 
@@ -229,7 +231,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         goodDetections.last().getMediaOffsetFrame(),
                         goodDetections.first().getMediaOffsetTime(),
                         goodDetections.last().getMediaOffsetTime(),
-                        track.getType(),
+                        track.getMergedAlgorithm(),
                         track.getConfidence(),
                         goodDetections,
                         track.getTrackProperties(),
@@ -355,7 +357,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getEndOffsetFrameInclusive(),
                     track.getStartOffsetTimeInclusive(),
                     track.getEndOffsetTimeInclusive(),
-                    track.getType(),
+                    track.getMergedAlgorithm(),
                     track.getConfidence(),
                     newDetections,
                     track.getTrackProperties(),

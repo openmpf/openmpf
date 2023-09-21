@@ -36,6 +36,7 @@ import org.mitre.mpf.interop.JsonStreamingTrackOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
+import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -59,6 +60,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
     private final ProtobufDataFormatFactory _protobufDataFormatFactory;
 
+    private final InProgressStreamingJobsService _inProgressJobs;
+
     // Used to determine of messages should be ignored if AMQ has not been purged yet
     private final WfmStartup _wfmStartup;
 
@@ -66,9 +69,11 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
     public StreamingJobRoutesBuilder(
             StreamingJobRequestService streamingJobRequestService,
             ProtobufDataFormatFactory protobufDataFormatFactory,
+            InProgressStreamingJobsService inProgressJobs,
             WfmStartup wfmStartup) {
         _streamingJobRequestService = streamingJobRequestService;
         _protobufDataFormatFactory = protobufDataFormatFactory;
+        _inProgressJobs = inProgressJobs;
         _wfmStartup = wfmStartup;
     }
 
@@ -124,13 +129,15 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 
 
-    private static JsonSegmentSummaryReport convertProtobufResponse(
+    private JsonSegmentSummaryReport convertProtobufResponse(
             long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
+        var job = _inProgressJobs.getJob(jobId);
+        var trackType = job.getPipelineElements().getAlgorithm(0, 0).getTrackType();
 
         List<JsonStreamingTrackOutputObject> tracks =
                 IntStream.range(0, protobuf.getVideoTracksList().size())
                 .mapToObj(i -> StreamingJobRoutesBuilder.convertProtobufTrack(i,
-                        protobuf.getDetectionType(), protobuf.getVideoTracksList().get(i)) )
+                        trackType, protobuf.getVideoTracksList().get(i)) )
                 .collect(toList());
 
         return new JsonSegmentSummaryReport(
@@ -139,14 +146,14 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getSegmentNumber(),
                 protobuf.getSegmentStartFrame(),
                 protobuf.getSegmentStopFrame(),
-                protobuf.getDetectionType(),
+                trackType,
                 tracks,
                 protobuf.getError());
     }
 
 
     private static JsonStreamingTrackOutputObject convertProtobufTrack(
-            int id, String detectionType, DetectionProtobuf.StreamingVideoTrack protobuf) {
+            int id, String trackType, DetectionProtobuf.StreamingVideoTrack protobuf) {
 
         SortedSet<JsonStreamingDetectionOutputObject> detections = protobuf.getDetectionsList().stream()
                 .map(StreamingJobRoutesBuilder::convertDetection)
@@ -162,7 +169,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getStopFrame(),
                 Instant.ofEpochMilli(protobuf.getStartTime()),
                 Instant.ofEpochMilli(protobuf.getStopTime()),
-                detectionType,
+                trackType,
                 /* source, */ // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
                 protobuf.getConfidence(),
                 convertProperties(protobuf.getDetectionPropertiesList()),

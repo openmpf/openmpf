@@ -490,6 +490,13 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
+        "name": "TRIGGER",
+        "description": "Trigger condition for an action when feed forward is used. An action with a trigger of `TRACK_PROPERTY=VALUE` will only process feed forward tracks that have a track property named \"TRACK_PROPERTY\" set to \"VALUE\".",
+        "type": "STRING",
+        "defaultValue": "",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "CALLBACK_USE_OIDC",
         "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included in the job completion callback.",
         "type": "BOOLEAN",

@@ -31,7 +31,6 @@ import mpf_component_api as mpf
 logger = logging.getLogger('TestComponent')
 
 class TestComponent(object):
-    detection_type = 'TEST DETECTION TYPE'
 
     def __init__(self):
         logger.info('Creating instance of TestComponent')

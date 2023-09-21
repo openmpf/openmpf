@@ -107,6 +107,15 @@ public class JobPipelineElements {
         return _algorithms.get(action.getAlgorithm());
     }
 
+    @JsonIgnore
+    public int getLastDetectionTaskIdx() {
+        int lastTaskIdx = getTaskCount() - 1;
+        var lastTaskAlgo = getAlgorithm(lastTaskIdx, 0);
+        return lastTaskAlgo.getActionType() == ActionType.DETECTION
+                ? lastTaskIdx
+                // The last algorithm is markup and there can only be one markup task.
+                : lastTaskIdx - 1;
+    }
 
     @JsonIgnore
     public Iterable<Task> getTasksInOrder() {

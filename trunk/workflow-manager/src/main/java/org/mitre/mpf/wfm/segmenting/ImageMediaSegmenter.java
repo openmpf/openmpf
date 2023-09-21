@@ -26,9 +26,10 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
+import java.util.List;
+
+import javax.inject.Inject;
+
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -36,64 +37,59 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 @Component(ImageMediaSegmenter.REF)
 public class ImageMediaSegmenter implements MediaSegmenter {
-	public static final String REF = "imageMediaSegmenter";
+    public static final String REF = "imageMediaSegmenter";
 
-	private final CamelContext _camelContext;
+    private final TriggerProcessor _triggerProcessor;
 
 	@Inject
-	ImageMediaSegmenter(CamelContext camelContext) {
-		_camelContext = camelContext;
+	ImageMediaSegmenter(TriggerProcessor triggerProcessor) {
+        _triggerProcessor = triggerProcessor;
 	}
+
 
 	@Override
-	public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
-
+	public List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context) {
 		if (context.isFirstDetectionTask()) {
-			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
+            return createSingleRequest(media, context);
 		}
 		else if (MediaSegmenter.feedForwardIsEnabled(context)) {
-			return createFeedForwardMessages(media, context);
+            return _triggerProcessor.getTriggeredTracks(media, context)
+                    .map(t -> createFeedForwardRequest(t, media, context))
+                    .toList();
 		}
 		else if (!context.getPreviousTracks().isEmpty()) {
-			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
+            return createSingleRequest(media, context);
 		}
 		else {
-			return Collections.emptyList();
+			return List.of();
 		}
 	}
 
 
-	private Message createProtobufMessage(Media media, DetectionContext context,
-	                                      ImageRequest imageRequest) {
-		DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
+    private static List<DetectionRequest> createSingleRequest(
+            Media media, DetectionContext context) {
+        var protobuf = createProtobuf(media, context, ImageRequest.getDefaultInstance());
+        return List.of(new DetectionRequest(protobuf));
+    }
+
+
+	private static DetectionProtobuf.DetectionRequest createProtobuf(
+            Media media, DetectionContext context, ImageRequest imageRequest) {
+		return MediaSegmenter.initializeRequest(media, context)
 				.setDataType(DetectionProtobuf.DetectionRequest.DataType.IMAGE)
 				.setImageRequest(imageRequest)
 				.build();
-
-		Message message = new DefaultMessage(_camelContext);
-		message.setBody(detectionRequest);
-		return message;
 	}
 
 
-	private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
-		List<Message> messages = new ArrayList<>();
-		for (Track track : context.getPreviousTracks()) {
-			DetectionProtobuf.ImageLocation imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());
-			ImageRequest imageRequest = ImageRequest.newBuilder()
-					.setFeedForwardLocation(imageLocation)
-					.build();
-
-			messages.add(createProtobufMessage(media, context, imageRequest));
-		}
-		return messages;
-	}
+    private static DetectionRequest createFeedForwardRequest(
+            Track track, Media media, DetectionContext ctx) {
+        var imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());
+        ImageRequest imageRequest = ImageRequest.newBuilder()
+                .setFeedForwardLocation(imageLocation)
+                .build();
+        return new DetectionRequest(createProtobuf(media, ctx, imageRequest), track);
+    }
 }
-

@@ -179,7 +179,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 track.getEndOffsetFrameInclusive(),
                 track.getStartOffsetTimeInclusive(),
                 track.getEndOffsetTimeInclusive(),
-                track.getType(),
+                track.getMergedAlgorithm(),
                 track.getConfidence(),
                 newDetectionsBuilder.build(),
                 newTrackProperties,

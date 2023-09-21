@@ -26,14 +26,31 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Message;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertAllHaveFeedForwardTrack;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertContainsAlgoProperty;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertContainsExpectedMediaMetadata;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertNoneHaveFeedForwardTrack;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.confidenceIsEqualToDimensions;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createDetection;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTestDetectionContext;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTrack;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalLong;
+import java.util.Set;
+
 import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadata;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
@@ -43,17 +60,20 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
 import org.mitre.mpf.wfm.util.MediaRange;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
-import java.net.URI;
-import java.nio.file.Paths;
-import java.util.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
-import static org.mockito.Mockito.mock;
 
-public class TestVideoMediaSegmenter {
+public class TestVideoMediaSegmenter extends MockitoTest.Strict {
+
+    @Mock
+    private TriggerProcessor _mockTriggerProcessor;
+
+    @InjectMocks
+    private VideoMediaSegmenter _videoMediaSegmenter;
 
     @Test
     public void canCreateFirstStageMessages() {
@@ -61,7 +81,7 @@ public class TestVideoMediaSegmenter {
         DetectionContext context = createTestDetectionContext(
                 0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(3, detectionRequests.size());
         assertContainsSegment(0, 19, detectionRequests);
@@ -72,9 +92,10 @@ public class TestVideoMediaSegmenter {
 
         // Verify FEED_FORWARD_TYPE has been removed
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
     }
 
     @Test
@@ -88,13 +109,14 @@ public class TestVideoMediaSegmenter {
                 List.of());
         DetectionContext context = createTestDetectionContext(
                 0, Map.of("FEED_FORWARD_TYPE", "FRAME"), Set.of());
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(4, detectionRequests.size());
         assertContainsSegment(0, 7, detectionRequests);
         assertContainsSegment(15, 25, detectionRequests);
         assertContainsSegment(100, 119, detectionRequests);
         assertContainsSegment(120, 124, detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
     }
 
 
@@ -110,7 +132,7 @@ public class TestVideoMediaSegmenter {
         );
         DetectionContext context = createTestDetectionContext(
                 0,  Map.of(), Set.of());
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(6, detectionRequests.size());
         assertContainsSegment(2, 21, detectionRequests);
@@ -119,6 +141,7 @@ public class TestVideoMediaSegmenter {
         assertContainsSegment(63, 73, detectionRequests);
         assertContainsSegment(88, 107, detectionRequests);
         assertContainsSegment(108, 126, detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
     }
 
 
@@ -139,11 +162,12 @@ public class TestVideoMediaSegmenter {
                 List.of()
         );
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(2, detectionRequests.size());
         assertContainsSegment(5, 30, detectionRequests);
         assertContainsSegment(32, 40, detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
     }
 
     @Test
@@ -154,7 +178,7 @@ public class TestVideoMediaSegmenter {
         );
         DetectionContext context = createTestDetectionContext(0, Map.of(), Set.of());
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(5, detectionRequests.size());
         assertContainsSegment(100, 119, detectionRequests);
@@ -162,6 +186,7 @@ public class TestVideoMediaSegmenter {
         assertContainsSegment(140, 159, detectionRequests);
         assertContainsSegment(160, 179, detectionRequests);
         assertContainsSegment(180, 199, detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
     }
 
     @Test
@@ -172,7 +197,7 @@ public class TestVideoMediaSegmenter {
 
         DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         // range 2 -> 40
         assertEquals(2, detectionRequests.size());
@@ -182,9 +207,10 @@ public class TestVideoMediaSegmenter {
         assertContainsExpectedMediaMetadata(detectionRequests);
 
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
     }
 
 
@@ -194,31 +220,38 @@ public class TestVideoMediaSegmenter {
 
         Set<Track> tracks = createTestTracks();
 
-        DetectionContext context = createTestDetectionContext(
+        var detectionContext = createTestDetectionContext(
                 1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
+                .thenReturn(tracks.stream());
+
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, detectionContext);
 
         assertEquals(2, detectionRequests.size());
         assertContainsExpectedMediaMetadata(detectionRequests);
 
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 3));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 3));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
 
+        var track1 = detectionRequests.get(0).protobuf()
+                .getVideoRequest().getFeedForwardTrack();
+        var track2 = detectionRequests.get(1).protobuf()
+                .getVideoRequest().getFeedForwardTrack();
         DetectionProtobuf.VideoTrack shortTrack;
         DetectionProtobuf.VideoTrack longTrack;
         // The protobuf should contain both tracks, but we don't know what order they will be in.
-        if (detectionRequests.get(0).getVideoRequest().getFeedForwardTrack().getFrameLocationsCount() == 1) {
-            shortTrack = detectionRequests.get(0).getVideoRequest().getFeedForwardTrack();
-            longTrack = detectionRequests.get(1).getVideoRequest().getFeedForwardTrack();
+        if (track1.getFrameLocationsCount() == 1) {
+            shortTrack = track1;
+            longTrack = track2;
         }
         else {
-            shortTrack = detectionRequests.get(1).getVideoRequest().getFeedForwardTrack();
-            longTrack = detectionRequests.get(0).getVideoRequest().getFeedForwardTrack();
+            shortTrack = track2;
+            longTrack = track1;
         }
 
         assertEquals(3, longTrack.getFrameLocationsCount());
@@ -232,6 +265,7 @@ public class TestVideoMediaSegmenter {
         assertContainsFrameLocation(5, shortTrack);
         assertEquals(5, shortTrack.getStartFrame());
         assertEquals(5, shortTrack.getStopFrame());
+        assertAllHaveFeedForwardTrack(detectionRequests);
     }
 
 
@@ -241,33 +275,40 @@ public class TestVideoMediaSegmenter {
 
         Set<Track> tracks = createTestTracks();
 
-        DetectionContext context = createTestDetectionContext(
+        var detectionContext = createTestDetectionContext(
                 1,
                 ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_TOP_CONFIDENCE_COUNT", "2"),
                 tracks);
 
-        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
+                .thenReturn(tracks.stream());
+
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, detectionContext);
 
         assertEquals(2, detectionRequests.size());
         assertContainsExpectedMediaMetadata(detectionRequests);
 
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 4));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 4));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
 
+        var track1 = detectionRequests.get(0).protobuf()
+                .getVideoRequest().getFeedForwardTrack();
+        var track2 = detectionRequests.get(1).protobuf()
+                .getVideoRequest().getFeedForwardTrack();
         DetectionProtobuf.VideoTrack shortTrack;
         DetectionProtobuf.VideoTrack longTrack;
         // The protobuf should contain both tracks, but we don't know what order they will be in.
-        if (detectionRequests.get(0).getVideoRequest().getFeedForwardTrack().getFrameLocationsCount() == 1) {
-            shortTrack = detectionRequests.get(0).getVideoRequest().getFeedForwardTrack();
-            longTrack = detectionRequests.get(1).getVideoRequest().getFeedForwardTrack();
+        if (track1.getFrameLocationsCount() == 1) {
+            shortTrack = track1;
+            longTrack = track2;
         }
         else {
-            shortTrack = detectionRequests.get(1).getVideoRequest().getFeedForwardTrack();
-            longTrack = detectionRequests.get(0).getVideoRequest().getFeedForwardTrack();
+            shortTrack = track2;
+            longTrack = track1;
         }
 
         assertEquals(2, longTrack.getFrameLocationsCount());
@@ -280,8 +321,8 @@ public class TestVideoMediaSegmenter {
         assertContainsFrameLocation(5, shortTrack);
         assertEquals(5, shortTrack.getStartFrame());
         assertEquals(5, shortTrack.getStopFrame());
+        assertAllHaveFeedForwardTrack(detectionRequests);
     }
-
 
 
     @Test
@@ -289,18 +330,17 @@ public class TestVideoMediaSegmenter {
         Media media = createTestMedia();
 
         DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet());
-        assertTrue(runSegmenter(media, context).isEmpty());
+        assertTrue(_videoMediaSegmenter.createDetectionRequests(media, context).isEmpty());
 
         DetectionContext feedForwardContext = createTestDetectionContext(
                 1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
-        assertTrue(runSegmenter(media, feedForwardContext).isEmpty());
+        assertTrue(_videoMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
     }
-
 
 
     private static void assertContainsSegment(int begin, int end, Collection<DetectionRequest> requests) {
         long numMatchingSegments = requests.stream()
-                .map(DetectionRequest::getVideoRequest)
+                .map(r -> r.protobuf().getVideoRequest())
                 .filter(vr -> vr.getStartFrame() == begin && vr.getStopFrame() == end)
                 .count();
         assertEquals(String.format(
@@ -310,20 +350,11 @@ public class TestVideoMediaSegmenter {
     }
 
 
-
     private static void assertContainsFrameLocation(float confidence, DetectionProtobuf.VideoTrack track) {
         int dimensions = (int) confidence;
         assertTrue(track.getFrameLocationsList().stream()
                 .anyMatch(flm -> flm.getFrame() == dimensions
                         && confidenceIsEqualToDimensions(confidence, flm.getImageLocation())));
-    }
-
-
-
-    private static List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
-        MediaSegmenter segmenter = new VideoMediaSegmenter(mock(CamelContext.class));
-        List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
-        return unwrapMessages(messages);
     }
 
 

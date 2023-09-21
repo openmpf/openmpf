@@ -219,6 +219,9 @@ public class MarkupSplitter {
         // PipelineValidator made sure taskToMarkupIndex only has one action.
         SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
                 job.getId(), media.getId(), taskToMarkupIndex, 0);
+        var algo = job.getPipelineElements().getAlgorithm(taskToMarkupIndex, 0);
+        var isExemptFromIllFormedDetectionRemoval = _aggregateJobPropertiesUtil
+                .isExemptFromIllFormedDetectionRemoval(algo.getTrackType());
 
         int trackIndex = 0;
         for (Track track : tracks) {
@@ -228,7 +231,8 @@ public class MarkupSplitter {
             }
             addTrackToBoundingBoxMap(
                     track, boundingBoxMap, trackColors.next(), labelPrefix, labelFromDetections,
-                    labelTextPropToShow, labelNumericPropToShow, animate, labelMaxLength);
+                    labelTextPropToShow, labelNumericPropToShow, animate, labelMaxLength,
+                    isExemptFromIllFormedDetectionRemoval);
             trackIndex++;
         }
 
@@ -285,7 +289,8 @@ public class MarkupSplitter {
             String labelTextPropToShow,
             String labelNumericPropToShow,
             boolean animate,
-            int textLength) {
+            int textLength,
+            boolean isExemptFromIllFormedDetectionRemoval) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
@@ -333,7 +338,7 @@ public class MarkupSplitter {
                     track.getExemplar().equals(detection),
                     label);
 
-            if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(track.getType())) {
+            if (isExemptFromIllFormedDetectionRemoval) {
                 // Special case: Speech doesn't populate object locations for each frame in the video, so you have to
                 // go by the track start and stop frames.
                 boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),

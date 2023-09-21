@@ -244,7 +244,6 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
     EXPECT_EQ(seg_num, dst_msg.segment_number_);
     EXPECT_EQ(start_frame, dst_msg.segment_start_frame_);
     EXPECT_EQ(stop_frame, dst_msg.segment_stop_frame_);
-    EXPECT_EQ(type, dst_msg.detection_type_);
     EXPECT_EQ(err, dst_msg.segment_error_);
 
     // Check the segment summary tracks

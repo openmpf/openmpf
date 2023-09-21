@@ -222,7 +222,6 @@ public class MPFDetectionBuffer {
     public byte[] createAudioResponseMessage(final MPFMessageMetadata msgMetadata,
                                              final int startTime,
                                              final int stopTime,
-                                             final String detectionType,
                                              final List<MPFAudioTrack> tracks,
                                              final MPFDetectionError errorCode,
                                              final String errorMessage) {
@@ -234,7 +233,6 @@ public class MPFDetectionBuffer {
         DetectionProtobuf.DetectionResponse.AudioResponse.Builder audioResponseBuilder = detectionResponseBuilder.addAudioResponsesBuilder();
         audioResponseBuilder.setStartTime(startTime);
         audioResponseBuilder.setStopTime(stopTime);
-        audioResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {
             LOG.debug("Number of audio tracks in detection response for job ID " +
@@ -263,7 +261,6 @@ public class MPFDetectionBuffer {
     public byte[] createVideoResponseMessage(final MPFMessageMetadata msgMetadata,
                                              final int startFrame,
                                              final int stopFrame,
-                                             final String detectionType,
                                              final List<MPFVideoTrack> tracks,
                                              final MPFDetectionError errorCode,
                                              final String errorMessage) {
@@ -276,7 +273,6 @@ public class MPFDetectionBuffer {
                 detectionResponseBuilder.addVideoResponsesBuilder();
         videoResponseBuilder.setStartFrame(startFrame);
         videoResponseBuilder.setStopFrame(stopFrame);
-        videoResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {
             LOG.info("Number of video tracks in detection response for job ID " +
@@ -321,7 +317,6 @@ public class MPFDetectionBuffer {
     }
 
     public byte[] createImageResponseMessage(final MPFMessageMetadata msgMetadata,
-                                             final String detectionType,
                                              final List<MPFImageLocation> locations,
                                              final MPFDetectionError errorCode,
                                              final String errorMessage) {
@@ -331,7 +326,6 @@ public class MPFDetectionBuffer {
                 = packCommonFields(msgMetadata, errorCode, errorMessage);
 
         DetectionProtobuf.DetectionResponse.ImageResponse.Builder imageResponseBuilder = detectionResponseBuilder.addImageResponsesBuilder();
-        imageResponseBuilder.setDetectionType(detectionType);
 
         if (!locations.isEmpty()) {
             LOG.debug("Number of image locations in detection response for job ID " +
@@ -360,7 +354,6 @@ public class MPFDetectionBuffer {
     }
 
     public byte[] createGenericResponseMessage(final MPFMessageMetadata msgMetadata,
-                                               final String detectionType,
                                                final List<MPFGenericTrack> tracks,
                                                final MPFDetectionError errorCode,
                                                final String errorMessage) {
@@ -370,7 +363,6 @@ public class MPFDetectionBuffer {
                 = packCommonFields(msgMetadata, errorCode, errorMessage);
 
         DetectionProtobuf.DetectionResponse.GenericResponse.Builder genericResponseBuilder = detectionResponseBuilder.addGenericResponsesBuilder();
-        genericResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {
             LOG.debug("Number of generic tracks in detection response for job ID " +

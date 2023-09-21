@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.camel.Message;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -55,10 +54,7 @@ public interface MediaSegmenter {
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
 
-
-    List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext);
-
-
+    List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context);
 
 
     public static DetectionProtobuf.DetectionRequest.Builder initializeRequest(

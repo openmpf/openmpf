@@ -67,6 +67,7 @@ import org.apache.http.message.BasicHttpResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
@@ -117,6 +118,9 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private HttpClientUtils _mockHttpClientUtils;
 
     @Mock
+    private OAuthClientTokenProvider _mockOAuthClientTokenProvider;
+
+    @Mock
     private JobRequestDao _mockJobRequestDao;
 
     @Mock
@@ -161,7 +165,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 _objectMapper,
                 _jsonUtils,
                 _mockHttpClientUtils,
-                null,
+                _mockOAuthClientTokenProvider,
                 _mockJobRequestDao,
                 _mockInProgressJobs,
                 _mockJobConfigHasher,
@@ -297,6 +301,10 @@ public class TestTiesDbService extends MockitoTest.Strict {
         var expectedParentTiesDbInfo = createExpectedParentTiesDbInfo();
         _tiesDbParentMedia.setTiesDbInfo(expectedParentTiesDbInfo);
 
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                MpfConstants.TIES_DB_USE_OIDC, _job, _tiesDbMedia))
+                .thenReturn("true");
+
         var httpRespFuture = ThreadUtil.<HttpResponse>newFuture();
         var httpRespFuture2 = ThreadUtil.<HttpResponse>newFuture();
         var httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
@@ -334,6 +342,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 httpRequest.getEntity().getContent(),
                 TiesDbInfo.Assertion.class);
         assertEquals(expectedTiesDbInfo.assertion(), postedAssertion);
+        verify(_mockOAuthClientTokenProvider)
+                .addToken(httpRequest);
 
 
         var parentHttpRequest = httpRequestCaptor.getAllValues()
@@ -348,6 +358,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 parentHttpRequest.getEntity().getContent(),
                 TiesDbInfo.Assertion.class);
         assertEquals(expectedParentTiesDbInfo.assertion(), parentPostedAssertion);
+        verify(_mockOAuthClientTokenProvider, never())
+                .addToken(parentHttpRequest);
     }
 
 

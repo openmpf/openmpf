@@ -181,7 +181,7 @@ public class TiesDbService {
         var futures = job.getMedia()
                 .stream()
                 .filter(m -> m.getTiesDbInfo().isPresent())
-                .map(this::postAssertion)
+                .map(m -> postAssertion(job, m))
                 .toList();
         if (futures.isEmpty()) {
             return ThreadUtil.completedFuture(null);
@@ -315,7 +315,7 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<Void> postAssertion(Media media) {
+    private CompletableFuture<Void> postAssertion(BatchJob job, Media media) {
         var tiesDbInfo = media.getTiesDbInfo().orElseThrow();
         URI fullUrl;
         try {
@@ -346,9 +346,12 @@ public class TiesDbService {
                     .build();
             postRequest.setConfig(requestConfig);
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
-            // if (useOidc) {
-            //     _oAuthClientTokenProvider.addToken(postRequest);
-            // }
+            boolean useOidc = Boolean.parseBoolean(
+                    _aggregateJobPropertiesUtil.getValue(
+                            MpfConstants.TIES_DB_USE_OIDC, job, media));
+            if (useOidc) {
+                _oAuthClientTokenProvider.addToken(postRequest);
+            }
 
             var responseChecker = new ResponseChecker();
             return _httpClientUtils.executeRequest(

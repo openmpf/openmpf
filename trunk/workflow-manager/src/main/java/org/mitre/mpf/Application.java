@@ -27,6 +27,12 @@
 
 package org.mitre.mpf;
 
+import org.apache.activemq.broker.BrokerService;
+import org.apache.activemq.broker.region.policy.PolicyEntry;
+import org.apache.activemq.broker.region.policy.PolicyMap;
+import org.apache.activemq.camel.component.ActiveMQConfiguration;
+import org.apache.camel.builder.ThreadPoolProfileBuilder;
+import org.apache.camel.spi.ThreadPoolProfile;
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -35,6 +41,7 @@ import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
 import org.mitre.mpf.mvc.security.OidcSecurityConfig;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -100,6 +107,58 @@ public class Application extends SpringBootServletInitializer {
 
         return tomcat;
     }
+
+
+    @Bean("activemqBroker")
+    public BrokerService activemqBroker(PropertiesUtil propertiesUtil) throws Exception {
+        var broker = new BrokerService();
+        broker.addConnector(propertiesUtil.getAmqOpenWireBindAddress());
+        broker.setPersistent(false);
+        // Remove memory limit.
+        broker.getSystemUsage().getMemoryUsage().setLimit(0);
+
+        var policy = new PolicyEntry();
+        policy.setQueuePrefetch(0);
+        policy.setPrioritizedMessages(true);
+        var policyMap = new PolicyMap();
+        policyMap.setDefaultEntry(policy);
+        broker.setDestinationPolicy(policyMap);
+
+        broker.start();
+        return broker;
+    }
+
+    @Bean
+    public ActiveMQConfiguration activemqConfiguration(
+            BrokerService broker, PropertiesUtil propertiesUtil) {
+        var amqConfig = new ActiveMQConfiguration();
+        amqConfig.setBrokerURL(broker.getVmConnectorURI().toString());
+        amqConfig.setTransacted(false);
+        amqConfig.setDeliveryPersistent(false);
+        amqConfig.setAcknowledgementModeName("CLIENT_ACKNOWLEDGE");
+        amqConfig.setPreserveMessageQos(true);
+
+        amqConfig.setConcurrentConsumers(2);
+        amqConfig.setMaxConcurrentConsumers(propertiesUtil.getAmqConcurrentConsumers());
+        // Make threads stop after about
+        // (amqConfig.getReceiveTimeout() * amqConfig.getMaxMessagesPerTask() * 1000) seconds of
+        // inactivity.
+        amqConfig.setMaxMessagesPerTask(60);
+        return amqConfig;
+    }
+
+
+    @Bean("splitterThreadPoolProfile")
+    public ThreadPoolProfile splitterThreadPoolProfile(PropertiesUtil propertiesUtil) {
+        // The default thread pool profile for splits with parallelProcessing only allows for 10
+        // parallel threads.
+        return new ThreadPoolProfileBuilder("splitterThreadPoolProfile")
+            .poolSize(propertiesUtil.getAmqConcurrentConsumers())
+            .maxPoolSize(propertiesUtil.getAmqConcurrentConsumers())
+            .allowCoreThreadTimeOut(true)
+            .build();
+    }
+
 
     @Bean
     public ServletRegistrationBean<SimonConsoleServlet> simonConsoleServlet() {

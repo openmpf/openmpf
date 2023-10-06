@@ -50,6 +50,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @Profile("oidc")
@@ -169,6 +170,8 @@ public class OidcSecurityConfig {
                 x.accessDeniedPage("/oidc-access-denied")
                 .defaultAuthenticationEntryPointFor(
                         ajaxAuthenticationEntrypoint, ajaxAuthenticationEntrypoint))
+            // Hawtio requires CookieCsrfTokenRepository.withHttpOnlyFalse().
+            .csrf(x -> x.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
             .build();
     }
 

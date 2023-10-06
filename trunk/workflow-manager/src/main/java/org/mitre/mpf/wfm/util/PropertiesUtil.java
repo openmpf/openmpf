@@ -257,29 +257,6 @@ public class PropertiesUtil {
         return new SystemPropertiesSnapshot(Maps.toMap(snapshotProps, _mpfPropertiesConfig::getString));
     }
 
-    //
-    // JMX configuration
-    //
-
-    public boolean isAmqBrokerEnabled() {
-        return _mpfPropertiesConfig.getBoolean("jmx.amq.broker.enabled");
-    }
-
-    public String getAmqBrokerJmxUri() {
-        return _mpfPropertiesConfig.getString("jmx.amq.broker.uri");
-    }
-
-    public String getAmqBrokerAdminUsername() {
-        return _mpfPropertiesConfig.getString("jmx.amq.broker.admin.username");
-    }
-
-    public String getAmqBrokerAdminPassword() {
-        return _mpfPropertiesConfig.getString("jmx.amq.broker.admin.password");
-    }
-
-    public Set<String> getAmqBrokerPurgeWhiteList() {
-        return new HashSet<>(_mpfPropertiesConfig.getList(String.class, "jmx.amq.broker.whiteList"));
-    }
 
     //
     // Main configuration
@@ -712,7 +689,15 @@ public class PropertiesUtil {
 
 
     public String getAmqUri() {
-        return _mpfPropertiesConfig.getString("amq.broker.uri");
+        return _mpfPropertiesConfig.getString("amq.broker.uri", "tcp://localhost:61616");
+    }
+
+    public int getAmqConcurrentConsumers() {
+        return _mpfPropertiesConfig.getInt("amq.concurrent.consumers", 60);
+    }
+
+    public String getAmqOpenWireBindAddress() {
+        return _mpfPropertiesConfig.getString("amq.open.wire.bind.address");
     }
 
     //

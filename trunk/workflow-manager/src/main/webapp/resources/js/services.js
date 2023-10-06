@@ -526,13 +526,10 @@ AppServices.factory('ServerSidePush', [
         }
         initialized = true;
 
-        let baseUrl = location.href;
-        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('workflow-manager/'));
-
         let unsubscribed = false;
 
         $.atmosphere.subscribe({
-            url: baseUrl + 'workflow-manager/websocket',
+            url: 'websocket',
             contentType: "application/json",
             logLevel: 'debug',
             transport: 'websocket',

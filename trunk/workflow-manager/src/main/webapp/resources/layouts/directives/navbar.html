@@ -68,6 +68,9 @@
                         <li><a href="swagger-ui/index.html" target="_blank" title="Displays REST web service information (for Developers)">REST API</a></li>
                         <li><a ui-sref="/pipelines" id="menu_pipelines" title="Create and edit pipelines and algorithms">Pipelines </a></li>
                         <li><a ui-sref="/pipelines2" id="menu_pipelines2" title="Create and edit pipelines and algorithms">Pipelines 2</a></li>
+                        <li>
+                            <a href="actuator/hawtio">Hawtio</a>
+                        </li>
                     </ul>
                 </li>
                 <li><a ui-sref="/about">About</a></li>
@@ -84,7 +87,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li>
-                            <form method="post" action="/workflow-manager/logout"
+                            <form method="post" action="/logout"
                                   class="navbar-form">
                                 <input type="hidden" name="{{csrfFormParam}}"
                                        value="{{csrfToken}}"/>

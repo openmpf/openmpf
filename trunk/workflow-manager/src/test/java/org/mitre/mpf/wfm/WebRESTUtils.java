@@ -49,7 +49,7 @@ import java.util.List;
 public class WebRESTUtils {
 
 	public static final String BASE_URL = getBaseUrl();
-	public static final String REST_URL = BASE_URL + "/workflow-manager/rest/";
+	public static final String REST_URL = BASE_URL + "/rest/";
 	public static final String MPF_AUTHORIZATION = "Basic bXBmOm1wZjEyMw==";// mpf user base64 <username:password>
 	public static final String ADMIN_AUTHORIZATION = "Basic YWRtaW46bXBmYWRtCg";// admin user base64 <username:password>
 

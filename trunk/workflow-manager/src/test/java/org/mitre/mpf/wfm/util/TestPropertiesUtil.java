@@ -189,10 +189,6 @@ public class TestPropertiesUtil {
 
     @Test
     public void testPropertiesUtilGetters() {
-        Assert.assertTrue(_propertiesUtil.isAmqBrokerEnabled());
-
-        Assert.assertEquals(2, _propertiesUtil.getAmqBrokerPurgeWhiteList().size());
-
         Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_TYPES_ONLY, _propertiesUtil.getArtifactExtractionPolicy());
 
         Assert.assertTrue(WritableResource.class.isAssignableFrom(_propertiesUtil.getAlgorithmDefinitions().getClass()));

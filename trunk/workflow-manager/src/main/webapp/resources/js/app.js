@@ -183,14 +183,9 @@ App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $u
 }]);
 
 
-App.config(['$httpProvider', 'csrf', function($httpProvider, csrf) {
+App.config(['$httpProvider', function($httpProvider) {
 	//need to add explicitly but can cause problems with CORS
 	$httpProvider.defaults.headers.common["X-Requested-With"] = 'XMLHttpRequest';
-	const defaultHeaders = $httpProvider.defaults.headers;
-	for (let method of ['post', 'put', 'patch', 'delete']) {
-		defaultHeaders[method] = csrf.headers(defaultHeaders[method])
-	}
-
 	$httpProvider.interceptors.push('httpInterceptor');//services.js
 }]);
 

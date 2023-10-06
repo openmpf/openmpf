@@ -56,7 +56,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 	public static final String JMS_DESTINATION = "MPF.COMPLETED_DETECTIONS";
 
 	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = "jms:" + JMS_DESTINATION;
+	public static final String ENTRY_POINT = "activemq:" + JMS_DESTINATION;
 
 	/** The default exit point for this route. */
 	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
@@ -108,6 +108,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.process(DetectionTransformationProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
+                        .executorServiceRef("splitterThreadPoolProfile")
 						.streaming() // Aggregate responses in any order.
                         .process(ArtifactExtractionProcessor.REF)
 					.end()

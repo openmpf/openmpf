@@ -50,17 +50,14 @@ import javax.jms.Session;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.SimpleRegistry;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -110,7 +107,6 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
 
     private static int runId = -1;
 
-    private static BrokerService BROKER;
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
     private ActiveMQConnection connection;
@@ -119,12 +115,6 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
     @Mock
     private DetectionDeadLetterProcessor mockDetectionDeadLetterProcessor;
 
-    @BeforeClass
-    public static void setupClass() throws Exception {
-        BROKER = new BrokerService();
-        BROKER.setPersistent(false);
-        BROKER.start();
-    }
 
     @Before
     public void setup() throws Exception {
@@ -132,7 +122,8 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
         simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
         camelContext = new DefaultCamelContext(simpleRegistry);
 
-        connectionFactory = new ActiveMQConnectionFactory(BROKER.getVmConnectorURI());
+        connectionFactory = new ActiveMQConnectionFactory(
+                "vm://test_dlq?broker.persistent=false");
         ActiveMQComponent activeMqComponent = ActiveMQComponent.activeMQComponent();
         activeMqComponent.setConnectionFactory(connectionFactory);
         camelContext.addComponent("activemq", activeMqComponent);
@@ -173,10 +164,6 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
         }
     }
 
-    @AfterClass
-    public static void cleanupClass() throws Exception {
-        BROKER.stop();
-    }
 
     private void removeQueues() {
         removeQueueQuietly(ENTRY_POINT);

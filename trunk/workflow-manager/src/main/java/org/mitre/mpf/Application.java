@@ -109,57 +109,6 @@ public class Application extends SpringBootServletInitializer {
     }
 
 
-    @Bean("activemqBroker")
-    public BrokerService activemqBroker(PropertiesUtil propertiesUtil) throws Exception {
-        var broker = new BrokerService();
-        broker.addConnector(propertiesUtil.getAmqOpenWireBindAddress());
-        broker.setPersistent(false);
-        // Remove memory limit.
-        broker.getSystemUsage().getMemoryUsage().setLimit(0);
-
-        var policy = new PolicyEntry();
-        policy.setQueuePrefetch(0);
-        policy.setPrioritizedMessages(true);
-        var policyMap = new PolicyMap();
-        policyMap.setDefaultEntry(policy);
-        broker.setDestinationPolicy(policyMap);
-
-        broker.start();
-        return broker;
-    }
-
-    @Bean
-    public ActiveMQConfiguration activemqConfiguration(
-            BrokerService broker, PropertiesUtil propertiesUtil) {
-        var amqConfig = new ActiveMQConfiguration();
-        amqConfig.setBrokerURL(broker.getVmConnectorURI().toString());
-        amqConfig.setTransacted(false);
-        amqConfig.setDeliveryPersistent(false);
-        amqConfig.setAcknowledgementModeName("CLIENT_ACKNOWLEDGE");
-        amqConfig.setPreserveMessageQos(true);
-
-        amqConfig.setConcurrentConsumers(2);
-        amqConfig.setMaxConcurrentConsumers(propertiesUtil.getAmqConcurrentConsumers());
-        // Make threads stop after about
-        // (amqConfig.getReceiveTimeout() * amqConfig.getMaxMessagesPerTask() * 1000) seconds of
-        // inactivity.
-        amqConfig.setMaxMessagesPerTask(60);
-        return amqConfig;
-    }
-
-
-    @Bean("splitterThreadPoolProfile")
-    public ThreadPoolProfile splitterThreadPoolProfile(PropertiesUtil propertiesUtil) {
-        // The default thread pool profile for splits with parallelProcessing only allows for 10
-        // parallel threads.
-        return new ThreadPoolProfileBuilder("splitterThreadPoolProfile")
-            .poolSize(propertiesUtil.getAmqConcurrentConsumers())
-            .maxPoolSize(propertiesUtil.getAmqConcurrentConsumers())
-            .allowCoreThreadTimeOut(true)
-            .build();
-    }
-
-
     @Bean
     public ServletRegistrationBean<SimonConsoleServlet> simonConsoleServlet() {
         var servlet = new ServletRegistrationBean<>(

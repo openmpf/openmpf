@@ -78,11 +78,13 @@ public class ActiveMQConfiguration {
     }
 
 
-    @Bean("splitterThreadPoolProfile")
+    public static final String SPLITTER_THREAD_POOL_REF = "splitterThreadPoolProfile";
+
+    @Bean(SPLITTER_THREAD_POOL_REF)
     public ThreadPoolProfile splitterThreadPoolProfile(PropertiesUtil propertiesUtil) {
         // The default thread pool profile for splits with parallelProcessing only allows for 10
         // parallel threads.
-        return new ThreadPoolProfileBuilder("splitterThreadPoolProfile")
+        return new ThreadPoolProfileBuilder(SPLITTER_THREAD_POOL_REF)
             .poolSize(propertiesUtil.getAmqConcurrentConsumers())
             .maxPoolSize(propertiesUtil.getAmqConcurrentConsumers())
             .allowCoreThreadTimeOut(true)

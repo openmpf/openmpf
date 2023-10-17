@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.DefaultTaskSplitter;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.camel.BeginTaskProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -73,7 +74,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
             .split(method(DefaultTaskSplitter.REF, "split"))
                 .parallelProcessing()
                 .streaming()
-                .executorServiceRef("splitterThreadPoolProfile")
+                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
                 .marshal().protobuf()
                 // Splitter will set the "CamelJmsDestinationName" header to
                 // specify the destination.

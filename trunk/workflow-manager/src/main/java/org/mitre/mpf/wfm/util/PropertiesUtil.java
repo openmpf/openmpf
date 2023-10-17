@@ -689,7 +689,7 @@ public class PropertiesUtil {
 
 
     public String getAmqUri() {
-        return _mpfPropertiesConfig.getString("amq.broker.uri", "tcp://localhost:61616");
+        return _mpfPropertiesConfig.getString("amq.broker.uri");
     }
 
     public int getAmqConcurrentConsumers() {

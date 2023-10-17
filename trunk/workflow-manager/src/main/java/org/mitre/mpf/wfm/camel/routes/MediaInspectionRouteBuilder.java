@@ -28,11 +28,10 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckServiceImpl;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
@@ -85,7 +84,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.setExchangePattern(ExchangePattern.InOnly)
 			.split().method(MediaInspectionSplitter.REF, "split")
 				.parallelProcessing() // Perform this operation in parallel.
-                .executorServiceRef("splitterThreadPoolProfile")
+                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 				.streaming() // The aggregation order of messages is not important.
                 .process(MediaInspectionProcessor.REF)
             .end()

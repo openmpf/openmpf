@@ -27,12 +27,6 @@
 
 package org.mitre.mpf;
 
-import org.apache.activemq.broker.BrokerService;
-import org.apache.activemq.broker.region.policy.PolicyEntry;
-import org.apache.activemq.broker.region.policy.PolicyMap;
-import org.apache.activemq.camel.component.ActiveMQConfiguration;
-import org.apache.camel.builder.ThreadPoolProfileBuilder;
-import org.apache.camel.spi.ThreadPoolProfile;
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -41,7 +35,6 @@ import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
 import org.mitre.mpf.mvc.security.OidcSecurityConfig;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

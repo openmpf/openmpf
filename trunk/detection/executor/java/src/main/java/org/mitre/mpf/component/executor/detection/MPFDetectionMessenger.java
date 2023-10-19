@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.lang.IllegalStateException;
 
 public class MPFDetectionMessenger {
 
@@ -49,10 +50,12 @@ public class MPFDetectionMessenger {
 
 	private final MPFDetectionComponentInterface component;
 	private final Session session;
+	private final MessageProducer replyProducer;
 
-    public MPFDetectionMessenger(MPFDetectionComponentInterface component, Session session) {
+    public MPFDetectionMessenger(MPFDetectionComponentInterface component, Session session) throws JMSException {
         this.component = component;
         this.session = session;
+		this.replyProducer = session.createProducer(null);
     }
 
     public void onMessage(Message message) {
@@ -66,7 +69,6 @@ public class MPFDetectionMessenger {
 			MPFDetectionBuffer detectionBuffer = new MPFDetectionBuffer(requestBytesMessage);
 			MPFMessageMetadata msgMetadata = detectionBuffer.getMessageMetadata(message);
 			msgMetadata.getAlgorithmProperties().putAll(environmentJobProperties);
-            Destination out = message.getJMSReplyTo();
 
             if (msgMetadata != null) {
 
@@ -181,9 +183,8 @@ public class MPFDetectionMessenger {
                         responseBytesMessage = session.createBytesMessage();
                         responseBytesMessage.writeBytes(responseBytes);
                         ProtoUtils.setMsgProperties(headerProperties, responseBytesMessage);
-	                    MessageProducer replyProducer = session.createProducer(out);
 	                    replyProducer.setPriority(message.getJMSPriority());
-                        replyProducer.send(responseBytesMessage);
+                        replyProducer.send(message.getJMSReplyTo(), responseBytesMessage);
                         session.commit();
                         LOG.info("Detection response sent for job ID {}", msgMetadata.getJobId());
                         LOG.debug(responseBytesMessage.toString());
@@ -208,10 +209,12 @@ public class MPFDetectionMessenger {
             } else {
 				// TODO: Send error message.
                 LOG.error("Could not parse contents of Detection Request message");
+				rollback();
             }
-        } catch (InvalidProtocolBufferException | JMSException e) {
+        } catch (Exception e) {
 			// TODO: Send error message.
             LOG.error("Could not process detection request message due to Exception ", e);
+			rollback();
         }
     }
 
@@ -224,17 +227,15 @@ public class MPFDetectionMessenger {
 			// Set the body of the message.
 			response.writeBytes(detectionResponse.toByteArray());
 
-			// Create a transacted producer, send the message, and close the producer.
-			MessageProducer producer = session.createProducer(destination);
-			producer.send(response);
+			replyProducer.send(destination, response);
 			session.commit();
-			producer.close();
 
 			// Record the success.
 			LOG.debug("[Request #{}] Built and sent response. Error: {}.", detectionResponse.getRequestId(), detectionResponse.getError());
 		} catch(Exception e) {
 			// Record the failure. This is likely irrecoverable.
 			LOG.error("[Request #{}] Failed to send the response due to an exception.", detectionResponse == null ? Long.MIN_VALUE : detectionResponse.getRequestId(), e);
+			rollback();
 		}
 	}
 
@@ -324,5 +325,14 @@ public class MPFDetectionMessenger {
 		        .collect(ImmutableMap.toImmutableMap(
 		        		e -> e.getKey().substring(propertyPrefix.length()),
 				        Map.Entry::getValue));
+	}
+
+	private void rollback() {
+		try {
+			session.rollback();
+		}
+		catch (JMSException e) {
+			throw new IllegalStateException("Rollback failed due to: " + e, e);
+		}
 	}
 }

@@ -157,7 +157,7 @@ public class MarkupRequestConsumer {
 
     private void onMarkupRequest(Markup.MarkupRequest markupRequest) throws IOException {
         var destinationPath = Path.of(URI.create(markupRequest.getDestinationUri()));
-        if (!Files.isWritable(destinationPath)) {
+        if (!Files.isWritable(destinationPath.getParent())) {
             throw new IllegalStateException(
                     "The target URI '%s' is not writable."
                     .formatted(markupRequest.getDestinationUri()));
@@ -172,7 +172,9 @@ public class MarkupRequestConsumer {
         if (markupRequest.getMapEntriesList().isEmpty()) {
             Files.copy(sourcePath, destinationPath);
         }
-        markup(markupRequest);
+        else {
+            markup(markupRequest);
+        }
     }
 
     private static void markup(Markup.MarkupRequest markupRequest) throws IOException {

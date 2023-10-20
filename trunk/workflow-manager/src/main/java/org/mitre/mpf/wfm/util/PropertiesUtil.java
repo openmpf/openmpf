@@ -427,20 +427,6 @@ public class PropertiesUtil {
         return new File(markupDirectory, String.valueOf(jobId));
     }
 
-    public Path createMarkupPath(long jobId, long mediaId, String extension) {
-        try {
-            Path path = Paths.get(markupDirectory.toURI())
-                    .resolve(String.format("%d/%d/%s%s", jobId, mediaId, UUID.randomUUID(), TextUtils.trimToEmpty(extension)))
-                    .normalize()
-                    .toAbsolutePath();
-            Files.createDirectories(path.getParent());
-            return Files.createFile(path);
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
     //
     // Detection configuration
     //

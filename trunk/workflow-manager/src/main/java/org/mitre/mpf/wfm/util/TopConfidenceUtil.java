@@ -24,56 +24,63 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.wfm.util;
+
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+import java.util.function.ToDoubleFunction;
 
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-import java.util.SortedSet;
+public class TopConfidenceUtil {
 
-public class ExemplarPolicyUtil {
-
-    public static final String PROPERTY = "EXEMPLAR_POLICY";
-
-    private ExemplarPolicyUtil() {
+    private TopConfidenceUtil() {
     }
 
-    public static Detection getExemplar(String policy, int begin, int end,
-                                        SortedSet<Detection> detections) {
-        if (detections.isEmpty()) {
-            return null;
-        }
-        else if (detections.size() == 1 || "FIRST".equalsIgnoreCase(policy)) {
-            return detections.first();
-        }
-        else if ("LAST".equalsIgnoreCase(policy)) {
-            return detections.last();
-        }
-        else if ("MIDDLE".equalsIgnoreCase(policy)) {
-            return findMiddle(begin, end, detections);
-        }
-        else {
-            return TopConfidenceUtil.getTopConfidenceDetection(detections);
-        }
+
+    public static Detection getTopConfidenceDetection(Collection<Detection> detections) {
+        return getTopConfidenceItem(detections, Detection::getConfidence);
     }
 
-    private static Detection findMiddle(int begin, int end, SortedSet<Detection> detections) {
-        int middleFrame = (begin + end) / 2;
-        var iter = detections.iterator();
-        var minDet = iter.next();
-        int minDist = Math.abs(minDet.getMediaOffsetFrame() - middleFrame);
 
-        while (iter.hasNext()) {
-            var current = iter.next();
-            int currentDist = Math.abs(current.getMediaOffsetFrame() - middleFrame);
-            if (currentDist < minDist) {
-                minDet = current;
-                minDist = currentDist;
-            }
-            else {
-                break;
+    public static <T extends Comparable<T>> T getTopConfidenceItem(
+            Collection<T> items, ToDoubleFunction<T> confidenceGetter) {
+        return items.stream()
+            .max(getMaxConfidenceComparator(confidenceGetter))
+            .orElse(null);
+    }
+
+
+    public static Collection<Detection> getTopConfidenceDetections(
+            Collection<Detection> allDetections, int topConfidenceCount) {
+        if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
+            return allDetections;
+        }
+
+        var confidenceComparator = getMaxConfidenceComparator(Detection::getConfidence);
+        var topDetections = new PriorityQueue<>(topConfidenceCount, confidenceComparator);
+
+        var allDetectionsIter = allDetections.iterator();
+        for (int i = 0; i < topConfidenceCount; i++) {
+            topDetections.add(allDetectionsIter.next());
+        }
+
+        while (allDetectionsIter.hasNext()) {
+            Detection detection = allDetectionsIter.next();
+            // Check if current detection is less than the minimum top detection so far
+            if (confidenceComparator.compare(detection, topDetections.peek()) > 0) {
+                topDetections.poll();
+                topDetections.add(detection);
             }
         }
-        return minDet;
+        return topDetections;
+    }
+
+
+    private static <T extends Comparable<T>>
+            Comparator<T> getMaxConfidenceComparator(ToDoubleFunction<T> confidenceGetter) {
+        return Comparator.comparingDouble(confidenceGetter)
+                .thenComparing(Comparator.reverseOrder());
     }
 }

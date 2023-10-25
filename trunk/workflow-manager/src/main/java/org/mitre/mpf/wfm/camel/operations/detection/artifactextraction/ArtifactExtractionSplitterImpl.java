@@ -46,6 +46,7 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.TopConfidenceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -320,16 +321,13 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     topConfidenceCount);
         }
         if (topConfidenceCount > 0) {
-            // Sort the detections by confidence, then by frame number, if two detections have equal
-            // confidence. The sort by confidence is reversed so that the N highest confidence
-            // detections are at the start of the list.
-            sortedDetections.sort(
-                    Comparator.comparing(Detection::getConfidence).reversed().thenComparing(Comparator.naturalOrder()));
-            int extractCount = Math.min(topConfidenceCount, sortedDetections.size());
-            for (int i = 0; i < extractCount; i++) {
-                LOG.debug("Will extract frame #{} with confidence = {}", sortedDetections.get(i).getMediaOffsetFrame(),
-                        sortedDetections.get(i).getConfidence());
-                framesToExtract.add(sortedDetections.get(i).getMediaOffsetFrame());
+            var topConfidenceDetections = TopConfidenceUtil.getTopConfidenceDetections(
+                    sortedDetections, topConfidenceCount);
+            for (var detection : topConfidenceDetections) {
+                LOG.debug("Will extract frame #{} with confidence = {}",
+                        detection.getMediaOffsetFrame(),
+                        detection.getConfidence());
+                framesToExtract.add(detection.getMediaOffsetFrame());
             }
         }
         // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a

@@ -247,13 +247,14 @@ public class TestArtifactExtractionSplitter {
                 5, 0.5f,
                 9, 0.0f,
                 10, 1.0f,
+                11, 0.9f,
                 14, 0.9f);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 10,
                 detectionFramesAndConfidences,
-                Arrays.asList(10, 14));
+                Arrays.asList(10, 11));
 
 
         detectionFramesAndConfidences = ImmutableMap.of(

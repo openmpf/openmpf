@@ -71,6 +71,12 @@ public class TestExemplarPolicyUtil {
         assertSame(_d52, ExemplarPolicyUtil.getExemplar("MIDDLE", 0, 104, _detections));
     }
 
+    @Test
+    public void testEqualMaxConfidence() {
+        var d61 = createDetection(61, _d60.getConfidence());
+        var detections = ImmutableSortedSet.of(_d50, _d52, _d54, _d60, d61);
+        assertSame(_d60, ExemplarPolicyUtil.getExemplar("CONFIDENCE", 0, 100, detections));
+    }
 
     private static Detection createDetection(int frame, double confidence) {
         return new Detection(1, 1, 1, 1, (float) confidence, frame, 1, Map.of());

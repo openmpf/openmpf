@@ -455,7 +455,8 @@ public class TestMediaSegmenter {
 				.max()
 				.getAsInt();
 
-        Detection exemplar = TopConfidenceUtil.getTopConfidenceDetection(detectionList);
+        Detection exemplar = TopConfidenceUtil.getTopConfidenceItem(
+                detectionList, Detection::getConfidence);
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, "type",
 				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "");

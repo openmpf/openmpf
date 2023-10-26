@@ -187,8 +187,6 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .build();
     }
 
-
-
     private static int getTopConfidenceCount(DetectionContext context) {
         return context.getAlgorithmProperties()
                 .stream()

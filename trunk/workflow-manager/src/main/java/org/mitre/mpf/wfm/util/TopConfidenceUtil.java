@@ -39,11 +39,6 @@ public class TopConfidenceUtil {
     }
 
 
-    public static Detection getTopConfidenceDetection(Collection<Detection> detections) {
-        return getTopConfidenceItem(detections, Detection::getConfidence);
-    }
-
-
     public static <T extends Comparable<T>> T getTopConfidenceItem(
             Collection<T> items, ToDoubleFunction<T> confidenceGetter) {
         return items.stream()

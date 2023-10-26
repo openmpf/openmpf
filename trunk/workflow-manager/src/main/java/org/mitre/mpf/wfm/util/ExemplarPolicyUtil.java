@@ -53,7 +53,7 @@ public class ExemplarPolicyUtil {
             return findMiddle(begin, end, detections);
         }
         else {
-            return TopConfidenceUtil.getTopConfidenceDetection(detections);
+            return TopConfidenceUtil.getTopConfidenceItem(detections, Detection::getConfidence);
         }
     }
 

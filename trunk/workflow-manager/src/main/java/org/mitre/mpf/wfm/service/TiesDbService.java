@@ -163,7 +163,7 @@ public class TiesDbService {
                     jobStatus,
                     _propertiesUtil.getSemanticVersion(),
                     _propertiesUtil.getHostName(),
-                    trackCounter.get(media.getId()),
+                    trackCounter.get(media),
                     getJobConfigHash(job));
             var assertion = new TiesDbInfo.Assertion(UUID.randomUUID().toString(), dataObject);
             var tiesDbInfo = new TiesDbInfo(tiesDbUrl, assertion);

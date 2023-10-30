@@ -65,7 +65,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
                                              .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -108,7 +108,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
                                              .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -186,7 +186,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         // The media used in this test generates two tracks that both have the same range of frames, but different exemplars,
         // and the set of extractions for each track do not intersect with each other.
@@ -260,7 +260,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
                                              .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -480,7 +480,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
                 .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -1124,7 +1124,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get(trackType);
-        assertNotNull("Output object did not contain expected detection type: " + trackType,
+        assertNotNull("Output object did not contain expected track type: " + trackType,
                       actionOutputObjects);
 
         List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()

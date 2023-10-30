@@ -94,9 +94,9 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
     public void testTriggerValidation() {
         TriggerProcessor.validateTrigger(getTriggerProperties(null));
         TriggerProcessor.validateTrigger(getTriggerProperties(""));
-        TriggerProcessor.validateTrigger(getTriggerProperties("a=a"));
-        TriggerProcessor.validateTrigger(getTriggerProperties("a="));
-        TriggerProcessor.validateTrigger(getTriggerProperties("a=b="));
+        TriggerProcessor.validateTrigger(getTriggerProperties("a=a", "FRAME"));
+        TriggerProcessor.validateTrigger(getTriggerProperties("a=", "SUPERSET_REGION"));
+        TriggerProcessor.validateTrigger(getTriggerProperties("a=b=", "REGION"));
 
         assertTriggerInvalid("asdf");
         assertTriggerInvalid("=");
@@ -104,17 +104,41 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
     }
 
 
-    private static UnaryOperator<String> getTriggerProperties(String trigger)  {
+    @Test
+    public void testTriggerRequiresFeedForward() {
+        var trigger = "a=a";
+        assertTriggerValidationFails(trigger, null);
+        assertTriggerValidationFails(trigger, "");
+        assertTriggerValidationFails(trigger, "  ");
+        assertTriggerValidationFails(trigger, "asdf");
+        assertTriggerValidationFails(trigger, "NONE");
+        assertTriggerValidationFails(trigger, "none");
+    }
+
+
+    private static UnaryOperator<String> getTriggerProperties(
+            String trigger, String feedForwardType) {
         return propName -> {
             if (propName.equals("TRIGGER")) {
                 return trigger;
+            }
+            if (propName.equals("FEED_FORWARD_TYPE")) {
+                return feedForwardType;
             }
             throw new IllegalArgumentException();
         };
     }
 
+    private static UnaryOperator<String> getTriggerProperties(String trigger)  {
+        return getTriggerProperties(trigger, null);
+    }
+
     private static void assertTriggerInvalid(String trigger) {
-        var props = getTriggerProperties(trigger);
+        assertTriggerValidationFails(trigger, null);
+    }
+
+    private static void assertTriggerValidationFails(String trigger, String feedForwardType) {
+        var props = getTriggerProperties(trigger, feedForwardType);
         TestUtil.assertThrows(
                 WfmProcessingException.class,
                 () -> TriggerProcessor.validateTrigger(props));

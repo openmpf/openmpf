@@ -30,15 +30,21 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+
 public class TrackCounter {
 
     private final Map<Long, Integer> _counts = new HashMap<>();
 
-    public void add(long mediaId, int count) {
-        _counts.merge(mediaId, count, (v1, v2) -> v1 + v2);
+    public void add(Media media, int count) {
+        _counts.merge(getId(media), count, (v1, v2) -> v1 + v2);
     }
 
-    public int get(long mediaId) {
-        return _counts.getOrDefault(mediaId, 0);
+    public int get(Media media) {
+        return _counts.getOrDefault(getId(media), 0);
+    }
+
+    private static long getId(Media media) {
+        return media.isDerivative() ? media.getParentId() : media.getId();
     }
 }

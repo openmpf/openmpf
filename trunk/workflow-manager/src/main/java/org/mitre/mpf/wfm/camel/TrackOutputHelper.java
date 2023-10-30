@@ -127,15 +127,15 @@ public class TrackOutputHelper {
         }
 
         var pipelineElements = job.getPipelineElements();
+        // Check if a task later in the pipeline does not have a trigger set. When a trigger is not
+        // set, all tracks are passed as input to the task. That means that all of the tracks
+        // created in current task were input to a task.
         boolean futureTaskMissingTrigger = IntStream
             .rangeClosed(taskIdx + 1, pipelineElements.getLastDetectionTaskIdx())
             .mapToObj(pipelineElements::getTask)
             .flatMap(pipelineElements::getActionStreamInOrder)
             .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
             .anyMatch(t -> t == null || t.isBlank());
-        // A task later in the pipeline does not have a trigger set. When a trigger
-        // is not set all tracks are passed as input to the task. That means that all
-        // of the tracks created in current task were input to a task.
         return !futureTaskMissingTrigger;
     }
 

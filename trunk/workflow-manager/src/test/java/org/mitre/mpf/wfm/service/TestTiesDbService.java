@@ -232,9 +232,9 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
 
         var trackCounter = new TrackCounter();
-        trackCounter.add(_tiesDbMedia.getId(), 20);
-        trackCounter.add(_tiesDbParentMedia.getId(), 8);
-        trackCounter.add(_tiesDbChildMedia.getParentId(), 2);
+        trackCounter.add(_tiesDbMedia, 20);
+        trackCounter.add(_tiesDbParentMedia, 8);
+        trackCounter.add(_tiesDbChildMedia, 2);
 
         _tiesDbService.prepareAssertions(
                 _job,
@@ -601,6 +601,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             List.of(),
             List.of(),
             null);
+        _tiesDbChildMedia.addMetadata(MpfConstants.IS_DERIVATIVE_MEDIA, "true");
 
 
         _noTiesDbMedia = new MediaImpl(

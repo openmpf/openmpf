@@ -509,7 +509,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             JsonMediaOutputObject mediaOutputObject,
             TrackCounter trackCounter) {
         var prevUnmergedAction = job.getPipelineElements().getAction(0, 0);
-        int trackCount = 0;
         for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);
 
@@ -562,7 +561,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             JsonActionOutputObject.TRACKS_MERGED_TYPE, action, mediaOutputObject);
                 }
                 else {
-                    trackCount += trackInfo.tracksGroupedByAction().size();
+                    trackCounter.add(media, trackInfo.tracksGroupedByAction().size());
                     addJsonTracks(
                             mediaOutputObject, job, media, action,
                             trackInfo.tracksGroupedByAction());
@@ -575,8 +574,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 }
             }
         }
-        long parentMediaId = media.isDerivative() ? media.getParentId() : media.getId();
-        trackCounter.add(parentMediaId, trackCount);
     }
 
 

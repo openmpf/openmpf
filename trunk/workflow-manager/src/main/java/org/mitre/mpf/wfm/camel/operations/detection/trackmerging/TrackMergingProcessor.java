@@ -313,7 +313,7 @@ public class TrackMergingProcessor extends WfmProcessor {
     }
 
 
-    // This method assumes that isEligibleForFixup() has been checked.
+    // This method assumes that we've already checked that both tracks have the same track type.
     private static boolean isEligibleForMerge(Track track1, Track track2, String trackType) {
         // NOTE: All tracks should be the same type.
         return !trackType.equals("CLASS") || isSameClassification(track1, track2);

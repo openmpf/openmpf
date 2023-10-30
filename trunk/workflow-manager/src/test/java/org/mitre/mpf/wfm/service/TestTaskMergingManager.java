@@ -124,7 +124,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
     @Test
     public void testFirstTask() {
         assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 0, 0));
-        var task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 0, 0, Map.of());
+        int task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 0, 0, Map.of());
         assertEquals(0, task);
     }
 
@@ -132,7 +132,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
     @Test
     public void testTaskMergingDisabled() {
         assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 1, 0));
-        var task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 1, 0, Map.of());
+        int task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 1, 0, Map.of());
         assertEquals(1, task);
     }
 
@@ -178,7 +178,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
 
     @Test
-    public void testNonFeedForwardTaskMerging() {
+    public void testTaskMergingWhenBreadCrumbNotNeeded() {
         when(_mockAggJobPropUtil.getValue(
                 eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
                 eq(_testJob), eq(_testMedia),
@@ -190,9 +190,10 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                 eq(_testJob), eq(_testMedia), any(Action.class)))
             .thenReturn(true);
 
-        var algo = _taskMergingManager.getMergedTaskIndex(
+        assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 3, 0));
+        int task = _taskMergingManager.getMergedTaskIndex(
             _testJob, _testMedia, 3, 0, Map.of());
-        assertEquals(1, algo);
+        assertEquals(1, task);
     }
 
 

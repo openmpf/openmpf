@@ -75,11 +75,6 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 	private final String type;
 	public String getType() { return type; }
 
-	@JsonProperty("source")
-	@JsonPropertyDescription("The set of pipeline actions which produced this track.")
-	private final String source;
-	public String getSource() { return source; }
-
 	@JsonProperty("confidence")
 	@JsonPropertyDescription("The confidence score associated with this track. " +
 							 " Higher scores indicate more confidence in the track.")
@@ -111,7 +106,6 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 			@JsonProperty("startOffsetTime") long startOffsetTime,
 			@JsonProperty("stopOffsetTime") long stopOffsetTime,
 			@JsonProperty("type") String type,
-			@JsonProperty("source") String source,
 			@JsonProperty("confidence") float confidence,
 			@JsonProperty("trackProperties") Map<String, String> trackProperties,
 			@JsonProperty("exemplar") JsonDetectionOutputObject exemplar,
@@ -123,7 +117,6 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 		this.startOffsetTime = startOffsetTime;
 		this.stopOffsetTime = stopOffsetTime;
 		this.type = type;
-		this.source = source;
 		this.confidence = confidence;
 		if (trackProperties != null) {
 			this.trackProperties.putAll(trackProperties);
@@ -136,7 +129,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type, source,
+		return Objects.hash(startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type,
 		                    exemplar, id, confidence, trackProperties);
 	}
 
@@ -155,7 +148,6 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
                 .thenComparingLong(JsonTrackOutputObject::getStartOffsetTime)
                 .thenComparingLong(JsonTrackOutputObject::getStopOffsetTime)
                 .thenComparing(JsonTrackOutputObject::getType)
-                .thenComparing(JsonTrackOutputObject::getSource, nullsFirst())
                 .thenComparing(JsonTrackOutputObject::getExemplar)
                 .thenComparing(JsonTrackOutputObject::getId, nullsFirst())
                 .thenComparingDouble(JsonTrackOutputObject::getConfidence)

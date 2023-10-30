@@ -147,13 +147,13 @@
       "output": {
         "TRACKS MERGED": [
           {
-            "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
+            "action": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
             "algorithm": "TIKATEXT"
           }
         ],
         "MEDIA": [
           {
-            "source": "+#TIKA IMAGE DETECTION ACTION",
+            "action": "TIKA IMAGE DETECTION ACTION",
             "algorithm": "TIKAIMAGE",
             "tracks": [
               {
@@ -163,7 +163,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "MEDIA",
-                "source": "+#TIKA IMAGE DETECTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "DERIVATIVE_MEDIA_ID": "2",
@@ -212,7 +211,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "MEDIA",
-                "source": "+#TIKA IMAGE DETECTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "DERIVATIVE_MEDIA_ID": "3",
@@ -259,7 +257,7 @@
         ],
         "TEXT": [
           {
-            "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+            "action": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
             "algorithm": "TIKATEXT",
             "tracks": [
               {
@@ -269,7 +267,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "PAGE_NUM": "1",
@@ -330,7 +327,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "PAGE_NUM": "1",
@@ -391,7 +387,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "PAGE_NUM": "2",
@@ -452,7 +447,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "PAGE_NUM": "3",
@@ -540,19 +534,19 @@
       "output": {
         "NO TRACKS": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+            "action": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "MARKUPCV"
           }
         ],
         "TRACKS MERGED": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+            "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "TESSERACTOCR"
           }
         ],
         "TEXT": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+            "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "TESSERACTOCR",
             "tracks": [
               {
@@ -562,7 +556,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
                 "confidence": 90.0,
                 "trackProperties": {
                   "MISSING_LANGUAGE_MODELS": "",
@@ -624,7 +617,7 @@
         ],
         "TEXT REGION": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+            "action": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "EAST",
             "tracks": [
               {
@@ -634,7 +627,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT REGION",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
                 "confidence": 0.9999901,
                 "trackProperties": {
                   "ROTATION": "0.7084896",
@@ -707,19 +699,19 @@
       "output": {
         "NO TRACKS": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+            "action": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "MARKUPCV"
           }
         ],
         "TRACKS MERGED": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+            "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "TESSERACTOCR"
           }
         ],
         "TEXT": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+            "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "TESSERACTOCR",
             "tracks": [
               {
@@ -729,7 +721,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
                 "confidence": 90.0,
                 "trackProperties": {
                   "MISSING_LANGUAGE_MODELS": "",
@@ -793,7 +784,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
                 "confidence": 91.0,
                 "trackProperties": {
                   "MISSING_LANGUAGE_MODELS": "",
@@ -855,7 +845,7 @@
         ],
         "TEXT REGION": [
           {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+            "action": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "EAST",
             "tracks": [
               {
@@ -865,7 +855,7 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT REGION",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+
                 "confidence": 0.9998172,
                 "trackProperties": {
                   "ROTATION": "359.49872",
@@ -911,7 +901,7 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT REGION",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+
                 "confidence": 0.99991477,
                 "trackProperties": {
                   "ROTATION": "0.8154963",

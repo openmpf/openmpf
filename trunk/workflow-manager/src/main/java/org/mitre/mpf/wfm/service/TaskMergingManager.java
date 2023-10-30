@@ -28,7 +28,6 @@
 package org.mitre.mpf.wfm.service;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -56,8 +55,6 @@ public class TaskMergingManager {
     // added by this class.
     private static final String CUSTOM_BREAD_CRUMB_PREFIX = "mpf-";
 
-    private static final int NUM_CHARS_BEFORE_ALGO
-            = CUSTOM_BREAD_CRUMB_PREFIX.length() + UUID.randomUUID().toString().length() + 1;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
@@ -88,37 +85,44 @@ public class TaskMergingManager {
             Message message, Track feedForwardTrack) {
         message.setHeader(
                 BREAD_CRUMB_HEADER,
-                CUSTOM_BREAD_CRUMB_PREFIX + UUID.randomUUID()
-                        + '-' + feedForwardTrack.getMergedAlgorithm());
+                CUSTOM_BREAD_CRUMB_PREFIX + feedForwardTrack.getMergedTaskIndex()
+                        + '-' + UUID.randomUUID());
     }
 
 
-    public String getMergedAlgorithm(
+    public int getMergedTaskIndex(
             BatchJob job,
             Media media,
             int taskIdx,
             int actionIdx,
             Map<String, Object> headers) {
-        var headerAlgo = Optional.ofNullable(headers.get(BREAD_CRUMB_HEADER))
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .filter(hv -> hv.startsWith(CUSTOM_BREAD_CRUMB_PREFIX)
-                        && hv.length() > NUM_CHARS_BEFORE_ALGO)
-                .map(hv -> hv.substring(NUM_CHARS_BEFORE_ALGO));
-        if (headerAlgo.isPresent()) {
-            return headerAlgo.get();
+        var headerTaskIdx = parseBreadCrumb(headers);
+        if (headerTaskIdx.isPresent()) {
+            return headerTaskIdx.getAsInt();
         }
-
-        var pipelineElements = job.getPipelineElements();
         return getTransitiveMergeTargets(job, media, taskIdx, actionIdx)
+                // Task merging is enabled, so use the task at the end of the merge chain.
                 .min()
-                .stream()
-                // Task merging is enabled, so use the algorithm at the end of the merge chain.
-                .mapToObj(ti -> pipelineElements.getAlgorithm(ti, 0))
-                .findAny()
-                // Task merging wasn't enabled, so use the actual algorithm.
-                .orElseGet(() -> pipelineElements.getAlgorithm(taskIdx, actionIdx))
-                .getName();
+                // Task merging wasn't enabled, so use the actual task.
+                .orElse(taskIdx);
+    }
+
+
+    private OptionalInt parseBreadCrumb(Map<String, Object> headers) {
+        if (!(headers.get(BREAD_CRUMB_HEADER) instanceof String breadcrumbHeader)) {
+            return OptionalInt.empty();
+        }
+        if (!breadcrumbHeader.startsWith(CUSTOM_BREAD_CRUMB_PREFIX)) {
+            return OptionalInt.empty();
+        }
+        var headerNoPrefix = breadcrumbHeader.substring(CUSTOM_BREAD_CRUMB_PREFIX.length());
+        var taskIdxStr = headerNoPrefix.split("-", 2)[0];
+        try {
+            return OptionalInt.of(Integer.parseInt(taskIdxStr));
+        }
+        catch (NumberFormatException e) {
+            return OptionalInt.empty();
+        }
     }
 
 

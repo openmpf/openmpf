@@ -58,7 +58,7 @@
       "output": {
         "MOTION": [
           {
-            "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
+            "action": "MOG MOTION DETECTION (WITH TRACKING) ACTION",
             "algorithm": "MOG",
             "tracks": [
               {
@@ -68,7 +68,6 @@
                 "startOffsetTime": 2318,
                 "stopOffsetTime": 4285,
                 "type": "MOTION",
-                "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -537,7 +536,6 @@
                 "startOffsetTime": 4001,
                 "stopOffsetTime": 7735,
                 "type": "MOTION",
-                "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {

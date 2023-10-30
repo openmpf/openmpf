@@ -57,7 +57,7 @@
       "output": {
         "NO TRACKS": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV"
           }
         ]

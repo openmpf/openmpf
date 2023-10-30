@@ -78,7 +78,7 @@ public class TrackOutputHelper {
             boolean isMergeSource,
             boolean isMergeTarget,
             boolean hadAnyTracks,
-            Multimap<String, Track> tracksGroupedByAlgo) { }
+            Multimap<String, Track> tracksGroupedByAction) { }
 
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
@@ -108,7 +108,7 @@ public class TrackOutputHelper {
                 isSuppressed = false;
             }
         }
-        var indexedTracks = Multimaps.index(tracks, Track::getMergedAlgorithm);
+        var indexedTracks = Multimaps.index(tracks, t -> getMergedAction(t, job));
         return new TrackInfo(
                 isSuppressed, isMergeSource, isMergeTarget,
                 !indexedTracks.isEmpty(), indexedTracks);
@@ -151,5 +151,19 @@ public class TrackOutputHelper {
         return tracks.stream()
             .filter(wasTriggeredFilter.negate())
             .collect(toCollection(TreeSet::new));
+    }
+
+
+    private String getMergedAction(Track track, BatchJob job) {
+        int actionIndex;
+        if (track.getMergedTaskIndex() == track.getTaskIndex()) {
+            actionIndex = track.getActionIndex();
+        }
+        else {
+            actionIndex = 0;
+        }
+        return job.getPipelineElements()
+                .getAction(track.getMergedTaskIndex(), actionIndex)
+                .getName();
     }
 }

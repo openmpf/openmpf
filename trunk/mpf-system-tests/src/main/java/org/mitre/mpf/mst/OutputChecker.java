@@ -112,17 +112,20 @@ public class OutputChecker {
         Iterator<JsonActionOutputObject> expIter = expectedTypeEntry.getValue().iterator();
         Iterator<JsonActionOutputObject> actIter = actualTypeEntry.getValue().iterator();
 
-        JsonActionOutputObject expTrackOutput;
-        JsonActionOutputObject actTrackOutput;
-        _errorCollector.checkThat("Expected Type", actualTypeEntry.getKey(), is(expectedTypeEntry.getKey()));
+        _errorCollector.checkThat(
+                "Expected Type", actualTypeEntry.getKey(), is(expectedTypeEntry.getKey()));
         while (expIter.hasNext()){
-            expTrackOutput = expIter.next();
-            actTrackOutput = actIter.next();
-            log.debug("Comparing expected actions at Source={} to actual actions at Source={}",
-                    expTrackOutput.getSource(), actTrackOutput.getSource());
+            var expActionOutput = expIter.next();
+            var actActionOutput = actIter.next();
+            _errorCollector.checkThat(
+                    "Action Name", actActionOutput.getAction(),
+                    is(expActionOutput.getAction()));
+            _errorCollector.checkThat(
+                    "Algorithm Name", actActionOutput.getAlgorithm(),
+                    is(expActionOutput.getAlgorithm()));
             compareJsonTrackOutputObjects(
-                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expTrackOutput),
-                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actTrackOutput),
+                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expActionOutput),
+                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actActionOutput),
                     pipeline);
         }
     }

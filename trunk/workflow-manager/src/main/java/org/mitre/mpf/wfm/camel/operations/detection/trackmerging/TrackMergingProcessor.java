@@ -290,7 +290,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 track2.getEndOffsetFrameInclusive(),
                 track1.getStartOffsetTimeInclusive(),
                 track2.getEndOffsetTimeInclusive(),
-                track1.getMergedAlgorithm(),
+                track1.getMergedTaskIndex(),
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
                 properties,

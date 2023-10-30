@@ -886,11 +886,11 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         var track1 = new JsonTrackOutputObject(
-                19, "19", 20, 21, 22, 23, "type1", "source1", 0.5f,
+                19, "19", 20, 21, 22, 23, "type1", 0.5f,
                 Map.of("prop3", "prop4"), detection1, List.of(detection1, detection2));
 
         var track2 = new JsonTrackOutputObject(
-                24, "24", 25, 26, 27, 28, "type2", "source1", 1,
+                24, "24", 25, 26, 27, 28, "type2", 1,
                 Map.of("prop3", "prop4"), detection3, List.of(detection3));
 
         var action1 = JsonActionOutputObject.factory(
@@ -1031,7 +1031,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         var newAction1 = newMedia1.getTrackTypes().get("type1").first();
         var action1Checker = new FieldChecker<>(action1, newAction1);
-        action1Checker.eq(a -> a.getSource());
+        action1Checker.eq(a -> a.getAction());
         action1Checker.eq(a -> a.getAlgorithm());
         action1Checker.eq(a -> a.getTracks().size());
 
@@ -1056,7 +1056,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         var newAction2 = newMedia1.getTrackTypes().get("type2").first();
         var action2Checker = new FieldChecker<>(action2, newAction2);
-        action2Checker.eq(a -> a.getSource());
+        action2Checker.eq(a -> a.getAction());
         action2Checker.eq(a -> a.getAlgorithm());
         action2Checker.eq(a -> a.getTracks().size());
 
@@ -1090,7 +1090,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 "path");
 
         var track = new JsonTrackOutputObject(
-                1, "id", 0, 0, 0, 0, "type", "source", 0.5f, Map.of(), detection,
+                1, "id", 0, 0, 0, 0, "type", 0.5f, Map.of(), detection,
                 List.of(detection));
 
         var action = new JsonActionOutputObject("source", "algo");
@@ -1183,7 +1183,6 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         checker.eq(t -> t.getStartOffsetTime());
         checker.eq(t -> t.getStopOffsetTime());
         checker.eq(t -> t.getType());
-        checker.eq(t -> t.getSource());
         assertEquals(expectedTrack.getConfidence(), actualTrack.getConfidence(), 0.01);
         checker.eq(t -> t.getTrackProperties());
     }

@@ -508,13 +508,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             Media media,
             JsonMediaOutputObject mediaOutputObject,
             TrackCounter trackCounter) {
-        var stateKeyBuilder = new StringBuilder("+");
-        String prevUnmergedAlgorithm = null;
-        int lastDetectionTaskIdx = job.getPipelineElements().getLastDetectionTaskIdx();
+        var prevUnmergedAction = job.getPipelineElements().getAction(0, 0);
+        int trackCount = 0;
         for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);
 
-            int numTracksForTask = 0;
             for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
                 String actionName = task.getActions().get(actionIndex);
                 Action action = job.getPipelineElements().getAction(actionName);
@@ -522,8 +520,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
                     continue;
                 }
-
-                String stateKey = String.format("%s#%s", stateKeyBuilder, action.getName());
 
                 for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
                             job, media.getId(), taskIndex, actionIndex)) {
@@ -535,57 +531,52 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                         detectionProcessingError.getStopTime(),
                                         detectionProcessingError.getErrorCode(),
                                         detectionProcessingError.getErrorMessage());
-                    if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
-                        mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
-                    }
-                    mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
+                    mediaOutputObject.getDetectionProcessingErrors()
+                            .computeIfAbsent(actionName, k -> new TreeSet<>())
+                            .add(jsonDetectionProcessingError);
+
                     if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
                         mediaOutputObject.setStatus("INCOMPLETE");
                     }
                 }
 
                 var trackInfo = trackOutputHelper.getTrackInfo(job, media, taskIndex, actionIndex);
-                numTracksForTask += trackInfo.tracksGroupedByAlgo().size();
-
                 if (!trackInfo.hadAnyTracks()) {
-                    var algo = trackInfo.isMergeSource()
-                            ? prevUnmergedAlgorithm
-                            : action.getAlgorithm();
+                    var noTracksAction = trackInfo.isMergeSource()
+                            ? prevUnmergedAction
+                            : action;
                     // Always include detection actions in the output object,
                     // even if they do not generate any results.
-                    addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
-                                        algo, mediaOutputObject);
+                    addMissingTrackInfo(
+                            JsonActionOutputObject.NO_TRACKS_TYPE, noTracksAction,
+                            mediaOutputObject);
                 }
                 else if (trackInfo.isSuppressed()) {
-                    addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
-                            action.getAlgorithm(), mediaOutputObject);
+                    addMissingTrackInfo(
+                            JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, action,
+                            mediaOutputObject);
                 }
                 else if (trackInfo.isMergeTarget()) {
                     // This task will be merged with one that follows.
-                    addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey,
-                            action.getAlgorithm(), mediaOutputObject);
+                    addMissingTrackInfo(
+                            JsonActionOutputObject.TRACKS_MERGED_TYPE, action, mediaOutputObject);
                 }
                 else {
+                    trackCount += trackInfo.tracksGroupedByAction().size();
                     addJsonTracks(
-                            mediaOutputObject, job, media, action, stateKey,
-                            trackInfo.tracksGroupedByAlgo());
+                            mediaOutputObject, job, media, action,
+                            trackInfo.tracksGroupedByAction());
                 }
 
                 if (!trackInfo.isMergeSource()) {
                     // NOTE: If and when we support parallel actions in tasks other then the final
                     // one in a pipeline, this code will need to be updated.
-                    prevUnmergedAlgorithm = action.getAlgorithm();
+                    prevUnmergedAction = action;
                 }
-
-                if (actionIndex == task.getActions().size() - 1) {
-                    stateKeyBuilder.append('#').append(action.getName());
-                }
-            }
-            if (taskIndex == lastDetectionTaskIdx) {
-                long parentMediaId = media.isDerivative() ? media.getParentId() : media.getId();
-                trackCounter.add(parentMediaId, numTracksForTask);
             }
         }
+        long parentMediaId = media.isDerivative() ? media.getParentId() : media.getId();
+        trackCounter.add(parentMediaId, trackCount);
     }
 
 
@@ -594,21 +585,20 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             BatchJob job,
             Media media,
             Action action,
-            String stateKey,
-            Multimap<String, Track> tracks) {
-        for (var entry : tracks.asMap().entrySet()) {
-            var algo = job.getPipelineElements().getAlgorithm(entry.getKey());
-            var jsonAction = new JsonActionOutputObject(stateKey, algo.getName());
+            Multimap<String, Track> tracksGroupedByMergedAction) {
+        for (var entry : tracksGroupedByMergedAction.asMap().entrySet()) {
+            var mergedAction = job.getPipelineElements().getAction(entry.getKey());
+            var mergedAlgo = job.getPipelineElements().getAlgorithm(mergedAction.getAlgorithm());
+            var jsonAction = new JsonActionOutputObject(
+                    mergedAction.getName(), mergedAlgo.getName());
             int trackIndex = 0;
             for (var track : entry.getValue()) {
                 var jsonTrackOutputObject = createTrackOutputObject(
-                        track, trackIndex++, stateKey,
-                        algo.getTrackType(),
-                        action, media, job);
+                        track, trackIndex++, mergedAlgo.getTrackType(), action, media, job);
                 jsonAction.getTracks().add(jsonTrackOutputObject);
             }
             mediaOutputObject.getTrackTypes()
-                    .computeIfAbsent(algo.getTrackType(), k -> new TreeSet<>())
+                    .computeIfAbsent(mergedAlgo.getTrackType(), k -> new TreeSet<>())
                     .add(jsonAction);
         }
     }
@@ -624,7 +614,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private JsonTrackOutputObject createTrackOutputObject(Track track, int trackIndex, String stateKey, String type,
+    private JsonTrackOutputObject createTrackOutputObject(Track track, int trackIndex, String type,
                                                           Action action, Media media, BatchJob job) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
@@ -663,7 +653,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             track.getStartOffsetTimeInclusive(),
             track.getEndOffsetTimeInclusive(),
             type,
-            stateKey,
             track.getConfidence(),
             censorPropertiesService.copyAndCensorProperties(track.getTrackProperties()),
             exemplar,
@@ -720,13 +709,20 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static void addMissingTrackInfo(String missingTrackKey, String stateKey, String algorithm,
-                                            JsonMediaOutputObject mediaOutputObject) {
-        Set<JsonActionOutputObject> trackSet = mediaOutputObject.getTrackTypes().computeIfAbsent(
-            missingTrackKey, k -> new TreeSet<>());
-        boolean stateMissing = trackSet.stream().noneMatch(a -> stateKey.equals(a.getSource()));
-        if (stateMissing) {
-            trackSet.add(new JsonActionOutputObject(stateKey, algorithm));
+    private static void addMissingTrackInfo(
+            String missingTrackKey,
+            Action action,
+            JsonMediaOutputObject mediaOutputObject) {
+        var tracks = mediaOutputObject
+                .getTrackTypes()
+                .computeIfAbsent(missingTrackKey, k -> new TreeSet<>());
+        boolean actionAndAlgoMissing = tracks
+                .stream()
+                .noneMatch(
+                        ja -> action.getName().equals(ja.getAction())
+                                && action.getAlgorithm().equals(ja.getAlgorithm()));
+        if (actionAndAlgoMissing) {
+            tracks.add(new JsonActionOutputObject(action.getName(), action.getAlgorithm()));
         }
     }
 

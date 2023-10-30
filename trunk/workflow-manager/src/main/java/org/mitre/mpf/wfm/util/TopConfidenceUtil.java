@@ -23,62 +23,59 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
+
 package org.mitre.mpf.wfm.util;
 
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+import java.util.function.ToDoubleFunction;
 
-import com.google.common.collect.ImmutableSortedSet;
-import org.junit.Test;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-import java.util.Map;
-import java.util.SortedSet;
+public class TopConfidenceUtil {
 
-import static org.junit.Assert.assertSame;
-
-public class TestExemplarPolicyUtil {
-    private final Detection _d50 = createDetection(50, 0.3);
-    private final Detection _d51 = createDetection(51, 0.9);
-    private final Detection _d52 = createDetection(52, 0.2);
-    private final Detection _d54 = createDetection(54, 0.1);
-    private final Detection _d60 = createDetection(60, 0.5);
-
-    private final SortedSet<Detection> _detections = ImmutableSortedSet.of(
-            _d50, _d51, _d52, _d54, _d60);
-
-
-    @Test
-    public void testMatchingBounds() {
-        assertSame(_d50, ExemplarPolicyUtil.getExemplar("FIRST", 50, 60, _detections));
-        assertSame(_d60, ExemplarPolicyUtil.getExemplar("LAST", 50, 60, _detections));
-        assertSame(_d54, ExemplarPolicyUtil.getExemplar("MIDDLE", 50, 60, _detections));
-        assertSame(_d51, ExemplarPolicyUtil.getExemplar("CONFIDENCE", 50, 60, _detections));
-        assertSame(_d51, ExemplarPolicyUtil.getExemplar("", 50, 60, _detections));
+    private TopConfidenceUtil() {
     }
 
 
-    @Test
-    public void testMiddleIsFirst() {
-        assertSame(_d50, ExemplarPolicyUtil.getExemplar("MIDDLE", 0, 70, _detections));
+    public static <T extends Comparable<T>> T getTopConfidenceItem(
+            Collection<T> items, ToDoubleFunction<T> confidenceGetter) {
+        return items.stream()
+            .max(getMaxConfidenceComparator(confidenceGetter))
+            .orElse(null);
     }
 
-    @Test
-    public void testMiddleIsLast() {
-        assertSame(_d60, ExemplarPolicyUtil.getExemplar("MIDDLE", 50, 100, _detections));
+
+    public static Collection<Detection> getTopConfidenceDetections(
+            Collection<Detection> allDetections, int topConfidenceCount) {
+        if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
+            return allDetections;
+        }
+
+        var confidenceComparator = getMaxConfidenceComparator(Detection::getConfidence);
+        var topDetections = new PriorityQueue<>(topConfidenceCount, confidenceComparator);
+
+        var allDetectionsIter = allDetections.iterator();
+        for (int i = 0; i < topConfidenceCount; i++) {
+            topDetections.add(allDetectionsIter.next());
+        }
+
+        while (allDetectionsIter.hasNext()) {
+            Detection detection = allDetectionsIter.next();
+            // Check if current detection is less than the minimum top detection so far
+            if (confidenceComparator.compare(detection, topDetections.peek()) > 0) {
+                topDetections.poll();
+                topDetections.add(detection);
+            }
+        }
+        return topDetections;
     }
 
-    @Test
-    public void testMiddleIsMiddleElement() {
-        assertSame(_d52, ExemplarPolicyUtil.getExemplar("MIDDLE", 0, 104, _detections));
-    }
 
-    @Test
-    public void testEqualMaxConfidence() {
-        var d61 = createDetection(61, _d60.getConfidence());
-        var detections = ImmutableSortedSet.of(_d50, _d52, _d54, _d60, d61);
-        assertSame(_d60, ExemplarPolicyUtil.getExemplar("CONFIDENCE", 0, 100, detections));
-    }
-
-    private static Detection createDetection(int frame, double confidence) {
-        return new Detection(1, 1, 1, 1, (float) confidence, frame, 1, Map.of());
+    private static <T extends Comparable<T>>
+            Comparator<T> getMaxConfidenceComparator(ToDoubleFunction<T> confidenceGetter) {
+        return Comparator.comparingDouble(confidenceGetter)
+                .thenComparing(Comparator.reverseOrder());
     }
 }

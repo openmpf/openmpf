@@ -46,6 +46,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.TopConfidenceUtil;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,8 +155,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             stopFrame = track.getEndOffsetFrameInclusive();
         }
         else {
-            includedDetections = getTopConfidenceDetections(track.getDetections(),
-                                                            topConfidenceCount);
+            includedDetections = TopConfidenceUtil.getTopConfidenceDetections(
+                    track.getDetections(), topConfidenceCount);
             var frameSummaryStats = includedDetections.stream()
                     .mapToInt(Detection::getMediaOffsetFrame)
                     .summaryStatistics();
@@ -188,36 +189,6 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         var protobuf = createProtobuf(media, context, videoRequest);
         return new DetectionRequest(protobuf, track);
     }
-
-
-    private static Collection<Detection> getTopConfidenceDetections(Collection<Detection> allDetections,
-                                                                    int topConfidenceCount) {
-        if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
-            return allDetections;
-        }
-
-        Comparator<Detection> confidenceComparator = Comparator
-                .comparingDouble(Detection::getConfidence)
-                .thenComparing(Comparator.naturalOrder());
-
-        PriorityQueue<Detection> topDetections = new PriorityQueue<>(topConfidenceCount, confidenceComparator);
-
-        Iterator<Detection> allDetectionsIter = allDetections.iterator();
-        for (int i = 0; i < topConfidenceCount; i++) {
-            topDetections.add(allDetectionsIter.next());
-        }
-
-        while (allDetectionsIter.hasNext()) {
-            Detection detection = allDetectionsIter.next();
-            // Check if current detection is less than the minimum top detection so far
-            if (confidenceComparator.compare(detection, topDetections.peek()) > 0) {
-                topDetections.poll();
-                topDetections.add(detection);
-            }
-        }
-        return topDetections;
-    }
-
 
     private static int getTopConfidenceCount(DetectionContext context) {
         return context.getAlgorithmProperties()

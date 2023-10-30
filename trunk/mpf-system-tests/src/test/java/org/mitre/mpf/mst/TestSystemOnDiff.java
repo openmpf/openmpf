@@ -314,8 +314,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         SortedSet<JsonActionOutputObject> textTracksOutput  = outputMedia.getTrackTypes().get("TEXT");
         assertEquals(1, textTracksOutput.size());
         assertEquals("TEXT tracks for task other than KEYWORD TAGGING",
-                "+#EAST TEXT DETECTION ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION" +
-                        "KEYWORD TAGGING (WITH FF REGION) ACTION",
+                "TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION",
                 textTracksOutput.first().getAction());
         assertEquals("TESSERACTOCR", textTracksOutput.first().getAlgorithm());
         assertTrue(textTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("TEXT")));
@@ -347,7 +346,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         SortedSet<JsonActionOutputObject> speechTracksOutput  = outputMedia.getTrackTypes().get("SPEECH");
         assertEquals(1, speechTracksOutput.size());
         assertEquals("SPEECH tracks for task other than KEYWORD TAGGING",
-                "SPHINX SPEECH DETECTION ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                "SPHINX SPEECH DETECTION ACTION",
                 speechTracksOutput.first().getAction());
         assertEquals("SPHINX", speechTracksOutput.first().getAlgorithm());
         assertTrue(speechTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("SPEECH")));

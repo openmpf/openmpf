@@ -71,8 +71,7 @@ public class TaskMergingManager {
                 .min()
                 .stream()
                 .mapToObj(ti -> job.getPipelineElements().getAction(ti, 0))
-                .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
-                .anyMatch(t -> t != null && !t.isBlank());
+                .anyMatch(a -> actionHasTrigger(job, media, a));
     }
 
 
@@ -151,21 +150,28 @@ public class TaskMergingManager {
                 futureTaskIdx++) {
             var futureTask = pipelineElements.getTask(futureTaskIdx);
             var taskAppliesToMedia = false;
+            var taskHasTrigger = false;
             for (var futureAction : pipelineElements.getActionsInOrder(futureTask)) {
                 if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, futureAction)) {
                     taskAppliesToMedia = true;
                     if (isMergeSource(job, media, futureAction)) {
                         return true;
                     }
+                    taskHasTrigger = taskHasTrigger || actionHasTrigger(job, media, futureAction);
                 }
             }
-            if (taskAppliesToMedia) {
+            if (taskAppliesToMedia && !taskHasTrigger) {
                 return false;
             }
         }
         return false;
     }
 
+    private boolean actionHasTrigger(BatchJob job, Media media, Action action) {
+        var trigger = _aggregateJobPropertiesUtil.getValue(
+                MpfConstants.TRIGGER, job, media, action);
+        return trigger != null && !trigger.isBlank();
+    }
 
     public IntStream getTransitiveMergeTargets(
             BatchJob job, Media media, int srcTaskIdx, int srcActionIdx) {

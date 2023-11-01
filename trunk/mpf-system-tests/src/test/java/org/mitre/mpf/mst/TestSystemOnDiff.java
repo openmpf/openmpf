@@ -293,23 +293,15 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        assertEquals(3, outputMedia.getTrackTypes().size());
+        assertEquals(2, outputMedia.getTrackTypes().size());
 
-        SortedSet<JsonActionOutputObject> textRegionTracksOutput  = outputMedia.getTrackTypes().get("TEXT REGION");
+        SortedSet<JsonActionOutputObject> textRegionTracksOutput = outputMedia.getTrackTypes().get("TEXT REGION");
         assertEquals(1, textRegionTracksOutput.size());
         assertEquals("TEXT REGION tracks for task other than EAST", "EAST TEXT DETECTION ACTION",
                 textRegionTracksOutput.first().getAction());
         assertEquals("EAST", textRegionTracksOutput.first().getAlgorithm());
         assertTrue(textRegionTracksOutput.first().getTracks().stream().allMatch(
                 t -> t.getType().equals("TEXT REGION")));
-
-        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
-                outputMedia.getTrackTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
-        assertEquals(1, mergedTracksOutput.size());
-        assertEquals("Tracks merged for task other than TESSERACT OCR",
-                "TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION",
-                mergedTracksOutput.first().getAction());
-        assertEquals("TESSERACTOCR", mergedTracksOutput.first().getAlgorithm());
 
         SortedSet<JsonActionOutputObject> textTracksOutput  = outputMedia.getTrackTypes().get("TEXT");
         assertEquals(1, textTracksOutput.size());
@@ -318,6 +310,14 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 textTracksOutput.first().getAction());
         assertEquals("TESSERACTOCR", textTracksOutput.first().getAlgorithm());
         assertTrue(textTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("TEXT")));
+
+        boolean allTextTracksHaveTags = textTracksOutput.stream()
+                .flatMap(ja -> ja.getTracks().stream())
+                .allMatch(jt -> jt.getTrackProperties().containsKey("TAGS"));
+        assertTrue(
+                "The keyword tagging task should have added a \"TAGS\" track property"
+                        + " to all of the text tracks.",
+                allTextTracksHaveTags);
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -334,22 +334,23 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        assertEquals(3, outputMedia.getTrackTypes().size());
+        assertEquals(2, outputMedia.getTrackTypes().size());
 
-        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
-                outputMedia.getTrackTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
-        assertEquals(1, mergedTracksOutput.size());
-        assertEquals("Tracks merged for task other than SPHINX", "SPHINX SPEECH DETECTION ACTION",
-                mergedTracksOutput.first().getAction());
-        assertEquals("SPHINX", mergedTracksOutput.first().getAlgorithm());
-
-        SortedSet<JsonActionOutputObject> speechTracksOutput  = outputMedia.getTrackTypes().get("SPEECH");
+        SortedSet<JsonActionOutputObject> speechTracksOutput = outputMedia.getTrackTypes().get("SPEECH");
         assertEquals(1, speechTracksOutput.size());
         assertEquals("SPEECH tracks for task other than KEYWORD TAGGING",
                 "SPHINX SPEECH DETECTION ACTION",
                 speechTracksOutput.first().getAction());
         assertEquals("SPHINX", speechTracksOutput.first().getAlgorithm());
         assertTrue(speechTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("SPEECH")));
+
+        boolean allSpeechTracksHaveTags = speechTracksOutput.stream()
+                .flatMap(ja -> ja.getTracks().stream())
+                .allMatch(jt -> jt.getTrackProperties().containsKey("TAGS"));
+        assertTrue(
+                "The keyword tagging task should have added a \"TAGS\" track property"
+                        + " to all of the speech tracks.",
+                allSpeechTracksHaveTags);
 
         SortedSet<JsonActionOutputObject> noTracksOutput  =
                 outputMedia.getTrackTypes().get(JsonActionOutputObject.NO_TRACKS_TYPE);

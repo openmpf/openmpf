@@ -145,12 +145,6 @@
       "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
-        "TRACKS MERGED": [
-          {
-            "action": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
-            "algorithm": "TIKATEXT"
-          }
-        ],
         "MEDIA": [
           {
             "action": "TIKA IMAGE DETECTION ACTION",

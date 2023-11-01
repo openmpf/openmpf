@@ -532,12 +532,6 @@
             "algorithm": "MARKUPCV"
           }
         ],
-        "TRACKS MERGED": [
-          {
-            "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "TESSERACTOCR"
-          }
-        ],
         "TEXT": [
           {
             "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
@@ -695,12 +689,6 @@
           {
             "action": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "MARKUPCV"
-          }
-        ],
-        "TRACKS MERGED": [
-          {
-            "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "TESSERACTOCR"
           }
         ],
         "TEXT": [

@@ -78,7 +78,7 @@ public class MediaTypeUtils {
             }
             catch (IllegalArgumentException e) {
                 LOG.error(
-                        "The \"{}\" property from the media type files contained the invalid value of \"{}\".",
+                        "The \"{}\" property from the media types file contained the invalid value of \"{}\".",
                         mimeType, mediaType);
 
             }

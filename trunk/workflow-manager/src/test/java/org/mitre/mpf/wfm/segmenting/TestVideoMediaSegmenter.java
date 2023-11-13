@@ -199,10 +199,11 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
-        // range 2 -> 40
-        assertEquals(2, detectionRequests.size());
+        // range 2 -> 50
+        assertEquals(3, detectionRequests.size());
         assertContainsSegment(2, 21, detectionRequests);
-        assertContainsSegment(22, 40, detectionRequests);
+        assertContainsSegment(22, 41, detectionRequests);
+        assertContainsSegment(42, 50, detectionRequests);
 
         assertContainsExpectedMediaMetadata(detectionRequests);
 
@@ -254,12 +255,12 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
             longTrack = track1;
         }
 
-        assertEquals(3, longTrack.getFrameLocationsCount());
+        assertEquals(4, longTrack.getFrameLocationsCount());
         assertContainsFrameLocation(2, longTrack);
         assertContainsFrameLocation(20, longTrack);
         assertContainsFrameLocation(40, longTrack);
         assertEquals(2, longTrack.getStartFrame());
-        assertEquals(40, longTrack.getStopFrame());
+        assertEquals(50, longTrack.getStopFrame());
 
         assertEquals(1, shortTrack.getFrameLocationsCount());
         assertContainsFrameLocation(5, shortTrack);
@@ -395,7 +396,8 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         Track longTrack = createTrack(
                 createDetection(2, 2),
                 createDetection(20, 20),
-                createDetection(40, 40));
+                createDetection(40, 40),
+                createDetection(50, 20));
 
         return ImmutableSet.of(shortTrack, longTrack);
     }

@@ -215,9 +215,11 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbParentMedia))
                 .thenReturn("http://tiesdbForParent");
+        // Configure _tiesDbParentMedia so that task merging and output last task only are both
+        // enabled. When both are enabled, the TiesDb output should only report the track type for
+        // the last task and its transitive merge targets.
         when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbParentMedia, _job))
                 .thenReturn(true);
-
         when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
                 .thenReturn(IntStream.of(2, 1));
         when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
@@ -237,9 +239,10 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
 
         var trackCounter = new TrackCounter();
-        trackCounter.add(_tiesDbMedia.getId(), 20);
-        trackCounter.add(_tiesDbParentMedia.getId(), 8);
-        trackCounter.add(_tiesDbChildMedia.getParentId(), 2);
+        trackCounter.add(_tiesDbMedia, 15);
+        trackCounter.add(_tiesDbMedia, 5);
+        trackCounter.add(_tiesDbParentMedia, 8);
+        trackCounter.add(_tiesDbChildMedia, 2);
 
         _tiesDbService.prepareAssertions(
                 _job,
@@ -614,6 +617,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             List.of(),
             List.of(),
             null);
+        _tiesDbChildMedia.addMetadata(MpfConstants.IS_DERIVATIVE_MEDIA, "true");
 
 
         _noTiesDbMedia = new MediaImpl(

@@ -220,13 +220,13 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
         exchange.getIn().setBody(detectionResponse);
 
-        when(mockTaskMergingManager.getMergedAlgorithm(
+        when(mockTaskMergingManager.getMergedTaskIndex(
                 argThat(j -> j.getId() == JOB_ID),
                 argThat(m -> m.getId() == MEDIA_ID),
                 eq(1),
                 eq(1),
                 eq(exchange.getIn().getHeaders())))
-                .thenReturn("MERGED_ALGO");
+                .thenReturn(0);
 
         detectionResponseProcessor.wfmProcess(exchange);
         Assert.assertEquals(JOB_ID, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
@@ -245,7 +245,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         var track = trackCaptor.getValue();
         assertEquals(JOB_ID, track.getJobId());
         assertEquals(5, track.getStartOffsetFrameInclusive());
-        assertEquals("MERGED_ALGO", track.getMergedAlgorithm());
+        assertEquals(0, track.getMergedTaskIndex());
     }
 
     @Test

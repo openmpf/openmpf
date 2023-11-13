@@ -45,6 +45,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
+        <spring.boot.version>2.7.17</spring.boot.version>
         <!--
             extraArgLine is required so that the JaCoCo code coverage plugin can be used.
             To get the code coverage information for a unit test class the following command
@@ -66,7 +67,7 @@
                 <!-- Import dependency management from Spring Boot -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>2.7.16</version>
+                <version>${spring.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -583,6 +584,7 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-broker</artifactId>
+            <version>${activemq.framework.version}</version>
         </dependency>
 
         <dependency>
@@ -911,7 +913,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.16</version>
+                <version>${spring.boot.version}</version>
                 <executions>
                     <execution>
                         <id>start-wfm</id>

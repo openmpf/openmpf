@@ -68,7 +68,15 @@ public class TriggerProcessor {
 
 
     public static void validateTrigger(UnaryOperator<String> properties) {
-        parseTriggerProperty(properties.apply(MpfConstants.TRIGGER));
+        var trigger = parseTriggerProperty(properties.apply(MpfConstants.TRIGGER));
+        if (trigger == ALL_MATCH) {
+            return;
+        }
+        var feedForwardType = properties.apply(MediaSegmenter.FEED_FORWARD_TYPE);
+        if (!MediaSegmenter.feedForwardIsEnabled(feedForwardType)) {
+            throw new WfmProcessingException(
+                    "The \"TRIGGER\" property was set, but feed forward was not enabled.");
+        }
     }
 
 

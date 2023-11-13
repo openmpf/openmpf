@@ -124,16 +124,16 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
     @Test
     public void testFirstTask() {
         assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 0, 0));
-        var algo = _taskMergingManager.getMergedAlgorithm(_testJob, _testMedia, 0, 0, Map.of());
-        assertEquals("ALGO1", algo);
+        int task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 0, 0, Map.of());
+        assertEquals(0, task);
     }
 
 
     @Test
     public void testTaskMergingDisabled() {
         assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 1, 0));
-        var algo = _taskMergingManager.getMergedAlgorithm(_testJob, _testMedia, 1, 0, Map.of());
-        assertEquals("ALGO2", algo);
+        int task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 1, 0, Map.of());
+        assertEquals(1, task);
     }
 
 
@@ -153,24 +153,22 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
         assertTrue(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 3, 0));
 
-        var track1 = createTrack("ALGO2");
+        var track1 = createTrack(1);
         var message1 = createMessage();
         _taskMergingManager.addBreadCrumb(message1, track1);
 
         var breadCrumb1 = message1.getHeader("breadcrumbId", String.class);
-        assertTrue(breadCrumb1.startsWith("mpf-"));
-        assertTrue(breadCrumb1.endsWith("-ALGO2"));
-        assertEquals("ALGO2", _taskMergingManager.getMergedAlgorithm(
+        assertTrue(breadCrumb1.startsWith("mpf-1-"));
+        assertEquals(1, _taskMergingManager.getMergedTaskIndex(
                 _testJob, _testMedia, -1, -1, message1.getHeaders()));
 
 
-        var track2 = createTrack("ALGO3");
+        var track2 = createTrack(2);
         var message2 = createMessage();
         _taskMergingManager.addBreadCrumb(message2, track2);
         var breadCrumb2 = message2.getHeader("breadcrumbId", String.class);
-        assertTrue(breadCrumb2.startsWith("mpf-"));
-        assertTrue(breadCrumb2.endsWith("-ALGO3"));
-        assertEquals("ALGO3", _taskMergingManager.getMergedAlgorithm(
+        assertTrue(breadCrumb2.startsWith("mpf-2-"));
+        assertEquals(2, _taskMergingManager.getMergedTaskIndex(
                 _testJob, _testMedia, -1, -1, message2.getHeaders()));
 
         var prefixAndUuid1 = breadCrumb1.substring(0, breadCrumb1.lastIndexOf('-'));
@@ -180,7 +178,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
 
     @Test
-    public void testNonFeedForwardTaskMerging() {
+    public void testTaskMergingWhenBreadCrumbNotNeeded() {
         when(_mockAggJobPropUtil.getValue(
                 eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
                 eq(_testJob), eq(_testMedia),
@@ -192,9 +190,10 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                 eq(_testJob), eq(_testMedia), any(Action.class)))
             .thenReturn(true);
 
-        var algo = _taskMergingManager.getMergedAlgorithm(
+        assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 3, 0));
+        int task = _taskMergingManager.getMergedTaskIndex(
             _testJob, _testMedia, 3, 0, Map.of());
-        assertEquals("ALGO2", algo);
+        assertEquals(1, task);
     }
 
 
@@ -206,10 +205,10 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
     }
 
 
-    private Track createTrack(String mergedAlgorithm) {
+    private Track createTrack(int mergedTask) {
         return new Track(
             0, 0, 0, 0, 0, 0, 0, 0,
-            mergedAlgorithm,
+            mergedTask,
             0, List.of(), Map.of(), "");
     }
 

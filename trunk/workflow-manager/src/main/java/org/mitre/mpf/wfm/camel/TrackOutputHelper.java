@@ -156,11 +156,15 @@ public class TrackOutputHelper {
 
     private String getMergedAction(Track track, BatchJob job) {
         int actionIndex;
-        if (track.getMergedTaskIndex() == track.getTaskIndex()) {
-            actionIndex = track.getActionIndex();
+        var trackMergingEnabled = track.getMergedTaskIndex() != track.getTaskIndex();
+        if (trackMergingEnabled) {
+            // When track merging is enabled, the merged task will never be the last task.  Only
+            // the last task can have more than one action, so the merged action has to be the
+            // first and only action in the task.
+            actionIndex = 0;
         }
         else {
-            actionIndex = 0;
+            actionIndex = track.getActionIndex();
         }
         return job.getPipelineElements()
                 .getAction(track.getMergedTaskIndex(), actionIndex)

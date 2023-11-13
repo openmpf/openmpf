@@ -894,10 +894,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 Map.of("prop3", "prop4"), detection3, List.of(detection3));
 
         var action1 = JsonActionOutputObject.factory(
-                "source1", "algo1", ImmutableSortedSet.of(track1));
+                "action1", "algo1", ImmutableSortedSet.of(track1));
 
         var action2 = JsonActionOutputObject.factory(
-                "source2", "algo2", ImmutableSortedSet.of(track2));
+                "action2", "algo2", ImmutableSortedSet.of(track2));
 
         var trackTypeMap = ImmutableSortedMap.<String, SortedSet<JsonActionOutputObject>>of(
                 "type1", ImmutableSortedSet.of(action1),
@@ -1093,7 +1093,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 1, "id", 0, 0, 0, 0, "type", 0.5f, Map.of(), detection,
                 List.of(detection));
 
-        var action = new JsonActionOutputObject("source", "algo");
+        var action = new JsonActionOutputObject("action", "algo");
         action.getTracks().add(track);
 
         var media = new JsonMediaOutputObject(

@@ -266,7 +266,6 @@ public class TrackMergingProcessor extends WfmProcessor {
         return new HashSet<>(mergedTracks);
     }
 
-    /** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
     public static Track merge(Track track1, Track track2){
 
         Collection<Detection> detections = Stream.of(track1, track2)

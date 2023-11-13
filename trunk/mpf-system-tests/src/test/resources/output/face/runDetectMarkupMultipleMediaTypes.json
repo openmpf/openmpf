@@ -7,6 +7,7 @@
       "mediaId": 1,
       "details": [
         {
+          "source": "WORKFLOW_MANAGER",
           "code": "FRAME_COUNT",
           "message": "OpenCV reported the frame count to be 154, but FFmpeg reported it to be 138. 138 will be used."
         }

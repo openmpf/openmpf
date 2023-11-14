@@ -704,7 +704,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                     .map(t -> updateTrack(t, updatedUris))
                     .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
             var newAction = JsonActionOutputObject.factory(
-                oldAction.getSource(),
+                oldAction.getAction(),
                 oldAction.getAlgorithm(),
                 newTracks);
             newActions.add(newAction);
@@ -727,7 +727,6 @@ public class TiesDbBeforeJobCheckServiceImpl
                 oldTrack.getStartOffsetTime(),
                 oldTrack.getStopOffsetTime(),
                 oldTrack.getType(),
-                oldTrack.getSource(),
                 oldTrack.getConfidence(),
                 oldTrack.getTrackProperties(),
                 updateDetection(oldTrack.getExemplar(), updatedUris),

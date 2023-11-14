@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.util;
 
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-import java.util.Comparator;
 import java.util.SortedSet;
 
 public class ExemplarPolicyUtil {
@@ -54,9 +53,7 @@ public class ExemplarPolicyUtil {
             return findMiddle(begin, end, detections);
         }
         else {
-            return detections.stream()
-                    .max(Comparator.comparingDouble(Detection::getConfidence))
-                    .orElse(null);
+            return TopConfidenceUtil.getTopConfidenceItem(detections, Detection::getConfidence);
         }
     }
 

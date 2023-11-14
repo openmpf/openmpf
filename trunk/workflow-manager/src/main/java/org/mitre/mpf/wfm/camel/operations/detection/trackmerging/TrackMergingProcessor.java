@@ -266,7 +266,6 @@ public class TrackMergingProcessor extends WfmProcessor {
         return new HashSet<>(mergedTracks);
     }
 
-    /** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
     public static Track merge(Track track1, Track track2){
 
         Collection<Detection> detections = Stream.of(track1, track2)
@@ -290,7 +289,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 track2.getEndOffsetFrameInclusive(),
                 track1.getStartOffsetTimeInclusive(),
                 track2.getEndOffsetTimeInclusive(),
-                track1.getMergedAlgorithm(),
+                track1.getMergedTaskIndex(),
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
                 properties,
@@ -313,7 +312,7 @@ public class TrackMergingProcessor extends WfmProcessor {
     }
 
 
-    // This method assumes that isEligibleForFixup() has been checked.
+    // This method assumes that we've already checked that both tracks have the same track type.
     private static boolean isEligibleForMerge(Track track1, Track track2, String trackType) {
         // NOTE: All tracks should be the same type.
         return !trackType.equals("CLASS") || isSameClassification(track1, track2);

@@ -86,12 +86,12 @@ public class Track implements Comparable<Track> {
     public int getEndOffsetTimeInclusive() { return _endOffsetTimeInclusive; }
 
     /**
-     * The name of the algorithm that should be reported after applying task merging. If task
-     * merging does not apply to this track, this field will contain the name of the algorithm that
+     * The index of the task that should be reported after applying task merging. If task
+     * merging does not apply to this track, this field will contain the index of the task that
      * actually generated this track.
      */
-    private final String _mergedAlgorithm;
-    public String getMergedAlgorithm() { return _mergedAlgorithm; }
+    private final int _mergedTaskIndex;
+    public int getMergedTaskIndex() { return _mergedTaskIndex; }
 
     private final float _confidence;
     public float getConfidence() { return _confidence; }
@@ -129,7 +129,7 @@ public class Track implements Comparable<Track> {
      *                                      Time is given in milliseconds, and is relevant for video and audio files.
      * @param endOffsetTimeInclusive The zero-based and inclusive stop index where the track ends in the medium.
      *                                      Time is given in milliseconds, and is relevant for video and audio files.
-     * @param mergedAlgorithm The name of the algorithm that should be reported after applying task merging.
+     * @param mergedTaskIndex The index of the task that should be reported after applying task merging.
      * @param confidence The track confidence
      * @param detections The collection of detections which correspond to the position of the object as it
      *                   moves through the track.
@@ -145,7 +145,7 @@ public class Track implements Comparable<Track> {
             @JsonProperty("endOffsetFrameInclusive") int endOffsetFrameInclusive,
             @JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
             @JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
-            @JsonProperty("mergedAlgorithm") String mergedAlgorithm,
+            @JsonProperty("mergedTaskIndex") int mergedTaskIndex,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
@@ -158,7 +158,7 @@ public class Track implements Comparable<Track> {
         _endOffsetFrameInclusive = endOffsetFrameInclusive;
         _startOffsetTimeInclusive = startOffsetTimeInclusive;
         _endOffsetTimeInclusive = endOffsetTimeInclusive;
-        _mergedAlgorithm = mergedAlgorithm;
+        _mergedTaskIndex = mergedTaskIndex;
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
@@ -177,7 +177,7 @@ public class Track implements Comparable<Track> {
         return Objects.hash(
                 _jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
                 _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
-                _mergedAlgorithm, _confidence, _trackProperties, _exemplar,
+                _mergedTaskIndex, _confidence, _trackProperties, _exemplar,
                 _detections);
     }
 
@@ -213,7 +213,7 @@ public class Track implements Comparable<Track> {
                 .thenComparingInt(Track::getEndOffsetFrameInclusive)
                 .thenComparingInt(Track::getStartOffsetTimeInclusive)
                 .thenComparingInt(Track::getEndOffsetTimeInclusive)
-                .thenComparing(Track::getMergedAlgorithm, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparingInt(Track::getMergedTaskIndex)
                 .thenComparingDouble(Track::getConfidence)
                 .thenComparing(Track::getTrackProperties, CompareUtils.MAP_COMPARATOR)
                 .thenComparing(Track::getExemplar, Comparator.nullsFirst(Comparator.naturalOrder()))

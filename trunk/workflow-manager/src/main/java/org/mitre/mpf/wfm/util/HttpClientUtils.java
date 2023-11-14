@@ -181,7 +181,7 @@ public class HttpClientUtils implements AutoCloseable {
                 return ThreadUtil.completedFuture(resp);
             }
 
-            log.warn("\"{}\" responded with a non-200 status code of {}. There are {}  " +
+            log.warn("\"{}\" responded with a non-200 status code of {}. There are {} " +
                              "attempts remaining and the next attempt will begin in {} ms.",
                      request.getURI(),statusCode, retries, nextDelay);
             return ThreadUtil.<HttpResponse>failedFuture(new IllegalStateException("non-200"));

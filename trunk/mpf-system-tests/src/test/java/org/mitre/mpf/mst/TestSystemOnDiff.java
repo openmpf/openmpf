@@ -65,7 +65,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
                                              .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -108,7 +108,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
                                              .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -160,8 +160,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         // Make sure that only one task was suppressed
         assertEquals("Output contained more than one suppressed task", 1, suppressedActionOutput.size());
         // Make sure that the suppressed task was MOTION
-        assertEquals("Tracks suppressed for task other than MOTION", "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
-                suppressedActionOutput.first().getSource());
+        assertEquals("Tracks suppressed for task other than MOTION", "MOG MOTION DETECTION PREPROCESSOR ACTION",
+                suppressedActionOutput.first().getAction());
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -186,7 +186,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         // The media used in this test generates two tracks that both have the same range of frames, but different exemplars,
         // and the set of extractions for each track do not intersect with each other.
@@ -239,8 +239,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         // Make sure that only one action was suppressed
         assertEquals("Output contained more than one suppressed action", 1, firstMediaSuppressed.size());
         // Make sure that the suppressed action was MOTION
-        assertEquals("Tracks suppressed for action other than MOTION", "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
-                firstMediaSuppressed.first().getSource());
+        assertEquals("Tracks suppressed for action other than MOTION", "MOG MOTION DETECTION PREPROCESSOR ACTION",
+                firstMediaSuppressed.first().getAction());
 
         // Check that the second media did not have a suppressed action
         assertFalse("Found an incorrectly suppressed action",
@@ -260,7 +260,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
 
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
                                              .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -293,32 +293,31 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        assertEquals(3, outputMedia.getTrackTypes().size());
+        assertEquals(2, outputMedia.getTrackTypes().size());
 
-        SortedSet<JsonActionOutputObject> textRegionTracksOutput  = outputMedia.getTrackTypes().get("TEXT REGION");
+        SortedSet<JsonActionOutputObject> textRegionTracksOutput = outputMedia.getTrackTypes().get("TEXT REGION");
         assertEquals(1, textRegionTracksOutput.size());
-        assertEquals("TEXT REGION tracks for task other than EAST", "+#EAST TEXT DETECTION ACTION",
-                textRegionTracksOutput.first().getSource());
+        assertEquals("TEXT REGION tracks for task other than EAST", "EAST TEXT DETECTION ACTION",
+                textRegionTracksOutput.first().getAction());
         assertEquals("EAST", textRegionTracksOutput.first().getAlgorithm());
         assertTrue(textRegionTracksOutput.first().getTracks().stream().allMatch(
                 t -> t.getType().equals("TEXT REGION")));
 
-        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
-                outputMedia.getTrackTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
-        assertEquals(1, mergedTracksOutput.size());
-        assertEquals("Tracks merged for task other than TESSERACT OCR",
-                "+#EAST TEXT DETECTION ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION",
-                mergedTracksOutput.first().getSource());
-        assertEquals("TESSERACTOCR", mergedTracksOutput.first().getAlgorithm());
-
         SortedSet<JsonActionOutputObject> textTracksOutput  = outputMedia.getTrackTypes().get("TEXT");
         assertEquals(1, textTracksOutput.size());
         assertEquals("TEXT tracks for task other than KEYWORD TAGGING",
-                "+#EAST TEXT DETECTION ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION" +
-                        "#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                textTracksOutput.first().getSource());
+                "TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION",
+                textTracksOutput.first().getAction());
         assertEquals("TESSERACTOCR", textTracksOutput.first().getAlgorithm());
         assertTrue(textTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("TEXT")));
+
+        boolean allTextTracksHaveTags = textTracksOutput.stream()
+                .flatMap(ja -> ja.getTracks().stream())
+                .allMatch(jt -> jt.getTrackProperties().containsKey("TAGS"));
+        assertTrue(
+                "The keyword tagging task should have added a \"TAGS\" track property"
+                        + " to all of the text tracks.",
+                allTextTracksHaveTags);
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -335,29 +334,30 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        assertEquals(3, outputMedia.getTrackTypes().size());
+        assertEquals(2, outputMedia.getTrackTypes().size());
 
-        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
-                outputMedia.getTrackTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
-        assertEquals(1, mergedTracksOutput.size());
-        assertEquals("Tracks merged for task other than SPHINX", "+#SPHINX SPEECH DETECTION ACTION",
-                mergedTracksOutput.first().getSource());
-        assertEquals("SPHINX", mergedTracksOutput.first().getAlgorithm());
-
-        SortedSet<JsonActionOutputObject> speechTracksOutput  = outputMedia.getTrackTypes().get("SPEECH");
+        SortedSet<JsonActionOutputObject> speechTracksOutput = outputMedia.getTrackTypes().get("SPEECH");
         assertEquals(1, speechTracksOutput.size());
         assertEquals("SPEECH tracks for task other than KEYWORD TAGGING",
-                "+#SPHINX SPEECH DETECTION ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                speechTracksOutput.first().getSource());
+                "SPHINX SPEECH DETECTION ACTION",
+                speechTracksOutput.first().getAction());
         assertEquals("SPHINX", speechTracksOutput.first().getAlgorithm());
         assertTrue(speechTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("SPEECH")));
+
+        boolean allSpeechTracksHaveTags = speechTracksOutput.stream()
+                .flatMap(ja -> ja.getTracks().stream())
+                .allMatch(jt -> jt.getTrackProperties().containsKey("TAGS"));
+        assertTrue(
+                "The keyword tagging task should have added a \"TAGS\" track property"
+                        + " to all of the speech tracks.",
+                allSpeechTracksHaveTags);
 
         SortedSet<JsonActionOutputObject> noTracksOutput  =
                 outputMedia.getTrackTypes().get(JsonActionOutputObject.NO_TRACKS_TYPE);
         assertEquals(1, noTracksOutput.size());
         assertEquals("No tracks for task other than MARKUP",
-                "+#SPHINX SPEECH DETECTION ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP ACTION",
-                noTracksOutput.first().getSource());
+                "OCV GENERIC MARKUP ACTION",
+                noTracksOutput.first().getAction());
         assertEquals("MARKUPCV", noTracksOutput.first().getAlgorithm());
     }
 
@@ -481,7 +481,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get("FACE");
-        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+        assertNotNull("Output object did not contain expected track type: FACE", actionOutputObjects);
 
         List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
                 .flatMap(outputObj -> outputObj.getTracks().stream())
@@ -1125,7 +1125,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
         SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTrackTypes().get(trackType);
-        assertNotNull("Output object did not contain expected detection type: " + trackType,
+        assertNotNull("Output object did not contain expected track type: " + trackType,
                       actionOutputObjects);
 
         List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()

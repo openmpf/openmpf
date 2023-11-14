@@ -78,7 +78,7 @@ public class TrackOutputHelper {
             boolean isMergeSource,
             boolean isMergeTarget,
             boolean hadAnyTracks,
-            Multimap<String, Track> tracksGroupedByAlgo) { }
+            Multimap<String, Track> tracksGroupedByAction) { }
 
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
@@ -108,7 +108,7 @@ public class TrackOutputHelper {
                 isSuppressed = false;
             }
         }
-        var indexedTracks = Multimaps.index(tracks, Track::getMergedAlgorithm);
+        var indexedTracks = Multimaps.index(tracks, t -> getMergedAction(t, job));
         return new TrackInfo(
                 isSuppressed, isMergeSource, isMergeTarget,
                 !indexedTracks.isEmpty(), indexedTracks);
@@ -127,15 +127,15 @@ public class TrackOutputHelper {
         }
 
         var pipelineElements = job.getPipelineElements();
+        // Check if a task later in the pipeline does not have a trigger set. When a trigger is not
+        // set, all tracks are passed as input to the task. That means that all of the tracks
+        // created in current task were input to a task.
         boolean futureTaskMissingTrigger = IntStream
             .rangeClosed(taskIdx + 1, pipelineElements.getLastDetectionTaskIdx())
             .mapToObj(pipelineElements::getTask)
             .flatMap(pipelineElements::getActionStreamInOrder)
             .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
             .anyMatch(t -> t == null || t.isBlank());
-        // A task later in the pipeline does not have a trigger set. When a trigger
-        // is not set all tracks are passed as input to the task. That means that all
-        // of the tracks created in current task were input to a task.
         return !futureTaskMissingTrigger;
     }
 
@@ -151,5 +151,23 @@ public class TrackOutputHelper {
         return tracks.stream()
             .filter(wasTriggeredFilter.negate())
             .collect(toCollection(TreeSet::new));
+    }
+
+
+    private String getMergedAction(Track track, BatchJob job) {
+        int actionIndex;
+        var trackMergingEnabled = track.getMergedTaskIndex() != track.getTaskIndex();
+        if (trackMergingEnabled) {
+            // When track merging is enabled, the merged task will never be the last task.  Only
+            // the last task can have more than one action, so the merged action has to be the
+            // first and only action in the task.
+            actionIndex = 0;
+        }
+        else {
+            actionIndex = track.getActionIndex();
+        }
+        return job.getPipelineElements()
+                .getAction(track.getMergedTaskIndex(), actionIndex)
+                .getName();
     }
 }

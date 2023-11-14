@@ -114,7 +114,7 @@ public class DetectionResponseProcessor
         Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
         double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
         var trackType = job.getPipelineElements().getAlgorithm(action.getAlgorithm()).getTrackType();
-        var mergedAlgo = _taskMergingManager.getMergedAlgorithm(
+        var mergedTaskIdx = _taskMergingManager.getMergedTaskIndex(
                 job, media,
                 detectionResponse.getTaskIndex(),
                 detectionResponse.getActionIndex(),
@@ -131,7 +131,7 @@ public class DetectionResponseProcessor
                     media,
                     exemplarPolicy,
                     trackType,
-                    mergedAlgo);
+                    mergedTaskIdx);
         }
         else if (detectionResponse.getAudioResponsesCount() != 0) {
             processAudioResponse(
@@ -140,7 +140,7 @@ public class DetectionResponseProcessor
                     detectionResponse.getAudioResponses(0),
                     confidenceThreshold,
                     trackType,
-                    mergedAlgo);
+                    mergedTaskIdx);
         }
         else if (detectionResponse.getImageResponsesCount() != 0) {
             processImageResponse(
@@ -149,7 +149,7 @@ public class DetectionResponseProcessor
                     detectionResponse.getImageResponses(0),
                     confidenceThreshold,
                     trackType,
-                    mergedAlgo);
+                    mergedTaskIdx);
         }
         else {
             processGenericResponse(
@@ -158,7 +158,7 @@ public class DetectionResponseProcessor
                     detectionResponse.getGenericResponses(0),
                     confidenceThreshold,
                     trackType,
-                    mergedAlgo);
+                    mergedTaskIdx);
         }
         return null;
     }
@@ -185,7 +185,7 @@ public class DetectionResponseProcessor
             Media media,
             String exemplarPolicy,
             String trackType,
-            String mergedAlgo) {
+            int mergedTaskIdx) {
         int startFrame = videoResponse.getStartFrame();
         int stopFrame = videoResponse.getStopFrame();
         var frameTimeInfo = media.getFrameTimeInfo();
@@ -237,7 +237,7 @@ public class DetectionResponseProcessor
                         objectTrack.getStopFrame(),
                         startOffsetTime,
                         stopOffsetTime,
-                        mergedAlgo,
+                        mergedTaskIdx,
                         objectTrack.getConfidence(),
                         detections,
                         trackProperties,
@@ -253,7 +253,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
             double confidenceThreshold,
             String tracktype,
-            String mergedAlgo) {
+            int mergedTaskIdx) {
 
         int startTime = audioResponse.getStartTime();
         int stopTime = audioResponse.getStopTime();
@@ -299,7 +299,7 @@ public class DetectionResponseProcessor
                         0,
                         objectTrack.getStartTime(),
                         objectTrack.getStopTime(),
-                        mergedAlgo,
+                        mergedTaskIdx,
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         trackProperties,
@@ -316,7 +316,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
             double confidenceThreshold,
             String trackType,
-            String mergedAlgo) {
+            int mergedTaskIdx) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
         log.debug("Response received for {}.", mediaLabel);
 
@@ -344,7 +344,7 @@ public class DetectionResponseProcessor
                         0,
                         0,
                         0,
-                        mergedAlgo,
+                        mergedTaskIdx,
                         location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
@@ -360,7 +360,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
             double confidenceThreshold,
             String trackType,
-            String mergedAlgo) {
+            int mergedTaskIdx) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
         log.debug("Response received for {}.", mediaLabel);
 
@@ -379,7 +379,7 @@ public class DetectionResponseProcessor
             }
 
             processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
-                    trackProperties, mergedAlgo);
+                    trackProperties, mergedTaskIdx);
         }
     }
 
@@ -391,7 +391,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.GenericTrack objectTrack,
             double confidenceThreshold,
             SortedMap<String, String> trackProperties,
-            String mergedAlgo) {
+            int mergedTaskIdx) {
         if (objectTrack.getConfidence() >= confidenceThreshold) {
             Detection detection = new Detection(
                     0,
@@ -412,7 +412,7 @@ public class DetectionResponseProcessor
                     0,
                     0,
                     0,
-                    mergedAlgo,
+                    mergedTaskIdx,
                     objectTrack.getConfidence(),
                     ImmutableSortedSet.of(detection),
                     trackProperties,

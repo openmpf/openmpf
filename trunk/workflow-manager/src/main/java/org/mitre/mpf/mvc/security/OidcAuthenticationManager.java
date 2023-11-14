@@ -26,14 +26,12 @@
 
 package org.mitre.mpf.mvc.security;
 
-import static java.util.stream.Collectors.joining;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -74,12 +72,15 @@ public class OidcAuthenticationManager implements
 
     private final String _userClaimValue;
 
+    private final Function<ClaimAccessor, String> _errorMessageCreator;
+
     @Inject
     OidcAuthenticationManager(OidcClaimConfig claimConfig) {
         _adminClaimName = claimConfig.adminClaimName();
         _adminClaimValue = claimConfig.adminClaimValue().orElse(null);
         _userClaimName = claimConfig.userClaimName();
         _userClaimValue = claimConfig.userClaimValue().orElse(null);
+        _errorMessageCreator = getErrorMessageCreator();
     }
 
 
@@ -106,50 +107,52 @@ public class OidcAuthenticationManager implements
         if (!(authentication.getPrincipal() instanceof ClaimAccessor claims)) {
             return new AuthorizationDecision(false);
         }
-        throw new AccessDeniedWithUserMessageException(getMissingClaimMessage(claims));
+        throw new AccessDeniedWithUserMessageException( _errorMessageCreator.apply(claims));
     }
 
 
-    private String getMissingClaimMessage(ClaimAccessor claims) {
-        boolean userClaimValuesPresent = _userClaimName
-                .map(claims::getClaimAsStringList)
-                .isPresent();
-        boolean adminClaimValuesPresent = _adminClaimName
-                .map(claims::getClaimAsStringList)
-                .isPresent();
-
-        if (!userClaimValuesPresent && !adminClaimValuesPresent) {
-            var configuredClaimNames = Stream.of(_adminClaimName, _userClaimName)
-                    .flatMap(Optional::stream)
-                    .distinct()
-                    .collect(joining("\" or \""));
-            return "The token did not contain a claim named \"%s\"."
-                    .formatted(configuredClaimNames);
+    private Function<ClaimAccessor, String> getErrorMessageCreator() {
+        var quotedAdminClaimValue = '"' + _adminClaimValue + '"';
+        var quotedUserClaimValue = '"' + _userClaimValue + '"';
+        if (_userClaimName.isEmpty()) {
+            return claims -> getSingleClaimNameErrorMessage(
+                    claims, _adminClaimName.get(), quotedAdminClaimValue);
+        }
+        if (_adminClaimName.isEmpty()) {
+            return claims -> getSingleClaimNameErrorMessage(
+                    claims, _userClaimName.get(), quotedUserClaimValue);
         }
 
-        boolean sameClaimName = _adminClaimName.equals(_userClaimName);
-        if (userClaimValuesPresent && adminClaimValuesPresent && !sameClaimName) {
-            return "The token's \"%s\" claim did not contain \"%s\" and the \"%s\" claim did not contain \"%s\"."
-                    .formatted(_userClaimName.orElseThrow(), _userClaimValue,
-                            _adminClaimName.orElseThrow(), _adminClaimName);
+        var userClaimName = _userClaimName.get();
+        var adminClaimName = _adminClaimName.get();
+        if (userClaimName.equals(adminClaimName)) {
+            var quotedClaim = _userClaimValue.equals(_adminClaimValue)
+                    ? quotedAdminClaimValue
+                    : quotedAdminClaimValue + " or " + quotedUserClaimValue;
+            return claims -> getSingleClaimNameErrorMessage(claims, adminClaimName, quotedClaim);
         }
+        return claims -> {
+            if (claims.hasClaim(adminClaimName) || claims.hasClaim(userClaimName)) {
+                return "The token's \"%s\" claim did not contain \"%s\" and the \"%s\" claim did not contain \"%s\"."
+                       .formatted(userClaimName, _userClaimValue, adminClaimName, _adminClaimValue);
+            }
+            else {
+                return "The token did not contain a claim named \"%s\" or \"%s\"."
+                        .formatted(userClaimName, adminClaimName);
+            }
+        };
+    }
 
-        String presentClaimName;
-        String requiredClaimValue;
-        if (sameClaimName || userClaimValuesPresent) {
-            presentClaimName = _userClaimName.orElseThrow();
-            requiredClaimValue = _userClaimValue.equals(_adminClaimValue)
-                    ? _userClaimValue
-                    : _userClaimValue + "\" or \"" + _adminClaimValue;
+    private static String getSingleClaimNameErrorMessage(
+            ClaimAccessor claims, String claimName, String quotedClaimValue) {
+        if (claims.hasClaim(claimName)) {
+            return "The token's \"%s\" claim did not contain %s.".formatted(
+                    claimName, quotedClaimValue);
         }
         else {
-            presentClaimName = _adminClaimName.orElseThrow();
-            requiredClaimValue = _adminClaimValue;
+            return "The token did not contain a claim named \"%s\".".formatted(claimName);
         }
-        return "The token's \"%s\" claim did not contain \"%s\".".formatted(
-                presentClaimName, requiredClaimValue);
     }
-
 
     // This is called when a user tries to log in to the Web UI to map OIDC to claims to
     // Workflow Manager roles.

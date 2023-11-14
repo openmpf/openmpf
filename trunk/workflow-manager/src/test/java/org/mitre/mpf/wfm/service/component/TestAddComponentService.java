@@ -26,10 +26,41 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_NAMES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_VALUES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION_NAMES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.PIPELINE_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.REFERENCED_ALGO_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.TASK_NAMES;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-import org.junit.After;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +71,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
@@ -48,26 +80,13 @@ import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Optional;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
-import static org.mockito.Mockito.*;
-
-public class TestAddComponentService {
+public class TestAddComponentService extends MockitoTest.Strict {
 
     private AddComponentServiceImpl _addComponentService;
-
-    private AutoCloseable _closeable;
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
@@ -103,18 +122,12 @@ public class TestAddComponentService {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
-
         _addComponentService = new AddComponentServiceImpl(
                 _mockPropertiesUtil, _mockPipelineService, Optional.of(_mockNodeManager),
                 Optional.of(_mockStreamingServiceManager), _mockDeploymentService, _mockStateService,
                 _mockDescriptorValidator, null, _mockRemoveComponentService, _mockObjectMapper);
     }
 
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void throwsExceptionWhenNoRegisterModel() throws ComponentRegistrationException {
@@ -421,6 +434,7 @@ public class TestAddComponentService {
                 existingAlgo.getName(),
                 existingAlgo.getDescription(),
                 existingAlgo.getActionType(),
+                existingAlgo.getTrackType(),
                 existingAlgo.getOutputChangedCounter(),
                 // Just pick a random field to change
                 new Algorithm.Requires(Collections.singleton("asdf")),

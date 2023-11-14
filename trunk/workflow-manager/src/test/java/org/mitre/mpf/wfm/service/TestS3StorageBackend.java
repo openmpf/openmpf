@@ -416,7 +416,7 @@ public class TestS3StorageBackend {
         var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
         var media = mock(Media.class);
 
-        var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
+        var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION, "TEST",
                                       OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),

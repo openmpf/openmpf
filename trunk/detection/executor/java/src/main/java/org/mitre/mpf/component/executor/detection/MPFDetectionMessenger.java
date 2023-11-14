@@ -88,8 +88,6 @@ public class MPFDetectionMessenger {
                 LOG.info("Detection request received with job ID " + msgMetadata.getJobId() +
                          " for media file " + msgMetadata.getDataUri());
 
-				String detectionType = component.getDetectionType();
-
 				if(component.supports(msgMetadata.getDataType())) {
 
 					byte[] responseBytes = null;
@@ -109,13 +107,13 @@ public class MPFDetectionMessenger {
                             responseBytes = detectionBuffer.createAudioResponseMessage(
                             		msgMetadata,
 									audioRequest.getStartTime(), audioRequest.getStopTime(),
-									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
+									tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
 		                            "");
                         } catch (MPFComponentDetectionError e) {
                             responseBytes = detectionBuffer.createAudioResponseMessage(
                             		msgMetadata,
 									audioRequest.getStartTime(), audioRequest.getStopTime(),
-									detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError(),
+									Collections.<MPFAudioTrack>emptyList(), e.getDetectionError(),
 		                            e.getMessage());
                         }
                     } else if (MPFDataType.IMAGE == msgMetadata.getDataType()) {
@@ -128,11 +126,11 @@ public class MPFDetectionMessenger {
                                                                                msgMetadata.getMediaProperties(),
                                                                                imageRequest.getFeedForwardLocation()));
                             responseBytes = detectionBuffer.createImageResponseMessage(
-                            		msgMetadata, detectionType, locations, MPFDetectionError.MPF_DETECTION_SUCCESS,
+                            		msgMetadata, locations, MPFDetectionError.MPF_DETECTION_SUCCESS,
 		                            "");
                         } catch (MPFComponentDetectionError e) {
                             responseBytes = detectionBuffer.createImageResponseMessage(
-                            		msgMetadata, detectionType, locations, e.getDetectionError(), e.getMessage());
+                            		msgMetadata, locations, e.getDetectionError(), e.getMessage());
                         }
 
                     } else if (MPFDataType.VIDEO == msgMetadata.getDataType()) {
@@ -149,13 +147,13 @@ public class MPFDetectionMessenger {
                             responseBytes = detectionBuffer.createVideoResponseMessage(
                             		msgMetadata,
 									videoRequest.getStartFrame(), videoRequest.getStopFrame(),
-									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
+									tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
 		                            "");
                         } catch (MPFComponentDetectionError e) {
                             responseBytes = detectionBuffer.createVideoResponseMessage(
                             		msgMetadata,
 									videoRequest.getStartFrame(), videoRequest.getStopFrame(),
-									detectionType, tracks, e.getDetectionError(), e.getMessage());
+									tracks, e.getDetectionError(), e.getMessage());
                         }
                     } else if (MPFDataType.UNKNOWN == msgMetadata.getDataType()) {
 						MPFDetectionGenericRequest genericRequest = detectionBuffer.getGenericRequest();
@@ -167,11 +165,11 @@ public class MPFDetectionMessenger {
 									msgMetadata.getMediaProperties(),
 									genericRequest.getFeedForwardTrack()));
 							responseBytes = detectionBuffer.createGenericResponseMessage(
-									msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
+									msgMetadata, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
 									"");
 						} catch (MPFComponentDetectionError e) {
 							responseBytes = detectionBuffer.createGenericResponseMessage(
-									msgMetadata, detectionType, Collections.<MPFGenericTrack>emptyList(), e.getDetectionError(),
+									msgMetadata, Collections.<MPFGenericTrack>emptyList(), e.getDetectionError(),
 									e.getMessage());
 						}
 					}

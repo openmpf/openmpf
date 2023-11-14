@@ -235,9 +235,9 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     private void compareMedia(JsonMediaOutputObject defaultMedia, JsonMediaOutputObject customMedia) {
 
         Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> defaultEntries =
-                defaultMedia.getDetectionTypes().entrySet().iterator();
+                defaultMedia.getTrackTypes().entrySet().iterator();
         Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> customEntries =
-                customMedia.getDetectionTypes().entrySet().iterator();
+                customMedia.getTrackTypes().entrySet().iterator();
 
         while (defaultEntries.hasNext()) {
 

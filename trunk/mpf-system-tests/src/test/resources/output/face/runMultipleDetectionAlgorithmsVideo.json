@@ -68,7 +68,7 @@
       "output": {
         "CLASS": [
           {
-            "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+            "action": "OCV TINY YOLO OBJECT DETECTION ACTION",
             "algorithm": "OCVYOLO",
             "tracks": [
               {
@@ -78,7 +78,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 233,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.557857,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -205,7 +204,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 1901,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9918398,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -1132,7 +1130,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 2836,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9592341,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -2523,7 +2520,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 3737,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.99663603,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -4362,7 +4358,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 4204,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9910178,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -6409,7 +6404,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 5772,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.95699126,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -9160,7 +9154,6 @@
                 "startOffsetTime": 100,
                 "stopOffsetTime": 100,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.50089025,
                 "trackProperties": {
                   "CLASSIFICATION": "backpack"
@@ -9207,7 +9200,6 @@
                 "startOffsetTime": 433,
                 "stopOffsetTime": 1868,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.8676044,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -9926,7 +9918,6 @@
                 "startOffsetTime": 633,
                 "stopOffsetTime": 633,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.59821665,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -9973,7 +9964,6 @@
                 "startOffsetTime": 834,
                 "stopOffsetTime": 1034,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.59370905,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -10084,7 +10074,6 @@
                 "startOffsetTime": 1301,
                 "stopOffsetTime": 6639,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9749115,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -12563,7 +12552,6 @@
                 "startOffsetTime": 2302,
                 "stopOffsetTime": 2335,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.7348778,
                 "trackProperties": {
                   "CLASSIFICATION": "car"
@@ -12626,7 +12614,6 @@
                 "startOffsetTime": 2635,
                 "stopOffsetTime": 3303,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.8248929,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -12945,7 +12932,6 @@
                 "startOffsetTime": 2769,
                 "stopOffsetTime": 6639,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.945367,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -14528,7 +14514,6 @@
                 "startOffsetTime": 3136,
                 "stopOffsetTime": 3169,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.7628427,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -14591,7 +14576,6 @@
                 "startOffsetTime": 3603,
                 "stopOffsetTime": 6639,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9791013,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -16030,7 +16014,6 @@
                 "startOffsetTime": 3603,
                 "stopOffsetTime": 6639,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9953866,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -17501,7 +17484,6 @@
                 "startOffsetTime": 3636,
                 "stopOffsetTime": 3670,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.53625286,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -17564,7 +17546,6 @@
                 "startOffsetTime": 4104,
                 "stopOffsetTime": 4270,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.7379896,
                 "trackProperties": {
                   "CLASSIFICATION": "backpack"
@@ -17691,7 +17672,6 @@
                 "startOffsetTime": 4204,
                 "stopOffsetTime": 4204,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.6436645,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -17738,7 +17718,6 @@
                 "startOffsetTime": 4304,
                 "stopOffsetTime": 4371,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.65913975,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -17817,7 +17796,6 @@
                 "startOffsetTime": 4437,
                 "stopOffsetTime": 5305,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9734301,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -18184,7 +18162,6 @@
                 "startOffsetTime": 4471,
                 "stopOffsetTime": 4604,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.55465513,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -18247,7 +18224,6 @@
                 "startOffsetTime": 4771,
                 "stopOffsetTime": 4904,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.67601377,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -18326,7 +18302,6 @@
                 "startOffsetTime": 4938,
                 "stopOffsetTime": 5171,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.8017603,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -18485,7 +18460,6 @@
                 "startOffsetTime": 5005,
                 "stopOffsetTime": 5538,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.95874816,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -18708,7 +18682,6 @@
                 "startOffsetTime": 5271,
                 "stopOffsetTime": 5271,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.525546,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -18755,7 +18728,6 @@
                 "startOffsetTime": 5638,
                 "stopOffsetTime": 5739,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.8088312,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -18834,7 +18806,6 @@
                 "startOffsetTime": 5939,
                 "stopOffsetTime": 6406,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.8978603,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -19057,7 +19028,6 @@
                 "startOffsetTime": 6339,
                 "stopOffsetTime": 6406,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5891681,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -19136,7 +19106,6 @@
                 "startOffsetTime": 6673,
                 "stopOffsetTime": 10810,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.99892974,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -21167,7 +21136,6 @@
                 "startOffsetTime": 6673,
                 "stopOffsetTime": 11111,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.98422927,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -23230,7 +23198,6 @@
                 "startOffsetTime": 6673,
                 "stopOffsetTime": 13313,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9980806,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -26461,7 +26428,6 @@
                 "startOffsetTime": 6673,
                 "stopOffsetTime": 13313,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.98995334,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -29692,7 +29658,6 @@
                 "startOffsetTime": 6773,
                 "stopOffsetTime": 6773,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.59937066,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -29739,7 +29704,6 @@
                 "startOffsetTime": 6973,
                 "stopOffsetTime": 7040,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.71776056,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -29818,7 +29782,6 @@
                 "startOffsetTime": 7240,
                 "stopOffsetTime": 7240,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5549325,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -29865,7 +29828,6 @@
                 "startOffsetTime": 7307,
                 "stopOffsetTime": 8108,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.8826669,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -30264,7 +30226,6 @@
                 "startOffsetTime": 8174,
                 "stopOffsetTime": 8174,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5107876,
                 "trackProperties": {
                   "CLASSIFICATION": "backpack"
@@ -30311,7 +30272,6 @@
                 "startOffsetTime": 8375,
                 "stopOffsetTime": 10343,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.935901,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -31238,7 +31198,6 @@
                 "startOffsetTime": 10477,
                 "stopOffsetTime": 10477,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.54739714,
                 "trackProperties": {
                   "CLASSIFICATION": "backpack"
@@ -31285,7 +31244,6 @@
                 "startOffsetTime": 10844,
                 "stopOffsetTime": 10844,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5405803,
                 "trackProperties": {
                   "CLASSIFICATION": "dog"
@@ -31332,7 +31290,6 @@
                 "startOffsetTime": 10877,
                 "stopOffsetTime": 13313,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9657192,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -32483,7 +32440,6 @@
                 "startOffsetTime": 11511,
                 "stopOffsetTime": 12312,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.98864996,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -32898,7 +32854,6 @@
                 "startOffsetTime": 12879,
                 "stopOffsetTime": 13113,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.8692196,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -33057,7 +33012,6 @@
                 "startOffsetTime": 13346,
                 "stopOffsetTime": 14247,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.9903923,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -33520,7 +33474,6 @@
                 "startOffsetTime": 13346,
                 "stopOffsetTime": 15982,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.99604326,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -34815,7 +34768,6 @@
                 "startOffsetTime": 13346,
                 "stopOffsetTime": 16449,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.99597496,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36318,7 +36270,6 @@
                 "startOffsetTime": 14881,
                 "stopOffsetTime": 14881,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5384425,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36365,7 +36316,6 @@
                 "startOffsetTime": 15148,
                 "stopOffsetTime": 15315,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.58713377,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36444,7 +36394,6 @@
                 "startOffsetTime": 15515,
                 "stopOffsetTime": 15515,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5385394,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36491,7 +36440,6 @@
                 "startOffsetTime": 15548,
                 "stopOffsetTime": 15548,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5356754,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36538,7 +36486,6 @@
                 "startOffsetTime": 15582,
                 "stopOffsetTime": 15715,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.70909697,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36649,7 +36596,6 @@
                 "startOffsetTime": 16249,
                 "stopOffsetTime": 16316,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.54401416,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36712,7 +36658,6 @@
                 "startOffsetTime": 16383,
                 "stopOffsetTime": 16383,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.5596476,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36759,7 +36704,6 @@
                 "startOffsetTime": 16783,
                 "stopOffsetTime": 17350,
                 "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
                 "confidence": 0.897734,
                 "trackProperties": {
                   "CLASSIFICATION": "person"
@@ -36932,7 +36876,7 @@
         ],
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -36942,7 +36886,6 @@
                 "startOffsetTime": 2202,
                 "stopOffsetTime": 4237,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 52.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -37711,7 +37654,6 @@
                 "startOffsetTime": 3436,
                 "stopOffsetTime": 4004,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 35.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -37952,7 +37894,6 @@
                 "startOffsetTime": 13646,
                 "stopOffsetTime": 14781,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 29.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -38397,7 +38338,6 @@
                 "startOffsetTime": 14748,
                 "stopOffsetTime": 15582,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 16.0,
                 "trackProperties": {},
                 "exemplar": {

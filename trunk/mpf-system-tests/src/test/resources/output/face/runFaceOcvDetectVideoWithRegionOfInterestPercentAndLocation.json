@@ -62,7 +62,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
+            "action": "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -72,7 +72,6 @@
                 "startOffsetTime": 8074,
                 "stopOffsetTime": 8375,
                 "type": "FACE",
-                "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
                 "confidence": 44.0,
                 "trackProperties": {},
                 "exemplar": {

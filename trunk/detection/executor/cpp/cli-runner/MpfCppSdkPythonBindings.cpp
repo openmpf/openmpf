@@ -173,9 +173,6 @@ PYBIND11_MODULE(mpf_cpp_sdk, m) {
             .def("Close",
                     [](CppComponent& c) { return c->Close(); },
                     call_guard_t())
-            .def("GetDetectionType",
-                    [](CppComponent& c) { return c->GetDetectionType();  },
-                    call_guard_t())
             .def("Supports",
                     [](CppComponent& c, MPFDetectionDataType type) { return c->Supports(type); },
                     "data_type"_a,

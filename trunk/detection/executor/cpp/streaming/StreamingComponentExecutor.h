@@ -60,8 +60,6 @@ namespace MPF { namespace COMPONENT {
 
         StreamingVideoCapture video_capture_;
 
-        const std::string detection_type_;
-
         const double confidence_threshold_;
 
 
@@ -71,8 +69,7 @@ namespace MPF { namespace COMPONENT {
                 JobSettings &&settings,
                 BasicAmqMessageSender &&sender,
                 MPFStreamingVideoJob &&job,
-                StreamingComponentHandle &&component,
-                const std::string &detection_type);
+                StreamingComponentHandle &&component);
 
 
 

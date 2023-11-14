@@ -42,8 +42,6 @@ namespace MPF { namespace COMPONENT {
     public:
         StreamingComponentHandle(const std::string &lib_path, const MPFStreamingVideoJob &job);
 
-        std::string GetDetectionType();
-
         void BeginSegment(const VideoSegmentInfo &segment_info);
 
         bool ProcessFrame(const cv::Mat &frame, int frame_number);

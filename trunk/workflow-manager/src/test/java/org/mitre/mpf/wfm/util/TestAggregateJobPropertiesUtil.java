@@ -146,7 +146,7 @@ public class TestAggregateJobPropertiesUtil {
 
 
         var algorithm = new Algorithm(
-                "ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO", "descr", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), algoPropertyList),
                 true, true);

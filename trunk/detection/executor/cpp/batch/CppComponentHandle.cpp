@@ -51,10 +51,6 @@ namespace MPF::COMPONENT {
         return component_->Init();
     }
 
-    std::string CppComponentHandle::GetDetectionType() {
-        return component_->GetDetectionType();
-    }
-
     bool CppComponentHandle::Supports(MPFDetectionDataType data_type) {
         return component_->Supports(data_type);
     }

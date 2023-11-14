@@ -58,7 +58,7 @@ namespace MPF { namespace COMPONENT {
         void SendActivityAlert(int frame_number, long timestamp);
 
         void SendSummaryReport(
-                int frame_number, const std::string &detection_type,
+                int frame_number,
                 const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks,
                 const std::unordered_map<int, long> &frame_timestamps,
                 const std::string &error_message = {});

@@ -120,10 +120,6 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
             _storageService.store(markupResult); // may change markup status
         }
         _markupResultDao.persist(markupResult);
-
-        _inProgressJobs.setProcessedAction(jobId, markupResponse.getMediaId(), markupResponse.getTaskIndex(),
-                markupResponse.getActionIndex());
-
         return null;
     }
 }

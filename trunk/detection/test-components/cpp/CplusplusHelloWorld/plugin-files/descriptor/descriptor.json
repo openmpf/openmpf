@@ -15,6 +15,7 @@
     "name": "CplusplusHelloWorld",
     "description": "A dummy C++ detection component.",
     "actionType": "DETECTION",
+    "trackType": "HELLO",
     "requiresCollection": {
       "states": []
     },

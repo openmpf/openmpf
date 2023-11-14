@@ -83,13 +83,7 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
     }
 
     @Override
-    public String getDetectionType() {
-        return "HELLO";
-    }
-
-    @Override
     public MPFComponentType getComponentType() {
         return MPFComponentType.DETECTION;
     }
-
 }

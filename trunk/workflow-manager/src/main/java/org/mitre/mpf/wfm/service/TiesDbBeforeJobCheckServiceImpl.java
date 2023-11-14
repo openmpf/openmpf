@@ -583,7 +583,7 @@ public class TiesDbBeforeJobCheckServiceImpl
 
         var artifactPaths = outputObject.getMedia()
                 .stream()
-                .flatMap(m -> m.getDetectionTypes().values().stream())
+                .flatMap(m -> m.getTrackTypes().values().stream())
                 .flatMap(Collection::stream)
                 .flatMap(a -> a.getTracks().stream())
                 .flatMap(t -> t.getDetections().stream())
@@ -616,11 +616,11 @@ public class TiesDbBeforeJobCheckServiceImpl
 
         var newMediaList = new ArrayList<JsonMediaOutputObject>();
         for (var oldMedia : oldOutputObject.getMedia()) {
-            var newDetectionTypeMap = new TreeMap<String, SortedSet<JsonActionOutputObject>>();
-            for (var oldDetectionTypeEntry : oldMedia.getDetectionTypes().entrySet()) {
-                newDetectionTypeMap.put(
-                        oldDetectionTypeEntry.getKey(),
-                        updateActions(oldDetectionTypeEntry.getValue(), updatedUris));
+            var newTrackTypeMap = new TreeMap<String, SortedSet<JsonActionOutputObject>>();
+            for (var oldTrackTypeEntry : oldMedia.getTrackTypes().entrySet()) {
+                newTrackTypeMap.put(
+                        oldTrackTypeEntry.getKey(),
+                        updateActions(oldTrackTypeEntry.getValue(), updatedUris));
             }
 
             var oldMarkup = oldMedia.getMarkupResult();
@@ -657,7 +657,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                     oldMedia.getMediaMetadata(),
                     oldMedia.getMediaProperties(),
                     newMarkup,
-                    newDetectionTypeMap,
+                    newTrackTypeMap,
                     oldMedia.getDetectionProcessingErrors());
             newMediaList.add(newMedia);
         }
@@ -690,7 +690,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                     .map(t -> updateTrack(t, updatedUris))
                     .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
             var newAction = JsonActionOutputObject.factory(
-                oldAction.getSource(),
+                oldAction.getAction(),
                 oldAction.getAlgorithm(),
                 newTracks);
             newActions.add(newAction);
@@ -713,7 +713,6 @@ public class TiesDbBeforeJobCheckServiceImpl
                 oldTrack.getStartOffsetTime(),
                 oldTrack.getStopOffsetTime(),
                 oldTrack.getType(),
-                oldTrack.getSource(),
                 oldTrack.getConfidence(),
                 oldTrack.getTrackProperties(),
                 updateDetection(oldTrack.getExemplar(), updatedUris),

@@ -102,8 +102,7 @@ namespace MPF { namespace COMPONENT {
             JobSettings &&settings,
             BasicAmqMessageSender &&sender,
             MPFStreamingVideoJob &&job,
-            StreamingComponentHandle &&component,
-            const std::string &detection_type)
+            StreamingComponentHandle &&component)
         : logger_(logger)
         , log_prefix_(log_prefix)
         , settings_(std::move(settings))
@@ -111,7 +110,6 @@ namespace MPF { namespace COMPONENT {
         , sender_(std::move(sender))
         , component_(std::move(component))
         , video_capture_(logger, settings_.stream_uri, job_)
-        , detection_type_(detection_type)
         , confidence_threshold_(DetectionComponentUtils::GetProperty(
                     settings_.job_properties, "CONFIDENCE_THRESHOLD", ExecutorUtils::LOWEST_CONFIDENCE_THRESHOLD))
     {
@@ -123,11 +121,9 @@ namespace MPF { namespace COMPONENT {
             JobSettings &&settings, MPFStreamingVideoJob &&job) {
 
         BasicAmqMessageSender sender(settings);
-        std::string detection_type;
         try {
             LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
             StreamingComponentHandle component(settings.component_lib_path, job);
-            detection_type = component.GetDetectionType();
 
             return StreamingComponentExecutor(
                     logger,
@@ -135,11 +131,10 @@ namespace MPF { namespace COMPONENT {
                     std::move(settings),
                     std::move(sender),
                     std::move(job),
-                    std::move(component),
-                    detection_type);
+                    std::move(component));
         }
         catch (const FatalError &ex) {
-            sender.SendSummaryReport(0, detection_type, {}, {}, ex.what());
+            sender.SendSummaryReport(0, {}, {}, ex.what());
             throw;
         }
 
@@ -197,7 +192,7 @@ namespace MPF { namespace COMPONENT {
                     std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                     FixTracks(segment_info, tracks);
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
-                    sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
+                    sender_.SendSummaryReport(frame_number, tracks, frame_timestamps);
                     frame_timestamps.clear();
                 }
             }
@@ -206,7 +201,7 @@ namespace MPF { namespace COMPONENT {
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
                 FixTracks(segment_info, tracks);
-                sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
+                sender_.SendSummaryReport(frame_number, tracks, frame_timestamps);
             }
         }
         catch (const FatalError &ex) {
@@ -217,7 +212,7 @@ namespace MPF { namespace COMPONENT {
                 tracks = TryGetRemainingTracks();
                 FixTracks(segment_info, tracks);
             }
-            sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps, ex.what());
+            sender_.SendSummaryReport(frame_number, tracks, frame_timestamps, ex.what());
             throw;
         }
     }

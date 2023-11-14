@@ -69,7 +69,7 @@
       "output": {
         "MOTION": [
           {
-            "source": "+#TEST PREPROCESSOR MOTION ACTION",
+            "action": "TEST PREPROCESSOR MOTION ACTION",
             "algorithm": "MOG",
             "tracks": [
               {
@@ -79,7 +79,6 @@
                 "startOffsetTime": 524,
                 "stopOffsetTime": 5062,
                 "type": "MOTION",
-                "source": "+#TEST PREPROCESSOR MOTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1770,7 +1769,7 @@
       "output": {
         "MOTION": [
           {
-            "source": "+#TEST PREPROCESSOR MOTION ACTION",
+            "action": "TEST PREPROCESSOR MOTION ACTION",
             "algorithm": "MOG",
             "tracks": [
               {
@@ -1780,7 +1779,6 @@
                 "startOffsetTime": 33,
                 "stopOffsetTime": 6639,
                 "type": "MOTION",
-                "source": "+#TEST PREPROCESSOR MOTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -4193,7 +4191,6 @@
                 "startOffsetTime": 6673,
                 "stopOffsetTime": 13313,
                 "type": "MOTION",
-                "source": "+#TEST PREPROCESSOR MOTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -6618,7 +6615,6 @@
                 "startOffsetTime": 13346,
                 "stopOffsetTime": 17350,
                 "type": "MOTION",
-                "source": "+#TEST PREPROCESSOR MOTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {

@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.camel.Message;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -55,10 +54,7 @@ public interface MediaSegmenter {
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
 
-
-    List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext);
-
-
+    List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context);
 
 
     public static DetectionProtobuf.DetectionRequest.Builder initializeRequest(
@@ -95,21 +91,29 @@ public interface MediaSegmenter {
     }
 
 
-
     public static boolean feedForwardIsEnabled(DetectionContext context) {
-        String feedForwardType = context.getAlgorithmProperties()
+        return context.getAlgorithmProperties()
                 .stream()
                 .filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
                 .findAny()
-                .map(ap -> ap.getPropertyValue().toUpperCase())
-                .orElse("NONE");
+                .map(ap -> feedForwardIsEnabled(ap.getPropertyValue()))
+                .orElse(false);
+    }
 
-        if (!FEED_FORWARD_TYPES.contains(feedForwardType.toUpperCase())) {
+
+    public static boolean feedForwardIsEnabled(String feedForwardType) {
+        if (feedForwardType == null
+                || feedForwardType.isBlank()
+                || "NONE".equalsIgnoreCase(feedForwardType)) {
+            return false;
+        }
+        if (FEED_FORWARD_TYPES.contains(feedForwardType.toUpperCase())) {
+            return true;
+        }
+        else {
             log.warn("Unknown feed forward type: {}. Disabling feed forward.", feedForwardType);
             return false;
         }
-
-        return !feedForwardType.equalsIgnoreCase("NONE");
     }
 
 

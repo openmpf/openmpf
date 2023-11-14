@@ -26,7 +26,29 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.jms.BytesMessage;
+import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
+
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.camel.component.ActiveMQComponent;
@@ -34,25 +56,24 @@ import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.SimpleRegistry;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
 import org.mitre.mpf.wfm.camel.routes.DlqRouteBuilder;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import javax.jms.*;
-import java.util.Queue;
-import java.util.*;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestDlqRouteBuilder {
+public class TestDlqRouteBuilder extends MockitoTest.Lenient {
 
     public static final String ACTIVE_MQ_HOST =
             Optional.ofNullable(System.getenv("ACTIVE_MQ_HOST")).orElse("localhost");
@@ -91,8 +112,6 @@ public class TestDlqRouteBuilder {
 
     private static int runId = -1;
 
-    private AutoCloseable closeable;
-
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
     private ActiveMQConnection connection;
@@ -103,8 +122,6 @@ public class TestDlqRouteBuilder {
 
     @Before
     public void setup() throws Exception {
-        closeable = MockitoAnnotations.openMocks(this);
-
         SimpleRegistry simpleRegistry = new SimpleRegistry();
         simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
         camelContext = new DefaultCamelContext(simpleRegistry);
@@ -149,8 +166,6 @@ public class TestDlqRouteBuilder {
             connection.stop();
             connection = null;
         }
-
-        closeable.close();
     }
 
     private void removeQueues() {

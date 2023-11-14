@@ -112,6 +112,7 @@ public class TestDetectionTaskSplitter {
                 "detectionAlgo",
                 "algo description",
                 ActionType.DETECTION,
+                "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
@@ -416,6 +417,7 @@ public class TestDetectionTaskSplitter {
                 "detectionAlgo",
                 "algo description",
                 ActionType.DETECTION,
+                "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
@@ -470,7 +472,7 @@ public class TestDetectionTaskSplitter {
             testMedia.addMetadata("FPS", "30");
         }
 
-        BatchJob testJob = new BatchJobImpl(
+        var testJob = new BatchJobImpl(
                 testJobId,
                 testExternalId,
                 systemPropertiesSnapshot,
@@ -482,7 +484,7 @@ public class TestDetectionTaskSplitter {
                 jobProperties,
                 Collections.emptyMap(),
                 false);
-
+        testJob.setCurrentTaskIndex(0);
         return testJob;
     }
 
@@ -502,7 +504,7 @@ public class TestDetectionTaskSplitter {
         testMedia.setMimeType("video/dummy");
 
         Algorithm algorithm = new Algorithm(
-                "FACECV", "description", ActionType.DETECTION, OptionalInt.empty(),
+                "FACECV", "description", ActionType.DETECTION, "FACE", OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
@@ -899,16 +901,20 @@ public class TestDetectionTaskSplitter {
         parentMedia.setType(MediaType.UNKNOWN);
         parentMedia.setMimeType("application/pdf");
 
-        var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION, "MEDIA",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION, "PARENT",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION, "CHILD",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION, "SHARED",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
 
@@ -937,19 +943,20 @@ public class TestDetectionTaskSplitter {
                 null, null, List.of(parentMedia),
                 Map.of(), Map.of(), false);
 
+        job.setCurrentTaskIndex(0);
         List<Message> responseList = detectionSplitter.performSplit(job, task1);
         Assert.assertEquals(1, responseList.size()); // parent only
 
         // Children will be added after the extraction task in a real job.
         var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", UriScheme.FILE, Paths.get("/local/path/child1"),
                 Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of());
+                List.of(), List.of(), null);
         childMedia1.setType(MediaType.IMAGE);
         childMedia1.setMimeType("image/png");
 
         var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", UriScheme.FILE, Paths.get("/local/path/child2"),
                 Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of());
+                List.of(), List.of(), null);
         childMedia2.setType(MediaType.IMAGE);
         childMedia2.setMimeType("image/jpeg");
 
@@ -964,5 +971,35 @@ public class TestDetectionTaskSplitter {
 
         responseList = detectionSplitter.performSplit(job, task4);
         Assert.assertEquals(3, responseList.size()); // parent and children
+
+        // nothing run yet
+        job.setCurrentTaskIndex(0);
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after parent only extraction
+        job.setCurrentTaskIndex(1);
+        Assert.assertEquals(0, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after parent only detection
+        job.setCurrentTaskIndex(2);
+        Assert.assertEquals(1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after child only detection
+        job.setCurrentTaskIndex(3);
+        Assert.assertEquals(1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(2, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(2, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after parent and child detection
+        job.setCurrentTaskIndex(4);
+        Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
     }
 }

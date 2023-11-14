@@ -28,17 +28,17 @@ package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Message;
 import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -47,9 +47,16 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class TestDefaultMediaSegmenter {
+public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
+
+    @Mock
+    private TriggerProcessor _mockTriggerProcessor;
+
+    @InjectMocks
+    private DefaultMediaSegmenter _defaultMediaSegmenter;
+
 
 	@Test
 	public void canCreateFirstStageMessages() {
@@ -57,16 +64,17 @@ public class TestDefaultMediaSegmenter {
 		DetectionContext context = createTestDetectionContext(
 				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
-		List<DetectionRequest> detectionRequests = runDefaultSegmenter(media, context);
+		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
 
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		// Verify FEED_FORWARD_TYPE has been removed
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -78,15 +86,16 @@ public class TestDefaultMediaSegmenter {
 
 		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
 
-		List<DetectionRequest> detectionRequests = runDefaultSegmenter(media, context);
+		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
 
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -99,13 +108,16 @@ public class TestDefaultMediaSegmenter {
 		DetectionContext context = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
 
-		List<DetectionRequest> detectionRequests = runDefaultSegmenter(media, context);
+        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+                .thenReturn(tracks.stream());
+
+		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 
 		assertEquals(2, detectionRequests.size());
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 3));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 3));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
@@ -113,6 +125,7 @@ public class TestDefaultMediaSegmenter {
 
 		assertContainsExpectedTrack(0.00f, detectionRequests);
 		assertContainsExpectedTrack(0.10f, detectionRequests);
+        assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -121,20 +134,13 @@ public class TestDefaultMediaSegmenter {
 		Media media = createTestMedia();
 		DetectionContext feedForwardContext = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
-		assertTrue(runDefaultSegmenter(media, feedForwardContext).isEmpty());
-	}
-
-
-	private static List<DetectionRequest> runDefaultSegmenter(Media media, DetectionContext context) {
-		MediaSegmenter segmenter = new DefaultMediaSegmenter(mock(CamelContext.class));
-		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
-		return unwrapMessages(messages);
+		assertTrue(_defaultMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
 	}
 
 
 	private static void assertContainsExpectedTrack(float confidence, Collection<DetectionRequest> requests) {
 		DetectionProtobuf.GenericTrack genericTrack = requests.stream()
-				.map(dr -> dr.getGenericRequest().getFeedForwardTrack())
+				.map(dr -> dr.protobuf().getGenericRequest().getFeedForwardTrack())
 				.filter(gt -> gt.getConfidence() == confidence)
 				.findAny()
 				.get();
@@ -157,13 +163,13 @@ public class TestDefaultMediaSegmenter {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(0.00f);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", 0,
+		                         -1, 0, 0, 0, 0,
 		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
 		                         "");
 
 		Detection detection2 = createDetection(0.10f);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", 0.10f,
+		                         -1, 0, 0, 0, 0.10f,
 		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
 		                         "");
 

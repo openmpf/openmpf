@@ -168,7 +168,7 @@ public class TestStreamingJobStartStop {
         JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
         assertEquals(jobId, summaryReport.getJobId());
 
-        boolean hasNonEmptyDetection = summaryReport.getDetectionTypes()
+        boolean hasNonEmptyDetection = summaryReport.getTrackTypes()
                 .values()
                 .stream()
                 .flatMap(Collection::stream)

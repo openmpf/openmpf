@@ -32,8 +32,6 @@ logger = logging.getLogger('GenericTestComponent')
 
 
 class GenericTestComponent(object):
-    detection_type = 'TEST GENERIC DETECTION TYPE'
-
 
     @staticmethod
     def get_detections_from_generic(generic_job):

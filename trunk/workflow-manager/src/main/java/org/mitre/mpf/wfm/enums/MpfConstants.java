@@ -101,7 +101,8 @@ public class MpfConstants {
             SKIP_MEDIA_INSPECTION = "SKIP_MEDIA_INSPECTION",
             LINKED_MEDIA_HASH = "LINKED_MEDIA_HASH",
             FFPROBE_IGNORE_STDERR = "FFPROBE_IGNORE_STDERR",
-            FFPROBE_STDERR_NUM_LINES = "FFPROBE_STDERR_NUM_LINES";
+            FFPROBE_STDERR_NUM_LINES = "FFPROBE_STDERR_NUM_LINES",
+            TRIGGER = "TRIGGER";
 
     private MpfConstants() {
     }

@@ -97,7 +97,6 @@ namespace MPF { namespace COMPONENT {
 
 
     void BasicAmqMessageSender::SendSummaryReport(int frame_number,
-                                                  const std::string &detection_type,
                                                   const std::vector<MPFVideoTrack> &tracks,
                                                   const std::unordered_map<int, long> &frame_timestamps,
                                                   const std::string &error_message) {
@@ -107,7 +106,6 @@ namespace MPF { namespace COMPONENT {
         protobuf_response.set_segment_number(segment_number);
         protobuf_response.set_segment_start_frame(segment_size_ * segment_number);
         protobuf_response.set_segment_stop_frame(frame_number);
-        protobuf_response.set_detection_type(detection_type);
         if (!error_message.empty())  {
             protobuf_response.set_error(error_message);
         }

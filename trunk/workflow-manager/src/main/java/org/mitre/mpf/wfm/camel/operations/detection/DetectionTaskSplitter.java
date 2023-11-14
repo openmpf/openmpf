@@ -34,11 +34,13 @@ import java.util.Map;
 import java.util.SortedSet;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
@@ -52,8 +54,13 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.segmenting.AudioMediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.DefaultMediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.ImageMediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
+import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,28 +74,43 @@ public class DetectionTaskSplitter {
 
     private static final Logger log = LoggerFactory.getLogger(DetectionTaskSplitter.class);
 
+    private final CamelContext _camelContext;
+
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
     private final InProgressBatchJobsService _inProgressBatchJobs;
+
+    private final TaskMergingManager _taskMergingManager;
+
     private final MediaSegmenter _imageMediaSegmenter;
+
     private final MediaSegmenter _videoMediaSegmenter;
+
     private final MediaSegmenter _audioMediaSegmenter;
+
     private final MediaSegmenter _defaultMediaSegmenter;
 
+
     @Inject
-    public DetectionTaskSplitter(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-                                 InProgressBatchJobsService inProgressBatchJobs,
-                                 MediaSegmenter imageMediaSegmenter,
-                                 MediaSegmenter videoMediaSegmenter,
-                                 MediaSegmenter audioMediaSegmenter,
-                                 MediaSegmenter defaultMediaSegmenter)
-    {
+    public DetectionTaskSplitter(
+            CamelContext camelContext,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            InProgressBatchJobsService inProgressBatchJobs,
+            TaskMergingManager taskMergingManager,
+            @Named(ImageMediaSegmenter.REF) MediaSegmenter imageMediaSegmenter,
+            @Named(VideoMediaSegmenter.REF) MediaSegmenter videoMediaSegmenter,
+            @Named(AudioMediaSegmenter.REF) MediaSegmenter audioMediaSegmenter,
+            @Named(DefaultMediaSegmenter.REF) MediaSegmenter defaultMediaSegmenter) {
+        _camelContext = camelContext;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobs = inProgressBatchJobs;
+        _taskMergingManager = taskMergingManager;
         _imageMediaSegmenter = imageMediaSegmenter;
         _videoMediaSegmenter = videoMediaSegmenter;
         _audioMediaSegmenter = audioMediaSegmenter;
         _defaultMediaSegmenter = defaultMediaSegmenter;
     }
+
 
     public List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
@@ -101,7 +123,8 @@ public class DetectionTaskSplitter {
                     continue;
                 }
 
-                boolean isFirstDetectionTaskForMedia = isFirstDetectionTask(job, media);
+                int lastProcessedTaskForMedia = getLastProcessedTaskIndex(job, media);
+                boolean isFirstDetectionTaskForMedia = lastProcessedTaskForMedia == -1;
 
                 // If this is the first detection task in the pipeline, we should segment the entire media for detection.
                 // If this is not the first detection task, we should build segments based off of the previous tasks's
@@ -113,7 +136,8 @@ public class DetectionTaskSplitter {
                 } else {
                     // Get the tracks for the last task that was processed for this media.
                     previousTracks = _inProgressBatchJobs.getTracks(
-                            job.getId(), media.getId(), media.getLastProcessedTaskIndex(), 0);
+                            job.getId(), media.getId(),
+                            lastProcessedTaskForMedia, 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -165,24 +189,8 @@ public class DetectionTaskSplitter {
                             previousTracks,
                             segmentingPlan);
 
-                    // get detection request messages from ActiveMQ
-                    List<Message> detectionRequestMessages = createDetectionRequestMessages(media, detectionContext);
-
-                    ActionType actionType = job.getPipelineElements()
-                            .getAlgorithm(action.getAlgorithm())
-                            .getActionType();
-                    for (Message message : detectionRequestMessages) {
-                        message.setHeader(MpfHeaders.JMS_DESTINATION,
-                                String.format("MPF.%s_%s_REQUEST",
-                                        actionType,
-                                        action.getAlgorithm()));
-                        message.setHeader(
-                            MpfHeaders.JMS_REPLY_TO,
-                            DetectionResponseRouteBuilder.JMS_DESTINATION);
-
-                        media.getType().ifPresent(
-                                mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
-                    }
+                    var detectionRequestMessages = createDetectionRequestMessages(
+                            job, media, action, detectionContext);
                     messages.addAll(detectionRequestMessages);
                     log.debug("Created {} work units for Media #{}.",
                             detectionRequestMessages.size(), media.getId());
@@ -220,10 +228,40 @@ public class DetectionTaskSplitter {
         }
     }
 
-    private List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext) {
-        MediaSegmenter segmenter = getSegmenter(media.getType().orElse(MediaType.UNKNOWN));
-        return segmenter.createDetectionRequestMessages(media, detectionContext);
+
+    private List<Message> createDetectionRequestMessages(
+            BatchJob job, Media media, Action action, DetectionContext detectionContext) {
+        var segmenter = getSegmenter(media.getType().orElse(MediaType.UNKNOWN));
+        var requests = segmenter.createDetectionRequests(media, detectionContext);
+        if (requests.isEmpty()) {
+            return List.of();
+        }
+
+        var actionType = job.getPipelineElements().getAlgorithm(action.getAlgorithm())
+                .getActionType();
+        var destination = "MPF.%s_%s_REQUEST".formatted(actionType, action.getAlgorithm());
+        boolean needsBreadCrumb = _taskMergingManager.needsBreadCrumb(
+                job, media, detectionContext.getTaskIndex(), detectionContext.getActionIndex());
+
+        var messages = new ArrayList<Message>(requests.size());
+        for (var request : requests) {
+            var message = new DefaultMessage(_camelContext);
+            message.setHeader(MpfHeaders.JMS_DESTINATION, destination);
+            message.setHeader(
+                    MpfHeaders.JMS_REPLY_TO,
+                    DetectionResponseRouteBuilder.JMS_DESTINATION);
+            media.getType()
+                    .ifPresent(mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
+            if (needsBreadCrumb) {
+                request.feedForwardTrack()
+                    .ifPresent(t -> _taskMergingManager.addBreadCrumb(message, t));
+            }
+            message.setBody(request.protobuf());
+            messages.add(message);
+        }
+        return messages;
     }
+
 
     private MediaSegmenter getSegmenter(MediaType mediaType) {
         return switch (mediaType) {
@@ -299,20 +337,14 @@ public class DetectionTaskSplitter {
         }
     }
 
-    /**
-     * Returns {@literal true} iff the current task of this job is the first detection task in the job for the media.
-     */
-    private static boolean isFirstDetectionTask(BatchJob job, Media media) {
-        for (int taskIndex = 0; taskIndex < job.getCurrentTaskIndex(); taskIndex++) {
-            // Only need to check the first action. We would not be here in the splitter after a parallel action,
-            // which can only be the last action in a pipeline.
-            int actionIndex = 0;
-            boolean wasProcessed = media.wasActionProcessed(taskIndex, actionIndex);
-            ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
-            if (wasProcessed && actionType == ActionType.DETECTION) {
-                return false;
+    public int getLastProcessedTaskIndex(BatchJob job, Media media) {
+        for (int taskIdx = job.getCurrentTaskIndex() - 1;
+                    taskIdx > media.getCreationTask(); taskIdx--) {
+            var action = job.getPipelineElements().getAction(taskIdx, 0);
+            if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
+                return taskIdx;
             }
         }
-        return true;
+        return -1;
     }
 }

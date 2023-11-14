@@ -27,9 +27,10 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-
 import java.time.Instant;
+import java.util.SortedSet;
+
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
 
@@ -40,9 +41,9 @@ public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
             String system,
             DataObject dataObject) {
 
-        public Assertion(String assertionId, String trackType, DataObject dataObject) {
+        public Assertion(String assertionId, DataObject dataObject) {
             this(assertionId,
-                 "OpenMPF " + trackType,
+                 "OpenMPF Tracks",
                  "UNCLASSIFIED",
                  "OpenMPF",
                  dataObject);
@@ -51,8 +52,7 @@ public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
 
     public record DataObject(
             String pipeline,
-            String algorithm,
-            String outputType,
+            SortedSet<String> outputTypes,
             String jobId,
             String outputUri,
             String sha256OutputHash,

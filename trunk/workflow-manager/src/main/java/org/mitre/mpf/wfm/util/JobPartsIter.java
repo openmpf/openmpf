@@ -89,7 +89,7 @@ public class JobPartsIter {
     private static Stream<JobPart> createJobPartsForTaskAndMedia(
             BatchJob job, Media media, long mediaIdx, int taskIdx, int actionCount) {
         return IntStream.range(0, actionCount)
-            .mapToObj(ai -> new JobPart(job, media, (int) mediaIdx, ai, taskIdx));
+            .mapToObj(ai -> new JobPart(job, media, (int) mediaIdx, taskIdx, ai));
     }
 
 

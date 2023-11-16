@@ -299,7 +299,7 @@ public class AggregateJobPropertiesUtil {
 
 
     public String getValue(String propertyName, JobPart jobPart) {
-        return getValue(propertyName, jobPart.getJob(), jobPart.getMedia(), jobPart.getAction());
+        return getValue(propertyName, jobPart.job(), jobPart.media(), jobPart.action());
     }
 
     public String getValue(String propertyName, BatchJob job, Media media) {
@@ -495,8 +495,8 @@ public class AggregateJobPropertiesUtil {
         var tasksToMerge = new HashMap<Integer, Integer>();
 
         for (var jobPart : JobPartsIter.of(job, media)) {
-            if (jobPart.getTaskIndex() == 0
-                    || jobPart.getAlgorithm().getActionType() != ActionType.DETECTION) {
+            if (jobPart.taskIndex() == 0
+                    || jobPart.algorithm().getActionType() != ActionType.DETECTION) {
                 continue;
             }
 
@@ -506,12 +506,12 @@ public class AggregateJobPropertiesUtil {
                 continue;
             }
 
-            for (int prevTaskIndex = jobPart.getTaskIndex() - 1;
+            for (int prevTaskIndex = jobPart.taskIndex() - 1;
                  prevTaskIndex > media.getCreationTask();
                  prevTaskIndex--) {
                 var prevAction = job.getPipelineElements().getAction(prevTaskIndex, 0);
                 if (actionAppliesToMedia(job, media, prevAction)) {
-                    tasksToMerge.put(jobPart.getTaskIndex(), prevTaskIndex);
+                    tasksToMerge.put(jobPart.taskIndex(), prevTaskIndex);
                     break;
                 }
             }

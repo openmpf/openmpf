@@ -61,23 +61,21 @@ std::string BoundingBoxVideoHandle::GetCommand(const cv::Size& size) {
         " -video_size " + std::to_string(size.width) + "x" + std::to_string(size.height) +
         " -framerate " + std::to_string(videoCapture_.GetFrameRate()) +
         " -f rawvideo" +
-        " -i -" +
-        // https://trac.ffmpeg.org/ticket/5276
-        // Use yuv420p to encode webm files that can be played with current browsers.
-        " -pix_fmt yuv420p";
+        " -i -";
 
     if ("vp9" == encoder_) { // .webm
         command = command +
             " -c:v libvpx-vp9" +
             // https://trac.ffmpeg.org/wiki/Encode/VP9
             // Two-pass is the recommended encoding method for libvpx-vp9 as some quality-enhancing encoder features are
-            // only available in 2-pass mode. Constant quality 2-pass is invoked by setting -b:v to zero and specifiying
+            // only available in 2-pass mode. Constant quality 2-pass is invoked by setting -b:v to zero and specifying
             // a quality level using the -crf switch.
             " -crf " + std::to_string(vp9Crf_) + " -b:v 0";
     }
     else if ("h264" == encoder_) { // .mp4
         command = command +
-            " -c:v libx264";
+            // Use yuv420p to encode mp4 files that can be played with current browsers.
+            " -pix_fmt yuv420p -c:v libx264";
     }
     else { // "mjpeg" .avi
         command = command +
@@ -92,6 +90,7 @@ std::string BoundingBoxVideoHandle::GetCommand(const cv::Size& size) {
         " -y" + // overwrite file if it exists
         " '" + destinationPath_ + "'";
 
+    std::cout << "command: " << command << std::endl;
     return command;
 }
 

@@ -89,8 +89,6 @@ std::string BoundingBoxVideoHandle::GetCommand(const cv::Size& size) {
         " -threads 2" +
         " -y" + // overwrite file if it exists
         " '" + destinationPath_ + "'";
-
-    std::cout << "command: " << command << std::endl;
     return command;
 }
 

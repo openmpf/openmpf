@@ -336,7 +336,9 @@ public class OutputChecker {
                 try {
                     Integer.parseInt(expected);
                     // Double.parseDouble will successfully parse integer values, but we do not
-                    // want to use the closeTo matcher when the string is an integer.
+                    // want to use the closeTo matcher when the string is an integer. If the
+                    // properties contained the same integer, the string comparison would have
+                    // succeeded.
                     return false;
                 }
                 catch (NumberFormatException e) {
@@ -421,4 +423,3 @@ public class OutputChecker {
         return overlap;
     }
 }
-

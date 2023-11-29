@@ -34,7 +34,7 @@ var templateUrlPath = 'resources/js/pipelines2';
 
     var module = angular.module('mpf.wfm.pipeline2.directives', []);
 
-    module.directive('taskSequence', [ function () {
+    module.directive('mpfTaskSequence', [ function () {
         return {
             templateUrl: templateUrlPath + '/taskSequence.html',
             restrict: 'EA',
@@ -102,7 +102,7 @@ var templateUrlPath = 'resources/js/pipelines2';
     }]);
 
 
-    module.directive('mpf-action', [
+    module.directive('mpfAction', [
         'ActionService', 'TaskService',
         function ( ActionService, TaskService ) {
             return {

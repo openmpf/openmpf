@@ -85,7 +85,7 @@
       "output": {
         "NO TRACKS": [
           {
-            "action": "OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+            "action": "OCV GENERIC MARKUP ACTION",
             "algorithm": "MARKUPCV"
           }
         ],

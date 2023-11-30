@@ -32,6 +32,7 @@
 
     <meta id="_csrf" name="_csrf" content="${_csrf.token}"/>
     <meta id="_csrf_header" name="_csrf_header" content="${_csrf.headerName}"/>
+    <meta id="_csrf_parameterName" name="_csrf_parameterName" content="${_csrf.parameterName}"/>
 
     <title>Workflow Manager Web App</title>
     <link rel="icon" href="resources/img/favicon.ico"/>

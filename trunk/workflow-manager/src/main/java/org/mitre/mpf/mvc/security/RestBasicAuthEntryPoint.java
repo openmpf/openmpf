@@ -24,33 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-/* globals angular */
 
-(function () {
+package org.mitre.mpf.mvc.security;
 
-    'use strict';
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
 
-    var module = angular.module('mpf.wfm.pipeline2');
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-    module.directive('mpfActionProperty',
-        [
-            function () {
-                return {
-                    restrict: 'E',
-                    templateUrl: 'resources/js/pipelines2/actionProperties.tpl.html',
-                    scope: {
-                        prop: "=",      // the property
-                        editMode: "="   // true iff editable
-                    },
-                    // this is now really simple: if prop has a value then it by definition
-                    //  has overwritten prop.defaultValue
-                    link: function ($scope, element, attrs) {
-                        $scope.hasChanged = function ( prop ) {
-                            return ( prop.value );
-                        }
-                    }
-                }
+import org.mitre.mpf.mvc.CorsFilter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**
+ * By default Spring returns HTML when authentication fails,
+ * but since this is applied to our REST endpoints JSON is more appropriate.
+ */
+@Component
+public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
+
+    private final ObjectMapper _objectMapper;
+
+    RestBasicAuthEntryPoint(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
+    }
+
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
+        // This header is what makes the log in box appear when accessing the REST URLs
+        // in a browser such as on the Swagger page.
+        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
+        if (request.getMethod().equals("OPTIONS")
+                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
+            // Handle CORS preflight request
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
+        else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            var messageObj = Map.of("message", authException.getMessage());
+            try (PrintWriter pw = response.getWriter()) {
+                _objectMapper.writeValue(pw, messageObj);
             }
-        ]);
-
-})();
+        }
+    }
+}

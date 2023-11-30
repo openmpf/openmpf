@@ -35,7 +35,6 @@
     <import resource="applicationContext-jms.xml"/>
     <import resource="applicationContext-basicTransactionManager.xml"/>
     <import resource="applicationContext-hibernate.xml"/>
-    <import resource="applicationContext-spring-security.xml"/>
     <import resource="applicationContext-monitor.xml"/>
     <import resource="applicationContext-properties.xml"/>
     <import resource="applicationContext-redis.xml"/>

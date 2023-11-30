@@ -24,33 +24,45 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-/* globals angular */
+package org.mitre.mpf.mvc.security;
 
-(function () {
 
-    'use strict';
+import java.io.IOException;
 
-    var module = angular.module('mpf.wfm.pipeline2');
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-    module.directive('mpfActionProperty',
-        [
-            function () {
-                return {
-                    restrict: 'E',
-                    templateUrl: 'resources/js/pipelines2/actionProperties.tpl.html',
-                    scope: {
-                        prop: "=",      // the property
-                        editMode: "="   // true iff editable
-                    },
-                    // this is now really simple: if prop has a value then it by definition
-                    //  has overwritten prop.defaultValue
-                    link: function ($scope, element, attrs) {
-                        $scope.hasChanged = function ( prop ) {
-                            return ( prop.value );
-                        }
-                    }
-                }
-            }
-        ]);
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+import org.springframework.security.web.csrf.CsrfException;
+import org.springframework.stereotype.Service;
 
-})();
+@Service("CustomAccessDeniedHandler")
+public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
+
+    @Override
+    public void handle(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AccessDeniedException accessDeniedException) throws IOException, ServletException {
+
+        if (!(accessDeniedException instanceof CsrfException)) {
+            super.handle(request, response, accessDeniedException);
+        }
+        else if (isAjax(request)) {
+            response.sendError(403, "INVALID_CSRF_TOKEN");
+        }
+        else if ("/workflow-manager/login".equals(request.getRequestURI())) {
+            response.sendRedirect("/workflow-manager/");
+        }
+        else {
+            super.handle(request, response, accessDeniedException);
+        }
+    }
+
+
+    private static boolean isAjax(HttpServletRequest request) {
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+    }
+}

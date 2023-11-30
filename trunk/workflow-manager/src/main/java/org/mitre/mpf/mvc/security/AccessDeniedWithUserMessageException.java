@@ -24,33 +24,14 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-/* globals angular */
 
-(function () {
+package org.mitre.mpf.mvc.security;
 
-    'use strict';
+import org.springframework.security.access.AccessDeniedException;
 
-    var module = angular.module('mpf.wfm.pipeline2');
+public class AccessDeniedWithUserMessageException extends AccessDeniedException {
 
-    module.directive('mpfActionProperty',
-        [
-            function () {
-                return {
-                    restrict: 'E',
-                    templateUrl: 'resources/js/pipelines2/actionProperties.tpl.html',
-                    scope: {
-                        prop: "=",      // the property
-                        editMode: "="   // true iff editable
-                    },
-                    // this is now really simple: if prop has a value then it by definition
-                    //  has overwritten prop.defaultValue
-                    link: function ($scope, element, attrs) {
-                        $scope.hasChanged = function ( prop ) {
-                            return ( prop.value );
-                        }
-                    }
-                }
-            }
-        ]);
-
-})();
+    public AccessDeniedWithUserMessageException(String message) {
+        super(message);
+    }
+}

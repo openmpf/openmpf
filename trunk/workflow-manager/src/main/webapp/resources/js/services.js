@@ -661,7 +661,7 @@ function ($q, NotificationSvc, ClientState) {
             }
             if (ClientState.getConnectionState() != ClientState.ConnectionState.LOGGING_OUT
                     && response.status == 401) {
-                window.top.location.href = 'login';
+                window.top.location.reload()
             }
 
             var respData = response.data;

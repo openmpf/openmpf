@@ -32,8 +32,8 @@
      * @constructor
      */
     angular.module('mpf.wfm.controller.ServerMediaCtrl', []).controller('ServerMediaCtrl',
-        ['$scope',  '$http', '$location', '$timeout', '$log', '$compile', 'MediaService', 'JobsService', 'NotificationSvc', 'csrfHeaders',
-        function ($scope, $http, $location, $timeout, $log, $compile, MediaService, JobsService, NotificationSvc, csrfHeaders) {
+        ['$scope',  '$http', '$location', '$timeout', '$log', '$compile', 'MediaService', 'JobsService', 'NotificationSvc', 'csrf',
+        function ($scope, $http, $location, $timeout, $log, $compile, MediaService, JobsService, NotificationSvc, csrf) {
 
             var fileTable = null;//bootstrap datatable
             var fileList = [];//current list of files for the selected folder
@@ -327,7 +327,7 @@
                         ajax: {
                             url: "server/get-all-files-filtered",
                             type: "POST",
-                            headers: csrfHeaders(),
+                            headers: csrf.headers(),
                             data: function (d) {//extra params
                                 d.fullPath = selectedNode.fullPath;
                                 d.search = d.search.value;//pull out because spring is a pain to pass params
@@ -761,7 +761,7 @@
                 dropzone = new Dropzone("#fileManager",
                     {
                         url: fileUploadURL,
-                        headers: csrfHeaders(),
+                        headers: csrf.headers(),
                         autoProcessQueue: true,
                         maxFiles: maxFileUploadCnt,
                         maxFilesize: 5000, //MB

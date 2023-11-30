@@ -25,41 +25,40 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc;
+package org.mitre.mpf.wfm.data.access.hibernate;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
 
-/**
- * By default Spring returns HTML when authentication fails,
- * but since this is applied to our REST endpoints JSON is more appropriate.
- */
-@Component
-public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
+import javax.persistence.Entity;
+
+import org.mitre.mpf.mvc.security.OidcSecurityConfig;
+import org.mitre.mpf.wfm.data.entities.persistent.User;
+import org.springframework.core.type.classreading.MetadataReader;
+import org.springframework.core.type.classreading.MetadataReaderFactory;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.TypeFilter;
+
+
+public class UserEntityFilter implements TypeFilter {
+
+    private final AnnotationTypeFilter _annotationTypeFilter
+            = new AnnotationTypeFilter(Entity.class);
+
+    private final boolean _oidcEnabled = OidcSecurityConfig.isEnabled();
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
-        // This header is what makes the log in box appear when accessing the REST URLs
-        // in a browser such as on the Swagger page.
-        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
-        if (request.getMethod().equals("OPTIONS")
-                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
-            // Handle CORS preflight request
-            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+    public boolean match(
+            MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
+            throws IOException {
+        if (!_annotationTypeFilter.match(metadataReader, metadataReaderFactory)) {
+            return false;
+        }
+        else if (_oidcEnabled) {
+            // Prevent hibernate from creating user table when OIDC is enabled.
+            return !metadataReader.getClassMetadata().getClassName().equals(User.class.getName());
         }
         else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            try (PrintWriter pw = response.getWriter()) {
-                pw.printf("{\"message\": \"%s\"}", authException.getMessage());
-            }
+            return true;
         }
     }
 }

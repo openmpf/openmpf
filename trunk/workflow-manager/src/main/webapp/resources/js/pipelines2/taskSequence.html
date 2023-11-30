@@ -24,11 +24,11 @@
     limitations under the License.
 -->
 <ul class="task-sequence">
-    <li action class="pipeline-start" arrow-out="{{tasks[0]._actions.length>1}}" no-popover>start</li>
+    <li mpf-action class="pipeline-start" arrow-out="{{tasks[0]._actions.length>1}}" no-popover>start</li>
     <li ng-repeat="task in tasks">
         <mpf-task task="task" op-obj="opObj" index-in-sequence="{{$index}}"></mpf-task>
     </li>
-    <li action arrow-in class="pipeline-end" no-popover
+    <li mpf-action arrow-in class="pipeline-end" no-popover
         op-obj="opObj">end</li>
     <!--<button ng-click="logTasks()">~ task sequence</button>-->
 </ul>

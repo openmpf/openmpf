@@ -219,6 +219,19 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-resource-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
             <version>1</version>
@@ -916,7 +929,9 @@
                                      3 minutes. -->
                                 <maxAttempts>360</maxAttempts>
                                 <argument>--server.port=${wfm.port}</argument>
-                                <argument>--spring.profiles.active=jenkins</argument>
+                                <argument>
+                                    --spring.profiles.active=jenkins,test-with-security
+                                </argument>
                             </arguments>
                         </configuration>
                     </execution>

@@ -53,11 +53,6 @@ import static java.util.stream.Collectors.toList;
 @Scope("request")
 @RestController
 @RequestMapping(produces = "application/json")
-// Methods to get single pipeline element don't show up in Swagger because Swagger won't display both
-// /rest/elements and /rest/elements?name={name}. We decided to just show the /rest/elements endpoints since they
-// return the same models as the /rest/elements?name endpoints, except that they are in a list.
-// Github issue: https://github.com/swagger-api/swagger-ui/issues/2031
-// Appears to fixed in Swagger version 3.
 public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
@@ -81,7 +76,6 @@ public class PipelineController {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(InvalidPipelineException.class)
-    @ResponseBody
     public MessageModel invalidPipelineHandler(InvalidPipelineException ex) {
         log.error(ex.getMessage(), ex);
         return new MessageModel(ex.getMessage());
@@ -89,26 +83,24 @@ public class PipelineController {
 
 
 
-    @RequestMapping(value = {  "/pipelines", "/rest/pipelines" }, method = RequestMethod.GET)
+    @GetMapping({  "/pipelines", "/rest/pipelines" })
     @ApiOperation("Retrieves list of available pipelines.")
     public List<Pipeline> getPipelines() {
         return _pipelineService.getPipelines();
     }
 
 
-    @RequestMapping(value = { "/pipelines", "/rest/pipelines" },
-            method = RequestMethod.GET,
-            // Uses query string parameter instead of path variable to support names with special characters.
-            params = "name")
+    @GetMapping({ "/pipelines/{name}", "/rest/pipelines/{name}" })
+    @ApiOperation("Retrieves a single pipeline.")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
-    public ResponseEntity<Pipeline> getPipeline(String name) {
+    public ResponseEntity<Pipeline> getPipeline(@PathVariable String name) {
         return Optional.ofNullable(_pipelineService.getPipeline(name))
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
 
-    @RequestMapping(value = { "/pipelines", "/rest/pipelines" }, method = RequestMethod.POST)
+    @PostMapping({ "/pipelines", "/rest/pipelines" })
     @ApiOperation("Adds a new pipeline.")
     @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Pipeline pipeline) {
@@ -116,38 +108,33 @@ public class PipelineController {
     }
 
 
-    @RequestMapping(value = { "/pipelines", "/rest/pipelines" },
-            method = RequestMethod.DELETE,
-            // Uses query string parameter instead of path variable to support names with special characters.
-            params = "name")
+    @DeleteMapping({ "/pipelines/{name}", "/rest/pipelines/{name}" })
     @ApiOperation("Deletes a pipeline.")
-    public void deletePipeline(String name) {
+    public void deletePipeline(@PathVariable String name) {
         _pipelineService.deletePipeline(name);
     }
 
 
 
 
-    @RequestMapping(value = { "/tasks", "/rest/tasks" }, method = RequestMethod.GET)
+    @GetMapping({ "/tasks", "/rest/tasks" })
     @ApiOperation("Retrieves list of available tasks.")
     public List<Task> getTasks() {
         return _pipelineService.getTasks();
     }
 
 
-    @RequestMapping(value = { "/tasks", "/rest/tasks" },
-            method = RequestMethod.GET,
-            // Uses query string parameter instead of path variable to support names with special characters.
-            params = "name")
+    @GetMapping({ "/tasks/{name}", "/rest/tasks/{name}" })
+    @ApiOperation("Retrieves a single task.")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
-    public ResponseEntity<Task> getTask(String name) {
+    public ResponseEntity<Task> getTask(@PathVariable String name) {
         return Optional.ofNullable(_pipelineService.getTask(name))
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
 
-    @RequestMapping(value = { "/tasks", "/rest/tasks" }, method = RequestMethod.POST)
+    @PostMapping({ "/tasks", "/rest/tasks" })
     @ApiOperation("Adds a new task.")
     @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Task task) {
@@ -155,12 +142,9 @@ public class PipelineController {
     }
 
 
-    @RequestMapping(value = { "/tasks", "/rest/tasks" },
-            method = RequestMethod.DELETE,
-            // Uses query string parameter instead of path variable to support names with special characters.
-            params = "name")
+    @DeleteMapping({ "/tasks/{name}", "/rest/tasks/{name}" })
     @ApiOperation("Deletes a task.")
-    public void deleteTask(String name) {
+    public void deleteTask(@PathVariable String name) {
         _pipelineService.deleteTask(name);
     }
 
@@ -168,26 +152,24 @@ public class PipelineController {
 
 
 
-    @RequestMapping(value = { "/actions", "/rest/actions" }, method = RequestMethod.GET)
+    @GetMapping({ "/actions", "/rest/actions" })
     @ApiOperation("Retrieves list of available actions.")
     public List<Action> getActions() {
         return _pipelineService.getActions();
     }
 
 
-    @RequestMapping(value = { "/actions", "/rest/actions" },
-            method = RequestMethod.GET,
-            // Uses query string parameter instead of path variable to support names with special characters.
-            params = "name")
+    @GetMapping({ "/actions/{name}", "/rest/actions/{name}" })
+    @ApiOperation("Retrieves a single  action")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
-    public ResponseEntity<Action> getAction(String name) {
+    public ResponseEntity<Action> getAction(@PathVariable String name) {
         return Optional.ofNullable(_pipelineService.getAction(name))
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
 
-    @RequestMapping(value = { "/actions", "/rest/actions" }, method = RequestMethod.POST)
+    @PostMapping({ "/actions", "/rest/actions" })
     @ApiOperation("Adds a new action.")
     @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Action action) {
@@ -195,19 +177,16 @@ public class PipelineController {
     }
 
 
-    @RequestMapping(value = { "/actions", "/rest/actions" },
-            method = RequestMethod.DELETE,
-            // Uses query string parameter instead of path variable to support names with special characters.
-            params = "name")
+    @DeleteMapping({ "/actions/{name}", "/rest/actions/{name}" })
     @ApiOperation("Deletes an action.")
-    public void deleteAction(String name) {
+    public void deleteAction(@PathVariable String name) {
         _pipelineService.deleteAction(name);
     }
 
 
 
 
-    @RequestMapping(value = { "/algorithms", "/rest/algorithms" }, method = RequestMethod.GET)
+    @GetMapping({ "/algorithms", "/rest/algorithms" })
     @ApiOperation("Retrieves list of available algorithms.")
     public List<Algorithm> getAlgorithms() {
         return _pipelineService.getAlgorithms()
@@ -217,12 +196,10 @@ public class PipelineController {
     }
 
 
-    @RequestMapping(value = { "/algorithms", "/rest/algorithms" },
-            method = RequestMethod.GET,
-            // Uses query string parameter instead of path variable to support names with special characters.
-            params = "name")
+    @GetMapping({ "/algorithms/{name}", "/rest/algorithms/{name}" })
+    @ApiOperation("Retrieves a single algorithm.")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
-    public ResponseEntity<Algorithm> getAlgorithm(String name) {
+    public ResponseEntity<Algorithm> getAlgorithm(@PathVariable String name) {
         return Optional.ofNullable(_pipelineService.getAlgorithm(name))
                 .map(this::getAlgoWithDefaultValuesSet)
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))

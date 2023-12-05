@@ -31,8 +31,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
-import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
+import org.mitre.mpf.rest.api.util.ValidName;
 
 import javax.validation.Valid;
 import java.util.Collection;
@@ -42,7 +42,7 @@ public class Task implements PipelineElement {
 
     private final String _name;
     @Override
-    @NotBlank
+    @ValidName
     public String getName() {
         return _name;
     }
@@ -55,7 +55,7 @@ public class Task implements PipelineElement {
 
     private final ImmutableList<String> _actions;
     @NotEmpty @Valid
-    public ImmutableList<@AllNotBlank String> getActions() {
+    public ImmutableList<@ValidName String> getActions() {
         return _actions;
     }
 

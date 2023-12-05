@@ -34,6 +34,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
 import org.mitre.mpf.rest.api.util.Utils;
+import org.mitre.mpf.rest.api.util.ValidName;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -48,7 +49,7 @@ public class Algorithm implements PipelineElement {
 
     private final String _name;
     @Override
-    @NotBlank
+    @ValidName
     public String getName() {
         return _name;
     }

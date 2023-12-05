@@ -615,10 +615,12 @@ public class TestPipelineValidator {
                 createViolationMessage("description", pipeline.getDescription(), "may not be empty"),
                 createViolationMessage("tasks", "[]", "may not be empty"));
 
-        pipeline = new Pipeline("PIPELINE", "desc.desc", List.of("TASK", ""));
+        pipeline = new Pipeline("PIPELINE;", "desc.desc", List.of("TASK", "", "a/b"));
         assertValidationErrors(
                 pipeline,
-                createViolationMessage("tasks[1].<collection element>", pipeline.getTasks().get(1), "may not be empty"));
+                createViolationMessage("name", pipeline.getName(), "may not contain / or ;"),
+                createViolationMessage("tasks[1].<collection element>", pipeline.getTasks().get(1), "may not be empty"),
+                createViolationMessage("tasks[2].<collection element>", pipeline.getTasks().get(2), "may not contain / or ;"));
 
         pipeline = new Pipeline("PIPELINE", "desc.desc", List.of("TASK", "ASDF"));
         _pipelineValidator.validateOnAdd(pipeline, Map.of());

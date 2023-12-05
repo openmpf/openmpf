@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
+import org.mitre.mpf.rest.api.util.ValidName;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -41,7 +42,7 @@ public class Action implements PipelineElement {
 
     private final String _name;
     @Override
-    @NotBlank
+    @ValidName
     public String getName() {
         return _name;
     }
@@ -53,7 +54,7 @@ public class Action implements PipelineElement {
     }
 
     private final String _algorithm;
-    @NotBlank
+    @ValidName
     public String getAlgorithm() {
         return _algorithm;
     }

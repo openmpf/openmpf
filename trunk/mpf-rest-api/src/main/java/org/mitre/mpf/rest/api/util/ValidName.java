@@ -24,67 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.rest.api.util;
 
-package org.mitre.mpf.rest.api.pipelines;
+import java.lang.annotation.Target;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+import javax.validation.ReportAsSingleViolation;
+
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
-import org.mitre.mpf.rest.api.util.Utils;
-import org.mitre.mpf.rest.api.util.ValidName;
 
-import javax.validation.Valid;
-import java.util.Collection;
-import java.util.Objects;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
+        ElementType.ANNOTATION_TYPE })
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = ValidName.Validator.class)
+@NotBlank
+public @interface ValidName {
+    String message() default "may not contain / or ;";
+    Class<?>[] groups() default { };
+    Class<? extends Payload>[] payload() default { };
 
 
-public class Pipeline implements PipelineElement {
+    public static class Validator implements ConstraintValidator<ValidName, String> {
 
-    private final String _name;
-    @Override
-    @ValidName
-    public String getName() {
-        return _name;
-    }
-
-    private final String _description;
-    @NotBlank
-    public String getDescription() {
-        return _description;
-    }
-
-    private final ImmutableList<String> _tasks;
-    @NotEmpty @Valid
-    public ImmutableList<@ValidName String> getTasks() {
-        return _tasks;
-    }
-
-    public Pipeline(
-            @JsonProperty("name") String name,
-            @JsonProperty("description") String description,
-            @JsonProperty("tasks") Collection<String> tasks)  {
-        _name = Utils.trimAndUpper(name);
-        _description = Utils.trim(description);
-        _tasks = Utils.trimAndUpper(tasks, ImmutableList.toImmutableList());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
+        @Override
+        public void initialize(ValidName constraintAnnotation) {
         }
-        if (!(obj instanceof Pipeline)) {
-            return false;
-        }
-        var other = (Pipeline) obj;
-        return Objects.equals(_name, other._name)
-                && Objects.equals(_description, other._description)
-                && Objects.equals(_tasks, other._tasks);
-    }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(_name, _description, _tasks);
+        @Override
+        public boolean isValid(String value, ConstraintValidatorContext context) {
+            if (value == null) {
+                // Use the error message from @NotBlank when the value is null.
+                return true;
+            }
+            return !value.contains("/") && !value.contains(";");
+        }
     }
 }

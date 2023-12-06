@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.TrackCache;
@@ -183,8 +184,9 @@ public class TestMovingTrackLabelProcessor {
                 .thenReturn(mockJob);
         when(mockJob.getId())
                 .thenReturn(jobId);
-        when(mockJob.getPipelineElements().getTask(0).actions().size())
-                .thenReturn(1);
+        var task = new Task(null, null, List.of("ACTION"));
+        when(mockJob.getPipelineElements().getTask(0))
+                .thenReturn(task);
 
         long mediaId = 3242;
         var mockMedia = mock(MediaImpl.class);
@@ -206,7 +208,7 @@ public class TestMovingTrackLabelProcessor {
                 MpfConstants.MOVING_TRACK_MIN_DETECTIONS, String.valueOf(minDetections));
 
         when(mockAggregateJobPropertiesUtil.getCombinedProperties(
-                same(mockJob), same(mockMedia), any(Action.class)))
+                same(mockJob), same(mockMedia), any()))
                 .thenReturn(props::get);
 
         when(mockInProgressJobs.getTracks(jobId, mediaId, 0, 0))

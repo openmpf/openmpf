@@ -133,7 +133,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
     private JsonSegmentSummaryReport convertProtobufResponse(
             long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
         var job = _inProgressJobs.getJob(jobId);
-        var trackType = job.getPipelineElements().getAlgorithm(0, 0).getTrackType();
+        var trackType = job.getPipelineElements().getAlgorithm(0, 0).trackType();
 
         List<JsonStreamingTrackOutputObject> tracks =
                 IntStream.range(0, protobuf.getVideoTracksList().size())

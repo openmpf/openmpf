@@ -591,7 +591,7 @@ public class TestArtifactExtractionSplitter {
         Action action = mock(Action.class);
         Task task = mock(Task.class);
         ImmutableList<String> actionList = ImmutableList.of("Test Action");
-        when(task.getActions())
+        when(task.actions())
                 .thenReturn(actionList);
 
         JobPipelineElements pipelineElements = mock(JobPipelineElements.class, RETURNS_DEEP_STUBS);
@@ -606,7 +606,7 @@ public class TestArtifactExtractionSplitter {
         when(pipelineElements.getTaskCount())
                 .thenReturn(1);
 
-        when(pipelineElements.getAlgorithm(anyInt(), anyInt()).getActionType())
+        when(pipelineElements.getAlgorithm(anyInt(), anyInt()).actionType())
                 .thenReturn(ActionType.DETECTION);
 
 

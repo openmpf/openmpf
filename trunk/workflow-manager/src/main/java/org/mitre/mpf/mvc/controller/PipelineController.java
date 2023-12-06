@@ -211,30 +211,30 @@ public class PipelineController {
         var propsWithDefaultSet = new ArrayList<AlgorithmProperty>();
         var propertiesAdded = new HashSet<String>();
 
-        for (var property : algorithm.getProvidesCollection().getProperties()) {
-            if (property.getDefaultValue() != null) {
+        for (var property : algorithm.providesCollection().properties()) {
+            if (property.defaultValue() != null) {
                 propsWithDefaultSet.add(property);
             }
             else {
                 var propWithDefault = new AlgorithmProperty(
-                        property.getName(), property.getDescription(), property.getType(),
-                        _propertiesUtil.lookup(property.getPropertiesKey()), property.getPropertiesKey());
+                        property.name(), property.description(), property.type(),
+                        _propertiesUtil.lookup(property.propertiesKey()), property.propertiesKey());
                 propsWithDefaultSet.add(propWithDefault);
             }
-            propertiesAdded.add(property.getName());
+            propertiesAdded.add(property.name());
         }
 
-        if (algorithm.getActionType() == ActionType.DETECTION) {
+        if (algorithm.actionType() == ActionType.DETECTION) {
             addWorkflowProperties(propertiesAdded, propsWithDefaultSet);
         }
 
         return new Algorithm(
-                algorithm.getName(), algorithm.getDescription(), algorithm.getActionType(),
-                algorithm.getTrackType(),
-                algorithm.getOutputChangedCounter(),
-                algorithm.getRequiresCollection(),
-                new Algorithm.Provides(algorithm.getProvidesCollection().getStates(), propsWithDefaultSet),
-                algorithm.getSupportsBatchProcessing(), algorithm.getSupportsStreamProcessing());
+                algorithm.name(), algorithm.description(), algorithm.actionType(),
+                algorithm.trackType(),
+                algorithm.outputChangedCounter(),
+                algorithm.requiresCollection(),
+                new Algorithm.Provides(algorithm.providesCollection().states(), propsWithDefaultSet),
+                algorithm.supportsBatchProcessing(), algorithm.supportsStreamProcessing());
     }
 
 

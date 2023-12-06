@@ -491,7 +491,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
         var task3 = createTask(3, action3, action4);
 
         var tasks = List.of(task0, task1, task2, task3);
-        var taskNames = tasks.stream().map(Task::getName).toList();
+        var taskNames = tasks.stream().map(Task::name).toList();
         var pipeline = new Pipeline("TEST_PIPELINE", "", taskNames);
         return new JobPipelineElements(
                 pipeline, tasks,
@@ -515,12 +515,12 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
 
     private static Action createAction(int idx, Algorithm algorithm) {
-        return new Action("ACTION_" + idx, null, algorithm.getName(), List.of());
+        return new Action("ACTION_" + idx, null, algorithm.name(), List.of());
     }
 
     private static Task createTask(int idx, Action... actions) {
         var names = Stream.of(actions)
-            .map(Action::getName)
+            .map(Action::name)
             .toList();
         return new Task("TASK_" + idx, null, names);
     }

@@ -101,8 +101,8 @@ public class TestRemoveComponentService extends MockitoTest.Lenient {
     public void testRemoveComponentHappyPath() throws IOException, ManagedComponentsUnsupportedException {
         // Arrange
         JsonComponentDescriptor descriptor = TestDescriptorFactory.get();
-        String serviceName = descriptor.getAlgorithm().getName();
-        String algoName = descriptor.getAlgorithm().getName();
+        String serviceName = descriptor.getAlgorithm().name();
+        String algoName = descriptor.getAlgorithm().name();
 
         RegisterComponentModel rcm = new RegisterComponentModel();
         rcm.setComponentState(ComponentState.REGISTERED);
@@ -140,28 +140,28 @@ public class TestRemoveComponentService extends MockitoTest.Lenient {
         when(_mockPipelineService.getActions())
                 .thenReturn(ImmutableList.of(componentAction, componentAction2, otherAction));
 
-        rcm.getActions().add(componentAction.getName());
-        rcm.getActions().add(componentAction2.getName());
+        rcm.getActions().add(componentAction.name());
+        rcm.getActions().add(componentAction2.name());
 
         Task componentTask = new Task("component task", "description",
-                                      Collections.singleton(otherAction.getName()));
+                                      List.of(otherAction.name()));
         Task otherTask = new Task("other task", "description",
-                                  Collections.singleton(componentAction.getName()));
+                                  List.of(componentAction.name()));
         when(_mockPipelineService.getTasks())
                 .thenReturn(ImmutableList.of(
                         componentTask, otherTask,
                         new Task("asdf", "description", Collections.emptyList())));
-        rcm.getTasks().add(componentTask.getName());
+        rcm.getTasks().add(componentTask.name());
 
         Pipeline componentPipeline = new Pipeline("component pipeline", "description",
-                                                  Collections.singleton(otherTask.getName()));
+                                                  List.of(otherTask.name()));
         Pipeline otherPipeline = new Pipeline("other pipeline", "description",
-                                              Collections.singleton(otherTask.getName()));
+                                              List.of(otherTask.name()));
         when(_mockPipelineService.getPipelines())
                 .thenReturn(ImmutableList.of(
                         componentPipeline, otherPipeline,
                         new Pipeline("sdaf", "description", Collections.emptyList())));
-        rcm.getPipelines().add(componentPipeline.getName());
+        rcm.getPipelines().add(componentPipeline.name());
 
         // Act
         _removeComponentService.removeComponent(COMPONENT_NAME);
@@ -186,16 +186,16 @@ public class TestRemoveComponentService extends MockitoTest.Lenient {
                 .deleteAlgorithm(algoName);
 
         verify(_mockPipelineService)
-                .deleteAction(componentAction.getName());
+                .deleteAction(componentAction.name());
 
         verify(_mockPipelineService)
-                .deleteAction(componentAction2.getName());
+                .deleteAction(componentAction2.name());
 
         verify(_mockPipelineService)
-                .deleteTask(componentTask.getName());
+                .deleteTask(componentTask.name());
 
         verify(_mockPipelineService)
-                .deletePipeline(componentPipeline.getName());
+                .deletePipeline(componentPipeline.name());
 
         verifyNoMoreInteractions(_mockPipelineService);
 
@@ -245,4 +245,3 @@ public class TestRemoveComponentService extends MockitoTest.Lenient {
         assertFalse(Files.exists(testComponentDir));
     }
 }
-

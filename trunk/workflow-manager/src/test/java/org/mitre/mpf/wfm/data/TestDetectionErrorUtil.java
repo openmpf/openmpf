@@ -94,13 +94,13 @@ public class TestDetectionErrorUtil {
         when(mockPipelineElements.getName())
                 .thenReturn("TEST PIPELINE");
 
-        when(mockAlgorithm1.getName())
+        when(mockAlgorithm1.name())
                 .thenReturn(_TEST_ALGO1_NAME);
         when(mockPipelineElements.getAlgorithm(0, 0))
                 .thenReturn(mockAlgorithm1);
 
         var mockAlgorithm2 = mock(Algorithm.class);
-        when(mockAlgorithm2.getName())
+        when(mockAlgorithm2.name())
                 .thenReturn(_TEST_ALGO2_NAME);
         when(mockPipelineElements.getAlgorithm(1, 0))
                 .thenReturn(mockAlgorithm2);

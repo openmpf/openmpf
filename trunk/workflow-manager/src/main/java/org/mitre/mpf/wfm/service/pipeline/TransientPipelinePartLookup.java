@@ -60,19 +60,19 @@ public class TransientPipelinePartLookup implements PipelinePartLookup {
         _tasks = transientPipeline.getTasks()
                 .stream()
                 .map(TransientPipelinePartLookup::convertTask)
-                .collect(toMap(Task::getName, Function.identity(), (t1, t2) -> t1));
+                .collect(toMap(Task::name, Function.identity(), (t1, t2) -> t1));
 
         _actions = transientPipeline.getActions()
                 .stream()
                 .map(TransientPipelinePartLookup::convertAction)
-                .collect(toMap(Action::getName, Function.identity(), (a1, a2) -> a1));
+                .collect(toMap(Action::name, Function.identity(), (a1, a2) -> a1));
 
         _existingPipelineParts = existingPipelineParts;
     }
 
 
     public String getPipelineName() {
-        return _pipeline.getName();
+        return _pipeline.name();
     }
 
     @Override

@@ -322,12 +322,12 @@ public class AddComponentServiceImpl implements AddComponentService {
             throws ComponentRegistrationSubsystemException {
         try {
             _pipelineService.save(algorithm);
-            _log.info("Successfully added the " + algorithm.getName() + " algorithm");
-            return algorithm.getName().toUpperCase();
+            _log.info("Successfully added the " + algorithm.name() + " algorithm");
+            return algorithm.name().toUpperCase();
         }
         catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(
-                    String.format("Could not add the \"%s\" algorithm.", algorithm.getName()), ex);
+                    String.format("Could not add the \"%s\" algorithm.", algorithm.name()), ex);
         }
     }
 
@@ -340,9 +340,9 @@ public class AddComponentServiceImpl implements AddComponentService {
             }
 
             // add a default action associated with the algorithm
-            String actionDescription = "Default action for the " + algorithm.getName() + " algorithm.";
+            String actionDescription = "Default action for the " + algorithm.name() + " algorithm.";
             String actionName = getDefaultActionName(algorithm);
-            saveAction(new Action(actionName, actionDescription, algorithm.getName(), Collections.emptyList()));
+            saveAction(new Action(actionName, actionDescription, algorithm.name(), Collections.emptyList()));
             return Collections.singleton(actionName);
         }
 
@@ -351,7 +351,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
         return descriptor.getActions()
                 .stream()
-                .map(a -> a.getName().toUpperCase())
+                .map(a -> a.name().toUpperCase())
                 .collect(toSet());
     }
 
@@ -359,11 +359,11 @@ public class AddComponentServiceImpl implements AddComponentService {
             throws ComponentRegistrationSubsystemException {
         try {
             _pipelineService.save(action);
-            _log.info("Successfully added the {} action for the {} algorithm", action.getName(), action.getAlgorithm());
+            _log.info("Successfully added the {} action for the {} algorithm", action.name(), action.algorithm());
         }
         catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(String.format(
-                    "Could not add the %s action", action.getName()), ex);
+                    "Could not add the %s action", action.name()), ex);
         }
     }
 
@@ -388,7 +388,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
         return descriptor.getTasks()
                 .stream()
-                .map(Task::getName)
+                .map(Task::name)
                 .collect(toSet());
     }
 
@@ -396,11 +396,11 @@ public class AddComponentServiceImpl implements AddComponentService {
             throws ComponentRegistrationSubsystemException {
         try {
             _pipelineService.save(task);
-            _log.info("Successfully added the {} task", task.getName());
+            _log.info("Successfully added the {} task", task.name());
         }
         catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(
-                    String.format("Could not add the %s task", task.getName()), ex);
+                    String.format("Could not add the %s task", task.name()), ex);
         }
     }
 
@@ -412,11 +412,11 @@ public class AddComponentServiceImpl implements AddComponentService {
         // note, can't do this if a required state must be reached by a previous
         // stage in a pipeline that uses this algorithm
         if (descriptor.getPipelines().isEmpty()) {
-            if (algorithm != null && algorithm.getRequiresCollection().getStates().isEmpty()) {
+            if (algorithm != null && algorithm.requiresCollection().states().isEmpty()) {
                 String pipelineName = getDefaultPipelineName(algorithm);
                 String taskName = getDefaultTaskName(algorithm);
                 String pipelineDescription = "Default pipeline for the " + taskName + " task.";
-                savePipeline(new Pipeline(pipelineName, pipelineDescription, Collections.singleton(taskName)));
+                savePipeline(new Pipeline(pipelineName, pipelineDescription, List.of(taskName)));
                 return Collections.singleton(pipelineName);
             }
 
@@ -429,7 +429,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
         return descriptor.getPipelines()
                 .stream()
-                .map(Pipeline::getName)
+                .map(Pipeline::name)
                 .collect(toSet());
     }
 
@@ -438,11 +438,11 @@ public class AddComponentServiceImpl implements AddComponentService {
 
         try {
             _pipelineService.save(pipeline);
-            _log.info("Successfully added the {} pipeline.", pipeline.getName());
+            _log.info("Successfully added the {} pipeline.", pipeline.name());
         }
         catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(String.format(
-                    "Failed to add the %s pipeline", pipeline.getName()), ex);
+                    "Failed to add the %s pipeline", pipeline.name()), ex);
         }
     }
 
@@ -453,7 +453,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             throw new ComponentRegistrationSubsystemException(String.format(
                     "Couldn't add the %s service because another service already has that name", serviceName));
         }
-        String queueName = String.format("MPF.%s_%s_REQUEST", algorithm.getActionType(), algorithm.getName());
+        String queueName = String.format("MPF.%s_%s_REQUEST", algorithm.actionType(), algorithm.name());
 
         String path;
         String launcher;
@@ -482,7 +482,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 args,
                 convertJsonEnvVars(descriptor),
                 "${MPF_HOME}/plugins/" + descriptor.getComponentName(),
-                algorithm.getDescription());
+                algorithm.description());
 
         _log.debug("Created service definition");
         if (_nodeManagerService.addService(algorithmService)) {
@@ -516,7 +516,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                     .collect(toList());
 
             StreamingServiceModel serviceModel = new StreamingServiceModel(
-                    serviceName, algorithm.getName(), ComponentLanguage.CPP, libPath, envVars);
+                    serviceName, algorithm.name(), ComponentLanguage.CPP, libPath, envVars);
             _streamingServiceManager.addService(serviceModel);
             return serviceName;
         }
@@ -530,16 +530,16 @@ public class AddComponentServiceImpl implements AddComponentService {
 
 
     private static String getDefaultActionName(Algorithm algorithm) {
-        return String.format("%s %s ACTION", algorithm.getName(), algorithm.getActionType().toString()).toUpperCase();
+        return String.format("%s %s ACTION", algorithm.name(), algorithm.actionType().toString()).toUpperCase();
     }
 
     private static String getDefaultTaskName(Algorithm algorithm) {
-        return String.format("%s %s TASK", algorithm.getName(), algorithm.getActionType().toString())
+        return String.format("%s %s TASK", algorithm.name(), algorithm.actionType().toString())
                 .toUpperCase();
     }
 
     private static String getDefaultPipelineName(Algorithm algorithm) {
-        return String.format("%s %s PIPELINE", algorithm.getName(), algorithm.getActionType().toString())
+        return String.format("%s %s PIPELINE", algorithm.name(), algorithm.actionType().toString())
                 .toUpperCase();
     }
 }

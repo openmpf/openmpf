@@ -188,8 +188,8 @@ public class TestStreamingJobStartStop {
     private StreamingJob createJob(long jobId, String algorithm, String pipelineName,
                                             String mediaPath, int segmentSize, int stallTimeout) {
         Action action = new Action("Action1", "description", algorithm, Collections.emptyList());
-        Task task = new Task("Task1", "description", Collections.singleton(action.getName()));
-        Pipeline pipeline = new Pipeline(pipelineName, "desc", Collections.singleton(task.getName()));
+        Task task = new Task("Task1", "description", List.of(action.name()));
+        Pipeline pipeline = new Pipeline(pipelineName, "desc", List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(_pipelineService.getAlgorithm(algorithm)));

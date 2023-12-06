@@ -183,7 +183,7 @@ public class TestMovingTrackLabelProcessor {
                 .thenReturn(mockJob);
         when(mockJob.getId())
                 .thenReturn(jobId);
-        when(mockJob.getPipelineElements().getTask(0).getActions().size())
+        when(mockJob.getPipelineElements().getTask(0).actions().size())
                 .thenReturn(1);
 
         long mediaId = 3242;

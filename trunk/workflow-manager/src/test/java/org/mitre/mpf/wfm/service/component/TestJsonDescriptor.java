@@ -53,14 +53,14 @@ public class TestJsonDescriptor {
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
                      descriptor.getStreamLibrary());
 
-        assertEquals(3, descriptor.getAlgorithm().getProvidesCollection().getProperties().size());
+        assertEquals(3, descriptor.getAlgorithm().providesCollection().properties().size());
 
-        boolean propertiesLoaded = descriptor.getAlgorithm().getProvidesCollection().getProperties()
+        boolean propertiesLoaded = descriptor.getAlgorithm().providesCollection().properties()
                 .stream()
-                .anyMatch(p -> p.getDescription().equals("my prop 1")
-                        && p.getName().equals("PROP1")
-                        && p.getType() == ValueType.INT
-                        && p.getDefaultValue().equals("2"));
+                .anyMatch(p -> p.description().equals("my prop 1")
+                        && p.name().equals("PROP1")
+                        && p.type() == ValueType.INT
+                        && p.defaultValue().equals("2"));
         assertTrue(propertiesLoaded);
     }
 
@@ -76,14 +76,14 @@ public class TestJsonDescriptor {
                      descriptor.getBatchLibrary());
         assertNull(descriptor.getStreamLibrary());
 
-        assertEquals(3, descriptor.getAlgorithm().getProvidesCollection().getProperties().size());
+        assertEquals(3, descriptor.getAlgorithm().providesCollection().properties().size());
 
-        boolean propertiesLoaded = descriptor.getAlgorithm().getProvidesCollection().getProperties()
+        boolean propertiesLoaded = descriptor.getAlgorithm().providesCollection().properties()
                 .stream()
-                .anyMatch(p -> p.getDescription().equals("my prop 1")
-                        && p.getName().equals("PROP1")
-                        && p.getType() == ValueType.INT
-                        && p.getDefaultValue().equals("2"));
+                .anyMatch(p -> p.description().equals("my prop 1")
+                        && p.name().equals("PROP1")
+                        && p.type() == ValueType.INT
+                        && p.defaultValue().equals("2"));
         assertTrue(propertiesLoaded);
 
 
@@ -95,7 +95,7 @@ public class TestJsonDescriptor {
         long numActionProperties = descriptor
                 .getActions()
                 .stream()
-                .mapToInt(a -> a.getProperties().size())
+                .mapToInt(a -> a.properties().size())
                 .sum();
         assertEquals(3, numActionProperties);
 
@@ -103,14 +103,14 @@ public class TestJsonDescriptor {
         long numReferencedActions = descriptor
                 .getTasks()
                 .stream()
-                .mapToInt(t -> t.getActions().size())
+                .mapToInt(t -> t.actions().size())
                 .sum();
         assertEquals(3, numReferencedActions);
 
         long numReferencedTasks = descriptor
                 .getPipelines()
                 .stream()
-                .mapToInt(p -> p.getTasks().size())
+                .mapToInt(p -> p.tasks().size())
                 .sum();
         assertEquals(2, numReferencedTasks);
 
@@ -133,14 +133,14 @@ public class TestJsonDescriptor {
                 && envVar.getValue().equals("nothing")
                 && envVar.getSep() == null);
 
-        assertEquals(3, descriptor.getAlgorithm().getProvidesCollection().getProperties().size());
+        assertEquals(3, descriptor.getAlgorithm().providesCollection().properties().size());
 
-        boolean propertiesLoaded = descriptor.getAlgorithm().getProvidesCollection().getProperties()
+        boolean propertiesLoaded = descriptor.getAlgorithm().providesCollection().properties()
                 .stream()
-                .anyMatch(p -> p.getDescription().equals("my prop 1")
-                        && p.getName().equals("PROP1")
-                        && p.getType() == ValueType.INT
-                        && p.getDefaultValue().equals("2"));
+                .anyMatch(p -> p.description().equals("my prop 1")
+                        && p.name().equals("PROP1")
+                        && p.type() == ValueType.INT
+                        && p.defaultValue().equals("2"));
         assertTrue(propertiesLoaded);
     }
 

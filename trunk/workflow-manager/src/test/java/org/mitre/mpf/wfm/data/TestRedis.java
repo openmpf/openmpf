@@ -239,9 +239,9 @@ public class TestRedis {
                 .thenReturn(List.of(media));
         when(job.getPipelineElements().getTaskCount())
                 .thenReturn(2);
-        when(job.getPipelineElements().getTask(0).getActions().size())
+        when(job.getPipelineElements().getTask(0).actions().size())
                 .thenReturn(1);
-        when(job.getPipelineElements().getTask(1).getActions().size())
+        when(job.getPipelineElements().getTask(1).actions().size())
                 .thenReturn(1);
 
 

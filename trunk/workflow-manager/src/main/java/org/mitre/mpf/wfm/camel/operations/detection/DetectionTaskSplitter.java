@@ -141,9 +141,9 @@ public class DetectionTaskSplitter {
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
-                for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+                for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
 
-                    String actionName = task.getActions().get(actionIndex);
+                    String actionName = task.actions().get(actionIndex);
                     Action action = job.getPipelineElements().getAction(actionName);
 
                     var combinedProperties = new HashMap<>(
@@ -181,9 +181,9 @@ public class DetectionTaskSplitter {
                     DetectionContext detectionContext = new DetectionContext(
                             job.getId(),
                             job.getCurrentTaskIndex(),
-                            task.getName(),
+                            task.name(),
                             actionIndex,
-                            action.getName(),
+                            action.name(),
                             isFirstDetectionTaskForMedia,
                             algorithmProperties,
                             previousTracks,
@@ -237,9 +237,9 @@ public class DetectionTaskSplitter {
             return List.of();
         }
 
-        var actionType = job.getPipelineElements().getAlgorithm(action.getAlgorithm())
-                .getActionType();
-        var destination = "MPF.%s_%s_REQUEST".formatted(actionType, action.getAlgorithm());
+        var actionType = job.getPipelineElements().getAlgorithm(action.algorithm())
+                .actionType();
+        var destination = "MPF.%s_%s_REQUEST".formatted(actionType, action.algorithm());
         boolean needsBreadCrumb = _taskMergingManager.needsBreadCrumb(
                 job, media, detectionContext.getTaskIndex(), detectionContext.getActionIndex());
 

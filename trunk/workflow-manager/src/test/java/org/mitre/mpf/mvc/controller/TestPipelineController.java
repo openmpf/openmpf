@@ -171,30 +171,30 @@ public class TestPipelineController {
 
         var algorithm = _objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), Algorithm.class);
 
-        var properties = algorithm.getProvidesCollection().getProperties();
+        var properties = algorithm.providesCollection().properties();
         assertEquals(2, properties.size());
 
 
         var algoProp = properties.stream()
-                .filter(p -> p.getName().equals("TEST_ALGO_PROP"))
+                .filter(p -> p.name().equals("TEST_ALGO_PROP"))
                 .findAny()
                 .orElse(null);
         assertNotNull(algoProp);
-        assertEquals("Test algo property", algoProp.getDescription());
-        assertEquals("TRUE", algoProp.getDefaultValue());
-        assertEquals(ValueType.BOOLEAN, algoProp.getType());
-        assertNull(algoProp.getPropertiesKey());
+        assertEquals("Test algo property", algoProp.description());
+        assertEquals("TRUE", algoProp.defaultValue());
+        assertEquals(ValueType.BOOLEAN, algoProp.type());
+        assertNull(algoProp.propertiesKey());
 
 
         var wfProp = properties.stream()
-                .filter(p -> p.getName().equals("TEST_WF_PROPERTY"))
+                .filter(p -> p.name().equals("TEST_WF_PROPERTY"))
                 .findAny()
                 .orElse(null);
         assertNotNull(wfProp);
-        assertEquals("WF PROP DESCR", wfProp.getDescription());
-        assertEquals("5", wfProp.getDefaultValue());
-        assertEquals(ValueType.INT, wfProp.getType());
-        assertNull(wfProp.getPropertiesKey());
+        assertEquals("WF PROP DESCR", wfProp.description());
+        assertEquals("5", wfProp.defaultValue());
+        assertEquals(ValueType.INT, wfProp.type());
+        assertNull(wfProp.propertiesKey());
     }
 
 

@@ -189,7 +189,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     @Test
     public void testMediaMissingHash() {
         var action = mock(Action.class);
-        when(action.getName())
+        when(action.name())
             .thenReturn("action");
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
@@ -226,7 +226,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     @Test
     public void testMediaMissingMimeType() {
         var action = mock(Action.class);
-        when(action.getName())
+        when(action.name())
             .thenReturn("action");
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
@@ -262,7 +262,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     @Test
     public void testNoTiesDbUrl() {
         var action = mock(Action.class);
-        when(action.getName())
+        when(action.name())
             .thenReturn("action");
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())

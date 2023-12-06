@@ -514,8 +514,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);
 
-            for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                String actionName = task.getActions().get(actionIndex);
+            for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
+                String actionName = task.actions().get(actionIndex);
                 Action action = job.getPipelineElements().getAction(actionName);
 
                 if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
@@ -564,17 +564,17 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             Multimap<String, Track> tracksGroupedByMergedAction) {
         for (var entry : tracksGroupedByMergedAction.asMap().entrySet()) {
             var mergedAction = job.getPipelineElements().getAction(entry.getKey());
-            var mergedAlgo = job.getPipelineElements().getAlgorithm(mergedAction.getAlgorithm());
+            var mergedAlgo = job.getPipelineElements().getAlgorithm(mergedAction.algorithm());
             var jsonAction = new JsonActionOutputObject(
-                    mergedAction.getName(), mergedAlgo.getName());
+                    mergedAction.name(), mergedAlgo.name());
             int trackIndex = 0;
             for (var track : entry.getValue()) {
                 var jsonTrackOutputObject = createTrackOutputObject(
-                        track, trackIndex++, mergedAlgo.getTrackType(), action, media, job);
+                        track, trackIndex++, mergedAlgo.trackType(), action, media, job);
                 jsonAction.getTracks().add(jsonTrackOutputObject);
             }
             mediaOutputObject.getTrackTypes()
-                    .computeIfAbsent(mergedAlgo.getTrackType(), k -> new TreeSet<>())
+                    .computeIfAbsent(mergedAlgo.trackType(), k -> new TreeSet<>())
                     .add(jsonAction);
         }
     }
@@ -596,7 +596,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             var action = job.getPipelineElements().getAction(
                     error.getTaskIndex(), error.getActionIndex());
             mediaOutputObject.getDetectionProcessingErrors()
-                .computeIfAbsent(action.getName(), k -> new TreeSet<>())
+                .computeIfAbsent(action.name(), k -> new TreeSet<>())
                 .add(jsonError);
         }
         if (!mediaOutputObject.getDetectionProcessingErrors().isEmpty()
@@ -670,22 +670,22 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private JsonPipeline convertPipeline(JobPipelineElements pipelineElements) {
         Pipeline pipeline = pipelineElements.getPipeline();
-        JsonPipeline jsonPipeline = new JsonPipeline(pipeline.getName(), pipeline.getDescription());
+        JsonPipeline jsonPipeline = new JsonPipeline(pipeline.name(), pipeline.description());
         var censorOperator = censorPropertiesService.createCensorOperator();
 
-        for (String taskName : pipeline.getTasks()) {
+        for (String taskName : pipeline.tasks()) {
             Task task = pipelineElements.getTask(taskName);
             JsonTask jsonTask = new JsonTask(getActionType(pipelineElements, task).name(), taskName,
-                                             task.getDescription());
+                                             task.description());
 
-            for (String actionName : task.getActions()) {
+            for (String actionName : task.actions()) {
                 Action action = pipelineElements.getAction(actionName);
-                JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName,
-                                                       action.getDescription());
-                for (ActionProperty property : action.getProperties()) {
+                JsonAction jsonAction = new JsonAction(action.algorithm(), actionName,
+                                                       action.description());
+                for (ActionProperty property : action.properties()) {
                     jsonAction.getProperties().put(
-                            property.getName(),
-                            censorOperator.apply(property.getName(), property.getValue()));
+                            property.name(),
+                            censorOperator.apply(property.name(), property.value()));
                 }
                 jsonTask.getActions().add(jsonAction);
             }
@@ -696,8 +696,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
     private static ActionType getActionType(JobPipelineElements pipeline, Task task) {
-        Action action = pipeline.getAction(task.getActions().get(0));
-        return pipeline.getAlgorithm(action.getAlgorithm()).getActionType();
+        Action action = pipeline.getAction(task.actions().get(0));
+        return pipeline.getAlgorithm(action.algorithm()).actionType();
     }
 
 
@@ -715,11 +715,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         .values()
                         .stream()
                         .flatMap(Collection::stream)
-                        .noneMatch(ja -> action.getName().equals(ja.getAction()));
+                        .noneMatch(ja -> action.name().equals(ja.getAction()));
                 if (actionMissing) {
                     mediaOutputObject.getTrackTypes()
                         .computeIfAbsent(reason, k -> new TreeSet<>())
-                        .add(new JsonActionOutputObject(action.getName(), action.getAlgorithm()));
+                        .add(new JsonActionOutputObject(action.name(), action.algorithm()));
                 }
             }
         }

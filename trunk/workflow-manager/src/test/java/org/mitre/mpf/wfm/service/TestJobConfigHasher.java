@@ -562,7 +562,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                         }
                         else {
                             map.putAll(_jobProperties);
-                            algoToPropNames.putAll(action.getAlgorithm(), map.keySet());
+                            algoToPropNames.putAll(action.algorithm(), map.keySet());
                         }
                         when(_mockPropMapGetter.apply(_media.get(mediaIdx), action))
                             .thenReturn(map);
@@ -574,9 +574,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
             for (var entry : _algoNameToOutputCounter.entrySet()) {
                 var algo = mock(Algorithm.class);
-                when(algo.getName())
+                when(algo.name())
                     .thenReturn(entry.getKey());
-                when(algo.getOutputChangedCounter())
+                when(algo.outputChangedCounter())
                     .thenReturn(entry.getValue());
 
                 var algoProps = algoToPropNames.get(entry.getKey())
@@ -584,7 +584,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                         .map(pn -> new AlgorithmProperty(pn, "", ValueType.STRING, "", null))
                         .toList();
 
-                when(algo.getProvidesCollection())
+                when(algo.providesCollection())
                     .thenReturn(new Algorithm.Provides(List.of(), algoProps));
                 when(pipelineElements.getAlgorithm(entry.getKey()))
                     .thenReturn(algo);
@@ -647,9 +647,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             assertTrue(prev == null || prev.equals(outputChangedCounter));
 
             var action = mock(Action.class);
-            when(action.getName())
+            when(action.name())
                 .thenReturn(String.valueOf(++_actionNames));
-            when(action.getAlgorithm())
+            when(action.algorithm())
                 .thenReturn(algorithm);
             _taskContents.get(_taskContents.size() - 1).add(action);
 

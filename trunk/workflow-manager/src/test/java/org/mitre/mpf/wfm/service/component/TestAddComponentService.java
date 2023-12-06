@@ -59,6 +59,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -244,17 +245,17 @@ public class TestAddComponentService extends MockitoTest.Strict {
 
         // Verify mocked methods
 
-        String expectedAlgoName = descriptor.getAlgorithm().getName();
+        String expectedAlgoName = descriptor.getAlgorithm().name();
 
         verifyDescriptorAlgoSaved(descriptor);
 
         verify(_mockPipelineService)
-                .save(argThat((Action a) -> a.getName().contains(expectedAlgoName)
-                        && a.getAlgorithm().equals(expectedAlgoName)
-                        && a.getProperties().isEmpty() ));
+                .save(argThat((Action a) -> a.name().contains(expectedAlgoName)
+                        && a.algorithm().equals(expectedAlgoName)
+                        && a.properties().isEmpty() ));
 
         verify(_mockPipelineService)
-                .save(argThat((Task t) -> t.getName().contains(expectedAlgoName)));
+                .save(argThat((Task t) -> t.name().contains(expectedAlgoName)));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);
@@ -265,7 +266,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
         verify(_mockStreamingServiceManager)
                 .addService(argThat(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().getName())
+                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().name())
                                 && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
 
         assertNeverUndeployed();
@@ -273,9 +274,9 @@ public class TestAddComponentService extends MockitoTest.Strict {
 
     private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
         verify(_mockPipelineService)
-                .save(argThat((Algorithm algo) -> algo.getName().equals(descriptor.getAlgorithm().getName())
-                        && algo.getSupportsBatchProcessing() == descriptor.supportsBatchProcessing()
-                        && algo.getSupportsStreamProcessing() == descriptor.supportsStreamProcessing()));
+                .save(argThat((Algorithm algo) -> algo.name().equals(descriptor.getAlgorithm().name())
+                        && algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
+                        && algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
 
     }
 
@@ -347,7 +348,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
         verify(_mockStreamingServiceManager)
                 .addService(argThat(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().getName())
+                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().name())
                                 && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
     }
 
@@ -364,31 +365,31 @@ public class TestAddComponentService extends MockitoTest.Strict {
         verifyDescriptorAlgoSaved(descriptor);
 
         verify(_mockPipelineService, times(3))
-                .save(argThat((Action a) -> a.getAlgorithm().equals(REFERENCED_ALGO_NAME)));
+                .save(argThat((Action a) -> a.algorithm().equals(REFERENCED_ALGO_NAME)));
 
         verify(_mockPipelineService)
-                .save(argThat((Action a) -> a.getName().equals(ACTION_NAMES.get(0))
-                        && a.getProperties().stream()
-                                .anyMatch(pd -> pd.getName().equals(ACTION1_PROP_NAMES.get(0))
-                                        && pd.getValue().equals(ACTION1_PROP_VALUES.get(0)))));
-
-        verify(_mockPipelineService)
-                .save(argThat((Task t) ->
-                        t.getName().equals(TASK_NAMES.get(0))
-                                && t.getDescription().equals(TASK_NAMES.get(0) + " description")
-                                && t.getActions().size() == 1));
+                .save(argThat((Action a) -> a.name().equals(ACTION_NAMES.get(0))
+                        && a.properties().stream()
+                                .anyMatch(pd -> pd.name().equals(ACTION1_PROP_NAMES.get(0))
+                                        && pd.value().equals(ACTION1_PROP_VALUES.get(0)))));
 
         verify(_mockPipelineService)
                 .save(argThat((Task t) ->
-                        t.getName().equals(TASK_NAMES.get(1))
-                                && t.getDescription().equals(TASK_NAMES.get(1) + " description")
-                                && t.getActions().size() == 2));
+                        t.name().equals(TASK_NAMES.get(0))
+                                && t.description().equals(TASK_NAMES.get(0) + " description")
+                                && t.actions().size() == 1));
+
+        verify(_mockPipelineService)
+                .save(argThat((Task t) ->
+                        t.name().equals(TASK_NAMES.get(1))
+                                && t.description().equals(TASK_NAMES.get(1) + " description")
+                                && t.actions().size() == 2));
 
         verify(_mockPipelineService)
                 .save(argThat((Pipeline p) ->
-                        p.getName().equals(PIPELINE_NAME)
-                                && p.getDescription().contains("description")
-                                && p.getTasks().size() == 2));
+                        p.name().equals(PIPELINE_NAME)
+                                && p.description().contains("description")
+                                && p.tasks().size() == 2));
     }
 
 
@@ -431,16 +432,16 @@ public class TestAddComponentService extends MockitoTest.Strict {
 
         Algorithm existingAlgo = existingDescriptor.getAlgorithm();
         Algorithm algoWithChange = new Algorithm(
-                existingAlgo.getName(),
-                existingAlgo.getDescription(),
-                existingAlgo.getActionType(),
-                existingAlgo.getTrackType(),
-                existingAlgo.getOutputChangedCounter(),
+                existingAlgo.name(),
+                existingAlgo.description(),
+                existingAlgo.actionType(),
+                existingAlgo.trackType(),
+                existingAlgo.outputChangedCounter(),
                 // Just pick a random field to change
-                new Algorithm.Requires(Collections.singleton("asdf")),
-                existingAlgo.getProvidesCollection(),
-                existingAlgo.getSupportsBatchProcessing(),
-                existingAlgo.getSupportsStreamProcessing());
+                new Algorithm.Requires(List.of("asdf")),
+                existingAlgo.providesCollection(),
+                existingAlgo.supportsBatchProcessing(),
+                existingAlgo.supportsStreamProcessing());
 
         JsonComponentDescriptor newDescriptor = new JsonComponentDescriptor(
                 existingDescriptor.getComponentName(),

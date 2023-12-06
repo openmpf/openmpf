@@ -168,13 +168,13 @@ public class JsonComponentDescriptor {
         _algorithm = algorithm == null
                 ? null
                 : new Algorithm(
-                    algorithm.getName(),
-                    algorithm.getDescription(),
-                    algorithm.getActionType(),
-                    algorithm.getTrackType(),
-                    algorithm.getOutputChangedCounter(),
-                    algorithm.getRequiresCollection(),
-                    algorithm.getProvidesCollection(),
+                    algorithm.name(),
+                    algorithm.description(),
+                    algorithm.actionType(),
+                    algorithm.trackType(),
+                    algorithm.outputChangedCounter(),
+                    algorithm.requiresCollection(),
+                    algorithm.providesCollection(),
                     StringUtils.isNotBlank(batchLibrary),
                     StringUtils.isNotBlank(streamLibrary));
 

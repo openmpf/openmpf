@@ -159,8 +159,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testSkipCheckProperty() {
-        var action1 = mock(Action.class);
-        var action2 = mock(Action.class);
+        var action1 = createAction();
+        var action2 = createAction();
 
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
@@ -188,9 +188,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testMediaMissingHash() {
-        var action = mock(Action.class);
-        when(action.name())
-            .thenReturn("action");
+        var action = createAction();
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
             .thenReturn(ImmutableList.of(action));
@@ -225,9 +223,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testMediaMissingMimeType() {
-        var action = mock(Action.class);
-        when(action.name())
-            .thenReturn("action");
+        var action = createAction();
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
             .thenReturn(ImmutableList.of(action));
@@ -261,9 +257,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testNoTiesDbUrl() {
-        var action = mock(Action.class);
-        when(action.name())
-            .thenReturn("action");
+        var action = createAction();
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
             .thenReturn(ImmutableList.of(action));
@@ -292,7 +286,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Test
     public void testInvalidUri() {
-        var action = mock(Action.class);
+        var action = createAction();
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
             .thenReturn(ImmutableList.of(action));
@@ -394,7 +388,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
     private TiesDbCheckResult setupSingleTiesDbUriTest() throws IOException {
-        var action = mock(Action.class);
+        var action = createAction();
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
             .thenReturn(ImmutableList.of(action));
@@ -670,7 +664,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
     private TiesDbCheckResult testPartialFailure(Object tiesDbData) throws IOException {
-        var action = mock(Action.class);
+        var action = createAction();
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
             .thenReturn(ImmutableList.of(action));
@@ -782,7 +776,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     private Exchange runAfterMediaInspectionTest() throws IOException {
         var exchange = TestUtil.createTestExchange();
 
-        var action = mock(Action.class);
+        var action = createAction();
         var pipelineElements = mock(JobPipelineElements.class);
         when(pipelineElements.getAllActions())
                 .thenReturn(ImmutableList.of(action));
@@ -1276,5 +1270,9 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     private void setEmptyCombinedJobProps() {
         when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
             .thenReturn(s -> null);
+    }
+
+    private static Action createAction() {
+        return new Action("ACTION", null, null, List.of());
     }
 }

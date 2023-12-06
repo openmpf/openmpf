@@ -498,17 +498,14 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 String trigger,
                 BatchJob job,
                 Media media) {
-            var algo = mock(Algorithm.class);
-            lenient().when(algo.actionType())
-                    .thenReturn(ActionType.DETECTION);
-            lenient().when(pipelineElements.getAlgorithm("algo-" + String.valueOf(taskIdx)))
+            var algo = new Algorithm(
+                    "algo-" + taskIdx, null, ActionType.DETECTION, null, null, null,
+                    null, false, false);
+            lenient().when(pipelineElements.getAlgorithm(algo.name()))
                     .thenReturn(algo);
 
-            var action = mock(Action.class);
-            lenient().when(action.algorithm())
-                    .thenReturn("algo-" + String.valueOf(taskIdx));
-
-            var task = mock(Task.class);
+            var action = new Action("action-" + taskIdx, null, algo.name(), List.of());
+            var task = new Task("task-" + taskIdx, null, List.of(action.name()));
             lenient().when(pipelineElements.getTask(taskIdx))
                     .thenReturn(task);
             lenient().when(pipelineElements.getActionsInOrder(task))

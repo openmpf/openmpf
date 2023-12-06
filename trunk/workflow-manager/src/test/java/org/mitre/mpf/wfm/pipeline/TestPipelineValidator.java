@@ -143,10 +143,10 @@ public class TestPipelineValidator {
     }
 
     private void addDescriptorPipelines(JsonComponentDescriptor descriptor) {
-        addElement(descriptor.getPipelines());
-        addElement(descriptor.getTasks());
-        addElement(descriptor.getActions());
-        addElement(descriptor.getAlgorithm());
+        addElement(descriptor.pipelines());
+        addElement(descriptor.tasks());
+        addElement(descriptor.actions());
+        addElement(descriptor.algorithm());
     }
 
 
@@ -158,7 +158,7 @@ public class TestPipelineValidator {
         addDescriptorPipelines(descriptor);
         addElement(TestDescriptorFactory.getReferencedAlgorithm());
 
-        verifyBatchPipelineRunnable(descriptor.getPipelines().get(0).name());
+        verifyBatchPipelineRunnable(descriptor.pipelines().get(0).name());
     }
 
 

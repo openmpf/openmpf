@@ -101,8 +101,8 @@ public class TestRemoveComponentService extends MockitoTest.Lenient {
     public void testRemoveComponentHappyPath() throws IOException, ManagedComponentsUnsupportedException {
         // Arrange
         JsonComponentDescriptor descriptor = TestDescriptorFactory.get();
-        String serviceName = descriptor.getAlgorithm().name();
-        String algoName = descriptor.getAlgorithm().name();
+        String serviceName = descriptor.algorithm().name();
+        String algoName = descriptor.algorithm().name();
 
         RegisterComponentModel rcm = new RegisterComponentModel();
         rcm.setComponentState(ComponentState.REGISTERED);

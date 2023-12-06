@@ -245,7 +245,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
 
         // Verify mocked methods
 
-        String expectedAlgoName = descriptor.getAlgorithm().name();
+        String expectedAlgoName = descriptor.algorithm().name();
 
         verifyDescriptorAlgoSaved(descriptor);
 
@@ -266,15 +266,15 @@ public class TestAddComponentService extends MockitoTest.Strict {
         verify(_mockStreamingServiceManager)
                 .addService(argThat(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().name())
-                                && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
+                                && s.getAlgorithmName().equals(descriptor.algorithm().name())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables().size()));
 
         assertNeverUndeployed();
     }
 
     private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
         verify(_mockPipelineService)
-                .save(argThat((Algorithm algo) -> algo.name().equals(descriptor.getAlgorithm().name())
+                .save(argThat((Algorithm algo) -> algo.name().equals(descriptor.algorithm().name())
                         && algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
                         && algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
 
@@ -348,8 +348,8 @@ public class TestAddComponentService extends MockitoTest.Strict {
         verify(_mockStreamingServiceManager)
                 .addService(argThat(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().name())
-                                && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
+                                && s.getAlgorithmName().equals(descriptor.algorithm().name())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables().size()));
     }
 
 
@@ -430,7 +430,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
         when(_mockObjectMapper.readValue(new File(existingDescriptorPath), JsonComponentDescriptor.class))
                 .thenReturn(existingDescriptor);
 
-        Algorithm existingAlgo = existingDescriptor.getAlgorithm();
+        Algorithm existingAlgo = existingDescriptor.algorithm();
         Algorithm algoWithChange = new Algorithm(
                 existingAlgo.name(),
                 existingAlgo.description(),
@@ -444,19 +444,19 @@ public class TestAddComponentService extends MockitoTest.Strict {
                 existingAlgo.supportsStreamProcessing());
 
         JsonComponentDescriptor newDescriptor = new JsonComponentDescriptor(
-                existingDescriptor.getComponentName(),
-                existingDescriptor.getComponentVersion(),
-                existingDescriptor.getMiddlewareVersion(),
-                existingDescriptor.getSetupFile(),
-                existingDescriptor.getInstructionsFile(),
-                existingDescriptor.getSourceLanguage(),
-                existingDescriptor.getBatchLibrary(),
-                existingDescriptor.getStreamLibrary(),
-                existingDescriptor.getEnvironmentVariables(),
+                existingDescriptor.componentName(),
+                existingDescriptor.componentVersion(),
+                existingDescriptor.middlewareVersion(),
+                existingDescriptor.setupFile(),
+                existingDescriptor.instructionsFile(),
+                existingDescriptor.sourceLanguage(),
+                existingDescriptor.batchLibrary(),
+                existingDescriptor.streamLibrary(),
+                existingDescriptor.environmentVariables(),
                 algoWithChange,
-                existingDescriptor.getActions(),
-                existingDescriptor.getTasks(),
-                existingDescriptor.getPipelines());
+                existingDescriptor.actions(),
+                existingDescriptor.tasks(),
+                existingDescriptor.pipelines());
 
 
         boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
@@ -611,7 +611,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
 
         doThrow(InvalidPipelineException.class)
                 .when(_mockPipelineService)
-                .save(eq(descriptor.getAlgorithm()));
+                .save(eq(descriptor.algorithm()));
         try {
             _addComponentService.registerComponent(_testPackageName);
             fail();

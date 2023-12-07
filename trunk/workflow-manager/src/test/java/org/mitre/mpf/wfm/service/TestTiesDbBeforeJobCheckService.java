@@ -54,6 +54,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -84,6 +85,7 @@ import org.mitre.mpf.interop.JsonMediaRange;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -130,6 +132,9 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     @Mock
     private HttpClientUtils _mockHttpClientUtils;
 
+    @Mock
+    private OAuthClientTokenProvider _mockOAuthClientTokenProvider;
+
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
     @Mock
@@ -151,6 +156,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 _mockAggJobProps,
                 _mockJobConfigHasher,
                 _mockHttpClientUtils,
+                _mockOAuthClientTokenProvider,
                 _objectMapper,
                 _mockInProgressJobs,
                 _mockS3StorageBackend);
@@ -392,8 +398,12 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         return result;
     }
 
-
     private TiesDbCheckResult setupSingleTiesDbUriTest() throws IOException {
+        return setupSingleTiesDbUriTest(Map.of());
+    }
+
+    private TiesDbCheckResult setupSingleTiesDbUriTest(
+            Map<String, String> additionalJobProps) throws IOException {
         var action = mock(Action.class);
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
@@ -412,13 +422,15 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
             .thenReturn(mockMediaActionProps);
 
-        var combinedJobProps = Map.of(
+        var defaultJobProps = Map.of(
             MpfConstants.TIES_DB_S3_COPY_ENABLED, "true",
             MpfConstants.S3_RESULTS_BUCKET, "results bucket",
             MpfConstants.S3_ACCESS_KEY, "access key",
             MpfConstants.S3_SECRET_KEY, "secret key"
         );
 
+        var combinedJobProps = new HashMap<>(defaultJobProps);
+        combinedJobProps.putAll(additionalJobProps);
         when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
             .thenReturn(combinedJobProps::get);
 
@@ -559,6 +571,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 repeat(unrelatedResults, 10))
             .toList();
 
+        when(_mockAggJobProps.getValue(
+                eq(MpfConstants.TIES_DB_USE_OIDC), any(BatchJob.class),
+                any(Media.class)))
+                .thenReturn("true");
 
         var requestCaptor = ArgumentCaptor.forClass(HttpGet.class);
         when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
@@ -567,7 +583,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 createHttpResponse(page2),
                 createHttpResponse(page3));
 
-        var checkResult = setupSingleTiesDbUriTest();
+        var checkResult = setupSingleTiesDbUriTest(
+                Map.of(MpfConstants.TIES_DB_USE_OIDC, "true"));
         assertEquals(TiesDbCheckStatus.FOUND_MATCH, checkResult.status());
         assertTrue(checkResult.checkInfo().isPresent());
 
@@ -588,6 +605,11 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var page3Uri = URI.create(
             "http://tiesdb:1234/api/db/supplementals?sha256Hash=MEDIA_HASH&system=OpenMPF&offset=200&limit=100");
         assertUrisMatch(page3Uri, requests.get(2).getURI());
+
+        for (var request : requests) {
+            verify(_mockOAuthClientTokenProvider)
+                .addToken(request);
+        }
     }
 
     private static <T> Stream<T> repeat(List<T> items, int count) {

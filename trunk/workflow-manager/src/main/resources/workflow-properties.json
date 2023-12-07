@@ -495,5 +495,19 @@
         "type": "STRING",
         "defaultValue": "",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "CALLBACK_USE_OIDC",
+        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included in the job completion callback.",
+        "type": "BOOLEAN",
+        "propertiesKey": "http.callback.use.oidc",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "TIES_DB_USE_OIDC",
+        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included when communicating with TiesDb.",
+        "type": "BOOLEAN",
+        "propertiesKey": "ties.db.use.oidc",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

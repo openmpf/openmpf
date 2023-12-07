@@ -160,7 +160,7 @@ public class OidcSecurityConfig {
 
         return http
             .authorizeHttpRequests(x ->
-                x.antMatchers("/login/**", "/logout/**", "/resources/**", "/oidc-access-denied")
+                x.antMatchers("/login/**", "/resources/**", "/oidc-access-denied")
                     .permitAll()
                 .anyRequest().access(oidcAuthenticationManager))
             .oauth2Login(x ->

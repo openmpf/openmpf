@@ -49,6 +49,7 @@ function (MetadataService, RoleService, ClientState, csrf) {
 
             RoleService.getRoleInfo().then(function (roleInfo) {
                 $scope.userName = roleInfo.userPrincipalName;
+                $scope.isAdmin = roleInfo.admin;
             });
             $scope.logout = () => {
                 ClientState.setConnectionState(ClientState.ConnectionState.LOGGING_OUT);

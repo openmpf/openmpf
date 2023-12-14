@@ -70,7 +70,7 @@ public class ActiveMQConfiguration {
 
         amqConfig.setConcurrentConsumers(2);
         amqConfig.setMaxConcurrentConsumers(propertiesUtil.getAmqConcurrentConsumers());
-        // Make threads stop after about
+        // setMaxMessagesPerTask makes threads stop after about
         // (amqConfig.getReceiveTimeout() * amqConfig.getMaxMessagesPerTask() * 1000) seconds of
         // inactivity.
         amqConfig.setMaxMessagesPerTask(60);

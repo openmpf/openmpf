@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 public class MarkupMain {
     private static final Logger LOG = LoggerFactory.getLogger(MarkupMain.class);
 
+    // Set reconnect attempts so that about 5 minutes will be spent attempting to reconnect.
     private static final String DEFAULT_AMQ_URI =
             "failover:(tcp://localhost:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21";
 

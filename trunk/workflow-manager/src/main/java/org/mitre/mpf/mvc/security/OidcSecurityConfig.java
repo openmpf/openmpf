@@ -32,6 +32,7 @@ import static java.util.stream.Collectors.toSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.mitre.mpf.wfm.enums.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -162,6 +163,7 @@ public class OidcSecurityConfig {
             .authorizeHttpRequests(x ->
                 x.antMatchers("/login/**", "/resources/**", "/oidc-access-denied")
                     .permitAll()
+                .antMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
                 .anyRequest().access(oidcAuthenticationManager))
             .oauth2Login(x ->
                 x.userInfoEndpoint().userAuthoritiesMapper(oidcAuthenticationManager))

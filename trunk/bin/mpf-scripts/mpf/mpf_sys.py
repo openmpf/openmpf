@@ -331,7 +331,7 @@ class WorkflowManagerManager(BaseMpfSystemDependencyManager):
         return 'Workflow Manager'
 
     def status(self):
-        request = urllib.request.Request(self._config.wfm_url)
+        request = urllib.request.Request(self._config.wfm_url + '/login')
         request.get_method = lambda: 'HEAD'
         try:
             with urllib.request.urlopen(request):
@@ -571,7 +571,7 @@ sys_args = mpf_util.arg_group(
 
     argh.arg('--local-only', '-l', default=False),
 
-    argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
+    argh.arg('--workflow-manager-url', default='http://localhost:8080',
              help='Url to Workflow Manager'),
     argh.arg('--wfm-project', default='~/openmpf-projects/openmpf/trunk/workflow-manager',
              help='Path to the Workflow Manager Maven project.'),

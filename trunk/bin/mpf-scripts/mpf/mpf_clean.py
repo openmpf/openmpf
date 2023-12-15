@@ -48,8 +48,10 @@ from . import mpf_util
           help='Show output from called commands')
 @argh.arg('--node-manager-port', default=8008,
           help='port number that the Node Manager listens on')
-@argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
+@argh.arg('--workflow-manager-url', default='http://localhost:8080',
           help='Url to Workflow Manager')
+@argh.arg('--wfm-project', default='~/openmpf-projects/openmpf/trunk/workflow-manager',
+          help='Path to the Workflow Manager Maven project.')
 def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=False,
           delete_logs=False, sql_host='localhost', sql_user='mpf', sql_password='password',
           **opt_args):

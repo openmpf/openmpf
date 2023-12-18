@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 public class Main {
 
     public static final String DEFAULT_HOST_PREFIX = "http://localhost:8080";
-    public static final String WFM_REST_PATH = "/workflow-manager/rest/";
+    public static final String WFM_REST_PATH = "/rest/";
 
     private static final String DEFAULT_MPF_USER = "mpf";
     private static final String DEFAULT_MPF_USER_PWD = "mpf123";

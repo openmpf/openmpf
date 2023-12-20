@@ -37,7 +37,7 @@
 #include <MPFDetectionException.h>
 
 #include "../PythonComponentHandle.h"
-#include "../MPFMessenger.h"
+#include "../Messenger.h"
 #include "../BatchExecutorUtil.h"
 #include "../LazyLoggerWrapper.h"
 
@@ -328,7 +328,7 @@ TEST(PythonComponentHandleTest, TestDetectionExceptionTranslation) {
 
 
 TEST(TestRestrictMediaTypes, CanCreateRestrictMediaTypeSelector) {
-    using messenger_t = MPFMessenger<LazyLoggerWrapper<PythonLogger>>;
+    using messenger_t = Messenger<LazyLoggerWrapper<PythonLogger>>;
     auto restrict_media_types = messenger_t::RESTRICT_MEDIA_TYPES_ENV_NAME;
     auto initial_value =  std::getenv("RESTRICT_MEDIA_TYPES");
 

@@ -24,68 +24,29 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_CPPCOMPONENTHANDLE_H
-#define MPF_CPPCOMPONENTHANDLE_H
+#pragma once
 
-#include <memory>
 #include <string>
+#include <string_view>
+#include <variant>
 #include <vector>
 
-#include <log4cxx/logger.h>
-
-#include <DlClassLoader.h>
 #include <MPFDetectionComponent.h>
-#include <MPFDetectionObjects.h>
+
+#include "detection.pb.h"
+
+namespace MPF::COMPONENT::ProtobufRequestUtil {
+    namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
+    using job_variant_t = std::variant<MPFVideoJob, MPFImageJob, MPFAudioJob, MPFGenericJob>;
+
+    mpf_buffers::DetectionRequest ParseRequest(const std::vector<unsigned char>& bytes);
+
+    std::string GetJobName(
+                long job_id, const mpf_buffers::DetectionRequest& detection_request);
 
 
-namespace MPF::COMPONENT {
-
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
-
-        void SetRunDirectory(const std::string &run_dir);
-
-        bool Init();
-
-        std::string GetDetectionType();
-
-        bool Supports(MPFDetectionDataType data_type);
-
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
-
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
-
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
-
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
-
-        bool Close();
-
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
-
-
-    class CppLogger {
-    public:
-        explicit CppLogger(const std::string &app_dir);
-
-        void Debug(const std::string &message);
-
-        void Info(const std::string &message);
-
-        void Warn(const std::string &message);
-
-        void Error(const std::string &message);
-
-        void Fatal(const std::string &message);
-
-        std::shared_ptr<void> GetJobContext(const std::string& job_name);
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
+    job_variant_t CreateComponentJob(
+            std::string_view job_name,
+            const Properties& environment_job_properties,
+            const mpf_buffers::DetectionRequest& detection_request);
 }
-
-
-#endif //MPF_CPPCOMPONENTHANDLE_H

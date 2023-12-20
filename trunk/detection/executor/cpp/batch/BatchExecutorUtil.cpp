@@ -24,39 +24,27 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include "BatchExecutorUtil.h"
+#include <string_view>
 
-#include <algorithm>
 #include <unistd.h>
+
+#include "BatchExecutorUtil.h"
 
 
 std::map<std::string, std::string> BatchExecutorUtil::get_environment_job_properties() {
-    static std::string property_prefix = "MPF_PROP_";
+    static std::string_view property_prefix = "MPF_PROP_";
 
     std::map<std::string, std::string> properties;
-    for (int i = 0; environ[i] != nullptr; i++) {
-        std::string env_pair = environ[i];
-        // Filter out items that are too short so std::equal isn't checking past the end of the string.
-        if (env_pair.size() <= property_prefix.size()) {
-            continue;
+    for (auto env_ptr = environ; *env_ptr; env_ptr++) {
+        std::string_view env_pair = *env_ptr;
+        if (env_pair.size() > property_prefix.size()
+                && property_prefix == env_pair.substr(0, property_prefix.size())
+                // // Don't process environment variables named "MPF_PROP_".
+                && env_pair[property_prefix.size()] != '=') {
+            env_pair.remove_prefix(property_prefix.size());
+            size_t equals_pos = env_pair.find('=');
+            properties.emplace(env_pair.substr(0, equals_pos), env_pair.substr(equals_pos + 1));
         }
-
-        bool env_var_has_prefix = std::equal(property_prefix.begin(), property_prefix.end(),
-                                             env_pair.begin());
-        if (!env_var_has_prefix) {
-            continue;
-        }
-
-        size_t equals_pos = env_pair.find('=');
-        // Don't process environment variables named "MPF_PROP_".
-        if (equals_pos <= property_prefix.size()) {
-            continue;
-        }
-
-        size_t prop_name_length = equals_pos - property_prefix.size();
-        properties.emplace(
-                env_pair.substr(property_prefix.size(), prop_name_length),
-                env_pair.substr(equals_pos + 1));
     }
     return properties;
 }

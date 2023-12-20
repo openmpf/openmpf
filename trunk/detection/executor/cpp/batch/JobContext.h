@@ -24,68 +24,74 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_CPPCOMPONENTHANDLE_H
-#define MPF_CPPCOMPONENTHANDLE_H
+#pragma once
 
-#include <memory>
 #include <string>
-#include <vector>
+#include <memory>
+#include <variant>
 
-#include <log4cxx/logger.h>
+#include <cms/Destination.h>
 
-#include <DlClassLoader.h>
 #include <MPFDetectionComponent.h>
-#include <MPFDetectionObjects.h>
+
+#include "detection.pb.h"
 
 
 namespace MPF::COMPONENT {
+    using job_variant_t = std::variant<MPFVideoJob, MPFImageJob, MPFAudioJob, MPFGenericJob>;
 
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
+class JobContext {
+public:
+    JobContext(
+            long job_id,
+            std::string job_name,
+            std::string detection_type,
+            std::unique_ptr<cms::Destination> response_queue,
+            int cms_priority,
+            std::string correlation_id,
+            std::string bread_crumb_id,
+            int split_size,
+            const org::mitre::mpf::wfm::buffers::DetectionRequest &detection_request,
+            job_variant_t job,
+            std::shared_ptr<void> job_log_context);
 
-        void SetRunDirectory(const std::string &run_dir);
+    const MPFVideoJob& GetVideoJob() const;
+    const MPFImageJob& GetImageJob() const;
+    const MPFAudioJob& GetAudioJob() const;
+    const MPFGenericJob& GetGenericJob() const;
 
-        bool Init();
+    const long job_id;
 
-        std::string GetDetectionType();
+    const std::string job_name;
 
-        bool Supports(MPFDetectionDataType data_type);
+    const std::string detection_type;
 
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
+    const std::unique_ptr<cms::Destination> response_queue;
 
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
+    const int cms_priority;
 
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
+    const std::string correlation_id;
 
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
+    const std::string bread_crumb_id;
 
-        bool Close();
+    const int split_size;
 
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
+    const long request_id;
 
+    const long media_id;
 
-    class CppLogger {
-    public:
-        explicit CppLogger(const std::string &app_dir);
+    const int task_index;
 
-        void Debug(const std::string &message);
+    const std::string task_name;
 
-        void Info(const std::string &message);
+    const int action_index;
 
-        void Warn(const std::string &message);
+    const std::string action_name;
 
-        void Error(const std::string &message);
+    const job_variant_t job;
 
-        void Fatal(const std::string &message);
+    const MPFDetectionDataType job_type;
 
-        std::shared_ptr<void> GetJobContext(const std::string& job_name);
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
+    const std::shared_ptr<void> job_log_context;
+};
 }
-
-
-#endif //MPF_CPPCOMPONENTHANDLE_H

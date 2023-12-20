@@ -57,9 +57,12 @@ include_directories(${MSG_UTILS_DIR})
 
 set(batch_executor_lib_files
 	ComponentLoadError.h
+	JobReceiver.h
+	Messenger.h
+	ProtobufRequestUtil.h ProtobufRequestUtil.cpp
+	ProtobufResponseUtil.h ProtobufResponseUtil.cpp
+	JobContext.h JobContext.cpp
 	CppComponentHandle.cpp CppComponentHandle.h
-	MPFDetectionBuffer.cpp MPFDetectionBuffer.h
-	MPFMessenger.cpp MPFMessenger.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
 	BatchExecutorUtil.cpp BatchExecutorUtil.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
@@ -75,8 +78,6 @@ target_link_libraries(batch_executor_lib PUBLIC mpfProtobufs
 
 add_executable(amq_detection_component main.cpp)
 target_link_libraries(amq_detection_component PUBLIC batch_executor_lib)
-
-
 
 install(TARGETS amq_detection_component
                 RUNTIME DESTINATION bin

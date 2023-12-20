@@ -89,7 +89,7 @@ namespace MPF::COMPONENT {
 
     class PythonLogger {
     public:
-        PythonLogger(const std::string &log_level,  const std::string &component_name);
+        PythonLogger(const std::string &log_level, const std::string &component_name);
 
         PythonLogger(const PythonLogger& other);
 
@@ -105,7 +105,7 @@ namespace MPF::COMPONENT {
 
         void Fatal(const std::string &message);
 
-        PythonLoggerJobContext GetJobContext(const std::string& job_name);
+        std::shared_ptr<void> GetJobContext(const std::string& job_name);
 
     private:
         std::shared_ptr<std::string> job_name_log_prefix_ptr_ = std::make_shared<std::string>();

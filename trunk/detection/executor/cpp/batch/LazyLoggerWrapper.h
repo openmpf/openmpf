@@ -27,17 +27,18 @@
 #ifndef MPF_LAZYLOGGERWRAPPER_H
 #define MPF_LAZYLOGGERWRAPPER_H
 
+#include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 
 template<typename Logger>
 class LazyLoggerWrapper {
 public:
-
     template<typename... CtorArgs>
-    explicit LazyLoggerWrapper(const std::string &log_level, CtorArgs&&... args)
+    explicit LazyLoggerWrapper(std::string_view log_level, CtorArgs&&... args)
             : base_logger_(std::forward<CtorArgs>(args)...)
             , debug_enabled_(log_level == "DEBUG" || log_level == "TRACE")
             , info_enabled_(debug_enabled_ || log_level == "INFO")
@@ -82,7 +83,7 @@ public:
         }
     }
 
-    [[nodiscard]] auto GetJobContext(const std::string &job_name) {
+    [[nodiscard]] std::shared_ptr<void> GetJobContext(const std::string &job_name) {
         return base_logger_.GetJobContext(job_name);
     }
 
@@ -96,20 +97,10 @@ private:
     bool fatal_enabled_;
 
     template<typename... Args>
-    std::string ToString(Args&&... args) {
+    static std::string ToString(Args&&... args) {
         std::ostringstream ss;
-        InsertAll(ss, std::forward<Args>(args)...);
+        (ss << ... << std::forward<Args>(args));
         return ss.str();
-    }
-
-    // Base case for template recursion.
-    void InsertAll(std::ostringstream &ss) {
-    }
-
-    template<typename Head, typename... Tail>
-    void InsertAll(std::ostringstream &ss, Head&& head, Tail&&... tail) {
-        ss << std::forward<Head>(head);
-        InsertAll(ss, std::forward<Tail>(tail)...);
     }
 };
 

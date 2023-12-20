@@ -106,7 +106,7 @@ namespace MPF::COMPONENT {
         LOG4CXX_FATAL(logger_, message);
     }
 
-    log4cxx::MDC CppLogger::GetJobContext(const std::string& job_name) {
-        return {"job", '[' + job_name + ']'};
+    std::shared_ptr<void> CppLogger::GetJobContext(const std::string& job_name) {
+        return std::make_shared<log4cxx::MDC>("job", '[' + job_name + ']');
     }
 }

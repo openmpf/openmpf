@@ -817,11 +817,11 @@ namespace MPF::COMPONENT {
         impl_->loggerAttrs.fatal(message);
     }
 
-    PythonLoggerJobContext PythonLogger::GetJobContext(const std::string& job_name) {
+    std::shared_ptr<void> PythonLogger::GetJobContext(const std::string& job_name) {
         *job_name_log_prefix_ptr_ = '[';
         job_name_log_prefix_ptr_->append(job_name);
         job_name_log_prefix_ptr_->append("] ");
-        return PythonLoggerJobContext {job_name_log_prefix_ptr_};
+        return std::make_shared<PythonLoggerJobContext>(job_name_log_prefix_ptr_);
     }
 
     void PythonLogger::ConfigureLogging(const std::string &log_level_name,

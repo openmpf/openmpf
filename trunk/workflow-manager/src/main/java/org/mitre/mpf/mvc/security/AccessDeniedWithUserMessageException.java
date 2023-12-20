@@ -25,40 +25,13 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.mvc.security;
 
-import java.util.Objects;
+import org.springframework.security.access.AccessDeniedException;
 
-public class TrackCountKey {
-    private final long _mediaId;
+public class AccessDeniedWithUserMessageException extends AccessDeniedException {
 
-    private final int _taskIdx;
-
-    private final int _actionIdx;
-
-    public TrackCountKey(long mediaId, int taskIdx, int actionIdx) {
-        _mediaId = mediaId;
-        _taskIdx = taskIdx;
-        _actionIdx = actionIdx;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        else if (o instanceof TrackCountKey) {
-            var that = (TrackCountKey) o;
-            return _mediaId == that._mediaId && _taskIdx == that._taskIdx
-                    && _actionIdx == that._actionIdx;
-        }
-        else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(_mediaId, _taskIdx, _actionIdx);
+    public AccessDeniedWithUserMessageException(String message) {
+        super(message);
     }
 }

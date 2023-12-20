@@ -65,6 +65,12 @@ public class Algorithm implements PipelineElement {
         return _actionType;
     }
 
+    private final String _trackType;
+    @NotBlank
+    public String getTrackType() {
+        return _trackType;
+    }
+
     private final OptionalInt _outputChangedCounter;
     public OptionalInt getOutputChangedCounter() {
         return _outputChangedCounter;
@@ -97,6 +103,7 @@ public class Algorithm implements PipelineElement {
             @JsonProperty("name") String name,
             @JsonProperty("description") String description,
             @JsonProperty("actionType") ActionType actionType,
+            @JsonProperty("trackType") String trackType,
             @JsonProperty("outputChangedCounter") OptionalInt outputChangedCounter,
             @JsonProperty("requiresCollection") Requires requiresCollection,
             @JsonProperty("providesCollection") Provides providesCollection,
@@ -105,6 +112,7 @@ public class Algorithm implements PipelineElement {
         _name = Utils.trimAndUpper(name);
         _description = Utils.trim(description);
         _actionType = actionType;
+        _trackType = Utils.trimAndUpper(trackType);
         _outputChangedCounter = outputChangedCounter;
         _requiresCollection = requiresCollection;
         _providesCollection = providesCollection;
@@ -139,6 +147,7 @@ public class Algorithm implements PipelineElement {
         return Objects.equals(_name, other._name)
                 && Objects.equals(_description, other._description)
                 && _actionType == other._actionType
+                && Objects.equals(_trackType, other._trackType)
                 && Objects.equals(_outputChangedCounter, other._outputChangedCounter)
                 && Objects.equals(_requiresCollection, other._requiresCollection)
                 && Objects.equals(_providesCollection, other._providesCollection)
@@ -149,8 +158,9 @@ public class Algorithm implements PipelineElement {
     @Override
     public int hashCode() {
         return Objects.hash(
-                _name, _description, _actionType, _outputChangedCounter, _requiresCollection,
-                _providesCollection, _supportsBatchProcessing, _supportsStreamProcessing);
+                _name, _description, _actionType, _trackType, _outputChangedCounter,
+                _requiresCollection, _providesCollection, _supportsBatchProcessing,
+                _supportsStreamProcessing);
     }
 
 

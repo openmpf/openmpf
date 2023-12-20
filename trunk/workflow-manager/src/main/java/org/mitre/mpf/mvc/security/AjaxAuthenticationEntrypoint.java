@@ -25,45 +25,32 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.mvc.security;
 
-public class TrackCountEntry {
+import java.io.IOException;
 
-    private final long _mediaId;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-    private final int _taskIdx;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.stereotype.Component;
 
-    private final int _actionIdx;
 
-    private final String _trackType;
+@Component
+public class AjaxAuthenticationEntrypoint implements AuthenticationEntryPoint, RequestMatcher {
 
-    private final int _count;
-
-    public TrackCountEntry(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {
-        _mediaId = mediaId;
-        _taskIdx = taskIdx;
-        _actionIdx = actionIdx;
-        _trackType = trackType;
-        _count = count;
+    @Override
+    public boolean matches(HttpServletRequest request) {
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
     }
 
-    public long getMediaId() {
-        return _mediaId;
-    }
-
-    public int getTaskIdx() {
-        return _taskIdx;
-    }
-
-    public int getActionIdx() {
-        return _actionIdx;
-    }
-
-    public String getTrackType() {
-        return _trackType;
-    }
-
-    public int getCount() {
-        return _count;
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+            AuthenticationException authException) throws IOException {
+        // User authentication can not be done using AJAX. When the Web UI receives the 401, it
+        // will cause the page to reload and the user will be redirected to the login page.
+        response.sendError(401);
     }
 }

@@ -26,35 +26,44 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.Exchange;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.buffers.Markup;
-import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.service.StorageService;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.*;
+import org.apache.camel.Exchange;
+import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.buffers.Markup;
+import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.IssueSources;
+import org.mitre.mpf.wfm.enums.MarkupStatusType;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.StorageService;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
-public class TestMarkupResponseProcessor {
-
-    private AutoCloseable _closeable;
+public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
 
     @InjectMocks
     private MarkupResponseProcessor _markupResponseProcessor;
@@ -69,17 +78,6 @@ public class TestMarkupResponseProcessor {
     private StorageService _mockStorageService;
 
     private static final long TEST_JOB_ID = 1236;
-
-    @Before
-    public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
-    }
-
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
 
     @Test

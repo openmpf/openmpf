@@ -39,17 +39,6 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-
-    std::string StreamingComponentHandle::GetDetectionType() {
-        try {
-            return component_->GetDetectionType();
-        }
-        catch (...) {
-            WrapComponentException("GetDetectionType");
-        }
-    }
-
-
     void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
         try {
             component_->BeginSegment(segment_info);

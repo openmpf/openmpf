@@ -26,64 +26,69 @@
 
 package org.mitre.mpf.markup;
 
+import javax.jms.Connection;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Session;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.jms.connection.CachingConnectionFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 
 public class MarkupMain {
-    private static final Logger LOG = LoggerFactory.getLogger(org.mitre.mpf.markup.MarkupRequestConsumer.class);
-    public static String ACTIVEMQHOST = "tcp://localhost:61616";
+    private static final Logger LOG = LoggerFactory.getLogger(MarkupMain.class);
 
-    /**
-     * Main method that starts MarkupMain by loading the application context and initializing the LevelDB instances
-     *
-     * @param args Command line arguments, should be empty
-     * @throws InterruptedException
-     */
-    public static void main(String[] args) {
-        LOG.info("Beginning markup initialization");
+    // Set reconnect attempts so that about 5 minutes will be spent attempting to reconnect.
+    private static final String DEFAULT_AMQ_URI =
+            "failover:(tcp://localhost:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21";
 
-        if (args.length > 0) {
-            ACTIVEMQHOST = args[0];
-        } else if (System.getenv("ACTIVE_MQ_BROKER_URI") != null && !System.getenv("ACTIVE_MQ_BROKER_URI").isEmpty()) {
-            ACTIVEMQHOST = System.getenv("ACTIVE_MQ_BROKER_URI");
-        }
-        LOG.trace("ACTIVE_MQ_BROKER_URI=" + ACTIVEMQHOST);
+    private static final String REQUEST_QUEUE = "MPF.MARKUP_MARKUPCV_REQUEST";
 
-        var context = new ClassPathXmlApplicationContext("classpath:appConfig.xml");
-        context.registerShutdownHook();
 
-        var connection = context.getBean("jmsFactory", CachingConnectionFactory.class);
+    public static void main(String[] args) throws JMSException {
+        var connection = getConnection(args);
+        var standardInWatcher = StandardInWatcher.start(connection, Thread.currentThread());
+        try {
+            var session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            LOG.info("Creating ActiveMQ consumer for queue: {}", REQUEST_QUEUE);
+            var jmsConsumer = session.createConsumer(session.createQueue(REQUEST_QUEUE));
+            connection.start();
 
-        // Shutdown hook is required in order to shutdown when signal received.
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(connection, context)));
-
-        try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                LOG.info("Received input on stdin: \"{}\"", line);
-                if (line.startsWith("q")) {
-                    shutdown(connection, context);
-                    return;
-                }
+            var markupConsumer = new MarkupRequestConsumer(session);
+            Message message;
+            while ((message = jmsConsumer.receive()) != null) {
+                markupConsumer.onMessage(message);
             }
-
-            LOG.info("Standard in was closed. Must use a signal to exit.");
+            if (!standardInWatcher.quitReceived()) {
+                LOG.info("Received null message indicating that the ActiveMQ connection was closed. Shutting down...");
+            }
         }
-        catch (IOException e) {
-            LOG.error(e.getMessage(), e);
+        catch (Exception e) {
+            if (!standardInWatcher.quitReceived()) {
+                LOG.error(e.getMessage(), e);
+                throw e;
+            }
+        }
+        finally {
+            connection.close();
         }
     }
 
-
-    private static void shutdown(CachingConnectionFactory connection, ConfigurableApplicationContext context) {
-        connection.destroy();
-        context.close();
+    private static Connection getConnection(String[] args) throws JMSException {
+        String brokerUri;
+        if (args.length > 0) {
+            brokerUri = args[0];
+        }
+        else {
+            var envUri = System.getenv("ACTIVE_MQ_BROKER_URI");
+            if (envUri != null && !envUri.isBlank()) {
+                brokerUri = envUri;
+            }
+            else {
+                brokerUri = DEFAULT_AMQ_URI;
+            }
+        }
+        LOG.info("Attempting to connect to broker at: {}", brokerUri);
+        return new ActiveMQConnectionFactory(brokerUri).createConnection();
     }
 }

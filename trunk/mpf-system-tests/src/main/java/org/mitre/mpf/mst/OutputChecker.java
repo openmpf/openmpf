@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.mst;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.mitre.mpf.interop.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,8 +96,8 @@ public class OutputChecker {
 
         _errorCollector.checkThat("MarkupResult", actMedia.getMarkupResult() != null, is(expMedia.getMarkupResult() != null));
 
-        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getDetectionTypes();
-        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getDetectionTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getTrackTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getTrackTypes();
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ActionOutputs size", actExtrResults.size(), is(expExtrResults.size()));
 
@@ -112,31 +115,50 @@ public class OutputChecker {
         Iterator<JsonActionOutputObject> expIter = expectedTypeEntry.getValue().iterator();
         Iterator<JsonActionOutputObject> actIter = actualTypeEntry.getValue().iterator();
 
-        JsonActionOutputObject expTrackOutput;
-        JsonActionOutputObject actTrackOutput;
-        _errorCollector.checkThat("Expected Type", actualTypeEntry.getKey(), is(expectedTypeEntry.getKey()));
+        _errorCollector.checkThat(
+                "Expected Type", actualTypeEntry.getKey(), is(expectedTypeEntry.getKey()));
         while (expIter.hasNext()){
-            expTrackOutput = expIter.next();
-            actTrackOutput = actIter.next();
-            log.debug("Comparing expected actions at Source={} to actual actions at Source={}",
-                    expTrackOutput.getSource(), actTrackOutput.getSource());
+            var expActionOutput = expIter.next();
+            var actActionOutput = actIter.next();
+            _errorCollector.checkThat(
+                    "Action Name", actActionOutput.getAction(),
+                    is(expActionOutput.getAction()));
+            _errorCollector.checkThat(
+                    "Algorithm Name", actActionOutput.getAlgorithm(),
+                    is(expActionOutput.getAlgorithm()));
             compareJsonTrackOutputObjects(
-                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expTrackOutput),
-                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actTrackOutput),
+                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expActionOutput),
+                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actActionOutput),
                     pipeline);
         }
     }
 
-    private SortedSet<JsonTrackOutputObject> sortJsonActionOutputObjectSets(String detectionType, JsonActionOutputObject actionOutput) {
-        // MEDIA track default sort order is determined by DERIVATIVE_MEDIA_ID, which can cause issues. For example,
-        // a track with { DERIVATIVE_MEDIA_ID=10, PAGE_NUM=2 } will appear before { DERIVATIVE_MEDIA_ID=9, PAGE_NUM=1 }
-        // due to lexicographical String ordering. To address this, we sort by PAGE_NUM after converting to an int.
-        if (detectionType.equals("MEDIA") &&
-                actionOutput.getTracks().stream().allMatch(t -> t.getTrackProperties().containsKey("PAGE_NUM"))) {
-            return new TreeSet<>(Comparator.comparingInt(
-                    t -> Integer.parseInt(t.getTrackProperties().get("PAGE_NUM"))));
+    private SortedSet<JsonTrackOutputObject> sortJsonActionOutputObjectSets(
+            String trackType, JsonActionOutputObject actionOutput) {
+        if (!trackType.equals("MEDIA")) {
+            return actionOutput.getTracks();
         }
-        return actionOutput.getTracks();
+        // Remove PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES from track properties so they don't
+        // affect the sort order.
+        // Copy to a temporary unsorted collection because we are changing the value of comparison
+        // criteria.
+        var tracks = new ArrayList<>(actionOutput.getTracks());
+        for (var track : tracks) {
+            for (var propName : PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES) {
+                track.getTrackProperties().remove(propName);
+                track.getExemplar().getDetectionProperties().remove(propName);
+            }
+
+            var detections = new ArrayList<>(track.getDetections());
+            track.getDetections().clear();
+            for (var detection : detections) {
+                for (var propName : PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES) {
+                    detection.getDetectionProperties().remove(propName);
+                }
+            }
+            track.getDetections().addAll(detections);
+        }
+        return new TreeSet<>(tracks);
     }
 
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,
@@ -194,7 +216,7 @@ public class OutputChecker {
         _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
                 closeTo(expExtrResult.getConfidence(), 0.01));
 
-        compareProperties("Track", actExtrResult.getTrackProperties(), expExtrResult.getTrackProperties());
+        compareProperties("Track", expExtrResult.getTrackProperties(), actExtrResult.getTrackProperties());
 
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
@@ -277,8 +299,8 @@ public class OutputChecker {
                         is(expObjLocation.getOffsetFrame()));
                 _errorCollector.checkThat("X", actObjLocation.getX(), is(expObjLocation.getX()));
                 _errorCollector.checkThat("Y", actObjLocation.getY(), is(expObjLocation.getY()));
-                compareProperties("Detection", actObjLocation.getDetectionProperties(),
-                        expObjLocation.getDetectionProperties());
+                compareProperties("Detection", expObjLocation.getDetectionProperties(),
+                        actObjLocation.getDetectionProperties());
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
                         closeTo(expObjLocation.getConfidence(), confidenceDelta));
         }
@@ -288,12 +310,6 @@ public class OutputChecker {
             "DERIVATIVE_MEDIA_TEMP_PATH",
             "DERIVATIVE_MEDIA_ID"
     );
-
-    private static final List<String> PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON = Arrays.asList(
-            "ROTATION"
-    );
-
-    private static final double propertyDeltaFuzzy = 0.1;
 
     /**
      * Compare the actual properties to the expected properties
@@ -307,20 +323,78 @@ public class OutputChecker {
                                    Map<String, String> actProperties) {
         _errorCollector.checkThat(type + " Property Keys", actProperties.keySet(), is(expProperties.keySet()));
 
-        for (var expKey : expProperties.keySet()) {
-            if (PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES.contains(expKey)) {
-                continue;
+        for (var expected : expProperties.entrySet()) {
+            if (!PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES.contains(expected.getKey())) {
+                var actualValue = actProperties.get(expected.getKey());
+                _errorCollector.checkThat(type + " Property: " + expected.getKey(),
+                        actualValue, isPropertyMatching(expected.getValue()));
             }
-            if (PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON.contains(expKey)) {
-                _errorCollector.checkThat(type + " Property: " + expKey,
-                        Double.parseDouble(actProperties.get(expKey)),
-                        closeTo(Double.parseDouble(expProperties.get(expKey)), propertyDeltaFuzzy));
-                continue;
-            }
-            _errorCollector.checkThat(type + " Property: " + expKey,
-                    actProperties.get(expKey), is(expProperties.get(expKey)));
         }
     }
+
+    private static Matcher<String> isPropertyMatching(String expected) {
+        return isPropertyMatching(expected, 0.1);
+    }
+
+    private static Matcher<String> isPropertyMatching(String expected, double error) {
+        return new TypeSafeMatcher<String>() {
+            private Matcher<String> _isMatcher = is(expected);
+            private Matcher<Double> _closeToMatcher;
+
+            @Override
+            protected boolean matchesSafely(String actual) {
+                if (_isMatcher.matches(actual)) {
+                    return true;
+                }
+                else {
+                    return matchesDouble(actual);
+                }
+            }
+
+            private boolean matchesDouble(String actual) {
+                try {
+                    Integer.parseInt(expected);
+                    // Double.parseDouble will successfully parse integer values, but we do not
+                    // want to use the closeTo matcher when the string is an integer. If the
+                    // properties contained the same integer, the string comparison would have
+                    // succeeded.
+                    return false;
+                }
+                catch (NumberFormatException e) {
+                    // Expected value is either not a number or a floating point value.
+                }
+
+                double expectedDouble;
+                try {
+                    expectedDouble = Double.parseDouble(expected);
+                }
+                catch (NumberFormatException e) {
+                    return false;
+                }
+
+                _closeToMatcher = closeTo(expectedDouble, error);
+                try {
+                    var actualDouble = Double.parseDouble(actual);
+                    return _closeToMatcher.matches(actualDouble);
+                }
+                catch (NumberFormatException e) {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                if (_closeToMatcher == null) {
+                    _isMatcher.describeTo(description);
+                }
+                else {
+                    description.appendText("a string containing ")
+                            .appendDescriptionOf(_closeToMatcher);
+                }
+            }
+        };
+    }
+
 
     /**
      * Calculate the overlap between bounding boxes A & B using x/y coordinates, width and height
@@ -368,4 +442,3 @@ public class OutputChecker {
         return overlap;
     }
 }
-

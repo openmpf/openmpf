@@ -27,28 +27,8 @@
 
 package org.mitre.mpf.wfm.data;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-import org.mitre.mpf.interop.JsonIssueDetails;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.access.JobRequestDao;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.mitre.mpf.wfm.util.FrameTimeInfo;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.MediaRange;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import static java.util.stream.Collectors.joining;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -56,9 +36,54 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.UUID;
+import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.TiesDbInfo;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.IssueSources;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 
 @Component
 @Singleton
@@ -224,10 +249,20 @@ public class InProgressBatchJobsService {
         return job.isCancelled();
     }
 
-    public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
+    public synchronized SortedSet<Track> getTracks(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
         return _redis.getTracks(jobId, mediaId, taskIndex, actionIndex);
     }
 
+    public synchronized Stream<Track> getTracksStream(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        return _redis.getTracksStream(jobId, mediaId, taskIndex, actionIndex);
+    }
+
+    public synchronized int getTrackCount(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        return _redis.getTrackCount(jobId, mediaId, taskIndex, actionIndex);
+    }
 
     public synchronized void addTrack(Track track) {
         LOG.debug("Storing new track for job {}'s media {}.", track.getJobId(), track.getMediaId());
@@ -342,12 +377,6 @@ public class InProgressBatchJobsService {
         int nextTask = currentTask + 1;
         LOG.info("Changing job {}'s current task index from {} to {}", jobId, currentTask, nextTask);
         job.setCurrentTaskIndex(nextTask);
-    }
-
-
-    public synchronized void setProcessedAction(long jobId, long mediaId, int taskIndex, int actionIndex) {
-        var job = getJobImpl(jobId);
-        job.getMedia(mediaId).setProcessedAction(taskIndex, actionIndex);
     }
 
 
@@ -507,7 +536,7 @@ public class InProgressBatchJobsService {
 
     public synchronized void addTiesDbInfo(long jobId, long mediaId, TiesDbInfo tiesDbInfo) {
         getMediaImpl(jobId, mediaId)
-                .addTiesDbInfo(tiesDbInfo);
+                .setTiesDbInfo(tiesDbInfo);
     }
 
 

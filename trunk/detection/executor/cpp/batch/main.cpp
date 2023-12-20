@@ -371,8 +371,6 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                 auto ctx = logger.GetJobContext(job_name);
                 logger.Info("Processing message on ", service_name, '.');
 
-                string detection_type = detection_engine.GetDetectionType();
-
                 if (detection_engine.Supports(data_type)) {
                     MPFDetectionError rc = MPF_DETECTION_SUCCESS;
                     std::string error_message;
@@ -424,7 +422,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         detection_response_body = detection_buf.PackVideoResponse(
                                 tracks, msg_metadata, data_type,
                                 video_request.start_frame, video_request.stop_frame,
-                                detection_type, rc, error_message);
+                                rc, error_message);
 
                     } else if (data_type == MPFDetectionDataType::AUDIO) {
                         vector <MPFAudioTrack> tracks;
@@ -474,7 +472,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         detection_response_body = detection_buf.PackAudioResponse(
                                 tracks, msg_metadata, data_type,
                                 audio_request.start_time, audio_request.stop_time,
-                                detection_type, rc, error_message);
+                                rc, error_message);
 
                     } else if (data_type == MPFDetectionDataType::IMAGE) {
                         vector <MPFImageLocation> locations;
@@ -518,7 +516,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
 
                         // Pack image response
                         detection_response_body = detection_buf.PackImageResponse(
-                                locations, msg_metadata, data_type, detection_type, rc, error_message);
+                                locations, msg_metadata, data_type, rc, error_message);
 
                     } else {
                         vector <MPFGenericTrack> tracks;
@@ -563,7 +561,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
 
                         // Pack generic response
                         detection_response_body = detection_buf.PackGenericResponse(
-                                tracks, msg_metadata, data_type, detection_type, rc, error_message);
+                                tracks, msg_metadata, data_type, rc, error_message);
                     }
 
                 } else {

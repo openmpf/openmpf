@@ -152,41 +152,6 @@ class BaseMpfSystemDependencyManager(abc.ABC):
         raise NotImplementedError()
 
 
-class ActiveMqManager(BaseMpfSystemDependencyManager):
-    SERVICE_NAME = 'activemq'
-
-    def __init__(self, mpf_config):
-        super(ActiveMqManager, self).__init__(mpf_config)
-        self._is_service = self._config.activemq_is_service
-
-    def dependency_name(self):
-        return 'ActiveMQ'
-
-    def _run_status_command(self):
-        if self._is_service:
-            return self._shell.service_status(ActiveMqManager.SERVICE_NAME)
-        else:
-            return self._shell.check_call((self._config.active_mq, 'status'))
-
-    def _not_running_status_code(self):
-        if self._is_service:
-            return ShellHelper.SERVICE_STOPPED_CODE
-        else:
-            return 1
-
-    def _run_start_command(self):
-        if self._is_service:
-            self._shell.start_service(ActiveMqManager.SERVICE_NAME)
-        else:
-            self._shell.check_call((self._config.active_mq, 'start'))
-
-    def _run_stop_command(self):
-        if self._is_service:
-            self._shell.stop_service(ActiveMqManager.SERVICE_NAME)
-        else:
-            self._shell.check_call((self._config.active_mq, 'stop'))
-
-
 class PostgresManager(BaseMpfSystemDependencyManager):
     SERVICE_NAME = 'postgresql'
 
@@ -366,7 +331,7 @@ class WorkflowManagerManager(BaseMpfSystemDependencyManager):
         return 'Workflow Manager'
 
     def status(self):
-        request = urllib.request.Request(self._config.wfm_url)
+        request = urllib.request.Request(self._config.wfm_url + '/login')
         request.get_method = lambda: 'HEAD'
         try:
             with urllib.request.urlopen(request):
@@ -411,27 +376,12 @@ class WorkflowManagerManager(BaseMpfSystemDependencyManager):
 
 
 class MpfConfig:
-    def __init__(self, verbose=False, activemq_bin=None, activemq_data=None, redis_server_bin=None,
-                 redis_cli_bin=None, redis_conf=None, node_manager_port=None,
-                 workflow_manager_url=None, wfm_project=None,
-                 local_only=False, skip_activemq=False, skip_redis=False,
-                 skip_node_manager=False, skip_wfm=False, **_):
+    def __init__(self, verbose=False, redis_server_bin=None, redis_cli_bin=None, redis_conf=None,
+                 node_manager_port=None, workflow_manager_url=None, wfm_project=None,
+                 local_only=False, skip_redis=False, skip_node_manager=False, skip_wfm=False, **_):
 
         self.verbose = verbose
         self._shell = ShellHelper(self.verbose)
-
-        if not skip_activemq:
-            self.activemq_is_service = self._shell.service_exists(ActiveMqManager.SERVICE_NAME)
-            if not self.activemq_is_service:
-                self.active_mq = activemq_bin
-                self._verify_exists('ActiveMQ', self.active_mq, '--activemq-bin')
-
-            if activemq_data:
-                kahadb_dir = os.path.join(activemq_data, 'kahadb')
-                if os.path.isdir(kahadb_dir):
-                    self.kahadb_dir = kahadb_dir
-                else:
-                    self.kahadb_dir = None
 
         if not skip_redis:
             self.redis_is_service = self._shell.service_exists(RedisManager.SERVICE_NAME)
@@ -610,9 +560,6 @@ class ShellHelper:
 sys_args = mpf_util.arg_group(
     argh.arg('-v', '--verbose', default=False, help='Show output from called commands'),
 
-    argh.arg('--activemq-bin', default='/opt/activemq/bin/activemq',
-             help='path to ActiveMQ binary'),
-
     argh.arg('--redis-server-bin', default='redis-server', help='path to redis-server binary'),
 
     argh.arg('--redis-cli-bin', default='redis-cli', help='path to redis-cli binary'),
@@ -624,12 +571,11 @@ sys_args = mpf_util.arg_group(
 
     argh.arg('--local-only', '-l', default=False),
 
-    argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
+    argh.arg('--workflow-manager-url', default='http://localhost:8080',
              help='Url to Workflow Manager'),
     argh.arg('--wfm-project', default='~/openmpf-projects/openmpf/trunk/workflow-manager',
              help='Path to the Workflow Manager Maven project.'),
 
-    argh.arg('--skip-activemq', '--xaq', default=False, help='Exclude ActiveMQ from command'),
     argh.arg('--skip-sql', '--xsql', default=False, help='Exclude SQL from command'),
     argh.arg('--skip-redis', '--xrds', default=False, help='Exclude Redis from command'),
     argh.arg('--skip-node-manager', '--xnm', default=False, help='Exclude Node Manager from command'),
@@ -637,10 +583,7 @@ sys_args = mpf_util.arg_group(
 )
 
 
-def filtered_start_up_order(skip_activemq, skip_sql, skip_redis, skip_node_manager, skip_wfm,
-                            **_):
-    if not skip_activemq:
-        yield ActiveMqManager
+def filtered_start_up_order(skip_sql, skip_redis, skip_node_manager, skip_wfm, **_):
     if not skip_sql:
         yield PostgresManager
     if not skip_redis:

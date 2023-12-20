@@ -64,7 +64,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ITWebREST {
 
 	private static final String IMG_URL = WebRESTUtils.BASE_URL
-			+ "/workflow-manager/resources/img/blue-cybernetic-background.jpg";
+			+ "/resources/img/blue-cybernetic-background.jpg";
 
 	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 	private static final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";

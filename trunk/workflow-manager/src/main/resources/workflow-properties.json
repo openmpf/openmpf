@@ -36,7 +36,7 @@
     },
     {
         "name": "OUTPUT_MERGE_WITH_PREVIOUS_TASK",
-        "description": "Tasks with this property set to true will replace the preceding task's tracks in the JSON output object. Those tracks will inherit the detection type and algorithm from the preceding task's tracks.",
+        "description": "Tasks with this property set to true will replace the preceding task's tracks in the JSON output object. Those tracks will inherit the track type and algorithm from the preceding task's tracks.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
@@ -487,6 +487,27 @@
         "description": "If \"FFPROBE_IGNORE_STDERR\" is false and ffprobe produces error logging, this value is the maximum number of lines of ffprobe's error logging that will be added to the media error.",
         "type": "INT",
         "propertiesKey": "ffprobe.stderr.num.lines",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "TRIGGER",
+        "description": "Trigger condition for an action when feed forward is used. An action with a trigger of `TRACK_PROPERTY=VALUE` will only process feed forward tracks that have a track property named \"TRACK_PROPERTY\" set to \"VALUE\".",
+        "type": "STRING",
+        "defaultValue": "",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "CALLBACK_USE_OIDC",
+        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included in the job completion callback.",
+        "type": "BOOLEAN",
+        "propertiesKey": "http.callback.use.oidc",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "TIES_DB_USE_OIDC",
+        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included when communicating with TiesDb.",
+        "type": "BOOLEAN",
+        "propertiesKey": "ties.db.use.oidc",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

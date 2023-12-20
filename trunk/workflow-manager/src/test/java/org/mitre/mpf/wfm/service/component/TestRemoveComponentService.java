@@ -26,8 +26,24 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.google.common.collect.ImmutableList;
-import org.junit.After;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,30 +55,16 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import com.google.common.collect.ImmutableList;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
-import static org.mockito.Mockito.*;
-
-public class TestRemoveComponentService {
-
-    private AutoCloseable _closeable;
+public class TestRemoveComponentService extends MockitoTest.Lenient {
 
     private RemoveComponentServiceImpl _removeComponentService;
 
@@ -89,18 +91,11 @@ public class TestRemoveComponentService {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
-
         _removeComponentService = new RemoveComponentServiceImpl(
                 Optional.of(_mockNodeManager), Optional.of(_mockStreamingServiceManager), _mockDeploymentService,
                 _mockStateService, _mockPipelineService, _mockPropertiesUtil);
     }
 
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void testRemoveComponentHappyPath() throws IOException, ManagedComponentsUnsupportedException {

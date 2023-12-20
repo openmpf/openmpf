@@ -55,6 +55,9 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
@@ -121,21 +124,8 @@ public class MarkupSplitter {
 
             List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
                     = createMapEntries(job, media, markupProperties);
-
-            Path destinationPath;
-            if (boundingBoxMapEntryList.isEmpty()) {
-                var fileExtension = media.getMimeType()
-                        .map(MarkupSplitter::getFileExtension)
-                        .orElse(".bin");
-                destinationPath = _propertiesUtil.createMarkupPath(
-                        job.getId(), media.getId(), fileExtension);
-            }
-            else {
-                destinationPath = _propertiesUtil.createMarkupPath(
-                        job.getId(), media.getId(),
-                        getMarkedUpMediaExtensionForMediaType(media, markupProperties));
-            }
-
+            var destinationPath = getDestinationPath(
+                    job, media, !boundingBoxMapEntryList.isEmpty(), markupProperties);
 
             var mediaType = media.getType()
                     .map(mt -> Markup.MediaType.valueOf(mt.toString().toUpperCase()))
@@ -219,6 +209,9 @@ public class MarkupSplitter {
         // PipelineValidator made sure taskToMarkupIndex only has one action.
         SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
                 job.getId(), media.getId(), taskToMarkupIndex, 0);
+        var algo = job.getPipelineElements().getAlgorithm(taskToMarkupIndex, 0);
+        var isExemptFromIllFormedDetectionRemoval = _aggregateJobPropertiesUtil
+                .isExemptFromIllFormedDetectionRemoval(algo.getTrackType());
 
         int trackIndex = 0;
         for (Track track : tracks) {
@@ -228,7 +221,8 @@ public class MarkupSplitter {
             }
             addTrackToBoundingBoxMap(
                     track, boundingBoxMap, trackColors.next(), labelPrefix, labelFromDetections,
-                    labelTextPropToShow, labelNumericPropToShow, animate, labelMaxLength);
+                    labelTextPropToShow, labelNumericPropToShow, animate, labelMaxLength,
+                    isExemptFromIllFormedDetectionRemoval);
             trackIndex++;
         }
 
@@ -285,7 +279,8 @@ public class MarkupSplitter {
             String labelTextPropToShow,
             String labelNumericPropToShow,
             boolean animate,
-            int textLength) {
+            int textLength,
+            boolean isExemptFromIllFormedDetectionRemoval) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
@@ -333,7 +328,7 @@ public class MarkupSplitter {
                     track.getExemplar().equals(detection),
                     label);
 
-            if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(track.getType())) {
+            if (isExemptFromIllFormedDetectionRemoval) {
                 // Special case: Speech doesn't populate object locations for each frame in the video, so you have to
                 // go by the track start and stop frames.
                 boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),
@@ -388,6 +383,28 @@ public class MarkupSplitter {
     }
 
 
+    private Path getDestinationPath(
+            BatchJob job, Media media, boolean hasBoxes, Map<String, String> markupProperties) {
+        var mediaMarkupDir = _propertiesUtil.getJobMarkupDirectory(job.getId()).toPath()
+                .resolve(String.valueOf(media.getId()));
+        try {
+            Files.createDirectories(mediaMarkupDir);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        String extension;
+        if (hasBoxes) {
+            extension = getMarkedUpMediaExtensionForMediaType(media, markupProperties);
+        }
+        else {
+            extension = media.getMimeType()
+                    .map(MarkupSplitter::getFileExtension)
+                    .orElse(".bin");
+        }
+        return mediaMarkupDir.resolve(UUID.randomUUID() + extension);
+    }
 
     /** Returns the appropriate markup extension for a given {@link MediaType}. */
     private static String getMarkedUpMediaExtensionForMediaType(

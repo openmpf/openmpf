@@ -34,6 +34,7 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
+import org.mitre.mpf.mvc.security.OidcSecurityConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -55,7 +56,11 @@ import org.springframework.context.annotation.Profile;
 public class Application extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+        var app = new SpringApplication(Application.class);
+        if (OidcSecurityConfig.isEnabled()) {
+            app.setAdditionalProfiles("oidc");
+        }
+        app.run(args);
     }
 
     @Override
@@ -95,6 +100,7 @@ public class Application extends SpringBootServletInitializer {
 
         return tomcat;
     }
+
 
     @Bean
     public ServletRegistrationBean<SimonConsoleServlet> simonConsoleServlet() {

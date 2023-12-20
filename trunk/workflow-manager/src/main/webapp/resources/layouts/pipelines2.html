@@ -150,7 +150,8 @@
             </div>
             <div class="row">
                 <div>
-                    <task-sequence tasks="currentPipeline.vmTasks" op-obj="pipes2"></task-sequence>
+                    <mpf-task-sequence tasks="currentPipeline.vmTasks" op-obj="pipes2">
+                    </mpf-task-sequence>
                 </div>
             </div>
         </form>
@@ -226,7 +227,9 @@
                                         </span>
                                         <div class="pp-algorithm-panel">
                                             <div ng-repeat="prop in currentAction.viewProperties | orderBy: 'name'">
-                                                <action-property prop="prop" edit-mode="actions2.inEditMode()"></action-property>
+                                                <mpf-action-property prop="prop"
+                                                    edit-mode="actions2.inEditMode()">
+                                                </mpf-action-property>
                                             </div>
                                         </div>
                                     </div>
@@ -239,6 +242,3 @@
         </form>
     </div>
 </script>
-
-
-

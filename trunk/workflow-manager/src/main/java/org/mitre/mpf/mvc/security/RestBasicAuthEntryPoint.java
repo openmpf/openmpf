@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,54 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.mvc.security;
 
-import javax.servlet.ServletException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
+import org.mitre.mpf.mvc.CorsFilter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**
+ * By default Spring returns HTML when authentication fails,
+ * but since this is applied to our REST endpoints JSON is more appropriate.
+ */
 @Component
-public class AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
+public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
 
-    private static final String BAD_CREDENTIALS_MESSAGE = "Bad credentials";
+    private final ObjectMapper _objectMapper;
 
-    @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
-
-        if (BAD_CREDENTIALS_MESSAGE.equals(exception.getMessage())) {
-            response.sendRedirect(request.getContextPath() + "/login?reason=error");
-        }
+    RestBasicAuthEntryPoint(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
     }
 
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
+        // This header is what makes the log in box appear when accessing the REST URLs
+        // in a browser such as on the Swagger page.
+        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
+        if (request.getMethod().equals("OPTIONS")
+                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
+            // Handle CORS preflight request
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
+        else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            var messageObj = Map.of("message", authException.getMessage());
+            try (PrintWriter pw = response.getWriter()) {
+                _objectMapper.writeValue(pw, messageObj);
+            }
+        }
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

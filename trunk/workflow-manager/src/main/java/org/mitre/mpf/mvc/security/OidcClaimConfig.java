@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,58 +24,14 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.mvc.security;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.util.Optional;
 
-@Component
-public class AjaxAwareLoginUrlAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
-
-    public AjaxAwareLoginUrlAuthenticationEntryPoint() {
-        super("/login");
-    }
-
-    @Override
-    public void commence(final HttpServletRequest request, final HttpServletResponse response,
-                         final AuthenticationException authException) throws IOException, ServletException {
-
-        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-            response.sendError(401);
-        } else {
-            super.commence(request, response, authException);
-        }
-    }
-
+public record OidcClaimConfig(
+        Optional<String> adminClaimName,
+        Optional<String> adminClaimValue,
+        Optional<String> userClaimName,
+        Optional<String> userClaimValue) {
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

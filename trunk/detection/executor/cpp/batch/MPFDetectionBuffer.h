@@ -135,7 +135,6 @@ public:
             const MPFDetectionDataType data_type,
             const int start_frame,
             const int stop_frame,
-            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 
@@ -145,7 +144,6 @@ public:
             const MPFDetectionDataType data_type,
             const int start_time,
             const int stop_time,
-            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 
@@ -153,7 +151,6 @@ public:
             const vector<MPFImageLocation> &locations,
             const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
-            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 
@@ -161,7 +158,6 @@ public:
             const vector<MPFGenericTrack> &tracks,
             const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
-            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 

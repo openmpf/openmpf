@@ -54,7 +54,7 @@
     "markupResult": null,
     "output": {
       "FACE": [{
-        "source": "+#TEST OCV FACE WITH ROI ACTION",
+        "action": "TEST OCV FACE WITH ROI ACTION",
         "algorithm": "FACECV",
         "tracks": [{
           "id": "3f00918555bd88e95864cd6df16d290fc621affe9e28b44c5c3780f03a73e81e",
@@ -63,7 +63,6 @@
           "startOffsetTime": 3703,
           "stopOffsetTime": 3870,
           "type": "FACE",
-          "source": "+#TEST OCV FACE WITH ROI ACTION",
           "confidence": 19.0,
           "trackProperties": {},
           "exemplar": {
@@ -152,7 +151,6 @@
           "startOffsetTime": 8074,
           "stopOffsetTime": 8375,
           "type": "FACE",
-          "source": "+#TEST OCV FACE WITH ROI ACTION",
           "confidence": 41.0,
           "trackProperties": {},
           "exemplar": {

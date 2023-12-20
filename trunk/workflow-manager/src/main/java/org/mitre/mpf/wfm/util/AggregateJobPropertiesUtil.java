@@ -507,9 +507,10 @@ public class AggregateJobPropertiesUtil {
             }
 
             for (int prevTaskIndex = jobPart.getTaskIndex() - 1;
-                 prevTaskIndex >= 0;
+                 prevTaskIndex > media.getCreationTask();
                  prevTaskIndex--) {
-                if (media.wasActionProcessed(prevTaskIndex, 0)) {
+                var prevAction = job.getPipelineElements().getAction(prevTaskIndex, 0);
+                if (actionAppliesToMedia(job, media, prevAction)) {
                     tasksToMerge.put(jobPart.getTaskIndex(), prevTaskIndex);
                     break;
                 }

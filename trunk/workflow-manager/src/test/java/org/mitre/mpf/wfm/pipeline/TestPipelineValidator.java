@@ -164,7 +164,8 @@ public class TestPipelineValidator {
 
     @Test
     public void canValidatePipelineReferencingWorkflowProperties() {
-        var algorithm = new Algorithm("ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+        var algorithm = new Algorithm("ALGO", "descr", ActionType.DETECTION, "TEST",
+                                      OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
@@ -249,7 +250,7 @@ public class TestPipelineValidator {
     @Test
     public void throwsExceptionWhenNotAllAlgorithmsSupportSameProcessingType() {
         var batchAlgo = new Algorithm(
-                "BATCH ALGO", "asdf", ActionType.DETECTION, OptionalInt.empty(),
+                "BATCH ALGO", "asdf", ActionType.DETECTION, "BATCH", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
@@ -258,7 +259,7 @@ public class TestPipelineValidator {
         var batchTaskName = createSingleActionTask("BATCH", batchAlgo.getName());
 
         var streamAlgo = new Algorithm(
-                "STREAM ALGO", "asdf", ActionType.DETECTION, OptionalInt.empty(),
+                "STREAM ALGO", "asdf", ActionType.DETECTION, "STREAM", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 false, true);
@@ -292,7 +293,7 @@ public class TestPipelineValidator {
     @Test
     public void canHandleWhenOneAlgoSupportsBatchAndOtherSupportsBoth() {
         var batchAlgo = new Algorithm(
-                "BATCH ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "BATCH ALGO", "descr", ActionType.DETECTION, "BATCH", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
@@ -302,7 +303,7 @@ public class TestPipelineValidator {
 
 
         var bothAlgo = new Algorithm(
-                "BOTH ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "BOTH ALGO", "descr", ActionType.DETECTION, "BOTH", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
@@ -321,7 +322,7 @@ public class TestPipelineValidator {
     @Test
     public void canHandleWhenOneAlgoSupportsStreamingAndOtherSupportsBoth() {
         var bothAlgo = new Algorithm(
-                "BOTH ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "BOTH ALGO", "descr", ActionType.DETECTION, "BOTH", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
@@ -331,7 +332,7 @@ public class TestPipelineValidator {
 
 
         var streamAlgo = new Algorithm(
-                "STREAM ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "STREAM ALGO", "descr", ActionType.DETECTION, "STREAM", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 false, true);
@@ -351,7 +352,7 @@ public class TestPipelineValidator {
     @Test
     public void throwsExceptionWhenInvalidStates() {
         var providesAlgo = new Algorithm(
-                "PROVIDES ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "PROVIDES ALGO", "descr", ActionType.DETECTION, "PROVIDES", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of("STATE_ONE", "STATE_THREE"), List.of()),
                 true, true);
@@ -359,7 +360,7 @@ public class TestPipelineValidator {
         var providesTask = createSingleActionTask("PROVIDES", providesAlgo.getName());
 
         Algorithm requiresAlgo = new Algorithm(
-                "REQUIRES ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "REQUIRES ALGO", "descr", ActionType.DETECTION, "REQUIRES", OptionalInt.empty(),
                 new Algorithm.Requires(List.of("STATE_ONE", "STATE_TWO")),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
@@ -381,7 +382,7 @@ public class TestPipelineValidator {
                                              "1", null);
 
         var algorithm = new Algorithm(
-                "ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO", "descr", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(property)),
                 true, false);
@@ -410,7 +411,7 @@ public class TestPipelineValidator {
                                               "1", null);
 
         var algorithm = new Algorithm(
-                "ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO", "descr", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(property)),
                 true, false);
@@ -437,7 +438,7 @@ public class TestPipelineValidator {
     @Test
     public void throwsWhenTaskHasDifferentActionTypes() {
         var detectionAlgo = new Algorithm(
-                "DETECTION ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "DETECTION ALGO", "descr", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
@@ -449,7 +450,7 @@ public class TestPipelineValidator {
 
 
         var markupAlgo = new Algorithm(
-                "MARKUP ALGO", "descr", ActionType.MARKUP, OptionalInt.empty(),
+                "MARKUP ALGO", "descr", ActionType.MARKUP, "MARKUP", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
@@ -503,7 +504,7 @@ public class TestPipelineValidator {
     @Test
     public void throwsWhenMarkupPipelineIsInvalid() {
         var detectionAlgo = new Algorithm(
-                "DETECTION ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "DETECTION ALGO", "descr", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
@@ -512,7 +513,7 @@ public class TestPipelineValidator {
 
 
         var markupAlgo = new Algorithm(
-                "MARKUP ALGO", "descr", ActionType.MARKUP, OptionalInt.empty(),
+                "MARKUP ALGO", "descr", ActionType.MARKUP, "MARKUP", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
@@ -667,7 +668,7 @@ public class TestPipelineValidator {
 
     @Test
     public void canValidateAlgorithm() {
-        var algorithm = new Algorithm("", "", null, OptionalInt.empty(),
+        var algorithm = new Algorithm("", "", null, "", OptionalInt.empty(),
                                             null, null,
                                             false, false);
         assertValidationErrors(
@@ -675,6 +676,7 @@ public class TestPipelineValidator {
                 createViolationMessage("name", algorithm.getName(), "may not be empty"),
                 createViolationMessage("description", algorithm.getDescription(), "may not be empty"),
                 createViolationMessage("actionType", null, "may not be null"),
+                createViolationMessage("trackType", algorithm.getTrackType(), "may not be empty"),
                 createViolationMessage("providesCollection", null, "may not be null"),
                 createViolationMessage("requiresCollection", null, "may not be null"),
                 "must support batch processing, stream processing, or both");
@@ -686,7 +688,7 @@ public class TestPipelineValidator {
                 "", null, null, "default", "property.key");
 
         algorithm = new Algorithm(
-                "ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO", "descr", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of("STATE1", "")),
                 new Algorithm.Provides(List.of("", "STATE1"), List.of(property1, property2)),
                 true, true);
@@ -705,7 +707,7 @@ public class TestPipelineValidator {
 
 
         algorithm = new Algorithm(
-                "ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO", "descr", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of("STATE1", "STATE2")),
                 new Algorithm.Provides(List.of("STATE1", "STATE2"), List.of(property1)),
                 true, true);
@@ -718,7 +720,7 @@ public class TestPipelineValidator {
         var algoProp1 = new AlgorithmProperty(
                 "prop1", "description", ValueType.STRING, "default", null);
         var algo1 = new Algorithm(
-                "ALGO1", "description", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO1", "description", ActionType.DETECTION, "TEST1", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(algoProp1)),
                 true, false);
@@ -727,7 +729,7 @@ public class TestPipelineValidator {
         var algoProp2 = new AlgorithmProperty(
                 "prop2", "description", ValueType.STRING, "default", null);
         var algo2 = new Algorithm(
-                "ALGO2", "description", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO2", "description", ActionType.DETECTION, "TEST2", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(algoProp2)),
                 true, false);
@@ -752,7 +754,7 @@ public class TestPipelineValidator {
         var algoProp1 = new AlgorithmProperty(
                 "prop1", "description", ValueType.STRING, "default", null);
         var algo1 = new Algorithm(
-                "ALGO1", "description", ActionType.DETECTION, OptionalInt.empty(),
+                "ALGO1", "description", ActionType.DETECTION, "TEST", OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(algoProp1)),
                 true, false);

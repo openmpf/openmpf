@@ -257,29 +257,6 @@ public class PropertiesUtil {
         return new SystemPropertiesSnapshot(Maps.toMap(snapshotProps, _mpfPropertiesConfig::getString));
     }
 
-    //
-    // JMX configuration
-    //
-
-    public boolean isAmqBrokerEnabled() {
-        return _mpfPropertiesConfig.getBoolean("jmx.amq.broker.enabled");
-    }
-
-    public String getAmqBrokerJmxUri() {
-        return _mpfPropertiesConfig.getString("jmx.amq.broker.uri");
-    }
-
-    public String getAmqBrokerAdminUsername() {
-        return _mpfPropertiesConfig.getString("jmx.amq.broker.admin.username");
-    }
-
-    public String getAmqBrokerAdminPassword() {
-        return _mpfPropertiesConfig.getString("jmx.amq.broker.admin.password");
-    }
-
-    public Set<String> getAmqBrokerPurgeWhiteList() {
-        return new HashSet<>(_mpfPropertiesConfig.getList(String.class, "jmx.amq.broker.whiteList"));
-    }
 
     //
     // Main configuration
@@ -448,20 +425,6 @@ public class PropertiesUtil {
     private File markupDirectory;
     public File getJobMarkupDirectory(long jobId) {
         return new File(markupDirectory, String.valueOf(jobId));
-    }
-
-    public Path createMarkupPath(long jobId, long mediaId, String extension) {
-        try {
-            Path path = Paths.get(markupDirectory.toURI())
-                    .resolve(String.format("%d/%d/%s%s", jobId, mediaId, UUID.randomUUID(), TextUtils.trimToEmpty(extension)))
-                    .normalize()
-                    .toAbsolutePath();
-            Files.createDirectories(path.getParent());
-            return Files.createFile(path);
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     //
@@ -713,6 +676,14 @@ public class PropertiesUtil {
 
     public String getAmqUri() {
         return _mpfPropertiesConfig.getString("amq.broker.uri");
+    }
+
+    public int getAmqConcurrentConsumers() {
+        return _mpfPropertiesConfig.getInt("amq.concurrent.consumers", 60);
+    }
+
+    public String getAmqOpenWireBindAddress() {
+        return _mpfPropertiesConfig.getString("amq.open.wire.bind.address");
     }
 
     //

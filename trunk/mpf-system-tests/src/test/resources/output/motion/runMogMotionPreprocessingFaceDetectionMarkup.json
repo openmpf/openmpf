@@ -95,13 +95,13 @@
       "output": {
         "NO TRACKS": [
           {
-            "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+            "action": "OCV GENERIC MARKUP ACTION",
             "algorithm": "MARKUPCV"
           }
         ],
         "FACE": [
           {
-            "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -111,7 +111,6 @@
                 "startOffsetTime": 2202,
                 "stopOffsetTime": 4237,
                 "type": "FACE",
-                "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
                 "confidence": 52.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -880,7 +879,6 @@
                 "startOffsetTime": 3436,
                 "stopOffsetTime": 4004,
                 "type": "FACE",
-                "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
                 "confidence": 35.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1121,7 +1119,6 @@
                 "startOffsetTime": 13646,
                 "stopOffsetTime": 14781,
                 "type": "FACE",
-                "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
                 "confidence": 29.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1566,7 +1563,6 @@
                 "startOffsetTime": 14748,
                 "stopOffsetTime": 15582,
                 "type": "FACE",
-                "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
                 "confidence": 16.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1901,7 +1897,7 @@
         ],
         "MOTION": [
           {
-            "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
+            "action": "MOG MOTION DETECTION PREPROCESSOR ACTION",
             "algorithm": "MOG",
             "tracks": [
               {
@@ -1911,7 +1907,6 @@
                 "startOffsetTime": 33,
                 "stopOffsetTime": 17350,
                 "type": "MOTION",
-                "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {

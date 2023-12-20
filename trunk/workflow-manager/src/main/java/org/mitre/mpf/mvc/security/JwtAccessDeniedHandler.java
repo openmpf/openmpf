@@ -24,44 +24,45 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
+package org.mitre.mpf.mvc.security;
 
 import java.io.IOException;
+import java.util.Map;
 
+import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.csrf.InvalidCsrfTokenException;
-import org.springframework.stereotype.Service;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.stereotype.Component;
 
-@Service("CustomAccessDeniedHandler")
-public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@Component
+public class JwtAccessDeniedHandler implements AccessDeniedHandler {
+
+    private final BearerTokenAccessDeniedHandler _bearerTokenAccessDeniedHandler
+            = new BearerTokenAccessDeniedHandler();
+
+    private final ObjectMapper _objectMapper;
+
+    @Inject
+    JwtAccessDeniedHandler(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
+    }
 
     @Override
     public void handle(
-            HttpServletRequest request,
-            HttpServletResponse response,
+            HttpServletRequest request, HttpServletResponse response,
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
-
-        if (!(accessDeniedException instanceof InvalidCsrfTokenException)) {
-            super.handle(request, response, accessDeniedException);
+        _bearerTokenAccessDeniedHandler.handle(request, response, accessDeniedException);
+        if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
+            var messageObj = Map.of("message", accessDeniedException.getMessage());
+            _objectMapper.writeValue(response.getWriter(), messageObj);
         }
-        else if (isAjax(request)) {
-            response.sendError(403, "INVALID_CSRF_TOKEN");
-        }
-        else if ("/workflow-manager/login".equals(request.getRequestURI())) {
-            response.sendRedirect("/workflow-manager/");
-        }
-        else {
-            super.handle(request, response, accessDeniedException);
-        }
-    }
-
-    private static boolean isAjax(HttpServletRequest request) {
-        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
     }
 }

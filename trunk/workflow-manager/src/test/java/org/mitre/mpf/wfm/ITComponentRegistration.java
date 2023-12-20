@@ -165,7 +165,7 @@ public class ITComponentRegistration {
 
 
     private static String getUrl(String path) {
-        return WebRESTUtils.BASE_URL + "/workflow-manager/rest/" + path;
+        return WebRESTUtils.BASE_URL + "/rest/" + path;
     }
 
 

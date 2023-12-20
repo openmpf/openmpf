@@ -28,11 +28,10 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckServiceImpl;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
@@ -52,7 +51,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(MediaInspectionRouteBuilder.class);
 
 	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION";
+	public static final String ENTRY_POINT = "activemq:MPF.MEDIA_INSPECTION";
 
 	/** The default exit point for this route. */
 	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
@@ -85,6 +84,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.setExchangePattern(ExchangePattern.InOnly)
 			.split().method(MediaInspectionSplitter.REF, "split")
 				.parallelProcessing() // Perform this operation in parallel.
+                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 				.streaming() // The aggregation order of messages is not important.
                 .process(MediaInspectionProcessor.REF)
             .end()

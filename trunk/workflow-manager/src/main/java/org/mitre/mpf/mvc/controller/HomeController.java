@@ -59,6 +59,11 @@ public class HomeController
 		return "index";
 	}
 
+    @RequestMapping("/workflow-manager")
+    public String getOldBaseUrl() {
+        return "redirect:/";
+    }
+
 	@RequestMapping(value = {"/rest/info", "/info"}, method = RequestMethod.GET,
 			produces = "application/json;charset=UTF-8")
 	@ApiOperation(value="Returns metadata about the Workflow Manager, such as version and build number",

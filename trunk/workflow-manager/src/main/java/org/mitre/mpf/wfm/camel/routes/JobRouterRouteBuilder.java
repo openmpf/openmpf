@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.DefaultTaskSplitter;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.camel.BeginTaskProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -43,7 +44,7 @@ import org.springframework.stereotype.Component;
 public class JobRouterRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(JobRouterRouteBuilder.class);
 
-	public static final String ENTRY_POINT = "jms:MPF.JOB_ROUTER";
+	public static final String ENTRY_POINT = "activemq:MPF.JOB_ROUTER";
 	public static final String ROUTE_ID = "Job Router Route";
 
 	private final String entryPoint, routeId;
@@ -75,11 +76,12 @@ public class JobRouterRouteBuilder extends RouteBuilder {
             .split(method(DefaultTaskSplitter.REF, "split"))
                 .parallelProcessing()
                 .streaming()
+                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
                 .marshal().protobuf()
                 // Splitter will set the "CamelJmsDestinationName" header to
                 // specify the destination.
                 // Adapted from: https://camel.apache.org/components/3.20.x/jms-component.html#_reuse_endpoint_and_send_to_different_destinations_computed_at_runtime
-                .to("jms:queue:dummy")
+                .to("activemq:queue:dummy")
             .end()
             .filter(exchangeProperty(MpfHeaders.EMPTY_SPLIT))
                 .to(entryPoint)

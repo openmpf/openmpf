@@ -57,7 +57,7 @@ export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 export ACTIVE_MQ_HOST=$MASTER_MPF_NODE
 export REDIS_HOST=localhost
 
-export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
+export ACTIVE_MQ_BROKER_URI="failover:(tcp://$ACTIVE_MQ_HOST:61616)?maxReconnectAttempts=1"
 
 # enable tab completion for mpf script
 # command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"

@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.enums;
 public class MpfEndpoints {
 
     public static final String
-            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES";
+            UNSOLICITED_MESSAGES = "activemq:MPF.UNSOLICITED_MESSAGES";
 
     private MpfEndpoints() {
     }

@@ -91,8 +91,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
     public void onApplicationEvent(ApplicationEvent event) {
 
         if (event instanceof ContextRefreshedEvent) {
-            // this callback will be invoked at least twice: once for the root /workflow-manager, and
-            // once for /workflow-manager/appServlet
+            // this callback will be invoked at least twice: once for the root servlet, and
+            // once for /appServlet
 
             ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
             ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();

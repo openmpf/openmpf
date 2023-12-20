@@ -53,8 +53,8 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
         else if (isAjax(request)) {
             response.sendError(403, "INVALID_CSRF_TOKEN");
         }
-        else if ("/workflow-manager/login".equals(request.getRequestURI())) {
-            response.sendRedirect("/workflow-manager/");
+        else if ("/login".equals(request.getRequestURI())) {
+            response.sendRedirect("/");
         }
         else {
             super.handle(request, response, accessDeniedException);

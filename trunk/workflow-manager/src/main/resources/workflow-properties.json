@@ -7,8 +7,8 @@
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
-        "name": "FEED_FORWARD_TOP_CONFIDENCE_COUNT",
-        "description": "Only applies if FEED_FORWARD_TYPE is set to a value other than “NONE”. If set to a value <= 0, then for each track generated in the previous pipeline stage, this algorithm will process the frame associated with each detection in that track, ignoring frames that don’t have detections. If FEED_FORWARD_TYPE is set to “FRAME”, then the entire frame is processed. If FEED_FORWARD_TYPE is set to “SUPERSET_REGION”, then only the superset region for those frames is processed. If this property is set to “1” then only the exemplar frame for each of the previous tracks is processed. If this property is set to a value > 1, say 5, then each of the detections in the previous track are sorted by confidence and this algorithm will only process the frames associated with the top 5 detections with the highest confidence. For detections with the same confidence values, it will select those with a lower frame index. If the track contains less than 5 detections, then all of the available detections are used. In practice, setting this property to a value > 1 has no effect on image and audio jobs because each track only contains one detection.",
+        "name": "FEED_FORWARD_TOP_QUALITY_COUNT",
+        "description": "Only applies if FEED_FORWARD_TYPE is set to a value other than “NONE”. If set to a value <= 0, then for each track generated in the previous pipeline stage, this algorithm will process the frame associated with each detection in that track, ignoring frames that don’t have detections. If FEED_FORWARD_TYPE is set to “FRAME”, then the entire frame is processed. If FEED_FORWARD_TYPE is set to “SUPERSET_REGION”, then only the superset region for those frames is processed. If this property is set to “1” then only the exemplar frame for each of the previous tracks is processed. If this property is set to a value > 1, say 5, then each of the detections in the previous track are sorted according to the value of the QUALITY_SELECTION_PROP job property. and this algorithm will only process the frames associated with the top 5 detections with the highest quality. For detections with the same quality values, it will select those with a lower frame index. If the track contains less than 5 detections, then all of the available detections are used. In practice, setting this property to a value > 1 has no effect on image and audio jobs because each track only contains one detection.",
         "type": "INT",
         "defaultValue": "0",
         "mediaTypes": ["VIDEO"]
@@ -84,10 +84,10 @@
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
-        "name": "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
-        "description": "The detections in a track will be sorted by confidence and then the N detections with the highest confidence will be extracted, up to the number of available detections, where N is an integer greater than 0. If N is less than or equal to 0, then this policy is disabled.",
+        "name": "ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT",
+        "description": "The detections in a track will be sorted by the detection property given by the QUALITY_SELECTION_PROP job property, and then the N detections with the highest quality will be extracted, up to the number of available detections, where N is an integer greater than 0. If N is less than or equal to 0, then this policy is disabled.",
         "type": "INT",
-        "propertiesKey": "detection.artifact.extraction.policy.top.confidence.count",
+        "propertiesKey": "detection.artifact.extraction.policy.top.quality.count",
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
@@ -106,7 +106,7 @@
     },
     {
         "name": "CONFIDENCE_THRESHOLD",
-        "description": "The minimum confidence score which must be met or exceeded. Detections below this threshold are silently discarded.",
+        "description": "When using confidence as the quality selection property, this is the minimum confidence score which must be met or exceeded. Detections below this threshold are silently discarded.",
         "type": "DOUBLE",
         "propertiesKey": "detection.confidence.threshold",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
@@ -463,9 +463,9 @@
     },
     {
         "name": "EXEMPLAR_POLICY",
-        "description": "Sets the policy for determining a track's exemplar. When set to \"CONFIDENCE\" or anything other than a named policy, the detection with the maximum confidence is selected. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track).",
+        "description": "Sets the policy for determining a track's exemplar. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track). When set to anything other than a named policy, the detection with the maximum quality, according to the QUALITY_SELECTION_RPOP job property, is selected.",
         "type": "STRING",
-        "defaultValue": "CONFIDENCE",
+        "propertiesKey": "detection.quality.selection.prop",
         "mediaTypes": ["VIDEO"]
     },
     {

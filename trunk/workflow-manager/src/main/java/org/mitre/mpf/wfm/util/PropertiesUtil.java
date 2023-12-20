@@ -496,6 +496,10 @@ public class PropertiesUtil {
         return _mpfPropertiesConfig.getInt("detection.sampling.interval");
     }
 
+    public String getQualitySelectionProperty() {
+        return _mpfPropertiesConfig.getString("detection.quality.selection.prop")
+    }
+
     //
     // JMS configuration
     //

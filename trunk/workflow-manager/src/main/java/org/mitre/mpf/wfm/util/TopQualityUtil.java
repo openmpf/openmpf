@@ -33,38 +33,38 @@ import java.util.function.ToDoubleFunction;
 
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-public class TopConfidenceUtil {
+public class TopQualityUtil {
 
-    private TopConfidenceUtil() {
+    private TopQualityUtil() {
     }
 
 
-    public static <T extends Comparable<T>> T getTopConfidenceItem(
-            Collection<T> items, ToDoubleFunction<T> confidenceGetter) {
+    public static <T extends Comparable<T>> T getTopQualityItem(
+            Collection<T> items, ToDoubleFunction<T> qualityGetter) {
         return items.stream()
-            .max(getMaxConfidenceComparator(confidenceGetter))
+            .max(getMaxQualityComparator(qualityGetter))
             .orElse(null);
     }
 
 
-    public static Collection<Detection> getTopConfidenceDetections(
-            Collection<Detection> allDetections, int topConfidenceCount) {
-        if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
+    public static Collection<Detection> getTopQualityDetections(
+            Collection<Detection> allDetections, int topQualityCount, String qualityProp) {
+        if (topQualityCount <= 0 || topQualityCount >= allDetections.size()) {
             return allDetections;
         }
 
-        var confidenceComparator = getMaxConfidenceComparator(Detection::getConfidence);
-        var topDetections = new PriorityQueue<>(topConfidenceCount, confidenceComparator);
+        var qualityComparator = getMaxQualityComparator(Detection::getConfidence);
+        var topDetections = new PriorityQueue<>(topQualityCount, qualityComparator);
 
         var allDetectionsIter = allDetections.iterator();
-        for (int i = 0; i < topConfidenceCount; i++) {
+        for (int i = 0; i < topQualityCount; i++) {
             topDetections.add(allDetectionsIter.next());
         }
 
         while (allDetectionsIter.hasNext()) {
             Detection detection = allDetectionsIter.next();
             // Check if current detection is less than the minimum top detection so far
-            if (confidenceComparator.compare(detection, topDetections.peek()) > 0) {
+            if (qualityComparator.compare(detection, topDetections.peek()) > 0) {
                 topDetections.poll();
                 topDetections.add(detection);
             }
@@ -74,8 +74,8 @@ public class TopConfidenceUtil {
 
 
     private static <T extends Comparable<T>>
-            Comparator<T> getMaxConfidenceComparator(ToDoubleFunction<T> confidenceGetter) {
-        return Comparator.comparingDouble(confidenceGetter)
+            Comparator<T> getMaxQualityComparator(ToDoubleFunction<T> qualityGetter) {
+        return Comparator.comparingDouble(qualityGetter)
                 .thenComparing(Comparator.reverseOrder());
     }
 }

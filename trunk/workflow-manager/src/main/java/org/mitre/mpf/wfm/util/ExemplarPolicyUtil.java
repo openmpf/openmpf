@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.util;
 
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.service.TopQualitySelectionService;
 
 import java.util.SortedSet;
 
@@ -38,7 +39,7 @@ public class ExemplarPolicyUtil {
     private ExemplarPolicyUtil() {
     }
 
-    public static Detection getExemplar(String policy, int begin, int end,
+    public static Detection getExemplar(String policy, String quality_prop, int begin, int end,
                                         SortedSet<Detection> detections) {
         if (detections.isEmpty()) {
             return null;
@@ -53,7 +54,7 @@ public class ExemplarPolicyUtil {
             return findMiddle(begin, end, detections);
         }
         else {
-            return TopConfidenceUtil.getTopConfidenceItem(detections, Detection::getConfidence);
+            return TopQualitySelectionService.getTopQualityItem(detections, quality_prop);
         }
     }
 

@@ -521,6 +521,16 @@ public class AggregateJobPropertiesUtil {
         return tasksToMerge;
     }
 
+    public String getQualitySelectionProp(BatchJob job, Media media, Action action) {
+        String prop = getValue(MpfConstants.QUALITY_SELECTION_PROPERTY, job, media, action);
+        if (prop.isEmpty()) {
+            return "CONFIDENCE";
+        }
+        else {
+            return prop;
+        }
+    }
+
     public boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense
         // to apply OUTPUT_LAST_TASK_ONLY to a single task.

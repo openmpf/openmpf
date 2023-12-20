@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -59,8 +58,8 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TopQualitySelectionService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.TopConfidenceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -322,26 +321,18 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             framesToExtract.add(middleFrame);
         }
 
-        int topConfidenceCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyTopConfidenceCount();
-        String topConfidenceCountProp = _aggregateJobPropertiesUtil
-                .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT_PROPERTY, job, media, action);
-        try {
-            topConfidenceCount = Integer.parseInt(topConfidenceCountProp);
-        } catch (NumberFormatException e) {
-            LOG.warn("Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                    MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT_PROPERTY, topConfidenceCountProp,
-                    topConfidenceCount);
+        int topQualityCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyTopQualityCount();
+        String topQualityCountProp = _aggregateJobPropertiesUtil
+                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, job, media, action);
+        var topQualityDetections = TopQualitySelectionService.getTopQualityDetections(
+                    sortedDetections, topQualityCount, topQualityCountProp);
+        for (var detection : topQualityDetections) {
+            LOG.debug("Will extract frame #{} with confidence = {}",
+                    detection.getMediaOffsetFrame(),
+                    detection.getConfidence());
+            framesToExtract.add(detection.getMediaOffsetFrame());
         }
-        if (topConfidenceCount > 0) {
-            var topConfidenceDetections = TopConfidenceUtil.getTopConfidenceDetections(
-                    sortedDetections, topConfidenceCount);
-            for (var detection : topConfidenceDetections) {
-                LOG.debug("Will extract frame #{} with confidence = {}",
-                        detection.getMediaOffsetFrame(),
-                        detection.getConfidence());
-                framesToExtract.add(detection.getMediaOffsetFrame());
-            }
-        }
+
         // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a
         // JsonDetectionOutputObject
         SortedSet<JsonDetectionOutputObject> detections = track.getDetections().stream()

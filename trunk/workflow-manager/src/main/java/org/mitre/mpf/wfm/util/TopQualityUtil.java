@@ -7,7 +7,6 @@
  *                                                                            *
  * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
-
 /******************************************************************************
  * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
@@ -24,8 +23,11 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.wfm.util;
 
+import java.lang.NumberFormatException;
+import java.lang.NullPointerException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.PriorityQueue;
@@ -35,25 +37,24 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
 public class TopQualityUtil {
 
-    private TopQualityUtil() {
-    }
+    private TopQualityUtil() {}
 
-
-    public static <T extends Comparable<T>> T getTopQualityItem(
-            Collection<T> items, ToDoubleFunction<T> qualityGetter) {
-        return items.stream()
-            .max(getMaxQualityComparator(qualityGetter))
+    public static Detection getTopQualityItem(
+            Collection<Detection> detections, String qualityProperty) {
+        return detections.stream()
+            .max(getMaxQualityComparator(d -> getQuality(d, qualityProperty.toLowerCase())))
             .orElse(null);
     }
 
-
     public static Collection<Detection> getTopQualityDetections(
-            Collection<Detection> allDetections, int topQualityCount, String qualityProp) {
+            Collection<Detection> allDetections, int topQualityCount,
+            String qualityProperty) {
+
         if (topQualityCount <= 0 || topQualityCount >= allDetections.size()) {
             return allDetections;
         }
+        var qualityComparator = getMaxQualityComparator(((Detection d) -> getQuality(d, qualityProperty)));
 
-        var qualityComparator = getMaxQualityComparator(Detection::getConfidence);
         var topDetections = new PriorityQueue<>(topQualityCount, qualityComparator);
 
         var allDetectionsIter = allDetections.iterator();
@@ -72,6 +73,22 @@ public class TopQualityUtil {
         return topDetections;
     }
 
+    public static double getQuality(Detection det, String qualityProperty) {
+        try {
+            if (qualityProperty.toLowerCase().equals("confidence"))
+                return det.getConfidence();
+            else
+                return Double.parseDouble(det.getDetectionProperties().get(qualityProperty));
+        }
+        catch(NumberFormatException e) {
+            String errMsg = "The quality selection property \"" + qualityProperty + "\" could not be converted to a double value: " + det.getDetectionProperties().get(qualityProperty);
+            throw new NumberFormatException(errMsg);
+        }
+        catch(NullPointerException e) {
+            String errMsg = "The value of quality selection property \"" + qualityProperty + "\" is null.";
+            throw new NumberFormatException(errMsg);
+       }
+    }
 
     private static <T extends Comparable<T>>
             Comparator<T> getMaxQualityComparator(ToDoubleFunction<T> qualityGetter) {

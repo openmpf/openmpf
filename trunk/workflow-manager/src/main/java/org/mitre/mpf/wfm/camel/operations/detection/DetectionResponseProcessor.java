@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
-import org.mitre.mpf.wfm.service.TopQualitySelectionService;
+import org.mitre.mpf.wfm.util.TopQualityUtil;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -261,7 +261,7 @@ public class DetectionResponseProcessor
                         : objectTrack.getFrameLocationsList()
                             .stream()
                             .map(flm -> toDetection(flm, frameTimeInfo))
-                            .filter(d -> TopQualitySelectionService.getQuality(d, qualitySelectionProp) >= qualityThreshold)
+                            .filter(d -> TopQualityUtil.getQuality(d, qualitySelectionProp) >= qualityThreshold)
                             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
                     if (!detections.isEmpty()) {

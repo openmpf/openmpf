@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.mvc.security;
 
+import org.mitre.mpf.wfm.enums.UserRole;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -62,6 +63,7 @@ public class LocalSecurityConfig {
 
         return http.authorizeHttpRequests(x ->
                 x.antMatchers("/login/**", "/resources/**").permitAll()
+                .antMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
                 .anyRequest().authenticated())
             .formLogin(x ->
                 x.loginPage("/login")

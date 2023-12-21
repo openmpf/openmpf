@@ -68,7 +68,7 @@
                         <li><a href="swagger-ui/index.html" target="_blank" title="Displays REST web service information (for Developers)">REST API</a></li>
                         <li><a ui-sref="/pipelines" id="menu_pipelines" title="Create and edit pipelines and algorithms">Pipelines </a></li>
                         <li><a ui-sref="/pipelines2" id="menu_pipelines2" title="Create and edit pipelines and algorithms">Pipelines 2</a></li>
-                        <li>
+                        <li ng-if="isAdmin">
                             <a href="actuator/hawtio">Hawtio</a>
                         </li>
                     </ul>

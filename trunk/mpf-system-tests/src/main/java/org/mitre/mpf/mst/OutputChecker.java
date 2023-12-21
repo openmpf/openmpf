@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.mst;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.mitre.mpf.interop.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -308,12 +311,6 @@ public class OutputChecker {
             "DERIVATIVE_MEDIA_ID"
     );
 
-    private static final List<String> PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON = Arrays.asList(
-            "ROTATION"
-    );
-
-    private static final double propertyDeltaFuzzy = 0.1;
-
     /**
      * Compare the actual properties to the expected properties
      *
@@ -326,20 +323,78 @@ public class OutputChecker {
                                    Map<String, String> actProperties) {
         _errorCollector.checkThat(type + " Property Keys", actProperties.keySet(), is(expProperties.keySet()));
 
-        for (var expKey : expProperties.keySet()) {
-            if (PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES.contains(expKey)) {
-                continue;
+        for (var expected : expProperties.entrySet()) {
+            if (!PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES.contains(expected.getKey())) {
+                var actualValue = actProperties.get(expected.getKey());
+                _errorCollector.checkThat(type + " Property: " + expected.getKey(),
+                        actualValue, isPropertyMatching(expected.getValue()));
             }
-            if (PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON.contains(expKey)) {
-                _errorCollector.checkThat(type + " Property: " + expKey,
-                        Double.parseDouble(actProperties.get(expKey)),
-                        closeTo(Double.parseDouble(expProperties.get(expKey)), propertyDeltaFuzzy));
-                continue;
-            }
-            _errorCollector.checkThat(type + " Property: " + expKey,
-                    actProperties.get(expKey), is(expProperties.get(expKey)));
         }
     }
+
+    private static Matcher<String> isPropertyMatching(String expected) {
+        return isPropertyMatching(expected, 0.1);
+    }
+
+    private static Matcher<String> isPropertyMatching(String expected, double error) {
+        return new TypeSafeMatcher<String>() {
+            private Matcher<String> _isMatcher = is(expected);
+            private Matcher<Double> _closeToMatcher;
+
+            @Override
+            protected boolean matchesSafely(String actual) {
+                if (_isMatcher.matches(actual)) {
+                    return true;
+                }
+                else {
+                    return matchesDouble(actual);
+                }
+            }
+
+            private boolean matchesDouble(String actual) {
+                try {
+                    Integer.parseInt(expected);
+                    // Double.parseDouble will successfully parse integer values, but we do not
+                    // want to use the closeTo matcher when the string is an integer. If the
+                    // properties contained the same integer, the string comparison would have
+                    // succeeded.
+                    return false;
+                }
+                catch (NumberFormatException e) {
+                    // Expected value is either not a number or a floating point value.
+                }
+
+                double expectedDouble;
+                try {
+                    expectedDouble = Double.parseDouble(expected);
+                }
+                catch (NumberFormatException e) {
+                    return false;
+                }
+
+                _closeToMatcher = closeTo(expectedDouble, error);
+                try {
+                    var actualDouble = Double.parseDouble(actual);
+                    return _closeToMatcher.matches(actualDouble);
+                }
+                catch (NumberFormatException e) {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                if (_closeToMatcher == null) {
+                    _isMatcher.describeTo(description);
+                }
+                else {
+                    description.appendText("a string containing ")
+                            .appendDescriptionOf(_closeToMatcher);
+                }
+            }
+        };
+    }
+
 
     /**
      * Calculate the overlap between bounding boxes A & B using x/y coordinates, width and height

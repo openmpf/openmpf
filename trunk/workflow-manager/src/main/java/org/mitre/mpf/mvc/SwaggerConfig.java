@@ -121,6 +121,8 @@ public class SwaggerConfig {
     }
 
 
+    // Without this method, a NullPointerException is thrown during start up when the Swagger URI
+    // patterns are being configured.
     // Adapted from https://stackoverflow.com/a/71497144
     @Bean
     public WebMvcRequestHandlerProvider webMvcRequestHandlerProvider(

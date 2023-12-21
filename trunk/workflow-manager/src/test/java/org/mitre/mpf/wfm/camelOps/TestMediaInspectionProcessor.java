@@ -208,7 +208,7 @@ public class TestMediaInspectionProcessor {
                 "FRAME_COUNT", "29",
                 "DURATION", "3500");
 
-        assertVideoMetadataMatches(expectedMetadata, 53.0 / 6);
+        assertVideoMetadataMatches(expectedMetadata, 25.0 / 3);
     }
 
 

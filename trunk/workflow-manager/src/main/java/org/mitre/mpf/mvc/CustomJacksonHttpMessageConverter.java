@@ -43,7 +43,8 @@ import javax.inject.Inject;
 public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
 
     // These classes should use the internal Spring HttpMessageConverters.
-    private static final ImmutableList<Class<?>> BLACKLIST = ImmutableList.of(String.class, Resource.class);
+    private static final ImmutableList<Class<?>> DENY_LIST
+            = ImmutableList.of(String.class, Resource.class);
 
     @Inject
     CustomJacksonHttpMessageConverter(ObjectMapper objectMapper) {
@@ -53,7 +54,7 @@ public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessag
 
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-        return BLACKLIST.stream().noneMatch(blc -> blc.isAssignableFrom(clazz))
+        return DENY_LIST.stream().noneMatch(blc -> blc.isAssignableFrom(clazz))
                 && super.canWrite(clazz, mediaType);
     }
 }

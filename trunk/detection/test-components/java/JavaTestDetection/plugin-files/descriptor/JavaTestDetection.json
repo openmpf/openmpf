@@ -15,6 +15,7 @@
     "name": "JavaTest",
     "description": "A dummy Java detection component.",
     "actionType": "DETECTION",
+    "trackType": "HELLO",
     "requiresCollection": {
       "states": []
     },

@@ -206,10 +206,6 @@ public class TestAdminComponentRegistrationController extends MockitoTest.Lenien
             _testComponentName, "", "", null, null, ComponentLanguage.CPP, "", "",
             List.of(), null, List.of(), List.of(), List.of());
 
-        // JsonComponentDescriptor descriptor = mock(JsonComponentDescriptor.class);
-        // when(descriptor.componentName())
-        //         .thenReturn(_testComponentName);
-
         when(_mockAddComponentService.registerUnmanagedComponent(descriptor))
                 .thenReturn(wasReregistered);
 

@@ -33,7 +33,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
-import org.joda.time.DateTime;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
@@ -128,11 +127,11 @@ public class ITWebREST {
 		test_ready = false;
 		testCtr++;
 		log.info("Beginning test #{}: {}. REST: [{}]", testCtr, testname, url);
-		starttime = DateTime.now().getMillis();
+		starttime = System.currentTimeMillis();
 	}
 
 	private void endTest() {
-		long end = DateTime.now().getMillis() - starttime;
+		long end = System.currentTimeMillis() - starttime;
 		log.info("Finished test #{}. Time elapsed: {} milliseconds ", testCtr,end);
 		test_ready = true;
 	}

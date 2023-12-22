@@ -56,7 +56,7 @@
         ['$q', '$resource', 'ActionService', 'orderByFilter',
             function ($q, $resource, ActionService, orderByFilter ) {
 
-                var taskResource = $resource('tasks');
+                var taskResource = $resource('tasks/:name');
 
                 var getAction = function (actionName) {
                     return ActionService.get(actionName)

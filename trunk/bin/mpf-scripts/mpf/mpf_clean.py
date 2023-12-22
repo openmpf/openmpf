@@ -46,14 +46,12 @@ from . import mpf_util
 @mpf_util.sql_args
 @argh.arg('-v', '--verbose', default=False,
           help='Show output from called commands')
-@argh.arg('--activemq-bin', default='/opt/activemq/bin/activemq',
-          help='path to ActiveMQ binary')
-@mpf_util.env_arg('--activemq-data', 'ACTIVEMQ_DATA', default='/opt/activemq/data',
-                  help='path to ActiveMQ data directory')
 @argh.arg('--node-manager-port', default=8008,
           help='port number that the Node Manager listens on')
-@argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
+@argh.arg('--workflow-manager-url', default='http://localhost:8080',
           help='Url to Workflow Manager')
+@argh.arg('--wfm-project', default='~/openmpf-projects/openmpf/trunk/workflow-manager',
+          help='Path to the Workflow Manager Maven project.')
 def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=False,
           delete_logs=False, sql_host='localhost', sql_user='mpf', sql_password='password',
           **opt_args):
@@ -61,7 +59,7 @@ def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=F
 
     sys_config = mpf_sys.MpfConfig(skip_redis=True, **opt_args)
     ensure_mpf_stopped(sys_config)
-    if not force and not prompt_user(delete_uploaded_media, delete_logs, sys_config.kahadb_dir):
+    if not force and not prompt_user(delete_uploaded_media, delete_logs):
         print('Clean aborted by user')
         sys.exit(1)
 
@@ -69,13 +67,10 @@ def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=F
 
     truncate_tables(sql_host, sql_user, sql_password)
     delete_folder_contents(mpf_home, delete_uploaded_media, delete_logs, mpf_log_path)
-    if sys_config.kahadb_dir:
-        delete_children(sys_config.kahadb_dir)
     print('MPF clean complete')
 
 
-must_be_stopped_dependencies = (mpf_sys.ActiveMqManager, mpf_sys.NodeManagerManager,
-                                mpf_sys.WorkflowManagerManager)
+must_be_stopped_dependencies = (mpf_sys.NodeManagerManager, mpf_sys.WorkflowManagerManager)
 
 
 def ensure_mpf_stopped(sys_config):
@@ -96,20 +91,16 @@ def ensure_sql_is_running(sys_config):
     print()
 
 
-def prompt_user(delete_uploaded_media, delete_logs, kahadb_dir):
+def prompt_user(delete_uploaded_media, delete_logs):
     print('The following items will be deleted:')
     print('\t-Job information and results')
     print('\t-Pending job requests')
     print('\t-Marked up media files')
-    if kahadb_dir:
-        print('\t-ActiveMQ data')
     if delete_uploaded_media:
         print('\t-Uploaded media')
     if delete_logs:
         print('\t-Log files')
 
-    if not kahadb_dir:
-        print(mpf_util.MsgUtil.yellow('(no persistent ActiveMQ data found)'))
     try:
         response = input('Do you want to continue? [y/N]: ').lower()
     except EOFError:

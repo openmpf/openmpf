@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.mvc.security;
 
+import org.mitre.mpf.wfm.enums.UserRole;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -34,6 +35,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @Profile("(!oidc & !jenkins) | test-with-security")
@@ -61,6 +63,7 @@ public class LocalSecurityConfig {
 
         return http.authorizeHttpRequests(x ->
                 x.antMatchers("/login/**", "/resources/**").permitAll()
+                .antMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
                 .anyRequest().authenticated())
             .formLogin(x ->
                 x.loginPage("/login")
@@ -71,6 +74,8 @@ public class LocalSecurityConfig {
                 .defaultAuthenticationEntryPointFor(
                         ajaxAuthenticationEntrypoint, ajaxAuthenticationEntrypoint)
                 )
+            // Hawtio requires CookieCsrfTokenRepository.withHttpOnlyFalse().
+            .csrf(x -> x.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
             .build();
     }
 

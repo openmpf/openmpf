@@ -32,6 +32,7 @@ import static java.util.stream.Collectors.toSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.mitre.mpf.wfm.enums.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -39,14 +40,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @Profile("oidc")
@@ -158,6 +163,7 @@ public class OidcSecurityConfig {
             .authorizeHttpRequests(x ->
                 x.antMatchers("/login/**", "/resources/**", "/oidc-access-denied")
                     .permitAll()
+                .antMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
                 .anyRequest().access(oidcAuthenticationManager))
             .oauth2Login(x ->
                 x.userInfoEndpoint().userAuthoritiesMapper(oidcAuthenticationManager))
@@ -166,6 +172,8 @@ public class OidcSecurityConfig {
                 x.accessDeniedPage("/oidc-access-denied")
                 .defaultAuthenticationEntryPointFor(
                         ajaxAuthenticationEntrypoint, ajaxAuthenticationEntrypoint))
+            // Hawtio requires CookieCsrfTokenRepository.withHttpOnlyFalse().
+            .csrf(x -> x.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
             .build();
     }
 
@@ -199,7 +207,25 @@ public class OidcSecurityConfig {
         getOptionalEnv(Keys.USER_NAME_ATTR)
                 .ifPresent(registration::userNameAttributeName);
 
-        return new InMemoryClientRegistrationRepository(registration.build());
+        var clientCredentialsRegistration = ClientRegistrations
+                .fromOidcIssuerLocation(getRequiredEnv(Keys.ISSUER_URI))
+                .registrationId(OAuthClientTokenProvider.REGISTRATION_ID)
+                .clientId(getRequiredEnv(Keys.CLIENT_ID))
+                .clientSecret(getRequiredEnv(Keys.CLIENT_SECRET))
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS);
+
+        return new InMemoryClientRegistrationRepository(
+                registration.build(), clientCredentialsRegistration.build());
+    }
+
+
+    @Bean
+    public AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceAndManager(
+            ClientRegistrationRepository clientRegistrationRepository) {
+        var authorizedClientService = new InMemoryOAuth2AuthorizedClientService(
+                clientRegistrationRepository);
+        return new AuthorizedClientServiceOAuth2AuthorizedClientManager(
+                clientRegistrationRepository, authorizedClientService);
     }
 
 

@@ -101,6 +101,7 @@ public class Application extends SpringBootServletInitializer {
         return tomcat;
     }
 
+
     @Bean
     public ServletRegistrationBean<SimonConsoleServlet> simonConsoleServlet() {
         var servlet = new ServletRegistrationBean<>(

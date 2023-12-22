@@ -35,7 +35,7 @@ import urllib.request
 from . import mpf_util
 
 @argh.arg('-w', '--workflow-manager-url', help='Url to Workflow Manager')
-def list_nodes(workflow_manager_url='http://localhost:8080/workflow-manager'):
+def list_nodes(workflow_manager_url='http://localhost:8080'):
     """ List JGroups membership for nodes in the OpenMPF cluster """
 
     if not is_wfm_running(workflow_manager_url):

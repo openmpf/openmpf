@@ -97,7 +97,7 @@ public class TestStreamingJobMessageSender extends MockitoTest.Lenient {
         when(_mockProperties.getStreamingJobStallAlertThreshold())
                 .thenReturn(stallAlertThreshold);
 
-        var activeMqUri = "failover://(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1";
+        var activeMqUri = "failover:(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1";
         when(_mockProperties.getAmqUri())
                 .thenReturn(activeMqUri);
 

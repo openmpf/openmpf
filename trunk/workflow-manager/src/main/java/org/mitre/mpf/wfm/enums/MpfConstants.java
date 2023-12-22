@@ -102,7 +102,9 @@ public class MpfConstants {
             LINKED_MEDIA_HASH = "LINKED_MEDIA_HASH",
             FFPROBE_IGNORE_STDERR = "FFPROBE_IGNORE_STDERR",
             FFPROBE_STDERR_NUM_LINES = "FFPROBE_STDERR_NUM_LINES",
-            TRIGGER = "TRIGGER";
+            TRIGGER = "TRIGGER",
+            CALLBACK_USE_OIDC = "CALLBACK_USE_OIDC",
+            TIES_DB_USE_OIDC = "TIES_DB_USE_OIDC";
 
     private MpfConstants() {
     }

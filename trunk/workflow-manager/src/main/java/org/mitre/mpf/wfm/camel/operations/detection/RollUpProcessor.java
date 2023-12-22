@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.apache.camel.Exchange;
+import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -21,6 +22,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JobPart;
 import org.mitre.mpf.wfm.util.JobPartsIter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,13 +79,12 @@ public class RollUpProcessor extends WfmProcessor {
         var job = _inProgressJobs.getJob(trackCache.getJobId());
         for (var jobPart : JobPartsIter.task(job, trackCache.getTaskIndex())) {
             try {
-                var rollUpFile = _aggregateJobPropertiesUtil.getValue(
-                        MpfConstants.ROLL_UP_FILE, jobPart);
-                if (rollUpFile == null || rollUpFile.isBlank()) {
+                var rollUpContext = getRollUpContext(jobPart);
+                if (rollUpContext.isEmpty()) {
                     continue;
                 }
                 var tracks = trackCache.getTracks(jobPart.media().getId(), jobPart.actionIndex());
-                var rolledUpTracks = getRollUpContext(rollUpFile).applyRollUp(tracks);
+                var rolledUpTracks = rollUpContext.get().applyRollUp(tracks);
                 if (tracks != rolledUpTracks) {
                     trackCache.updateTracks(
                             jobPart.media().getId(), jobPart.actionIndex(), rolledUpTracks);
@@ -98,9 +99,16 @@ public class RollUpProcessor extends WfmProcessor {
         }
     }
 
-    private RollUpContext getRollUpContext(String rollUpFile) {
+
+    private Optional<RollUpContext> getRollUpContext(JobPart jobPart) {
+        var unexpandedRollUpFile = _aggregateJobPropertiesUtil.getValue(
+                MpfConstants.ROLL_UP_FILE, jobPart);
+        if (unexpandedRollUpFile == null || unexpandedRollUpFile.isBlank()) {
+            return Optional.empty();
+        }
+        var rollUpFile = EnvironmentVariableExpander.expand(unexpandedRollUpFile);
         try {
-            return _cache.getUnchecked(rollUpFile);
+            return Optional.of(_cache.getUnchecked(rollUpFile));
         }
         catch (UncheckedExecutionException e) {
             Throwables.throwIfUnchecked(e.getCause());

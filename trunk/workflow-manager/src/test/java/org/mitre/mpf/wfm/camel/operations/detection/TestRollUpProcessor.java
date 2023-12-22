@@ -263,7 +263,7 @@ public class TestRollUpProcessor extends MockitoTest.Strict {
     private void assertInvalidRollUpJson(String json) throws IOException {
         var rollUpPath = _tempFolder.newFile().toPath();
         Files.writeString(rollUpPath, json);
-        var trackCache = runTest(rollUpPath.toString(), createTrack(Map.of()));
+        var trackCache = runTest(rollUpPath.toString(), null);
         verify(_mockInProgressJobs)
                 .addError(eq(JOB_ID), eq(MEDIA_ID), eq(IssueCodes.OTHER), anyString());
         assertNoUpdatedTracksStored(trackCache);
@@ -273,7 +273,7 @@ public class TestRollUpProcessor extends MockitoTest.Strict {
 
     @Test
     public void testMissingRollUpFile() {
-        var trackCache = runTest("no_file.json", createTrack(Map.of()));
+        var trackCache = runTest("no_file.json", null);
         verify(_mockInProgressJobs)
                 .addError(eq(JOB_ID), eq(MEDIA_ID), eq(IssueCodes.OTHER), anyString());
         assertNoUpdatedTracksStored(trackCache);
@@ -308,11 +308,7 @@ public class TestRollUpProcessor extends MockitoTest.Strict {
         when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.ROLL_UP_FILE), any()))
             .thenReturn(rollUpPath);
 
-        if (track == null) {
-            when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, 0, 0))
-                .thenReturn(ImmutableSortedSet.of());
-        }
-        else {
+        if (track != null) {
             when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, 0, 0))
                 .thenReturn(ImmutableSortedSet.of(track));
         }

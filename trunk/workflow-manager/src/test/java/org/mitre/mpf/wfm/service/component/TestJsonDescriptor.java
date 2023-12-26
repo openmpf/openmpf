@@ -47,7 +47,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloWorld", descriptor.componentName());
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage());
-        assertEquals("7.2", descriptor.componentVersion());
+        assertEquals("8.0", descriptor.componentVersion());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so",
                      descriptor.batchLibrary());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
@@ -71,7 +71,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName());
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage());
-        assertEquals("7.2", descriptor.componentVersion());
+        assertEquals("8.0", descriptor.componentVersion());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
                      descriptor.batchLibrary());
         assertNull(descriptor.streamLibrary());
@@ -123,9 +123,9 @@ public class TestJsonDescriptor {
         assertTrue(descriptor.pipelines().isEmpty());
         assertEquals("JavaTestDetection", descriptor.componentName());
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage());
-        assertEquals("7.2", descriptor.componentVersion());
-        assertEquals("7.2", descriptor.middlewareVersion());
-        assertEquals("mpf-java-test-detection-component-7.2.jar", descriptor.batchLibrary());
+        assertEquals("8.0", descriptor.componentVersion());
+        assertEquals("8.0", descriptor.middlewareVersion());
+        assertEquals("mpf-java-test-detection-component-8.0.jar", descriptor.batchLibrary());
         assertNull(descriptor.streamLibrary());
         assertEquals(1, descriptor.environmentVariables().size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables().get(0);

@@ -25,44 +25,40 @@
  ******************************************************************************/
 
 #include <algorithm>
+#include <cctype>
+#include <exception>
+#include <filesystem>
 #include <iostream>
 #include <memory>
-#include <filesystem>
+#include <optional>
+#include <string>
 #include <string_view>
-#include <cstring>
-#include <cstdlib>
+#include <variant>
 
+#include <MPFDetectionException.h>
+#include <MPFDetectionObjects.h>
+
+#include "BatchExecutorUtil.h"
 #include "ComponentLoadError.h"
 #include "CppComponentHandle.h"
-#include "LazyLoggerWrapper.h"
-#include "PythonComponentHandle.h"
+#include "HealthCheck.h"
 #include "JobReceiver.h"
+#include "LoggerWrapper.h"
 #include "Messenger.h"
+#include "PythonComponentHandle.h"
 
 namespace fs = std::filesystem;
 using namespace MPF::COMPONENT;
+
 
 std::string get_app_dir(const char * const argv0);
 std::string get_component_name_and_set_env_var();
 std::string get_log_level_and_set_env_var();
 bool is_python(int argc, const char * argv[]);
 
-
-using logger_variant_t = std::variant<std::monostate,
-        LazyLoggerWrapper<PythonLogger>, LazyLoggerWrapper<CppLogger>>;
-
-void log_top_level_exception(
-        logger_variant_t& logger_variant, std::string_view description, std::string_view what);
-
-template <typename Logger, typename ComponentHandle>
-int run_jobs(Logger& logger, std::string_view broker_uri, std::string_view request_queue,
-             std::string_view app_dir, ComponentHandle& detection_engine);
-
-template <typename Logger, typename ComponentHandle, typename JobType>
-auto run_job(
-        Logger& logger, ComponentHandle& detection_engine, const JobType& job,
-        std::string_view service_name, std::string_view job_type_name,
-        std::string_view results_name);
+template <typename ComponentHandle>
+int run_jobs(LoggerWrapper& logger, std::string_view broker_uri, std::string_view request_queue,
+             std::string_view app_dir, ComponentHandle& component);
 
 
 int main(int argc, const char* argv[]) {
@@ -72,55 +68,56 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    logger_variant_t logger_variant;
-    try {
-        auto app_dir = get_app_dir(argv[0]);
-        auto broker_uri = argv[1];
-        auto lib_path = argv[2];
-        auto request_queue = argv[3];
+    auto app_dir = get_app_dir(argv[0]);
+    auto broker_uri = argv[1];
+    auto lib_path = argv[2];
+    auto request_queue = argv[3];
 
+    std::optional<LoggerWrapper> logger;
+    bool is_python_component = false;
+    try {
         auto component_name = get_component_name_and_set_env_var();
         auto log_level = get_log_level_and_set_env_var();
-
-        if (is_python(argc, argv)) {
-            auto& logger = logger_variant.emplace<1>(log_level, log_level, component_name);
-            PythonComponentHandle component_handle{logger, lib_path};
-            return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
+        is_python_component = is_python(argc, argv);
+        if (is_python_component) {
+            logger.emplace(log_level, std::make_unique<PythonLogger>(log_level, component_name));
         }
         else {
-            auto& logger = logger_variant.emplace<2>(log_level, app_dir);
+            logger.emplace(log_level, std::make_unique<CppLogger>(app_dir));
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "An exception occurred before logging could be configured: "
+                  << e.what() << '\n';
+        return 1;
+    }
+
+    try {
+        if (is_python_component) {
+            PythonComponentHandle component_handle{*logger, lib_path};
+            return run_jobs(*logger, broker_uri, request_queue, app_dir, component_handle);
+        }
+        else {
             CppComponentHandle component_handle{lib_path};
-            return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
+            return run_jobs(*logger, broker_uri, request_queue, app_dir, component_handle);
         }
     }
     catch (const AmqConnectionInitializationException& e) {
-        log_top_level_exception(
-            logger_variant, "Failed to connect to ActiveMQ broker due to: ", e.what());
+        logger->Fatal("Failed to connect to ActiveMQ broker due to: ", e.what());
         return 37;
     }
     catch (const ComponentLoadError& e) {
-        log_top_level_exception(
-            logger_variant, "An error occurred while trying to load component: ", e.what());
+        logger->Fatal("An error occurred while trying to load component: ", e.what());
         return 38;
     }
+    catch (const FailedHealthCheck& e) {
+        logger->Fatal("Exiting because the component failed too many health checks. ", e.what());
+        return 39;
+    }
     catch (const std::exception& e) {
-        log_top_level_exception(
-            logger_variant, "A fatal error occurred: ", e.what());
+        logger->Fatal("A fatal error occurred: ", e.what());
         return 1;
     }
-}
-
-void log_top_level_exception(
-        logger_variant_t& logger_variant, std::string_view description, std::string_view what) {
-    return std::visit([description, what](auto& logger) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(logger)>, std::monostate>) {
-            // The error occurred before logging was initialized.
-            std::cerr << description << what << '\n';
-        }
-        else {
-            logger.Error(description, what);
-        }
-    }, logger_variant);
 }
 
 
@@ -143,9 +140,8 @@ std::string get_app_dir(const char * const argv0) {
 }
 
 std::string get_component_name_and_set_env_var() {
-    if (auto component_name = std::getenv("COMPONENT_NAME");
-            component_name != nullptr && std::strlen(component_name) > 0) {
-        return component_name;
+    if (auto component_name = BatchExecutorUtil::GetEnv("COMPONENT_NAME")) {
+        return *component_name;
     }
     std::string component_name = "detection";
     // Need to make sure COMPONENT_NAME is set because it is used to determine the name of the log file.
@@ -157,14 +153,14 @@ std::string get_component_name_and_set_env_var() {
 }
 
 std::string get_log_level_and_set_env_var() {
-    auto env_level = std::getenv("LOG_LEVEL");
-    if (env_level == nullptr || std::strlen(env_level) == 0) {
+    auto env_level = BatchExecutorUtil::GetEnv("LOG_LEVEL");
+    if (!env_level) {
         std::string level_name = "INFO";
         setenv("LOG_LEVEL", level_name.c_str(), 1);
         return level_name;
     }
 
-    std::string level_name = env_level;
+    std::string level_name = *env_level;
     std::transform(level_name.begin(), level_name.end(), level_name.begin(),
                    [](auto c) { return std::toupper(c); });
 
@@ -184,7 +180,7 @@ std::string get_log_level_and_set_env_var() {
     }
     else {
         level_name = "DEBUG";
-        std::cerr << "The LOG_LEVEL environment variable is set to " << env_level
+        std::cerr << "The LOG_LEVEL environment variable is set to " << *env_level
                   << " but that isn't a valid log level. Using " << level_name << " instead.\n";
 
         setenv("LOG_LEVEL", level_name.c_str(), 1);
@@ -194,18 +190,15 @@ std::string get_log_level_and_set_env_var() {
 
 bool is_python(int argc, const char * argv[]) {
     if (argc > 4) {
-        std::string provided_language = argv[4];
-        std::transform(provided_language.begin(), provided_language.end(),
-                       provided_language.begin(),
-                       [](auto c) { return std::tolower(c); });
-        if ("python" == provided_language) {
+        auto provided_language = argv[4];
+        if (BatchExecutorUtil::EqualsIgnoreCase("python", provided_language)) {
             return true;
         }
-        if ("c++" == provided_language) {
+        if (BatchExecutorUtil::EqualsIgnoreCase("c++", provided_language)) {
             return false;
         }
         std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", but ")"
-                  << argv[4] << "\" was provided.\n";
+                  << provided_language << "\" was provided.\n";
     }
     else {
         std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", )"
@@ -213,9 +206,7 @@ bool is_python(int argc, const char * argv[]) {
     }
 
     std::string lib_extension = fs::path(argv[2]).extension();
-    std::transform(lib_extension.begin(), lib_extension.end(), lib_extension.begin(),
-                   [](auto c) { return std::tolower(c); });
-    if (".so" == lib_extension) {
+    if (BatchExecutorUtil::EqualsIgnoreCase(".so", lib_extension)) {
         std::cerr << "Assuming \"" << argv[2]
                   << "\" is a C++ component because it has the .so extension.\n";
         return false;
@@ -228,70 +219,46 @@ bool is_python(int argc, const char * argv[]) {
 }
 
 std::string get_service_name() {
-    if (auto service_name = std::getenv("SERVICE_NAME");
-            service_name != nullptr && std::strlen(service_name) > 0) {
-        return service_name;
-    }
-    else {
-        return "UNKNOWN_SERVICE";
-    }
+    return BatchExecutorUtil::GetEnv("SERVICE_NAME")
+        .value_or(BatchExecutorUtil::GetEnv("COMPONENT_NAME")
+        .value_or("UNKNOWN_SERVICE"));
 }
 
 
-template <typename Logger, typename ComponentHandle>
-int run_jobs(Logger& logger, std::string_view broker_uri, std::string_view request_queue,
-              std::string_view app_dir, ComponentHandle& detection_engine) {
-    detection_engine.SetRunDirectory(std::string{app_dir} + "/../plugins");
-    if (!detection_engine.Init()) {
+template <typename ComponentHandle>
+int run_jobs(LoggerWrapper& logger, std::string_view broker_uri, std::string_view request_queue,
+             std::string_view app_dir, ComponentHandle& component) {
+    component.SetRunDirectory(std::string{app_dir} + "/../plugins");
+    if (!component.Init()) {
         logger.Error("Detection component initialization failed, exiting.");
         return 1;
     }
 
-    JobReceiver<Logger> job_receiver{
-            logger, broker_uri, request_queue, detection_engine.GetDetectionType()};
-
+    JobReceiver job_receiver{logger, broker_uri, request_queue, component.GetDetectionType()};
+    HealthCheck health_check{logger};
     auto service_name = get_service_name();
     logger.Info("Completed initialization of ", service_name, '.');
 
     while (true) {
         logger.Info("Waiting for next job.");
         auto job_context = job_receiver.GetJob();
-        auto job_type = job_context.job_type;
-        if (!detection_engine.Supports(job_type)) {
+        if (!component.Supports(job_context.job_type)) {
             job_receiver.ReportUnsupportedDataType(job_context);
             continue;
         }
+        bool can_process_job = health_check.Check(
+            component, [&job_receiver] { job_receiver.RejectJob(); });
+        if (!can_process_job) {
+            continue;
+        }
+
         try {
-            switch (job_type) {
-                case MPFDetectionDataType::VIDEO: {
-                    auto results = run_job(
-                            logger, detection_engine, job_context.GetVideoJob(),
-                            service_name, "video", "tracks");
-                    job_receiver.CompleteJob(job_context, results);
-                    break;
-                }
-                case MPFDetectionDataType::IMAGE: {
-                    auto results = run_job(
-                            logger, detection_engine, job_context.GetImageJob(),
-                            service_name, "image", "detections");
-                    job_receiver.CompleteJob(job_context, results);
-                    break;
-                }
-                case MPFDetectionDataType::AUDIO: {
-                    auto results = run_job(
-                            logger, detection_engine, job_context.GetAudioJob(),
-                            service_name, "audio", "tracks");
-                    job_receiver.CompleteJob(job_context, results);
-                    break;
-                }
-                default: {
-                    auto results = run_job(
-                            logger, detection_engine, job_context.GetGenericJob(),
-                            service_name, "generic", "tracks");
-                    job_receiver.CompleteJob(job_context, results);
-                    break;
-                }
-            }
+            logger.Info("Processing ", job_context.job_type_name, " job on ", service_name);
+            std::visit([&component, &logger, &job_context, &job_receiver](const auto& job) {
+                auto results = component.GetDetections(job);
+                logger.Info("Component found ", results.size(), " results.");
+                job_receiver.CompleteJob(job_context, results);
+            }, job_context.job);
         }
         catch (const MPFDetectionException& e) {
             job_receiver.ReportJobError(job_context, e.error_code, e.what());
@@ -300,16 +267,4 @@ int run_jobs(Logger& logger, std::string_view broker_uri, std::string_view reque
             job_receiver.ReportJobError(job_context, MPF_OTHER_DETECTION_ERROR_TYPE, e.what());
         }
     }
-}
-
-
-template <typename Logger, typename ComponentHandle, typename JobType>
-auto run_job(
-        Logger& logger, ComponentHandle& detection_engine, const JobType& job,
-        std::string_view service_name, std::string_view job_type_name,
-        std::string_view results_name) {
-    logger.Info("Processing ", job_type_name, " on ", service_name);
-    auto results = detection_engine.GetDetections(job);
-    logger.Info("Component found ", results.size(), ' ', results_name);
-    return results;
 }

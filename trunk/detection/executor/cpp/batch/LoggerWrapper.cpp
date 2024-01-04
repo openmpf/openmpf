@@ -24,69 +24,26 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#pragma once
-
-#include <string>
-#include <memory>
-#include <variant>
-
-#include <cms/Destination.h>
-
-#include <MPFDetectionComponent.h>
-
 #include "LoggerWrapper.h"
 
 
-namespace MPF::COMPONENT {
-
-using job_variant_t = std::variant<MPFVideoJob, MPFImageJob, MPFAudioJob, MPFGenericJob>;
-
-
-struct ProtobufMetadata {
-    const long request_id;
-
-    const long media_id;
-
-    const int task_index;
-
-    const std::string task_name;
-
-    const int action_index;
-
-    const std::string action_name;
-};
+JobLogContext::JobLogContext(
+        std::string_view new_job,
+        std::shared_ptr<std::string> logger_job_ref,
+        std::shared_ptr<ILogger> logger_impl)
+    : logger_job_ref_{std::move(logger_job_ref)}
+    , previous_job_{std::move(*logger_job_ref_)}
+    , logger_impl_{std::move(logger_impl)}
+{
+    *logger_job_ref_ = new_job;
+    logger_impl_->SetJobName(new_job);
+}
 
 
-struct AmqMetadata {
-    const std::unique_ptr<cms::Destination> response_queue;
-
-    const int cms_priority;
-
-    const std::string correlation_id;
-
-    const std::string bread_crumb_id;
-
-    const int split_size;
-};
-
-
-struct JobContext {
-    const long job_id;
-
-    const std::string job_name;
-
-    const std::string detection_type;
-
-    const job_variant_t job;
-
-    const MPFDetectionDataType job_type;
-
-    const std::string job_type_name;
-
-    const JobLogContext job_log_context;
-
-    const AmqMetadata amq_metadata;
-
-    const ProtobufMetadata protobuf_metadata;
-};
+JobLogContext::~JobLogContext() {
+    // logger_job_ref_ will be null when this instance was passed to a move constructor.
+    if (logger_job_ref_ != nullptr) {
+        *logger_job_ref_ = std::move(previous_job_);
+        logger_impl_->SetJobName(*logger_job_ref_);
+    }
 }

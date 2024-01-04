@@ -57,16 +57,17 @@ include_directories(${MSG_UTILS_DIR})
 
 set(batch_executor_lib_files
 	ComponentLoadError.h
-	JobReceiver.h
-	Messenger.h
+	JobReceiver.h JobReceiver.cpp
+	Messenger.h Messenger.cpp
 	ProtobufRequestUtil.h ProtobufRequestUtil.cpp
 	ProtobufResponseUtil.h ProtobufResponseUtil.cpp
-	JobContext.h JobContext.cpp
+	JobContext.h
 	CppComponentHandle.cpp CppComponentHandle.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
 	BatchExecutorUtil.cpp BatchExecutorUtil.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
-	LazyLoggerWrapper.h)
+	LoggerWrapper.h LoggerWrapper.cpp
+	HealthCheck.h HealthCheck.cpp)
 
 add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})
 target_include_directories(batch_executor_lib PUBLIC

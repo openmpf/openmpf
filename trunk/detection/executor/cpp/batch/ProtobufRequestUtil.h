@@ -28,25 +28,26 @@
 
 #include <string>
 #include <string_view>
-#include <variant>
 #include <vector>
 
 #include <MPFDetectionComponent.h>
 
 #include "detection.pb.h"
+#include "JobContext.h"
+
 
 namespace MPF::COMPONENT::ProtobufRequestUtil {
     namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
-    using job_variant_t = std::variant<MPFVideoJob, MPFImageJob, MPFAudioJob, MPFGenericJob>;
 
     mpf_buffers::DetectionRequest ParseRequest(const std::vector<unsigned char>& bytes);
 
     std::string GetJobName(
                 long job_id, const mpf_buffers::DetectionRequest& detection_request);
 
-
     job_variant_t CreateComponentJob(
             std::string_view job_name,
             const Properties& environment_job_properties,
             const mpf_buffers::DetectionRequest& detection_request);
+
+    ProtobufMetadata GetMetadata(const mpf_buffers::DetectionRequest& detection_request);
 }

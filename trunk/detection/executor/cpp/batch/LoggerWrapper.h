@@ -24,22 +24,56 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_LAZYLOGGERWRAPPER_H
-#define MPF_LAZYLOGGERWRAPPER_H
+#pragma once
 
 #include <memory>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 
-template<typename Logger>
-class LazyLoggerWrapper {
+class ILogger {
 public:
-    template<typename... CtorArgs>
-    explicit LazyLoggerWrapper(std::string_view log_level, CtorArgs&&... args)
-            : base_logger_(std::forward<CtorArgs>(args)...)
+    virtual void Debug(std::string_view message) = 0;
+    virtual void Info(std::string_view message) = 0;
+    virtual void Warn(std::string_view message) = 0;
+    virtual void Error(std::string_view message) = 0;
+    virtual void Fatal(std::string_view message) = 0;
+
+    virtual void SetJobName(std::string_view job_name) = 0;
+
+    virtual ~ILogger() = default;
+};
+
+
+class JobLogContext {
+public:
+    JobLogContext(
+        std::string_view new_job,
+        std::shared_ptr<std::string> logger_job_ref,
+        std::shared_ptr<ILogger> logger_impl);
+    ~JobLogContext();
+
+    // Only allow move construction.
+    JobLogContext(JobLogContext&&) = default;
+    JobLogContext& operator=(JobLogContext&&) = delete;
+
+    JobLogContext(const JobLogContext&) = delete;
+    JobLogContext& operator=(const JobLogContext&) = delete;
+
+private:
+    std::shared_ptr<std::string> logger_job_ref_;
+    std::string previous_job_;
+    std::shared_ptr<ILogger> logger_impl_;
+};
+
+
+class LoggerWrapper {
+public:
+    explicit LoggerWrapper(std::string_view log_level, std::unique_ptr<ILogger> base_logger)
+            : base_logger_(std::move(base_logger))
             , debug_enabled_(log_level == "DEBUG" || log_level == "TRACE")
             , info_enabled_(debug_enabled_ || log_level == "INFO")
             , warn_enabled_(info_enabled_ || log_level == "WARN")
@@ -49,60 +83,64 @@ public:
     }
 
     template<typename... Args>
-    void Debug(Args&&... args) {
+    void Debug(Args&&... args) const {
         if (debug_enabled_) {
-            base_logger_.Debug(ToString(std::forward<Args>(args)...));
+            base_logger_->Debug(ToString(std::forward<Args>(args)...));
         }
     }
 
     template<typename... Args>
-    void Info(Args&&... args) {
+    void Info(Args&&... args) const {
         if (info_enabled_) {
-            base_logger_.Info(ToString(std::forward<Args>(args)...));
+            base_logger_->Info(ToString(std::forward<Args>(args)...));
         }
     }
 
     template<typename... Args>
-    void Warn(Args&&... args) {
+    void Warn(Args&&... args) const {
         if (warn_enabled_) {
-            base_logger_.Warn(ToString(std::forward<Args>(args)...));
+            base_logger_->Warn(ToString(std::forward<Args>(args)...));
         }
     }
 
     template<typename... Args>
-    void Error(Args&&... args) {
+    void Error(Args&&... args) const {
         if (error_enabled_) {
-            base_logger_.Error(ToString(std::forward<Args>(args)...));
+            base_logger_->Error(ToString(std::forward<Args>(args)...));
         }
     }
 
     template<typename... Args>
-    void Fatal(Args&&... args) {
+    void Fatal(Args&&... args) const {
         if (fatal_enabled_) {
-            base_logger_.Fatal(ToString(std::forward<Args>(args)...));
+            base_logger_->Fatal(ToString(std::forward<Args>(args)...));
         }
     }
 
-    [[nodiscard]] std::shared_ptr<void> GetJobContext(const std::string &job_name) {
-        return base_logger_.GetJobContext(job_name);
+    [[nodiscard]] JobLogContext GetJobContext(std::string_view job_name) {
+        return {'[' + std::string{job_name} + "] ", current_job_name_, base_logger_};
     }
 
 
 private:
-    Logger base_logger_;
+    std::shared_ptr<ILogger> base_logger_;
     bool debug_enabled_;
     bool info_enabled_;
     bool warn_enabled_;
     bool error_enabled_;
     bool fatal_enabled_;
+    std::shared_ptr<std::string> current_job_name_ = std::make_shared<std::string>();
 
-    template<typename... Args>
-    static std::string ToString(Args&&... args) {
-        std::ostringstream ss;
-        (ss << ... << std::forward<Args>(args));
-        return ss.str();
+    template<typename Arg, typename... Args>
+    static auto ToString(Arg&& arg, Args&&... args) {
+        if constexpr (sizeof...(Args) == 0 && std::is_convertible_v<Arg, std::string_view>) {
+            return std::string_view{std::forward<Arg>(arg)};
+        }
+        else {
+            std::ostringstream ss;
+            ss << std::forward<Arg>(arg);
+            (ss << ... << std::forward<Args>(args));
+            return ss.str();
+        }
     }
 };
-
-
-#endif //MPF_LAZYLOGGERWRAPPER_H

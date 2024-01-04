@@ -27,6 +27,8 @@
 #include <filesystem>
 #include <utility>
 
+#include <MPFDetectionObjects.h>
+
 #include "ProtobufRequestUtil.h"
 
 namespace MPF::COMPONENT::ProtobufRequestUtil {
@@ -45,14 +47,14 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             return GetProperties(detection_request.media_metadata());
         }
 
-        Properties GetAlgorithmProperties(
+        Properties GetJobProperties(
                 const mpf_buffers::DetectionRequest& detection_request,
                 const Properties& environment_job_properties) {
-            auto algorithm_properties = environment_job_properties;
+            auto job_properties = environment_job_properties;
             for (const auto& prop : detection_request.algorithm_property()) {
-                algorithm_properties.emplace(prop.property_name(), prop.property_value());
+                job_properties.emplace(prop.property_name(), prop.property_value());
             }
-            return algorithm_properties;
+            return job_properties;
         }
 
         MPFImageLocation ConvertFeedForwardLocation(
@@ -92,7 +94,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     video_request.start_frame(),
                     video_request.stop_frame(),
                     std::move(ff_track),
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
@@ -102,7 +104,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     detection_request.data_uri(),
                     video_request.start_frame(),
                     video_request.stop_frame(),
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
@@ -119,7 +121,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     detection_request.data_uri(),
                     ConvertFeedForwardLocation(
                         detection_request.image_request().feed_forward_location()),
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
@@ -127,7 +129,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 return {
                     std::string{job_name},
                     detection_request.data_uri(),
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
@@ -153,7 +155,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     audio_request.start_time(),
                     audio_request.stop_time(),
                     std::move(ff_track),
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
@@ -163,7 +165,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     detection_request.data_uri(),
                     audio_request.start_time(),
                     audio_request.stop_time(),
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
@@ -183,7 +185,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                         ff_track.confidence(),
                         GetProperties(ff_track.detection_properties())
                     },
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
@@ -191,12 +193,13 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 return {
                     std::string{job_name},
                     detection_request.data_uri(),
-                    GetAlgorithmProperties(detection_request, environment_properties),
+                    GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
             }
         }
     } // End anonymous namespace
+
 
     mpf_buffers::DetectionRequest ParseRequest(const std::vector<unsigned char>& bytes) {
         mpf_buffers::DetectionRequest detection_request;
@@ -232,7 +235,6 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
         return job_name;
     }
 
-
     job_variant_t CreateComponentJob(
             std::string_view job_name,
             const Properties& environment_job_properties,
@@ -249,5 +251,17 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             default:
                 throw std::runtime_error{"Received message with incorrect data type."};
         }
+    }
+
+
+    ProtobufMetadata GetMetadata(const mpf_buffers::DetectionRequest& detection_request) {
+        return {
+            detection_request.request_id(),
+            detection_request.media_id(),
+            detection_request.task_index(),
+            detection_request.task_name(),
+            detection_request.action_index(),
+            detection_request.action_name()
+        };
     }
 }

@@ -24,6 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <variant>
 
 #include "MPFMessageUtils.h"
 
@@ -34,7 +35,6 @@ namespace MPF::COMPONENT::ProtobufResponseUtil {
     std::vector<unsigned char> PackErrorResponse(
             const JobContext& context, MPFDetectionError error_code,
             std::string_view explanation) {
-
         auto detection_response = detail::InitDetectionResponse(context);
         detection_response.set_error(translateMPFDetectionError(error_code));
         detection_response.set_error_message(explanation.data(), explanation.size());
@@ -42,8 +42,10 @@ namespace MPF::COMPONENT::ProtobufResponseUtil {
             case MPFDetectionDataType::VIDEO: {
                 auto video_response = detection_response.add_video_responses();
                 video_response->set_detection_type(context.detection_type);
-                video_response->set_start_frame(context.GetVideoJob().start_frame);
-                video_response->set_stop_frame(context.GetVideoJob().stop_frame);
+
+                const auto& video_job = std::get<MPFVideoJob>(context.job);
+                video_response->set_start_frame(video_job.start_frame);
+                video_response->set_stop_frame(video_job.stop_frame);
                 break;
             }
             case MPFDetectionDataType::IMAGE: {
@@ -54,8 +56,10 @@ namespace MPF::COMPONENT::ProtobufResponseUtil {
             case MPFDetectionDataType::AUDIO: {
                 auto audio_response = detection_response.add_audio_responses();
                 audio_response->set_detection_type(context.detection_type);
-                audio_response->set_start_time(context.GetAudioJob().start_time);
-                audio_response->set_stop_time(context.GetAudioJob().stop_time);
+
+                const auto& audio_job = std::get<MPFAudioJob>(context.job);
+                audio_response->set_start_time(audio_job.start_time);
+                audio_response->set_stop_time(audio_job.stop_time);
                 break;
             }
             default: {
@@ -72,12 +76,13 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
 
     mpf_buffers::DetectionResponse InitDetectionResponse(const JobContext& context) {
         mpf_buffers::DetectionResponse detection_response;
-        detection_response.set_request_id(context.request_id);
-        detection_response.set_media_id(context.media_id);
-        detection_response.set_task_index(context.task_index);
-        detection_response.set_task_name(context.task_name);
-        detection_response.set_action_index(context.action_index);
-        detection_response.set_action_name(context.action_name);
+        const auto& pb_meta = context.protobuf_metadata;
+        detection_response.set_request_id(pb_meta.request_id);
+        detection_response.set_media_id(pb_meta.media_id);
+        detection_response.set_task_index(pb_meta.task_index);
+        detection_response.set_task_name(pb_meta.task_name);
+        detection_response.set_action_index(pb_meta.action_index);
+        detection_response.set_action_name(pb_meta.action_name);
         detection_response.set_data_type(translateMPFDetectionDataType(context.job_type));
         return detection_response;
     }
@@ -111,8 +116,11 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             mpf_buffers::DetectionResponse& response) {
         auto video_response = response.add_video_responses();
         video_response->set_detection_type(context.detection_type);
-        video_response->set_start_frame(context.GetVideoJob().start_frame);
-        video_response->set_stop_frame(context.GetVideoJob().stop_frame);
+
+        const auto& video_job = std::get<MPFVideoJob>(context.job);
+        video_response->set_start_frame(video_job.start_frame);
+        video_response->set_stop_frame(video_job.stop_frame);
+
         for (const auto &track : tracks) {
             auto pb_track = video_response->add_video_tracks();
             pb_track->set_start_frame(track.start_frame);
@@ -150,8 +158,9 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             mpf_buffers::DetectionResponse& response) {
         auto audio_response = response.add_audio_responses();
         audio_response->set_detection_type(context.detection_type);
-        audio_response->set_start_time(context.GetAudioJob().start_time);
-        audio_response->set_stop_time(context.GetAudioJob().stop_time);
+        const auto& audio_job = std::get<MPFAudioJob>(context.job);
+        audio_response->set_start_time(audio_job.start_time);
+        audio_response->set_stop_time(audio_job.stop_time);
         for (const auto &track : tracks) {
             auto pb_track = audio_response->add_audio_tracks();
             pb_track->set_start_time(track.start_time);

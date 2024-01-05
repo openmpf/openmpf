@@ -107,7 +107,6 @@
         <mockito.core.version>4.9.0</mockito.core.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <google.protobuf.version>3.16.3</google.protobuf.version>
-        <springfox.swagger.version>3.0.0</springfox.swagger.version>
         <!-- The failsafe package is released under the surefire project. The surefire and failsafe versions should be the same in
         order to maintain cross-compatibility. -->
         <maven.surefire.plugin.version>2.22.1</maven.surefire.plugin.version>

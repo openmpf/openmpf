@@ -26,112 +26,21 @@
 
 package org.mitre.mpf.mvc;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
-
-import org.mitre.mpf.rest.api.MessageModel;
-import org.springframework.boot.actuate.endpoint.web.servlet.WebMvcEndpointHandlerMapping;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
 
-import io.swagger.annotations.ApiOperation;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.builders.ResponseMessageBuilder;
-import springfox.documentation.oas.annotations.EnableOpenApi;
-import springfox.documentation.schema.AlternateTypeRules;
-import springfox.documentation.schema.ModelRef;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.ResponseMessage;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.spring.web.plugins.WebMvcRequestHandlerProvider;
-import springfox.documentation.spring.web.readers.operation.HandlerMethodResolver;
-import springfox.documentation.swagger.web.UiConfiguration;
-import springfox.documentation.swagger.web.UiConfigurationBuilder;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
 
-//reference - http://springfox.github.io/springfox/docs/snapshot/
 @Configuration
-@EnableOpenApi
-// This class causes issues when running Maven tests, so we disable it when the jenkins profile is active.
 @Profile("!jenkins")
 public class SwaggerConfig {
 
     @Bean
-    public Docket api(){
-        var globalResponses = getGlobalResponses();
-
-        return new Docket(DocumentationType.OAS_30)
-            .select()
-            // only show APIs which has the @ApiOperation annotation
-            //  alternative is any(), but that defaults to somewhat useless autogen documentation
-            .apis(RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class))
-            .paths(PathSelectors.ant("/rest/**"))
-            .build()
-            // list classes to be ignored in parameters (useful for optional internal parameters)
-            .ignoredParameterTypes(HttpSession.class)
-            // opt out of auto-generated response code and their default message
-            .useDefaultResponseMessages(false)
-            .alternateTypeRules(AlternateTypeRules.newRule(Instant.class, String.class))
-            .globalResponseMessage(RequestMethod.GET, globalResponses)
-            .globalResponseMessage(RequestMethod.DELETE, globalResponses)
-            .globalResponseMessage(RequestMethod.POST, globalResponses)
-            .globalResponseMessage(RequestMethod.PUT, globalResponses)
-            .apiInfo(apiInfo());
-    }
-
-    private static ApiInfo apiInfo() {
-        ApiInfo apiInfo = new ApiInfo(
-            "Workflow Manager's REST API",  // title
-            "REST-based web services for the Workflow Manager",  // description
-            "",  // terms of service url
-            "",  // contact email
-            "",
-            "",  // license name
-            ""  // license url
-        );
-        return apiInfo;
-    }
-
-    @Bean
-    UiConfiguration uiConfig() {
-        return UiConfigurationBuilder.builder()
-                // disable validation of resulting Swagger JSON at http://online.swagger.io/validator
-                .validatorUrl(null)
-                .build();
-    }
-
-
-    private static List<ResponseMessage> getGlobalResponses() {
-        var unauthorized = new ResponseMessageBuilder()
-                .code(HttpStatus.UNAUTHORIZED.value())
-                .message("Unauthorized")
-                .responseModel(new ModelRef(MessageModel.class.getSimpleName()))
-                .build();
-
-        return List.of(unauthorized);
-    }
-
-
-    // Without this method, a NullPointerException is thrown during start up when the Swagger URI
-    // patterns are being configured.
-    // Adapted from https://stackoverflow.com/a/71497144
-    @Bean
-    public WebMvcRequestHandlerProvider webMvcRequestHandlerProvider(
-            Optional<ServletContext> context,
-            HandlerMethodResolver methodResolver,
-            List<RequestMappingInfoHandlerMapping> handlerMappings) {
-        var filteredHandlerMappings = handlerMappings.stream()
-                .filter(rh -> !(rh instanceof WebMvcEndpointHandlerMapping))
-                .toList();
-        return new WebMvcRequestHandlerProvider(context, methodResolver, filteredHandlerMappings);
+    public OpenAPI workflowManagerOpenAPI() {
+        return new OpenAPI()
+                .info(new Info().title("Workflow Manager's REST API")
+                .description("REST-based web services for the Workflow Manager"));
     }
 }

@@ -33,7 +33,7 @@ import org.mitre.mpf.wfm.data.access.SystemMessageDao;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

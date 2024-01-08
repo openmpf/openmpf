@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  * Given that all actions in a task share a common operation type (e.g., DETECTION), this class is used to

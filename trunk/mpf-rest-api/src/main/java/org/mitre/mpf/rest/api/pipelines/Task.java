@@ -34,7 +34,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Collection;
 import java.util.Objects;
 

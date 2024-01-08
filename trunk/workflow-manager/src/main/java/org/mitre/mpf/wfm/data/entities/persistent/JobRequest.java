@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.Instant;
 
 /**

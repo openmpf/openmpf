@@ -28,7 +28,7 @@ package org.mitre.mpf.mvc.controller;
 
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.atmosphere.config.service.ManagedService;
 import org.atmosphere.config.service.Message;

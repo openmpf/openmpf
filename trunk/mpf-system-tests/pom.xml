@@ -41,12 +41,6 @@
     <name>MPF System Tests</name>
 
     <dependencies>
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-            <version>${javax.annotation.api.version}</version>
-        </dependency>
-
         <!-- depends on workflow-manager-classes.jar for applicationContext.xml -->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
@@ -63,7 +57,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>${spring.framework.version}</version>
+            <!-- <version>${spring.framework.version}</version> -->
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>

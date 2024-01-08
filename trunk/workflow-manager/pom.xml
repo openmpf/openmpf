@@ -45,7 +45,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
-        <spring.boot.version>2.7.18</spring.boot.version>
         <!--
             extraArgLine is required so that the JaCoCo code coverage plugin can be used.
             To get the code coverage information for a unit test class the following command
@@ -60,19 +59,6 @@
         -->
         <extraArgLine/>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <!-- Import dependency management from Spring Boot -->
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring.boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <!-- MPF -->
@@ -238,17 +224,32 @@
             <version>2.17.7</version>
         </dependency>
 
+        <!-- Version matches what's used by hibernate-core:jar:6.4.1.Final, which is brought in by
+             spring-boot-dependencies:3.2.1 -->
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+        <!--
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
             <version>1</version>
         </dependency>
+        -->
 
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+        <!--
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
             <version>${javax.annotation.api.version}</version>
         </dependency>
+        -->
 
         <dependency>
             <groupId>commons-codec</groupId>
@@ -260,12 +261,6 @@
             <groupId>commons-dbcp</groupId>
             <artifactId>commons-dbcp</artifactId>
             <version>1.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.jms</groupId>
-            <artifactId>javax.jms-api</artifactId>
-            <version>${javax.jms-api.version}</version>
         </dependency>
 
         <dependency>
@@ -300,19 +295,18 @@
             <version>4.5.14</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>${hibernate.framework.version}</version>
+            <!-- <version>${hibernate.framework.version}</version> -->
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-envers</artifactId>
-            <version>${hibernate.framework.version}</version>
+            <!-- <version>${hibernate.framework.version}</version> -->
         </dependency>
         <dependency>
             <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-hibernate-cache-v53</artifactId>
-            <version>12.0.2.Final</version>
+            <artifactId>infinispan-hibernate-cache-v62</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.jgroups</groupId>
@@ -321,10 +315,16 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </dependency>
+        <!--
+        <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>${hibernate.validator.version}</version>
+           <version>${hibernate.validator.version}</version>
         </dependency>
+        -->
 
         <dependency>
             <groupId>org.apache.tomcat</groupId>
@@ -392,6 +392,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!--
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
@@ -403,6 +404,8 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        -->
+        <!--
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-spring-javaconfig</artifactId>
@@ -414,6 +417,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-jms</artifactId>
@@ -444,11 +448,13 @@
             <version>4.16.4.Final</version>
         </dependency>
 
+        <!--
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>jstl</artifactId>
             <version>1.2</version>
         </dependency>
+        -->
         <dependency>
             <groupId>commons-fileupload</groupId>
             <artifactId>commons-fileupload</artifactId>
@@ -504,7 +510,7 @@
         <dependency>
             <groupId>org.atmosphere</groupId>
             <artifactId>atmosphere-runtime</artifactId>
-            <version>2.3.4</version>
+            <version>3.0.3</version>
         </dependency>
 
         <dependency>
@@ -548,6 +554,7 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-camel</artifactId>
+            <version>5.16.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.sun.xml.bind</groupId>

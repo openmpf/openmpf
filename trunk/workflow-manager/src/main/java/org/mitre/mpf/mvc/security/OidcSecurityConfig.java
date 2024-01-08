@@ -129,9 +129,11 @@ public class OidcSecurityConfig {
         var jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(oidcAuthenticationManager);
 
-        return http.antMatcher("/rest/**")
+        return http.securityMatcher("/rest/**")
             .authorizeHttpRequests(x -> x.anyRequest().access(oidcAuthenticationManager))
-            .oauth2ResourceServer(x -> x.jwt().jwtAuthenticationConverter(jwtAuthenticationConverter))
+            .oauth2ResourceServer(x ->
+                x.jwt(c ->
+                    c.jwtAuthenticationConverter(jwtAuthenticationConverter)))
             .exceptionHandling(x -> x.accessDeniedHandler(jwtAccessDeniedHandler))
             .csrf(x -> x.disable())
             .build();
@@ -161,12 +163,13 @@ public class OidcSecurityConfig {
 
         return http
             .authorizeHttpRequests(x ->
-                x.antMatchers("/login/**", "/resources/**", "/oidc-access-denied")
+                x.requestMatchers("/login/**", "/resources/**", "/oidc-access-denied")
                     .permitAll()
-                .antMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
+                .requestMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
                 .anyRequest().access(oidcAuthenticationManager))
             .oauth2Login(x ->
-                x.userInfoEndpoint().userAuthoritiesMapper(oidcAuthenticationManager))
+                x.userInfoEndpoint(c ->
+                    c.userAuthoritiesMapper(oidcAuthenticationManager)))
             .logout(x -> x.logoutSuccessHandler(logoutHandler))
             .exceptionHandling(x ->
                 x.accessDeniedPage("/oidc-access-denied")

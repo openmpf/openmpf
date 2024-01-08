@@ -37,8 +37,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import jakarta.inject.Inject;
+
 import javax.imageio.ImageIO;
-import javax.inject.Inject;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.config.TikaConfig;

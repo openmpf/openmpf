@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 
 import java.io.IOException;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import org.mitre.mpf.mvc.security.OidcSecurityConfig;
 import org.mitre.mpf.wfm.data.entities.persistent.User;

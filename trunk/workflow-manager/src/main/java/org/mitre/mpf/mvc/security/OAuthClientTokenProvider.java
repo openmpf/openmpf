@@ -30,8 +30,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
-import javax.inject.Inject;
+import jakarta.annotation.Nullable;
+import jakarta.inject.Inject;
 
 import org.apache.http.client.methods.HttpUriRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;

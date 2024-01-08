@@ -33,7 +33,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.util.Utils;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Collection;
 
 public class TransientAction {

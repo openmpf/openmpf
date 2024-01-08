@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.event;
 
 import org.springframework.stereotype.Component;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;

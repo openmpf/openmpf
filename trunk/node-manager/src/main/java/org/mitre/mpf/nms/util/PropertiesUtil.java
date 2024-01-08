@@ -37,7 +37,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -50,7 +50,7 @@ public class PropertiesUtil {
 	@Autowired
 	private ApplicationContext appContext;
 
-	@javax.annotation.Resource(name="propFile")
+	@jakarta.annotation.Resource(name="propFile")
 	private ClassPathResource propFile;
 
 	private PropertiesConfiguration propertiesConfig;

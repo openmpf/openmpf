@@ -32,8 +32,8 @@ import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Objects;
 

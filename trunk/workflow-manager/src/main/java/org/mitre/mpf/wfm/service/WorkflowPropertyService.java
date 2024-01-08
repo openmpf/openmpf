@@ -40,7 +40,7 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;

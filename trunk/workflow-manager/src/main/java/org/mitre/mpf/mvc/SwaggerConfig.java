@@ -43,4 +43,6 @@ public class SwaggerConfig {
                 .info(new Info().title("Workflow Manager's REST API")
                 .description("REST-based web services for the Workflow Manager"));
     }
+
+    // TODO: missing common auth error and other things
 }

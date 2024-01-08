@@ -36,8 +36,8 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
 import java.io.File;
 import java.util.*;
 

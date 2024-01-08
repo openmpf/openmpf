@@ -49,8 +49,8 @@ import java.util.SortedSet;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;

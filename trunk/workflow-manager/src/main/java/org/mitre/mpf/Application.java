@@ -102,6 +102,7 @@ public class Application extends SpringBootServletInitializer {
     }
 
 
+    /* TODO: https://stackoverflow.com/questions/54946198/stopwatch-in-javasimon-vs-in-javamelody
     @Bean
     public ServletRegistrationBean<SimonConsoleServlet> simonConsoleServlet() {
         var servlet = new ServletRegistrationBean<>(
@@ -109,6 +110,7 @@ public class Application extends SpringBootServletInitializer {
         servlet.addInitParameter("url-prefix", "/javasimon-console");
         return servlet;
     }
+    */
 
     @Bean
     @Profile("!jenkins")

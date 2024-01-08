@@ -28,8 +28,8 @@ package org.mitre.mpf.mvc.controller;
 
 import java.util.Collection;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;

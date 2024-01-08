@@ -37,7 +37,7 @@ import org.mitre.mpf.wfm.service.WorkflowProperty;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;

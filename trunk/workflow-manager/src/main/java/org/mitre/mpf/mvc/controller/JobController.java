@@ -36,7 +36,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.function.Predicate;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.util.CloseableMdc;

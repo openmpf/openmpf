@@ -36,7 +36,7 @@ import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.Map;
 

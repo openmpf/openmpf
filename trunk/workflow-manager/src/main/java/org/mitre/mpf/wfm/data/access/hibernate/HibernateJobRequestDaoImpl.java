@@ -41,12 +41,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
@@ -182,7 +182,8 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
             var dialect = dialectResolver.resolveDialect(
                     new DatabaseMetaDataDialectResolutionInfoAdapter(connection.getMetaData()));
 
-            var queryString = dialect.getSequenceNextValString("hibernate_sequence");
+            var queryString = dialect.getSequenceSupport().getSequenceNextValString(
+                    "hibernate_sequence");
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryString);
                  ResultSet resultSet = preparedStatement.executeQuery()) {
                 resultSet.next();

@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.mvc.util.MdcUtil;

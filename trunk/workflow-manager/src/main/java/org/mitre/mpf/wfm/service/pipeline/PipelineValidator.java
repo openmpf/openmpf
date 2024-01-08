@@ -37,9 +37,9 @@ import org.mitre.mpf.rest.api.util.Utils;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validator;
+import jakarta.inject.Inject;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;

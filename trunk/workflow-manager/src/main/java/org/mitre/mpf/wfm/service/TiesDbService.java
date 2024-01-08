@@ -44,7 +44,7 @@ import java.util.concurrent.CompletionException;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;

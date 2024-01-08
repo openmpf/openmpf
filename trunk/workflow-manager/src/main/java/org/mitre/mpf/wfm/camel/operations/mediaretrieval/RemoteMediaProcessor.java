@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -132,7 +132,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
                 FileUtils.copyURLToFile(new URL(media.getUri()), localFile);
                 log.debug("Successfully retrieved {} and saved it to '{}'.", media.getUri(), media.getLocalPath());
                 break;
-            } catch (IOException e) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.
+            } catch (IOException e) { // "jakarta.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.
                 errorMessage = handleMediaRetrievalException(media, localFile, e);
             } catch (Exception e) { // specifying "http::" will cause an IllegalArgumentException
                 errorMessage = handleMediaRetrievalException(media, localFile, e);

@@ -46,7 +46,7 @@ public class LocalSecurityConfig {
     public SecurityFilterChain restSecurityFilterChain(
             HttpSecurity http, RestBasicAuthEntryPoint restBasicAuthEntryPoint) throws Exception {
 
-        return http.antMatcher("/rest/**")
+        return http.securityMatcher("/rest/**")
             .authorizeHttpRequests(x -> x.anyRequest().authenticated())
             .httpBasic(x -> x.authenticationEntryPoint(restBasicAuthEntryPoint))
             .csrf(x -> x.disable())
@@ -62,8 +62,8 @@ public class LocalSecurityConfig {
             AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint) throws Exception {
 
         return http.authorizeHttpRequests(x ->
-                x.antMatchers("/login/**", "/resources/**").permitAll()
-                .antMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
+                x.requestMatchers("/login/**", "/resources/**").permitAll()
+                .requestMatchers("/actuator/hawtio/**").hasAnyAuthority(UserRole.ADMIN.springName)
                 .anyRequest().authenticated())
             .formLogin(x ->
                 x.loginPage("/login")

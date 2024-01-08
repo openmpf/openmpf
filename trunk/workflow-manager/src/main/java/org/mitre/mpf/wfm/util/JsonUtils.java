@@ -35,7 +35,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;

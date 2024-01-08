@@ -26,39 +26,72 @@
 
 package org.mitre.mpf.wfm.data;
 
-import org.hibernate.dialect.PostgreSQL94Dialect;
+import org.hibernate.Length;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.type.SqlTypes;
 import org.springframework.core.annotation.AnnotationUtils;
 
-import javax.persistence.Column;
 import java.sql.Types;
 
-public class EnhancedPostgreSQLDialect extends PostgreSQL94Dialect {
+public class EnhancedPostgreSQLDialect extends PostgreSQLDialect {
 
-   public EnhancedPostgreSQLDialect() {
-       doNotSetStringColumnLengthWhenDefaultValueIsUsed();
-       // Change timestamps to include timezone.
-       registerColumnType(Types.TIMESTAMP, "timestamp with time zone");
-   }
+    public EnhancedPostgreSQLDialect() {
+        super();
+    }
+
+    // /**
+    //  * When using the {@link Column} without specifying a length, the value of {@link Column#length()} is used for
+    //  * the maximum length for that column. When no length is specified, then we will typically want that column
+    //  * to not have a maximum size.
+    //  */
+    // @Override
+    // protected String columnType(int sqlTypeCode) {
+    //     // Change timestamps to include timezone. // TODO: May not be necessary anymore
+    //     if (SqlTypes.TIMESTAMP == sqlTypeCode) {
+    //         return "timestamp with time zone";
+    //     }
+
+    //     // Currently defaultLength = 255
+    //     int defaultLength = Length.DEFAULT;
+
+    //     if (SqlTypes.VARCHAR == sqlTypeCode) {
+
+    //         return "timestamp with time zone";
+    //     }
+
+    //     return super.columnType(sqlTypeCode);
+    // }
 
 
-    /**
-     * When using the {@link Column} without specifying a length, the value of {@link Column#length()} is used for
-     * the maximum length for that column. When no length is specified, then we will typically want that column
-     * to not have a maximum size.
-     */
-   private void doNotSetStringColumnLengthWhenDefaultValueIsUsed() {
-       // Currently defaultLength = 255
-       int defaultLength = (int) AnnotationUtils.getDefaultValue(Column.class, "length");
+    // private void doNotSetStringColumnLengthWhenDefaultValueIsUsed(int sqlTypeCode) {
 
-       // This handles the case where @Column.length is explicitly set to some value below defaultLength.
-       // Since the value was explicitly set, we should use that value.
-       registerColumnType(Types.VARCHAR, defaultLength - 1, "varchar($l)");
+    // }
 
-       // This handles the case where either no length is provided or (unfortunately) when the length is explicitly
-       // set to the default length. To explicitly set the column length to the default,
-       // `@Column(columnDefinition = "VARCHAR(255)")` can be used.
-       // The length provided to registerColumnType specifies the maximum length, so if the explicitly set length is
-       // greater than the default, the maximum length will be correctly set.
-       registerColumnType(Types.VARCHAR, defaultLength, "text");
-   }
+//    public EnhancedPostgreSQLDialect() {
+//        doNotSetStringColumnLengthWhenDefaultValueIsUsed();
+//        // Change timestamps to include timezone.
+//        registerColumnType(Types.TIMESTAMP, "timestamp with time zone");
+//    }
+
+
+//     /**
+//      * When using the {@link Column} without specifying a length, the value of {@link Column#length()} is used for
+//      * the maximum length for that column. When no length is specified, then we will typically want that column
+//      * to not have a maximum size.
+//      */
+//    private void doNotSetStringColumnLengthWhenDefaultValueIsUsed() {
+//        // Currently defaultLength = 255
+//        int defaultLength = (int) AnnotationUtils.getDefaultValue(Column.class, "length");
+
+//        // This handles the case where @Column.length is explicitly set to some value below defaultLength.
+//        // Since the value was explicitly set, we should use that value.
+//        registerColumnType(Types.VARCHAR, defaultLength - 1, "varchar($l)");
+
+//        // This handles the case where either no length is provided or (unfortunately) when the length is explicitly
+//        // set to the default length. To explicitly set the column length to the default,
+//        // `@Column(columnDefinition = "VARCHAR(255)")` can be used.
+//        // The length provided to registerColumnType specifies the maximum length, so if the explicitly set length is
+//        // greater than the default, the maximum length will be correctly set.
+//        registerColumnType(Types.VARCHAR, defaultLength, "text");
+//    }
 }

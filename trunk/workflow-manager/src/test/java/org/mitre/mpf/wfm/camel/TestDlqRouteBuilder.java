@@ -39,14 +39,14 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.jms.BytesMessage;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
+import jakarta.jms.BytesMessage;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Session;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -174,11 +174,11 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
 
     private void removeQueueQuietly(String longName) {
         try {
-            javax.jms.Queue queue = session.createQueue(getQueueShortName(longName));
+            jakarta.jms.Queue queue = session.createQueue(getQueueShortName(longName));
             connection.destroyDestination((ActiveMQDestination) queue);
         } catch (Exception e) {
             // Sometimes destroying a destination can cause an exception like this:
-            //   "javax.jms.JMSException: Destination still has an active subscription: queue://MPF.TEST.ActiveMQ.DLQ"
+            //   "JMSException: Destination still has an active subscription: queue://MPF.TEST.ActiveMQ.DLQ"
             // Ignore these exceptions since they are not what's being tested.
         }
     }

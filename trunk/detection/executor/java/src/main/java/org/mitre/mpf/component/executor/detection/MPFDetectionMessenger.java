@@ -27,12 +27,19 @@
 package org.mitre.mpf.component.executor.detection;
 
 import com.google.common.collect.ImmutableMap;
+
+import jakarta.jms.BytesMessage;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Session;
+
 import org.mitre.mpf.component.api.detection.*;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

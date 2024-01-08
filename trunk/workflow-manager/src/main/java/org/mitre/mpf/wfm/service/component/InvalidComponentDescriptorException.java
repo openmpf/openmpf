@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.service.component;
 
 import com.google.common.collect.ImmutableSet;
 
-import javax.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolation;
 import java.util.Set;
 
 import static java.util.stream.Collectors.joining;

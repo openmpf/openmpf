@@ -33,7 +33,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.spi.DataFormat;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

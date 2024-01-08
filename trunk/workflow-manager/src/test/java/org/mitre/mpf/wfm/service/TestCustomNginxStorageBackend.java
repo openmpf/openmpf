@@ -58,8 +58,8 @@ import spark.Response;
 import spark.Route;
 import spark.Spark;
 
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

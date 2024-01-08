@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import org.mitre.mpf.wfm.enums.MarkupStatusType;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(indexes = {@Index(name = "MARKUP_NDX_UNIQ", columnList = "jobId,mediaIndex,taskIndex,actionIndex", unique = true)})

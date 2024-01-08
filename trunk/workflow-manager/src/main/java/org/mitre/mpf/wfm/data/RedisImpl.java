@@ -34,7 +34,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;

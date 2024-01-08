@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;

@@ -32,8 +32,8 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.springframework.context.annotation.Profile;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;

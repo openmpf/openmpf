@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.mediaretrieval;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;

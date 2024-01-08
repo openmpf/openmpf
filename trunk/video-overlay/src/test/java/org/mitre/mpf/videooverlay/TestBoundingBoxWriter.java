@@ -31,12 +31,13 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mitre.mpf.JniTestUtils;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import javax.imageio.ImageIO;
 
 public class TestBoundingBoxWriter {
 

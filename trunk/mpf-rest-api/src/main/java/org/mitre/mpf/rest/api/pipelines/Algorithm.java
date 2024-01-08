@@ -35,8 +35,8 @@ import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
 import org.mitre.mpf.rest.api.util.Utils;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.OptionalInt;

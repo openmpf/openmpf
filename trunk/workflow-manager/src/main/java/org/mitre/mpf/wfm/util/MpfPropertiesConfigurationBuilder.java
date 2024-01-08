@@ -41,8 +41,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 @Component
 public class MpfPropertiesConfigurationBuilder {

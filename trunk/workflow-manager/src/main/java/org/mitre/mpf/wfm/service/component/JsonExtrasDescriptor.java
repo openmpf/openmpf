@@ -32,9 +32,9 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Null;
-import javax.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Null;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public class JsonExtrasDescriptor {

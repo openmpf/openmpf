@@ -36,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @Profile("!oidc")
 @Repository

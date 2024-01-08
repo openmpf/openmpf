@@ -33,7 +33,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import javax.validation.Validator;
+import jakarta.validation.Validator;
 import java.util.Collections;
 import java.util.List;
 

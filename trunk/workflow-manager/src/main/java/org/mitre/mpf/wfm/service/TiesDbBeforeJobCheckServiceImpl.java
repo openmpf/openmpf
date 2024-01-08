@@ -53,7 +53,7 @@ import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.camel.Exchange;
 import org.apache.commons.io.IOUtils;

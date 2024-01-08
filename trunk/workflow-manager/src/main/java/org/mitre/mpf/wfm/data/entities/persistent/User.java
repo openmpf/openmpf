@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import org.mitre.mpf.wfm.enums.UserRole;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;

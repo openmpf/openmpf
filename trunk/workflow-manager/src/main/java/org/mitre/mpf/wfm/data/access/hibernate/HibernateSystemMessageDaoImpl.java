@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @Repository(HibernateSystemMessageDaoImpl.REF)
 @Transactional(propagation = Propagation.REQUIRED)

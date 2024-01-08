@@ -30,10 +30,10 @@ package org.mitre.mpf.mvc.security;
 import java.io.IOException;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;

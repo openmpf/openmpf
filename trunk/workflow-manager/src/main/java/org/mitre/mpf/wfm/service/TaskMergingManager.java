@@ -33,7 +33,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.camel.Message;
 import org.mitre.mpf.rest.api.pipelines.Action;

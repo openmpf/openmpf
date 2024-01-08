@@ -26,8 +26,8 @@
 
 package org.mitre.mpf.component.executor.detection;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;

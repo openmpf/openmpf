@@ -1,9 +1,9 @@
 {
   "componentName": "JavaTestDetection",
-  "componentVersion": "7.2",
-  "middlewareVersion": "7.2",
+  "componentVersion": "8.0",
+  "middlewareVersion": "8.0",
   "sourceLanguage": "java",
-  "batchLibrary": "mpf-java-test-detection-component-7.2.jar",
+  "batchLibrary": "mpf-java-test-detection-component-8.0.jar",
   "environmentVariables": [
     {
       "name": "DUMMY_VAR",
@@ -15,6 +15,7 @@
     "name": "JavaTest",
     "description": "A dummy Java detection component.",
     "actionType": "DETECTION",
+    "trackType": "HELLO",
     "requiresCollection": {
       "states": []
     },

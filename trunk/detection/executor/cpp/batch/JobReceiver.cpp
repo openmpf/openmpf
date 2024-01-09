@@ -35,33 +35,19 @@
 namespace MPF::COMPONENT {
 
 namespace {
-    MPFDetectionDataType GetJobType(const job_variant_t& job) {
-        if (std::holds_alternative<MPFVideoJob>(job)) {
-            return MPFDetectionDataType::VIDEO;
-        }
-        else if (std::holds_alternative<MPFImageJob>(job)) {
-            return MPFDetectionDataType::IMAGE;
-        }
-        else if (std::holds_alternative<MPFAudioJob>(job)) {
-            return MPFDetectionDataType::AUDIO;
-        }
-        else {
-            return MPFDetectionDataType::UNKNOWN;
-        }
-    }
+    using job_type_info_t = std::pair<MPFDetectionDataType, const char*>;
 
-    std::string JobTypeToString(MPFDetectionDataType job_type) {
-        switch (job_type) {
-            case MPFDetectionDataType::VIDEO:
-                return "VIDEO";
-            case MPFDetectionDataType::IMAGE:
-                return "IMAGE";
-            case MPFDetectionDataType::AUDIO:
-                return "AUDIO";
-            default:
-                return "GENERIC";
-        }
-    }
+    template <typename>
+    constexpr job_type_info_t job_type_info{MPFDetectionDataType::UNKNOWN, "GENERIC"};
+
+    template <>
+    constexpr job_type_info_t job_type_info<MPFVideoJob>{MPFDetectionDataType::VIDEO, "VIDEO"};
+
+    template <>
+    constexpr job_type_info_t job_type_info<MPFImageJob>{MPFDetectionDataType::IMAGE, "IMAGE"};
+
+    template <>
+    constexpr job_type_info_t job_type_info<MPFAudioJob>{MPFDetectionDataType::AUDIO, "AUDIO"};
 } // End anonymous namespace
 
 
@@ -99,14 +85,16 @@ JobContext JobReceiver::TryGetJob() {
     auto job_name = ProtobufRequestUtil::GetJobName(job_id, detection_request);
     auto component_job = ProtobufRequestUtil::CreateComponentJob(
             job_name, environment_job_properties_, detection_request);
-    auto job_type = GetJobType(component_job);
+    auto [job_type, type_name] = std::visit([](const auto& job) {
+        return job_type_info<std::decay_t<decltype(job)>>;
+    }, component_job);
     return {
         job_id,
         job_name,
         detection_type_,
         std::move(component_job),
         job_type,
-        JobTypeToString(job_type),
+        type_name,
         logger_.GetJobContext(job_name),
         Messenger::GetAmqMetadata(*request_message),
         ProtobufRequestUtil::GetMetadata(detection_request)

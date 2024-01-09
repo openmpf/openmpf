@@ -84,7 +84,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.setExchangePattern(ExchangePattern.InOnly)
 			.split().method(MediaInspectionSplitter.REF, "split")
 				.parallelProcessing() // Perform this operation in parallel.
-                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
+                .executorService(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 				.streaming() // The aggregation order of messages is not important.
                 .process(MediaInspectionProcessor.REF)
             .end()

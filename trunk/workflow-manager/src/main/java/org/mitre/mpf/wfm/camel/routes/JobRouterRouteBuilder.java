@@ -76,7 +76,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
             .split(method(DefaultTaskSplitter.REF, "split"))
                 .parallelProcessing()
                 .streaming()
-                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
+                .executorService(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
                 .marshal().protobuf()
                 // Splitter will set the "CamelJmsDestinationName" header to
                 // specify the destination.

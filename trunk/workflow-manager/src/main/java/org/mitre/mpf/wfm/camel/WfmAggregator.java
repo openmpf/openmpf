@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import org.apache.camel.processor.aggregate.AggregationStrategy;
+import org.apache.camel.AggregationStrategy;
 import org.javasimon.aop.Monitored;
 
 /**

@@ -351,7 +351,7 @@ class WorkflowManagerManager(BaseMpfSystemDependencyManager):
             return
 
         with subprocess.Popen(
-                ('mvn', 'spring-boot:run', '-Dstartup.auto.registration.skip=false'),
+                ('mvn', '-e', '-X', 'spring-boot:run', '-Dstartup.auto.registration.skip=false'),
                 cwd=self._config.wfm_project) as proc:
             try:
                 rv = proc.wait()

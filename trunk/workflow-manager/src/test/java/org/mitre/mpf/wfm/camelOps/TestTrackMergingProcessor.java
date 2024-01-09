@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
+import org.apache.camel.support.DefaultExchange;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -250,7 +250,7 @@ public class TestTrackMergingProcessor {
 
         trackMergingProcessor.wfmProcess(exchange);
 
-        var responseBody = exchange.getOut().getBody(TrackCache.class);
+        var responseBody = exchange.getMessage().getBody(TrackCache.class);
         Assert.assertEquals(TEST_JOB_ID, responseBody.getJobId());
         Assert.assertEquals(taskIndex, responseBody.getTaskIndex());
 
@@ -299,7 +299,7 @@ public class TestTrackMergingProcessor {
 
         trackMergingProcessor.wfmProcess(exchange);
 
-        var responseBody = exchange.getOut().getBody(TrackCache.class);
+        var responseBody = exchange.getMessage().getBody(TrackCache.class);
         Assert.assertEquals(TEST_JOB_ID, responseBody.getJobId());
         Assert.assertEquals(taskIndex, responseBody.getTaskIndex());
 

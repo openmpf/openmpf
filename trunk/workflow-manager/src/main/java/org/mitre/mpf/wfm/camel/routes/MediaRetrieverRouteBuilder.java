@@ -62,7 +62,7 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
             .setExchangePattern(ExchangePattern.InOnly)
             .split().method(RemoteMediaSplitter.REF, "split")
                 .parallelProcessing()
-                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
+                .executorService(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
                 .streaming()
                 .process(RemoteMediaProcessor.REF)
             .end()

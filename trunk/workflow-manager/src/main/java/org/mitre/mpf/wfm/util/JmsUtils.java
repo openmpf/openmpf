@@ -92,7 +92,7 @@ public class JmsUtils {
                 for(Route route : routes) {
                     if(route.getId().startsWith(createCancellationRouteName(jobId))) {
                         LOG.debug("Destroying Route: {}", route.getId());
-                        _camelContext.stopRoute(route.getId());
+                        _camelContext.getRouteController().stopRoute(route.getId());
                         _camelContext.removeRoute(route.getId());
                     }
                 }

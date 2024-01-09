@@ -59,7 +59,9 @@ import spark.Route;
 import spark.Spark;
 
 import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletException;
+
+import javax.servlet.ServletException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

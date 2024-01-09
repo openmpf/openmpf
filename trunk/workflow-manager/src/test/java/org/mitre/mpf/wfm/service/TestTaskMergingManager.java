@@ -41,9 +41,10 @@ import java.util.Map;
 import java.util.OptionalInt;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultHeadersMapFactory;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.impl.engine.DefaultHeadersMapFactory;
+import org.apache.camel.support.DefaultMessage;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -62,6 +63,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 
 public class TestTaskMergingManager extends MockitoTest.Strict {
@@ -199,7 +201,10 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
     private Message createMessage() {
         var camelContext = mock(CamelContext.class);
-        when(camelContext.getHeadersMapFactory())
+        var extendedCamelContext = mock(ExtendedCamelContext.class);
+        Mockito.when(camelContext.getCamelContextExtension())
+            .thenReturn(extendedCamelContext);
+        when(extendedCamelContext.getHeadersMapFactory())
             .thenReturn(new DefaultHeadersMapFactory());
         return new DefaultMessage(camelContext);
     }

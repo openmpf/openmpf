@@ -54,7 +54,7 @@ import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.SimpleRegistry;
+import org.apache.camel.support.DefaultRegistry;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -118,9 +118,9 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
 
     @Before
     public void setup() throws Exception {
-        SimpleRegistry simpleRegistry = new SimpleRegistry();
-        simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
-        camelContext = new DefaultCamelContext(simpleRegistry);
+        DefaultRegistry defaultRegistry = new DefaultRegistry();
+        defaultRegistry.bind(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
+        camelContext = new DefaultCamelContext(defaultRegistry);
 
         connectionFactory = new ActiveMQConnectionFactory(
                 "vm://test_dlq?broker.persistent=false");
@@ -144,7 +144,7 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
                 ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID_PREFIX,
                 SELECTOR_REPLY_TO, new ProtobufDataFormatFactory(mockPropertiesUtil));
 
-        dlqRouteBuilder.setContext(camelContext);
+        dlqRouteBuilder.setCamelContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);
 
         runId += 1;

@@ -273,7 +273,8 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                 "SELECT pipeline, status, EXTRACT(EPOCH FROM (time_completed - time_received)) as duration " +
                 "FROM job_request " +
             ") as sub " +
-            " GROUP BY pipeline, status");
+            " GROUP BY pipeline, status",
+            Object[].class);
 
         Map<String, AggregatePipelineStatsModel> statsModels;
         try (var queryResults = (Stream<Object[]>) query.stream()) {

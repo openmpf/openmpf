@@ -109,7 +109,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.process(DetectionTransformationProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
-                        .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
+                        .executorService(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 						.streaming() // Aggregate responses in any order.
                         .process(ArtifactExtractionProcessor.REF)
 					.end()

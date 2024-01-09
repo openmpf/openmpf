@@ -546,7 +546,7 @@ public class TestDetectionTaskSplitter {
 
     }
 
-    private void putStringInMapIfNotNull(Map map, String key, Object value) {
+    private void putStringInMapIfNotNull(Map<String, String> map, String key, Object value) {
         if (value != null) {
             map.put(key, value.toString());
         }

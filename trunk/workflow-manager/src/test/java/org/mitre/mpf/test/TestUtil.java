@@ -26,11 +26,10 @@
 
 package org.mitre.mpf.test;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.support.DefaultMessage;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -101,6 +100,7 @@ public class TestUtil {
         public void run() throws Exception;
     }
 
+    @SuppressWarnings("unchecked")
     public static <TEx extends Exception> TEx assertThrows(Class<TEx> expectedExceptionType,
                                                            ThrowingRunnable runnable) {
         try {

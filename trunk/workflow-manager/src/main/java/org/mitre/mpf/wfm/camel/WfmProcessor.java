@@ -52,8 +52,8 @@ public abstract class WfmProcessor implements WfmProcessorInterface {
 		assert exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class) != null : String.format("The '%s' header (value=%s) header be convertible to Long.", MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
 		// Copy any essential headers.
-		exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
-		exchange.getOut().getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
+		exchange.getMessage().getHeaders().put(MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
+		exchange.getMessage().getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 
 		var jobId  = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
 		MdcUtil.job(jobId, () -> wfmProcess(exchange));

@@ -47,8 +47,10 @@
         </bean>
 
         <!--  needed for fileupload -->
-        <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"/>
+        <!-- <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"/> -->
+        <bean id="multipartResolver" class="org.springframework.web.multipart.support.StandardServletMultipartResolver"/>
 
+        <!-- TODO: Update this -->
         <mvc:resources mapping="/swagger-ui/**"
                        location="classpath:/META-INF/resources/webjars/springfox-swagger-ui/" />
 

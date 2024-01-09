@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.camel.operations.markup;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 import org.apache.tika.mime.MimeTypes;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.ActionType;

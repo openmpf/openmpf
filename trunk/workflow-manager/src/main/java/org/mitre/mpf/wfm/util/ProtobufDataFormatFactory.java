@@ -76,5 +76,15 @@ public class ProtobufDataFormatFactory {
             codedInputStream.setSizeLimit(_propertiesUtil.getProtobufSizeLimit());
             return _messageBuilderSupplier.get().mergeFrom(codedInputStream).build();
         }
+
+        @Override
+        public void start() {
+            // No implementation necessary
+        }
+
+        @Override
+        public void stop() {
+            // No implementation necessary
+        }
     }
 }

@@ -44,8 +44,8 @@ import java.util.UUID;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.support.DefaultMessage;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -157,8 +157,8 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
 
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getMessage().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getMessage().getHeader(MpfHeaders.JOB_ID));
 
         Assert.assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
                         Boolean.toString(media.isFailed()),
@@ -181,8 +181,8 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
 
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getMessage().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getMessage().getHeader(MpfHeaders.JOB_ID));
         assertTrue(media.isFailed());
 
         verify(_mockInProgressJobs)

@@ -24,65 +24,58 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-# pragma once
+#pragma once
 
+#include <exception>
 #include <string>
 #include <string_view>
-#include <vector>
 
-#include <log4cxx/logger.h>
-
-#include <DlClassLoader.h>
-#include <MPFDetectionComponent.h>
 #include <MPFDetectionObjects.h>
 
+#include "BatchExecutorUtil.h"
+#include "JobContext.h"
+#include "Messenger.h"
+#include "ProtobufResponseUtil.h"
 #include "LoggerWrapper.h"
 
 
 namespace MPF::COMPONENT {
 
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
+class JobReceiver {
 
-        void SetRunDirectory(const std::string &run_dir);
+public:
+    JobReceiver(
+            LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue);
 
-        bool Init();
+    JobContext GetJob();
 
-        bool Supports(MPFDetectionDataType data_type);
+    template <typename TResp>
+    void CompleteJob(const JobContext& context, const TResp& results) {
+        try {
+            auto response_bytes = ProtobufResponseUtil::PackResponse(context, results);
+            messenger_.SendResponse(context, response_bytes);
+        }
+        catch (const std::exception& e) {
+            logger_.Error("An error occurred while attempting to send job results: ", e.what());
+            messenger_.Rollback();
+        }
+    }
 
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
+    void ReportJobError(
+            const JobContext& context, MPFDetectionError error_code,
+            std::string_view explanation);
 
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
+    void ReportUnsupportedDataType(const JobContext& context);
 
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
+    void RejectJob();
 
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
+private:
+    Properties environment_job_properties_ = BatchExecutorUtil::GetEnvironmentJobProperties();
 
-        bool Close();
+    LoggerWrapper logger_;
 
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
+    Messenger messenger_;
 
-
-    class CppLogger : public ILogger {
-    public:
-        explicit CppLogger(std::string_view app_dir);
-
-        void Debug(std::string_view message) override;
-
-        void Info(std::string_view message) override;
-
-        void Warn(std::string_view message) override;
-
-        void Error(std::string_view message) override;
-
-        void Fatal(std::string_view message) override;
-
-        void SetJobName(std::string_view job_name) override;
-
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
+    JobContext TryGetJob();
+};
 }

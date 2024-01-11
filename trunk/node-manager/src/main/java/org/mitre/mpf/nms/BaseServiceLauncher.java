@@ -230,7 +230,7 @@ public abstract class BaseServiceLauncher implements Runnable {
         mIsShutdown = true;
         //if called to shutdown we don't want to allow a restart! - only restart on failure
         restartOnFailure = false;
-        sendShutdownToApp();  // user-defined shutdown method
+        child.destroy();
         OutputShredder shredder = this.getStdOutShredder();
         boolean status = false;
         if (null != shredder) {
@@ -264,7 +264,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
         // we waited, if still running then shut it down
         if (isRunning) {
-            child.destroy();
+            child.destroyForcibly();
         }
     }
 
@@ -303,22 +303,6 @@ public abstract class BaseServiceLauncher implements Runnable {
 
     public void setStdErrReceiver(OutputReceiver receiver) {
         this.errReceiver = receiver;
-    }
-
-    public int sendLine(String toInput) {
-        if (stdIn == null) {
-            return -1;
-        }
-
-        try {
-            stdIn.write(toInput.getBytes());
-            stdIn.flush();
-        } catch (IOException e) {
-            LOG.error("Exception", e);
-            return -1;
-        }
-
-        return 0;
     }
 
     private OutputShredder getStdOutShredder(InputStream stream) {
@@ -525,8 +509,6 @@ public abstract class BaseServiceLauncher implements Runnable {
      * @param pb
      */
     public abstract void additionalProcessPreconfig(ProcessBuilder pb, ServiceDescriptor serviceDescriptor);
-
-    public abstract void sendShutdownToApp();
 
     /**
      * Returns the actual command line.

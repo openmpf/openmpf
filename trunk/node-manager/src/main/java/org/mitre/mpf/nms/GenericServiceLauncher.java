@@ -55,13 +55,6 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
     @Override
     public void additionalProcessPreconfig(ProcessBuilder pb, ServiceDescriptor serviceDescriptor) {}
 
-    @Override
-    public void sendShutdownToApp() {
-        LOG.debug("Sending down 'q' to {}", this.getServiceName());
-        // processbuilder doesn't give us the pid to send a signal and Windows doesn't have signals.
-        this.sendLine("q\n");
-
-    }
 
     @Override
     public void started(OutputStream inStream, InputStream outStream, InputStream errStream) {}

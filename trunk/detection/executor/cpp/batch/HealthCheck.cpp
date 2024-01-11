@@ -83,7 +83,7 @@ namespace {
         try {
             auto path = BatchExecutorUtil::ExpandFileName(
                 optional_path.value_or(
-                    "${MPF_HOME:-/opt/mpf}/plugins/${COMPONENT_NAME}/health-check.ini"));
+                    "${MPF_HOME:-/opt/mpf}/plugins/${COMPONENT_NAME}/health/health-check.ini"));
             boost::property_tree::ini_parser::read_ini(path, ini_settings);
         }
         catch (const boost::property_tree::ini_parser::ini_parser_error& e) {

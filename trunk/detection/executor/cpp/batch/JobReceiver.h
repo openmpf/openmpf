@@ -71,7 +71,7 @@ public:
     void RejectJob();
 
 private:
-    Properties environment_job_properties_ = BatchExecutorUtil::get_environment_job_properties();
+    Properties environment_job_properties_ = BatchExecutorUtil::GetEnvironmentJobProperties();
 
     LoggerWrapper logger_;
 

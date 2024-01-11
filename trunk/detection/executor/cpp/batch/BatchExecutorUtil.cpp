@@ -38,7 +38,7 @@
 #include "BatchExecutorUtil.h"
 
 
-std::map<std::string, std::string> BatchExecutorUtil::get_environment_job_properties() {
+std::map<std::string, std::string> BatchExecutorUtil::GetEnvironmentJobProperties() {
     static std::string_view property_prefix = "MPF_PROP_";
 
     std::map<std::string, std::string> properties;

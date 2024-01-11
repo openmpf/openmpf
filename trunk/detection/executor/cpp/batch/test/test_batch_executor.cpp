@@ -373,7 +373,7 @@ TEST(BatchExecutorUtil, get_environment_job_properties) {
         {"PROP2", "VALUE2"}
     };
 
-    ASSERT_EQ(expected, BatchExecutorUtil::get_environment_job_properties());
+    ASSERT_EQ(expected, BatchExecutorUtil::GetEnvironmentJobProperties());
 }
 
 
@@ -488,15 +488,15 @@ TEST(HealthCheckTest, TestHealthCheckTimeout) {
     ASSERT_GE(std::chrono::system_clock::now() - time_before_failed_check, 1s)
         << "When a health check fails, the call to HealthCheck::Check should wait the cool down period before returning.";
     ASSERT_EQ(1, failure_counter.counter);
+    // The call to check should take much less than 900ms, but we do not want the test to fail
+    // because it was run on a machine with a high load. Any value less than 1s is sufficient to
+    // to verify the cooldown period was not used.
     ASSERT_LE(failure_counter.last_failure_time - time_before_failed_check, 900ms)
         << "When a health check fails, the call to HealthCheck::Check should not wait before calling the failure callback.";
 
     auto time_before_final_check = std::chrono::system_clock::now();
     ASSERT_THROW({health_check.Check(test_component, failure_counter);}, FailedHealthCheck);
     auto time_in_final_health_check = std::chrono::system_clock::now() - time_before_final_check;
-    // The call to check should take much less than 900ms, but we do not want the test to fail
-    // because it was run on a machine with a high load. Any value less than 1s is sufficient to
-    // to verify the cooldown period was not used.
     ASSERT_LE(time_in_final_health_check, 900ms)
         << "The call to HealthCheck::Check should not wait the cooldown period before throwing.";
     ASSERT_EQ(2, failure_counter.counter);

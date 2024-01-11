@@ -33,7 +33,7 @@
 
 
 namespace BatchExecutorUtil {
-    std::map<std::string, std::string> get_environment_job_properties();
+    std::map<std::string, std::string> GetEnvironmentJobProperties();
 
     bool EqualsIgnoreCase(std::string_view s1, std::string_view s2);
 

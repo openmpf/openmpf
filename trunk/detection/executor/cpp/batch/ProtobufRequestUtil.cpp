@@ -58,14 +58,14 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
         }
 
         MPFImageLocation ConvertFeedForwardLocation(
-                const mpf_buffers::ImageLocation& ff_locaction) {
+                const mpf_buffers::ImageLocation& ff_location) {
             return {
-                ff_locaction.x_left_upper(),
-                ff_locaction.y_left_upper(),
-                ff_locaction.width(),
-                ff_locaction.height(),
-                ff_locaction.confidence(),
-                GetProperties(ff_locaction.detection_properties())
+                ff_location.x_left_upper(),
+                ff_location.y_left_upper(),
+                ff_location.width(),
+                ff_location.height(),
+                ff_location.confidence(),
+                GetProperties(ff_location.detection_properties())
             };
         }
 

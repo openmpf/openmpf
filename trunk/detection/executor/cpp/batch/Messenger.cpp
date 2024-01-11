@@ -154,6 +154,12 @@ std::unique_ptr<cms::Connection> Messenger::CreateConnection(
     bool hasPrefetchSetToZero
         = broker_uri.find("jms.prefetchPolicy.all=0") != std::string_view::npos;
     if (!hasPrefetch || hasPrefetchSetToZero) {
+        // Since the consumer is slow, it is best to set the prefetch size to 0. When the
+        // connection string sets prefetch to 0, the CMS library ends up setting it to 1, unless we
+        // create the DefaultPrefetchPolicy object. If the connection string omits the prefetch
+        // policy or sets it to 0, we use the DefaultPrefetchPolicy object. If the connection
+        // string sets the prefetch policy to something other than 0, we allow the CMS library to
+        // handle it, because it handles non-zero prefetch policies correctly.
         auto policy = std::make_unique<activemq::core::policies::DefaultPrefetchPolicy>();
         policy->setQueuePrefetch(0);
         policy->setTopicPrefetch(0);

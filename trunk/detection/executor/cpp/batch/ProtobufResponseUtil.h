@@ -26,19 +26,54 @@
 
 #pragma once
 
-#include <map>
-#include <optional>
-#include <string>
 #include <string_view>
+#include <vector>
+
+#include <MPFDetectionComponent.h>
+#include <MPFDetectionObjects.h>
+
+#include "detection.pb.h"
+#include "JobContext.h"
+
+namespace MPF::COMPONENT::ProtobufResponseUtil {
+    namespace detail {
+        namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
+
+        mpf_buffers::DetectionResponse InitDetectionResponse(const JobContext& context);
+
+        std::vector<unsigned char> Serialize(
+                const mpf_buffers::DetectionResponse& detection_response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFVideoTrack> &tracks,
+                mpf_buffers::DetectionResponse& response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFImageLocation>& tracks,
+                mpf_buffers::DetectionResponse& response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFAudioTrack>& tracks,
+                mpf_buffers::DetectionResponse& response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFGenericTrack>& tracks,
+                mpf_buffers::DetectionResponse& response);
+    }
 
 
-namespace BatchExecutorUtil {
-    std::map<std::string, std::string> GetEnvironmentJobProperties();
+    template <typename TResp>
+    std::vector<unsigned char> PackResponse(const JobContext& context, const TResp& results) {
+        auto detection_response = detail::InitDetectionResponse(context);
+        detail::AddToProtobuf(context, results, detection_response);
+        return detail::Serialize(detection_response);
+    }
 
-    bool EqualsIgnoreCase(std::string_view s1, std::string_view s2);
-
-    std::string ExpandFileName(std::string_view file_name);
-
-    /** Gets the specified environment variable if it exists and is not the empty string. */
-    std::optional<std::string> GetEnv(std::string_view name);
-};
+    std::vector<unsigned char> PackErrorResponse(
+            const JobContext& context, MPFDetectionError error_code,
+            std::string_view explanation);
+}

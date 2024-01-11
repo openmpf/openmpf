@@ -37,9 +37,10 @@
 #include <MPFDetectionException.h>
 
 #include "../PythonComponentHandle.h"
-#include "../MPFMessenger.h"
+#include "../Messenger.h"
 #include "../BatchExecutorUtil.h"
-#include "../LazyLoggerWrapper.h"
+#include "../LoggerWrapper.h"
+#include "../HealthCheck.h"
 
 using namespace MPF::COMPONENT;
 
@@ -50,33 +51,26 @@ log4cxx::LoggerPtr get_logger() {
     return logger;
 }
 
-std::string get_env_default(const std::string &var_name, const std::string &default_value = {}) {
-    char * var_value_ptr = std::getenv(var_name.c_str());
-    if (var_value_ptr) {
-        return var_value_ptr;
-    }
-    return default_value;
-}
 
 void init_python_path() {
     static bool initialized = false;
     if (initialized) {
         return;
     }
+    using BatchExecutorUtil::GetEnv;
 
-    std::string python_path = get_env_default("PYTHONPATH");
+    std::string python_path = GetEnv("PYTHONPATH").value_or("");
     python_path += ':';
 
-    std::string home_dir = get_env_default("HOME", "/home/mpf");
+    std::string home_dir = GetEnv("HOME").value_or("/home/mpf");
     python_path += home_dir + "/openmpf-projects/openmpf-python-component-sdk/detection/api:";
     python_path += home_dir + "/mpf-sdk-install/python/site-packages:";
 
-    std::string mpf_sdk_install = get_env_default("MPF_SDK_INSTALL_PATH");
-    if (!mpf_sdk_install.empty()) {
-        python_path += mpf_sdk_install + "/python/site-packages:";
+    if (auto mpf_sdk_install = GetEnv("MPF_SDK_INSTALL_PATH")) {
+        python_path += *mpf_sdk_install + "/python/site-packages:";
     }
 
-    std::string mpf_home = get_env_default("MPF_HOME", "/opt/mpf");
+    std::string mpf_home = GetEnv("MPF_HOME").value_or("/opt/mpf");
     python_path += mpf_home + "/python/site-packages";
 
     setenv("PYTHONPATH", python_path.c_str(), true);
@@ -88,7 +82,7 @@ void init_python_path() {
 PythonComponentHandle get_component(const std::string &file_name) {
     init_python_path();
     return PythonComponentHandle(
-            LazyLoggerWrapper<PythonLogger>("DEBUG", "DEBUG", "TestComponent"),
+            LoggerWrapper{"DEBUG", std::make_unique<PythonLogger>("DEBUG", "TestComponent")},
             "test_python_components/" + file_name);
 }
 
@@ -328,36 +322,35 @@ TEST(PythonComponentHandleTest, TestDetectionExceptionTranslation) {
 
 
 TEST(TestRestrictMediaTypes, CanCreateRestrictMediaTypeSelector) {
-    using messenger_t = MPFMessenger<LazyLoggerWrapper<PythonLogger>>;
-    auto restrict_media_types = messenger_t::RESTRICT_MEDIA_TYPES_ENV_NAME;
+    auto restrict_media_types = Messenger::RESTRICT_MEDIA_TYPES_ENV_NAME;
     auto initial_value =  std::getenv("RESTRICT_MEDIA_TYPES");
 
     unsetenv(restrict_media_types);
-    ASSERT_EQ("", messenger_t::GetMediaTypeSelector());
+    ASSERT_EQ(std::nullopt, Messenger::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "", true);
-    ASSERT_EQ("", messenger_t::GetMediaTypeSelector());
+    ASSERT_EQ(std::nullopt, Messenger::GetMediaTypeSelector());
 
     setenv(restrict_media_types, ",", true);
-    ASSERT_EQ("", messenger_t::GetMediaTypeSelector());
+    ASSERT_EQ(std::nullopt, Messenger::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "VIDEO", true);
-    ASSERT_EQ("MediaType in ('VIDEO')", messenger_t::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO')", Messenger::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "VIDEO, IMAGE", true);
-    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", messenger_t::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", Messenger::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "VIDEO,,IMAGE", true);
-    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", messenger_t::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", Messenger::GetMediaTypeSelector());
 
     setenv(restrict_media_types, " VIDEO,  IMaGe ,  audio,", true);
-    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE', 'AUDIO')", messenger_t::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE', 'AUDIO')", Messenger::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "HELLO", true);
-    ASSERT_THROW(messenger_t::GetMediaTypeSelector(), std::invalid_argument);
+    ASSERT_THROW(Messenger::GetMediaTypeSelector(), std::invalid_argument);
 
     setenv(restrict_media_types, "VIDEO, HELLO", true);
-    ASSERT_THROW(messenger_t::GetMediaTypeSelector(), std::invalid_argument);
+    ASSERT_THROW(Messenger::GetMediaTypeSelector(), std::invalid_argument);
 
     if (initial_value == nullptr) {
         unsetenv(restrict_media_types);
@@ -380,5 +373,176 @@ TEST(BatchExecutorUtil, get_environment_job_properties) {
         {"PROP2", "VALUE2"}
     };
 
-    ASSERT_EQ(expected, BatchExecutorUtil::get_environment_job_properties());
+    ASSERT_EQ(expected, BatchExecutorUtil::GetEnvironmentJobProperties());
+}
+
+
+TEST(BatchExecutorUtil, TestExpandWord) {
+    setenv("MPF_TEST_VAR", "Hello", 1);
+    unsetenv("MPF_TEST_MISSING_VAR");
+    auto input = "$MPF_TEST_VAR, ${MPF_TEST_MISSING_VAR:-world}!";
+    ASSERT_EQ("Hello, world!", BatchExecutorUtil::ExpandFileName(input));
+}
+
+
+struct TestComponent {
+    int num_detections;
+
+    explicit TestComponent(int num_detections = 0) : num_detections{num_detections} {
+    }
+
+    std::vector<MPFImageLocation> GetDetections(const MPFImageJob& job) {
+        // Use a file path we know will exist, because the health check will fail to initialize
+        // the media file does not exist.
+        EXPECT_EQ(job.data_uri, "test-health-check.ini");
+        EXPECT_FALSE(job.has_feed_forward_location);
+
+        EXPECT_EQ(job.job_properties.size(), 2);
+        EXPECT_EQ(job.job_properties.at("job prop1"), "job value1");
+        EXPECT_EQ(job.job_properties.at("job prop2"), "job value2");
+
+        EXPECT_EQ(job.media_properties.size(), 2);
+        EXPECT_EQ(job.media_properties.at("media prop1"), "media value1");
+        EXPECT_EQ(job.media_properties.at("media prop2"), "media value=2");
+
+        return std::vector<MPFImageLocation>(num_detections);
+    }
+
+    std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob&) {
+        ADD_FAILURE() << "Wrong job type.";
+        throw std::runtime_error{"Wrong job type."};
+    }
+
+    std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob&) {
+        ADD_FAILURE() << "Wrong job type.";
+        throw std::runtime_error{"Wrong job type."};
+    }
+
+    std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob&) {
+        ADD_FAILURE() << "Wrong job type.";
+        throw std::runtime_error{"Wrong job type."};
+    }
+};
+
+struct FailureCounter {
+    int counter = 0;
+    std::chrono::system_clock::time_point last_failure_time;
+
+    void operator()() {
+        counter++;
+        last_failure_time = std::chrono::system_clock::now();
+    }
+};
+
+
+TEST(HealthCheckTest, TestHealthCheck) {
+    init_python_path();
+
+    setenv("HEALTH_CHECK", "ENABLED", 1);
+    setenv("HEALTH_CHECK_RETRY_MAX_ATTEMPTS", "2", 1);
+
+    LoggerWrapper logger{"DEBUG", std::make_unique<PythonLogger>("DEBUG", "TestComponent")};
+
+    HealthCheck health_check{logger, "test-health-check.ini"};
+    FailureCounter failure_counter;
+
+    TestComponent test_component{4};
+    ASSERT_TRUE(health_check.Check(test_component, failure_counter));
+    ASSERT_EQ(0, failure_counter.counter);
+
+    test_component.num_detections = 1;
+    ASSERT_FALSE(health_check.Check(test_component, failure_counter));
+    ASSERT_EQ(1, failure_counter.counter);
+
+    ASSERT_THROW({health_check.Check(test_component, failure_counter);}, FailedHealthCheck);
+    ASSERT_EQ(2, failure_counter.counter);
+}
+
+
+TEST(HealthCheckTest, TestHealthCheckTimeout) {
+    using namespace std::literals::chrono_literals;
+    init_python_path();
+
+    setenv("HEALTH_CHECK", "ENABLED", 1);
+    setenv("HEALTH_CHECK_TIMEOUT", "1", 1);
+    setenv("HEALTH_CHECK_RETRY_MAX_ATTEMPTS", "2", 1);
+
+    LoggerWrapper logger{"DEBUG", std::make_unique<PythonLogger>("DEBUG", "TestComponent")};
+    HealthCheck health_check{logger, "test-health-check.ini"};
+    FailureCounter failure_counter;
+
+    TestComponent test_component{4};
+    ASSERT_TRUE(health_check.Check(test_component, failure_counter));
+    ASSERT_EQ(0, failure_counter.counter);
+
+    test_component.num_detections = 1;
+    ASSERT_TRUE(health_check.Check(test_component, failure_counter))
+        << "While the health check is in the cooldown period, it should report the result of the last check.";
+    ASSERT_EQ(0, failure_counter.counter);
+
+    // Wait until cool down period is over.
+    std::this_thread::sleep_for(1s);
+
+    auto time_before_failed_check = std::chrono::system_clock::now();
+    ASSERT_FALSE(health_check.Check(test_component, failure_counter));
+    ASSERT_GE(std::chrono::system_clock::now() - time_before_failed_check, 1s)
+        << "When a health check fails, the call to HealthCheck::Check should wait the cool down period before returning.";
+    ASSERT_EQ(1, failure_counter.counter);
+    // The call to check should take much less than 900ms, but we do not want the test to fail
+    // because it was run on a machine with a high load. Any value less than 1s is sufficient to
+    // to verify the cooldown period was not used.
+    ASSERT_LE(failure_counter.last_failure_time - time_before_failed_check, 900ms)
+        << "When a health check fails, the call to HealthCheck::Check should not wait before calling the failure callback.";
+
+    auto time_before_final_check = std::chrono::system_clock::now();
+    ASSERT_THROW({health_check.Check(test_component, failure_counter);}, FailedHealthCheck);
+    auto time_in_final_health_check = std::chrono::system_clock::now() - time_before_final_check;
+    ASSERT_LE(time_in_final_health_check, 900ms)
+        << "The call to HealthCheck::Check should not wait the cooldown period before throwing.";
+    ASSERT_EQ(2, failure_counter.counter);
+}
+
+
+
+TEST(TestLogger, CanSetAndRestoreJobName) {
+    auto logger = std::make_shared<PythonLogger>("DEBUG", "TestComponent");
+    auto job_name = std::make_shared<std::string>();
+
+    ASSERT_EQ("", *job_name);
+    {
+        auto ctx = JobLogContext("job1", job_name, logger);
+        ASSERT_EQ("job1", *job_name);
+        {
+            auto ctx2 = JobLogContext("job2", job_name, logger);
+            ASSERT_EQ("job2", *job_name);
+            {
+                auto ctx3 = JobLogContext("job3", job_name, logger);
+                ASSERT_EQ("job3", *job_name);
+            }
+            ASSERT_EQ("job2", *job_name);
+        }
+        ASSERT_EQ("job1", *job_name);
+    }
+
+    ASSERT_EQ("", *job_name);
+    {
+        auto ctx = JobLogContext("job1", job_name, logger);
+        ASSERT_EQ("job1", *job_name);
+        {
+            auto ctx2 = JobLogContext("job2", job_name, logger);
+            ASSERT_EQ("job2", *job_name);
+            {
+                auto ctx3 = JobLogContext("job3", job_name, logger);
+                ASSERT_EQ("job3", *job_name);
+            }
+            ASSERT_EQ("job2", *job_name);
+            {
+                auto ctx4 = JobLogContext("job4", job_name, logger);
+                ASSERT_EQ("job4", *job_name);
+            }
+            ASSERT_EQ("job2", *job_name);
+        }
+        ASSERT_EQ("job1", *job_name);
+    }
+    ASSERT_EQ("", *job_name);
 }

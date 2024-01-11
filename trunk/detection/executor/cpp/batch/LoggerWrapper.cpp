@@ -24,21 +24,26 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#pragma once
-
-#include <map>
-#include <optional>
-#include <string>
-#include <string_view>
+#include "LoggerWrapper.h"
 
 
-namespace BatchExecutorUtil {
-    std::map<std::string, std::string> GetEnvironmentJobProperties();
+JobLogContext::JobLogContext(
+        std::string_view new_job,
+        std::shared_ptr<std::string> logger_job_ref,
+        std::shared_ptr<ILogger> logger_impl)
+    : logger_job_ref_{std::move(logger_job_ref)}
+    , previous_job_{std::move(*logger_job_ref_)}
+    , logger_impl_{std::move(logger_impl)}
+{
+    *logger_job_ref_ = new_job;
+    logger_impl_->SetJobName(new_job);
+}
 
-    bool EqualsIgnoreCase(std::string_view s1, std::string_view s2);
 
-    std::string ExpandFileName(std::string_view file_name);
-
-    /** Gets the specified environment variable if it exists and is not the empty string. */
-    std::optional<std::string> GetEnv(std::string_view name);
-};
+JobLogContext::~JobLogContext() {
+    // logger_job_ref_ will be null when this instance was passed to a move constructor.
+    if (logger_job_ref_ != nullptr) {
+        *logger_job_ref_ = std::move(previous_job_);
+        logger_impl_->SetJobName(*logger_job_ref_);
+    }
+}

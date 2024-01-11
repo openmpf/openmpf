@@ -26,19 +26,67 @@
 
 #pragma once
 
-#include <map>
-#include <optional>
 #include <string>
-#include <string_view>
+#include <memory>
+#include <variant>
+
+#include <cms/Destination.h>
+
+#include <MPFDetectionComponent.h>
+
+#include "LoggerWrapper.h"
 
 
-namespace BatchExecutorUtil {
-    std::map<std::string, std::string> GetEnvironmentJobProperties();
+namespace MPF::COMPONENT {
 
-    bool EqualsIgnoreCase(std::string_view s1, std::string_view s2);
+using job_variant_t = std::variant<MPFVideoJob, MPFImageJob, MPFAudioJob, MPFGenericJob>;
 
-    std::string ExpandFileName(std::string_view file_name);
 
-    /** Gets the specified environment variable if it exists and is not the empty string. */
-    std::optional<std::string> GetEnv(std::string_view name);
+struct ProtobufMetadata {
+    const long request_id;
+
+    const long media_id;
+
+    const int task_index;
+
+    const std::string task_name;
+
+    const int action_index;
+
+    const std::string action_name;
 };
+
+
+struct AmqMetadata {
+    const std::unique_ptr<cms::Destination> response_queue;
+
+    const int cms_priority;
+
+    const std::string correlation_id;
+
+    const std::string bread_crumb_id;
+
+    const int split_size;
+};
+
+
+struct JobContext {
+    const long job_id;
+
+    const std::string job_name;
+
+    const std::string detection_type;
+
+    const job_variant_t job;
+
+    const MPFDetectionDataType job_type;
+
+    const std::string job_type_name;
+
+    const JobLogContext job_log_context;
+
+    const AmqMetadata amq_metadata;
+
+    const ProtobufMetadata protobuf_metadata;
+};
+}

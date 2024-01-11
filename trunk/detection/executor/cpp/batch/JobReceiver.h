@@ -26,19 +26,59 @@
 
 #pragma once
 
-#include <map>
-#include <optional>
+#include <exception>
 #include <string>
 #include <string_view>
 
+#include <MPFDetectionObjects.h>
 
-namespace BatchExecutorUtil {
-    std::map<std::string, std::string> GetEnvironmentJobProperties();
+#include "BatchExecutorUtil.h"
+#include "JobContext.h"
+#include "Messenger.h"
+#include "ProtobufResponseUtil.h"
+#include "LoggerWrapper.h"
 
-    bool EqualsIgnoreCase(std::string_view s1, std::string_view s2);
 
-    std::string ExpandFileName(std::string_view file_name);
+namespace MPF::COMPONENT {
 
-    /** Gets the specified environment variable if it exists and is not the empty string. */
-    std::optional<std::string> GetEnv(std::string_view name);
+class JobReceiver {
+
+public:
+    JobReceiver(
+            LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue,
+            std::string_view detection_type);
+
+    JobContext GetJob();
+
+    template <typename TResp>
+    void CompleteJob(const JobContext& context, const TResp& results) {
+        try {
+            auto response_bytes = ProtobufResponseUtil::PackResponse(context, results);
+            messenger_.SendResponse(context, response_bytes);
+        }
+        catch (const std::exception& e) {
+            logger_.Error("An error occurred while attempting to send job results: ", e.what());
+            messenger_.Rollback();
+        }
+    }
+
+    void ReportJobError(
+            const JobContext& context, MPFDetectionError error_code,
+            std::string_view explanation);
+
+    void ReportUnsupportedDataType(const JobContext& context);
+
+    void RejectJob();
+
+private:
+    Properties environment_job_properties_ = BatchExecutorUtil::GetEnvironmentJobProperties();
+
+    LoggerWrapper logger_;
+
+    Messenger messenger_;
+
+    std::string detection_type_;
+
+    JobContext TryGetJob();
 };
+}

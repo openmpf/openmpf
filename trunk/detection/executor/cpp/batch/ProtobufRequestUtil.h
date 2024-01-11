@@ -26,19 +26,28 @@
 
 #pragma once
 
-#include <map>
-#include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
+
+#include <MPFDetectionComponent.h>
+
+#include "detection.pb.h"
+#include "JobContext.h"
 
 
-namespace BatchExecutorUtil {
-    std::map<std::string, std::string> GetEnvironmentJobProperties();
+namespace MPF::COMPONENT::ProtobufRequestUtil {
+    namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
 
-    bool EqualsIgnoreCase(std::string_view s1, std::string_view s2);
+    mpf_buffers::DetectionRequest ParseRequest(const std::vector<unsigned char>& bytes);
 
-    std::string ExpandFileName(std::string_view file_name);
+    std::string GetJobName(
+                long job_id, const mpf_buffers::DetectionRequest& detection_request);
 
-    /** Gets the specified environment variable if it exists and is not the empty string. */
-    std::optional<std::string> GetEnv(std::string_view name);
-};
+    job_variant_t CreateComponentJob(
+            std::string_view job_name,
+            const Properties& environment_job_properties,
+            const mpf_buffers::DetectionRequest& detection_request);
+
+    ProtobufMetadata GetMetadata(const mpf_buffers::DetectionRequest& detection_request);
+}

@@ -24,67 +24,75 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-# pragma once
+#pragma once
 
+#include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include <log4cxx/logger.h>
+#include <cms/BytesMessage.h>
+#include <cms/Connection.h>
+#include <cms/Session.h>
+#include <cms/Message.h>
+#include <cms/MessageConsumer.h>
+#include <cms/MessageProducer.h>
 
-#include <DlClassLoader.h>
-#include <MPFDetectionComponent.h>
-#include <MPFDetectionObjects.h>
-
+#include "BatchExecutorUtil.h"
+#include "JobContext.h"
 #include "LoggerWrapper.h"
 
 
 namespace MPF::COMPONENT {
 
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
-
-        void SetRunDirectory(const std::string &run_dir);
-
-        bool Init();
-
-        std::string GetDetectionType();
-
-        bool Supports(MPFDetectionDataType data_type);
-
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
-
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
-
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
-
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
-
-        bool Close();
-
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
+class AmqConnectionInitializationException : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
 
 
-    class CppLogger : public ILogger {
-    public:
-        explicit CppLogger(std::string_view app_dir);
+class Messenger {
+public:
+    Messenger(LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue);
 
-        void Debug(std::string_view message) override;
+    std::unique_ptr<cms::BytesMessage> ReceiveMessage();
 
-        void Info(std::string_view message) override;
+    static AmqMetadata GetAmqMetadata(const cms::Message& message);
 
-        void Warn(std::string_view message) override;
+    void SendResponse(
+            const JobContext& job_context,
+            const std::vector<unsigned char>& response_bytes);
 
-        void Error(std::string_view message) override;
 
-        void Fatal(std::string_view message) override;
+    /**
+     * Returns the job request message to the ActiveMQ broker. The broker will decide whether to
+     * redeliver the message or to send it to the dead letter queue. Rollback is only used when
+     * errors occur before the job is passed to the component or while reporting job results.
+     * Rollback is NOT used when the component's GetDetections method raises an exception unless
+     * sending the error response fails.
+    */
+    void Rollback();
 
-        void SetJobName(std::string_view job_name) override;
 
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
-}
+    static constexpr const char* RESTRICT_MEDIA_TYPES_ENV_NAME = "RESTRICT_MEDIA_TYPES";
+
+    static std::optional<std::string> GetMediaTypeSelector();
+
+private:
+    LoggerWrapper logger_;
+    std::unique_ptr<cms::Connection> connection_;
+    std::unique_ptr<cms::Session> session_;
+    std::unique_ptr<cms::MessageConsumer> request_consumer_;
+    std::unique_ptr<cms::MessageProducer> response_producer_;
+
+    static std::unique_ptr<cms::Connection> CreateConnection(
+            const LoggerWrapper& logger, std::string_view broker_uri);
+
+
+    static std::unique_ptr<cms::MessageConsumer> CreateRequestConsumer(
+            const LoggerWrapper& logger,
+            cms::Session& session,
+            std::string_view request_queue_name);
+};
+};

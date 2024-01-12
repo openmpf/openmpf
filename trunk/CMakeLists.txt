@@ -33,6 +33,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 
+# Needed for VS Code Intellisense
+add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
+
 MESSAGE("CURRENT CMAKE CXX vars")
 # if empty or "Debug", the "-g" flag will be added
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -88,5 +91,3 @@ add_subdirectory(detection/executor/cpp)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)
-
-

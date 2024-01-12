@@ -24,65 +24,26 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-# pragma once
-
-#include <string>
-#include <string_view>
-#include <vector>
-
-#include <log4cxx/logger.h>
-
-#include <DlClassLoader.h>
-#include <MPFDetectionComponent.h>
-#include <MPFDetectionObjects.h>
-
 #include "LoggerWrapper.h"
 
 
-namespace MPF::COMPONENT {
-
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
-
-        void SetRunDirectory(const std::string &run_dir);
-
-        bool Init();
-
-        bool Supports(MPFDetectionDataType data_type);
-
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
-
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
-
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
-
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
-
-        bool Close();
-
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
+JobLogContext::JobLogContext(
+        std::string_view new_job,
+        std::shared_ptr<std::string> logger_job_ref,
+        std::shared_ptr<ILogger> logger_impl)
+    : logger_job_ref_{std::move(logger_job_ref)}
+    , previous_job_{std::move(*logger_job_ref_)}
+    , logger_impl_{std::move(logger_impl)}
+{
+    *logger_job_ref_ = new_job;
+    logger_impl_->SetJobName(new_job);
+}
 
 
-    class CppLogger : public ILogger {
-    public:
-        explicit CppLogger(std::string_view app_dir);
-
-        void Debug(std::string_view message) override;
-
-        void Info(std::string_view message) override;
-
-        void Warn(std::string_view message) override;
-
-        void Error(std::string_view message) override;
-
-        void Fatal(std::string_view message) override;
-
-        void SetJobName(std::string_view job_name) override;
-
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
+JobLogContext::~JobLogContext() {
+    // logger_job_ref_ will be null when this instance was passed to a move constructor.
+    if (logger_job_ref_ != nullptr) {
+        *logger_job_ref_ = std::move(previous_job_);
+        logger_impl_->SetJobName(*logger_job_ref_);
+    }
 }

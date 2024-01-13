@@ -106,7 +106,7 @@ public class TestIoUtils {
 
     @Test
     public void canDetectMimeTypeUsingFile() throws IOException, InterruptedException {
-        assertEquals("audio/x-aac", _ioUtils.getMimeTypeUsingFile(getResourcePath("/samples/green.adts")));
+        assertEquals("audio/x-hx-aac-adts", _ioUtils.getMimeTypeUsingFile(getResourcePath("/samples/green.adts")));
     }
 
     private Path getResourcePath(String subpath) {

@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,9 +112,11 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
                             String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
-
+                            var qualitySelectionProp = combinedProperties.apply(MpfConstants.QUALITY_SELECTION_PROPERTY);
+                            var exemplarPolicy = combinedProperties.apply(ExemplarPolicyUtil.PROPERTY);
                             padTracks(trackCache, media.getId(), actionIndex,
-                                    xPadding, yPadding, frameWidth, frameHeight, updatedTracks);
+                                    xPadding, yPadding, frameWidth, frameHeight, updatedTracks,
+                                    exemplarPolicy, qualitySelectionProp);
                         }
                     } catch (DetectionTransformationException e) {
                         // This should not happen because we checked that the detection properties were valid when the
@@ -235,7 +238,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         track.getConfidence(),
                         goodDetections,
                         track.getTrackProperties(),
-                        track.getExemplarPolicy()));
+                        track.getExemplar()));
             }
             else {
                 _log.warn(String.format("Empty track dropped after removing ill-formed detection(s): %s", track));
@@ -333,7 +336,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
     private void padTracks(TrackCache trackCache, long mediaId, int actionIndex,
                            String xPadding, String yPadding, int frameWidth,
-                           int frameHeight, Collection<Track> tracks) {
+                           int frameHeight, Collection<Track> tracks,
+                           String exemplarPolicy, String qualitySelectionProp) {
         var newTracks = new TreeSet<Track>();
         var shrunkToNothingFrames = IntStream.builder();
 
@@ -347,6 +351,9 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 }
                 newDetections.add(newDetection);
             }
+            var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
+                                              newDetections.first().getMediaOffsetFrame(),
+                                              newDetections.last().getMediaOffsetFrame(), newDetections);
 
             newTracks.add(new Track(
                     track.getJobId(),
@@ -361,7 +368,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getConfidence(),
                     newDetections,
                     track.getTrackProperties(),
-                    track.getExemplarPolicy()));
+                    exemplar));
         }
 
         Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()

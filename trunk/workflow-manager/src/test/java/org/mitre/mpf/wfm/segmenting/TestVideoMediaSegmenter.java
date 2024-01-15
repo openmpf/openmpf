@@ -79,7 +79,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
     public void canCreateFirstStageMessages() {
         Media media = createTestMedia();
         DetectionContext context = createTestDetectionContext(
-                0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+                0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
 
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
@@ -108,7 +108,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 ),
                 List.of());
         DetectionContext context = createTestDetectionContext(
-                0, Map.of("FEED_FORWARD_TYPE", "FRAME"), Set.of());
+                0, Map.of("FEED_FORWARD_TYPE", "FRAME"), Set.of(), null);
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(4, detectionRequests.size());
@@ -131,7 +131,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 )
         );
         DetectionContext context = createTestDetectionContext(
-                0,  Map.of(), Set.of());
+                0,  Map.of(), Set.of(), null);
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(6, detectionRequests.size());
@@ -151,7 +151,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         var context = new DetectionContext(
                 1, 0, "STAGE_NAME", 0, "ACTION_NAME",
                 true, List.of(), Set.of(),
-                segmentingPlan);
+                segmentingPlan, null);
 
         var media = createTestMediaWithFps(
                 List.of(
@@ -176,7 +176,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 List.of(new MediaRange(100, 250)),
                 List.of()
         );
-        DetectionContext context = createTestDetectionContext(0, Map.of(), Set.of());
+        DetectionContext context = createTestDetectionContext(0, Map.of(), Set.of(), null);
 
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
@@ -195,7 +195,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         Set<Track> tracks = createTestTracks();
 
-        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
+        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks, "CONFIDENCE");
 
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
@@ -222,7 +222,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         Set<Track> tracks = createTestTracks();
 
         var detectionContext = createTestDetectionContext(
-                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
+                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
                 .thenReturn(tracks.stream());
@@ -271,15 +271,15 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
 
     @Test
-    public void canCreateFeedForwardMessagesWithTopConfidenceCount() {
+    public void canCreateFeedForwardMessagesWithTopQualityCount() {
         Media media = createTestMedia();
 
         Set<Track> tracks = createTestTracks();
 
         var detectionContext = createTestDetectionContext(
                 1,
-                ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_TOP_CONFIDENCE_COUNT", "2"),
-                tracks);
+                ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_TOP_QUALITY_COUNT", "2"),
+                tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
                 .thenReturn(tracks.stream());
@@ -330,11 +330,11 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
     public void noMessagesCreatedWhenNoTracks() {
         Media media = createTestMedia();
 
-        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet());
+        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet(), null);
         assertTrue(_videoMediaSegmenter.createDetectionRequests(media, context).isEmpty());
 
         DetectionContext feedForwardContext = createTestDetectionContext(
-                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
         assertTrue(_videoMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
     }
 
@@ -391,14 +391,26 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
 
     private static Set<Track> createTestTracks() {
-        Track shortTrack = createTrack(createDetection(5, 5));
+        Track shortTrack = createTrack(createDetection(5, 5, "", 1));
 
         Track longTrack = createTrack(
-                createDetection(2, 2),
-                createDetection(20, 20),
-                createDetection(40, 40),
-                createDetection(50, 20));
+                createDetection(2, 2, "", 1),
+                createDetection(20, 20, "", 1),
+                createDetection(40, 40, "", 1),
+                createDetection(50, 20, "", 1));
 
         return ImmutableSet.of(shortTrack, longTrack);
     }
+    private static Set<Track> createTestTracksWithQualityProp() {
+        Track shortTrack = createTrack(createDetection(5, 5, "QUALITY_PROP", (float)0.5));
+
+        Track longTrack = createTrack(
+                createDetection(2, 2, "QUALITY_PROP", (float)0.1),
+                createDetection(20, 20, "QUALITY_PROP", (float)0.3),
+                createDetection(40, 40, "QUALITY_PROP", (float)0.4),
+                createDetection(50, 20, "QUALITY_PROP", (float)0.5));
+
+        return ImmutableSet.of(shortTrack, longTrack);
+    }
+
 }

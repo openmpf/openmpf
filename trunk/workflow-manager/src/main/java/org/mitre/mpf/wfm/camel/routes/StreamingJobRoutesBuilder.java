@@ -41,7 +41,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
-import org.mitre.mpf.wfm.util.TopConfidenceUtil;
+import org.mitre.mpf.wfm.util.TopQualityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -160,7 +160,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 .map(StreamingJobRoutesBuilder::convertDetection)
                 .collect(toCollection(TreeSet::new));
 
-        JsonStreamingDetectionOutputObject exemplar = TopConfidenceUtil.getTopConfidenceItem(
+        JsonStreamingDetectionOutputObject exemplar = TopQualityUtil.getTopConfidenceItem(
                 detections, JsonStreamingDetectionOutputObject::getConfidence);
 
         return new JsonStreamingTrackOutputObject(

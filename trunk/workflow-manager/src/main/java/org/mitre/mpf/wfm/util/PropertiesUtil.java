@@ -497,7 +497,7 @@ public class PropertiesUtil {
     }
 
     public String getQualitySelectionProperty() {
-        return _mpfPropertiesConfig.getString("detection.quality.selection.prop")
+        return _mpfPropertiesConfig.getString("detection.quality.selection.prop");
     }
 
     //

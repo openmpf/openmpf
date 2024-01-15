@@ -24,7 +24,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.wfm.service;
 
 import java.lang.NumberFormatException;
 import java.lang.NullPointerException;
@@ -33,20 +33,28 @@ import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-public class TopQualityUtil {
+public class TopQualitySelectionService {
 
-    private TopQualityUtil() {}
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    public static Detection getTopQualityItem(
+
+    private TopQualitySelectionService(InProgressBatchJobsService inProgressJobs) {
+        _inProgressJobs = inProgressJobs;
+    }
+
+    public static Detection getTopQualityItem(BatchJob job,
             Collection<Detection> detections, String qualityProperty) {
         return detections.stream()
-            .max(getMaxQualityComparator(d -> getQuality(d, qualityProperty.toLowerCase())))
+            .max(getMaxQualityComparator(d -> getQuality(d, qualityProperty)))
             .orElse(null);
     }
 
     public static Collection<Detection> getTopQualityDetections(
+            BatchJob job,
             Collection<Detection> allDetections, int topQualityCount,
             String qualityProperty) {
 
@@ -75,7 +83,9 @@ public class TopQualityUtil {
 
     public static double getQuality(Detection det, String qualityProperty) {
         try {
-            if (qualityProperty.toLowerCase().equals("confidence"))
+            if ((qualityProperty == null) ||
+                    StringUtils.isBlank(qualityProperty) ||
+                    qualityProperty.toLowerCase().equals("confidence"))
                 return det.getConfidence();
             else
                 return Double.parseDouble(det.getDetectionProperties().get(qualityProperty));
@@ -84,15 +94,29 @@ public class TopQualityUtil {
             String errMsg = "The quality selection property \"" + qualityProperty + "\" could not be converted to a double value: " + det.getDetectionProperties().get(qualityProperty);
             throw new NumberFormatException(errMsg);
         }
-        catch(NullPointerException e) {
-            String errMsg = "The value of quality selection property \"" + qualityProperty + "\" is null.";
-            throw new NumberFormatException(errMsg);
-       }
     }
 
     private static <T extends Comparable<T>>
             Comparator<T> getMaxQualityComparator(ToDoubleFunction<T> qualityGetter) {
         return Comparator.comparingDouble(qualityGetter)
+                .thenComparing(Comparator.reverseOrder());
+    }
+
+    // These are here because the StreamingJobRoutesBuilder uses them. The getQuality function
+    // above can't be made generic because it calls getConfidence() or getDetectionProperties()
+    // on its input detection object. Not sure we need to go through the magic to make that
+    // work simply to support streaming.
+    
+    public static <T extends Comparable<T>> T getTopConfidenceItem(
+            Collection<T> items, ToDoubleFunction<T> confidenceGetter) {
+        return items.stream()
+            .max(getMaxConfidenceComparator(confidenceGetter))
+            .orElse(null);
+    }
+
+    private static <T extends Comparable<T>>
+            Comparator<T> getMaxConfidenceComparator(ToDoubleFunction<T> confidenceGetter) {
+        return Comparator.comparingDouble(confidenceGetter)
                 .thenComparing(Comparator.reverseOrder());
     }
 }

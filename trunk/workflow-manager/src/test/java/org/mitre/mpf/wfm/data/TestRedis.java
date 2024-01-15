@@ -84,6 +84,7 @@ public class TestRedis {
 
     @BeforeClass
     public static void initClass() {
+        var detections = createDetections();
         var t1 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
@@ -95,9 +96,9 @@ public class TestRedis {
                 5423,
                 0,
                 0.5f,
-                createDetections(),
+                detections,
                 ImmutableSortedMap.of("a", "b", "c", "d"),
-                "");
+                detections.get(1));
         var t2 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
@@ -109,9 +110,9 @@ public class TestRedis {
                 5433,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 Map.of(),
-                "");
+                detections.get(1));
         _currentTracks = ImmutableSortedSet.of(t1, t2);
 
         _differentTaskTrack = new Track(
@@ -125,9 +126,9 @@ public class TestRedis {
                 5433,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 ImmutableSortedMap.of("e", "f"),
-                "");
+                detections.get(1));
 
         _differentJobTrack = new Track(
                 TEST_JOB_ID + 1,
@@ -140,9 +141,9 @@ public class TestRedis {
                 5433,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 Map.of(),
-                "");
+                detections.get(1));
     }
 
 
@@ -187,7 +188,7 @@ public class TestRedis {
 
         assertTrue(_redis.getTracks(1, TEST_MEDIA_ID, 0, 0).isEmpty());
 
-
+        var detections = createDetections();
         var replacementTrack = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
@@ -199,9 +200,9 @@ public class TestRedis {
                 5424,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 ImmutableSortedMap.of("a", "b", "c", "d", "e", "f"),
-                "");
+                detections.get(1));
         _redis.setTracks(TEST_JOB_ID, TEST_MEDIA_ID, 0, 0,
                          Collections.singletonList(replacementTrack));
 

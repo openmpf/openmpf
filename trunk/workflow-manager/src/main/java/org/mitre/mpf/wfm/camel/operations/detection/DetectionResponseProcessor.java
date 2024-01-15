@@ -28,6 +28,8 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
+
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -43,7 +45,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
-import org.mitre.mpf.wfm.util.TopQualityUtil;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +173,9 @@ public class DetectionResponseProcessor
     private double calculateQualityThreshold(String qualitySelectionProperty,
                                              BatchJob job, Media media, Action action) {
         String qualityThresholdProperty;
-        if (qualitySelectionProperty.toLowerCase().equals("confidence")) {
+        if  ((qualitySelectionProperty == null) ||
+                StringUtils.isBlank(qualitySelectionProperty) ||
+                qualitySelectionProperty.toLowerCase().equals("confidence")) {
             qualityThresholdProperty = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action);
         }
@@ -230,7 +233,9 @@ public class DetectionResponseProcessor
             }
 
             double trackQuality = qualityThreshold + 1;
-            if (qualitySelectionProp.toLowerCase().equals("confidence")) {
+            if ((qualitySelectionProp == null) ||
+                    StringUtils.isBlank(qualitySelectionProp) || 
+                    qualitySelectionProp.toLowerCase().equals("confidence")) {
                 trackQuality = objectTrack.getConfidence();
             }
             else {  
@@ -252,7 +257,14 @@ public class DetectionResponseProcessor
                 int stopOffsetTime  = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStopFrame());
 
                 try {
-                    ImmutableSortedSet<Detection> detections = (qualitySelectionProp.toLowerCase().equals("confidence")) ?
+                    String qualityProp;
+                    if ((qualitySelectionProp == null) || StringUtils.isBlank(qualitySelectionProp)) {
+                        qualityProp = "CONFIDENCE";
+                    }
+                    else {
+                        qualityProp = qualitySelectionProp;
+                    }
+                    ImmutableSortedSet<Detection> detections = (qualityProp.toLowerCase().equals("confidence")) ?
                         objectTrack.getFrameLocationsList()
                             .stream()
                             .filter(flm -> flm.getImageLocation().getConfidence() >= qualityThreshold)
@@ -261,10 +273,13 @@ public class DetectionResponseProcessor
                         : objectTrack.getFrameLocationsList()
                             .stream()
                             .map(flm -> toDetection(flm, frameTimeInfo))
-                            .filter(d -> TopQualityUtil.getQuality(d, qualitySelectionProp) >= qualityThreshold)
+                            .filter(d -> TopQualityUtil.getQuality(d, qualityProp) >= qualityThreshold)
                             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
                     if (!detections.isEmpty()) {
+                        var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
+                                                                      detections.first().getMediaOffsetFrame(),
+                                                                      detections.last().getMediaOffsetFrame(), detections);
                         Track track = new Track(
                                 jobId,
                                 detectionResponse.getMediaId(),
@@ -278,7 +293,7 @@ public class DetectionResponseProcessor
                                 (float)trackQuality,
                                 detections,
                                 trackProperties,
-                                exemplarPolicy);
+                                exemplar);
                         _inProgressJobs.addTrack(track);
                     }
                 }
@@ -324,7 +339,9 @@ public class DetectionResponseProcessor
             }
 
             double trackQuality = qualityThreshold + 1;
-            if (qualitySelectionProp.toLowerCase().equals("confidence")) {
+            if ((qualitySelectionProp == null) ||
+                    StringUtils.isBlank(qualitySelectionProp) ||
+                    qualitySelectionProp.toLowerCase().equals("confidence")) {
                 trackQuality = objectTrack.getConfidence();
             }
             else {  
@@ -364,7 +381,7 @@ public class DetectionResponseProcessor
                         (float)trackQuality,
                         ImmutableSortedSet.of(detection),
                         trackProperties,
-                        "");
+                        detection);
 
                 _inProgressJobs.addTrack(track);
             }
@@ -397,7 +414,9 @@ public class DetectionResponseProcessor
             }
 
             double imageQuality = qualityThreshold + 1;
-            if (qualitySelectionProp.toLowerCase().equals("confidence")) {
+            if ((qualitySelectionProp == null) ||
+                    StringUtils.isBlank(qualitySelectionProp) || 
+                    qualitySelectionProp.toLowerCase().equals("confidence")) {
                 imageQuality = location.getConfidence();
             }
             else {  
@@ -414,6 +433,7 @@ public class DetectionResponseProcessor
             }
 
             if (imageQuality >= qualityThreshold) {
+                var exemplar = toDetection(location, 0, 0);
                 Track track = new Track(
                         jobId,
                         detectionResponse.getMediaId(),
@@ -425,9 +445,9 @@ public class DetectionResponseProcessor
                         0,
                         mergedTaskIdx,
                         (float)imageQuality,
-                        ImmutableSortedSet.of(toDetection(location, 0, 0)),
+                        ImmutableSortedSet.of(exemplar),
                         locationProperties,
-                        "");
+                        exemplar);
                 _inProgressJobs.addTrack(track);
             }
         }
@@ -459,7 +479,9 @@ public class DetectionResponseProcessor
             }
 
             double trackQuality = qualityThreshold + 1;
-            if (qualitySelectionProp.toLowerCase().equals("confidence")) {
+            if ((qualitySelectionProp == null) ||
+                    StringUtils.isBlank(qualitySelectionProp) || 
+                    qualitySelectionProp.toLowerCase().equals("confidence")) {
                 trackQuality = objectTrack.getConfidence();
             }
             else {  
@@ -512,7 +534,7 @@ public class DetectionResponseProcessor
                 (float)trackQuality,
                 ImmutableSortedSet.of(detection),
                 trackProperties,
-                "");
+                detection);
 
         _inProgressJobs.addTrack(track);
     }

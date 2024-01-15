@@ -62,7 +62,7 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 	public void canCreateFirstStageMessages() {
 		Media media = createTestMedia();
 		DetectionContext context = createTestDetectionContext(
-				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
 
 		var detectionRequests = _imageMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
@@ -84,7 +84,7 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
 		Set<Track> tracks = createTestTracks();
 
-		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
+		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks, null);
 
 		var detectionRequests = _imageMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
@@ -106,7 +106,7 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 		Set<Track> tracks = createTestTracks();
 
 		DetectionContext context = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
@@ -138,10 +138,10 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 		Media media = createTestMedia();
 
 		DetectionContext feedForwardContext = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
 		assertTrue(_imageMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
 
-		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet());
+		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet(), null);
 		assertTrue(_imageMediaSegmenter.createDetectionRequests(media, context).isEmpty());
 	}
 
@@ -159,8 +159,8 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
 	private static Set<Track> createTestTracks() {
 		return ImmutableSet.of(
-				createTrack(createDetection(0, 5)),
-				createTrack(createDetection(0, 10)));
+				createTrack(createDetection(0, 5, "CONFIDENCE", (float)0.1)),
+				createTrack(createDetection(0, 10, "CONFIDENCE", (float)0.5)));
 
 	}
 

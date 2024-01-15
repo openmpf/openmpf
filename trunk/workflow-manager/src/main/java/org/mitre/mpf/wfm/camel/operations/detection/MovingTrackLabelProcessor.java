@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -77,7 +78,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
         var task = job.getPipelineElements().getTask(trackCache.getTaskIndex());
 
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-           var action = job.getPipelineElements().getAction(
+            var action = job.getPipelineElements().getAction(
                     trackCache.getTaskIndex(), actionIndex);
 
            for (var media : job.getMedia())  {
@@ -94,18 +95,21 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                    continue;
                }
 
-               var movingTracksOnly = Boolean.parseBoolean(
+                var movingTracksOnly = Boolean.parseBoolean(
                        combinedProperties.apply(MpfConstants.MOVING_TRACKS_ONLY));
-               var maxIou = Double.parseDouble(
+                var maxIou = Double.parseDouble(
                        combinedProperties.apply(MpfConstants.MOVING_TRACK_MAX_IOU));
-               int minMovingDetections = Integer.parseInt(
+                int minMovingDetections = Integer.parseInt(
                        combinedProperties.apply(MpfConstants.MOVING_TRACK_MIN_DETECTIONS));
-
+            
+                String qualitySelectionProp = combinedProperties.apply(MpfConstants.QUALITY_SELECTION_PROPERTY);
+                String exemplarPolicy = combinedProperties.apply(ExemplarPolicyUtil.PROPERTY);
 
                 var originalTracks = trackCache.getTracks(media.getId(), actionIndex);
 
                var labeledTracks = updateMovingTracks(movingTracksOnly, maxIou,
-                                                      minMovingDetections, originalTracks);
+                                                      minMovingDetections, originalTracks,
+                                                      exemplarPolicy, qualitySelectionProp);
 
                int numDropped = originalTracks.size() - labeledTracks.size();
                if (numDropped != 0) {
@@ -123,22 +127,23 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
 
     private static SortedSet<Track> updateMovingTracks(
             boolean movingTracksOnly, double maxIou, int minMovingDetections,
-            Collection<Track> originalTracks) {
+            Collection<Track> originalTracks, String exemplarPolicy, String qualitySelectionProp) {
         if (movingTracksOnly) {
             return originalTracks.stream()
-                    .map(t -> processTrack(maxIou, minMovingDetections, t))
+                    .map(t -> processTrack(maxIou, minMovingDetections, t, exemplarPolicy, qualitySelectionProp))
                     .filter(t -> Boolean.parseBoolean(t.getTrackProperties().get("MOVING")))
                     .collect(toCollection(TreeSet::new));
         }
         else {
             return originalTracks.stream()
-                    .map(t -> processTrack(maxIou, minMovingDetections, t))
+                    .map(t -> processTrack(maxIou, minMovingDetections, t, exemplarPolicy, qualitySelectionProp))
                     .collect(toCollection(TreeSet::new));
         }
     }
 
 
-    private static Track processTrack(double maxIou, int minMovingDetections, Track track) {
+    private static Track processTrack(double maxIou, int minMovingDetections, Track track,
+                                      String exemplarPolicy, String qualitySelectionProp) {
         double avgX = 0, avgY = 0, avgWidth = 0, avgHeight = 0;
         for (Detection detection : track.getDetections()) {
             avgX += detection.getX();
@@ -170,6 +175,10 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 .put("MOVING", trackIsMoving ? "TRUE" : "FALSE")
                 .build();
 
+        var detections = newDetectionsBuilder.build();
+        var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
+                                                      detections.first().getMediaOffsetFrame(),
+                                                      detections.last().getMediaOffsetFrame(), detections);
         return new Track(
                 track.getJobId(),
                 track.getMediaId(),
@@ -183,7 +192,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 track.getConfidence(),
                 newDetectionsBuilder.build(),
                 newTrackProperties,
-                track.getExemplarPolicy());
+                exemplar);
     }
 
 

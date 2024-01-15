@@ -55,6 +55,7 @@ public class TestMarkupSplitter {
     }
 
     private static Track createTrack(Map<String, String> trackProperties, Map<String, String> detectionProperties) {
+        var exemplar = createDetection(detectionProperties);
         return new Track(777,     // jobId
                          888,     // mediaId
                          1,       // taskIndex
@@ -65,9 +66,9 @@ public class TestMarkupSplitter {
                          10000,   // endOffsetTime
                          0, // mergedTaskIndex
                          7.7777f, // confidence
-                         List.of(createDetection(detectionProperties)),
+                         List.of(exemplar),
                          trackProperties,
-                         "");
+                         exemplar);
     }
 
     @Test

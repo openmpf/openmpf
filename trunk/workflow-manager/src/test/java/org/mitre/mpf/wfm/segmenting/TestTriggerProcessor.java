@@ -488,7 +488,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 _currentTask == 0,
                 createAlgorithmProps(_triggers.get(_currentTask)),
                 Set.copyOf(_tracks.get(_currentTask - 1)),
-                null);
+                null, "");
             return _triggerProcessor.getTriggeredTracks(media, detectionContext).toList();
         }
 

@@ -36,19 +36,14 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.TopQualityUtil;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,18 +54,10 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
     public static final String REF = "videoMediaSegmenter";
 
-    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
-
-    private final InProgressBatchJobsService _inProgressBatchJobs;
-
     private final TriggerProcessor _triggerProcessor;
 
     @Inject
-    VideoMediaSegmenter(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-                        InProgressBatchJobsService batchJobsService,
-                        TriggerProcessor triggerProcessor) {
-        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _inProgressBatchJobs = batchJobsService;
+    VideoMediaSegmenter(TriggerProcessor triggerProcessor) {
         _triggerProcessor = triggerProcessor;
     }
 
@@ -139,10 +126,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private List<DetectionRequest> createFeedForwardRequests(Media media, DetectionContext context) {
         int topQualityCount = getTopQualityCount(context);
-        BatchJob job = _inProgressBatchJobs.getJob(context.getJobId());
-        Action action = job.getPipelineElements().getAction(context.getActionName());
-        String topQualitySelectionProp = _aggregateJobPropertiesUtil
-                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, job, media, action);
+        String topQualitySelectionProp = context.getQualitySelectionProperty();
         return _triggerProcessor.getTriggeredTracks(media, context)
                 .filter(t -> {
                     if (t.getDetections().isEmpty()) {

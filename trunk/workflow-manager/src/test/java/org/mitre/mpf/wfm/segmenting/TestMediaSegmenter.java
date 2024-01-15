@@ -35,9 +35,8 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.PropertyMap;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.service.TopQualitySelectionService;
+import org.mitre.mpf.wfm.util.TopQualityUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
-import org.mitre.mpf.wfm.util.TopConfidenceUtil;
 
 import java.util.*;
 
@@ -392,11 +391,11 @@ public class TestMediaSegmenter {
 	}
 
 	protected static DetectionContext createTestDetectionContext(int stage, Map<String, String> additionalAlgoProps,
-																 Set<Track> tracks) {
+																 Set<Track> tracks, String qualitySelectionProperty) {
 		return new DetectionContext(
 				1, stage, "STAGE_NAME", 0, "ACTION_NAME", stage == 0,
 				createTestAlgorithmProperties(additionalAlgoProps), tracks,
-				createTestSegmentingPlan());
+				createTestSegmentingPlan(), qualitySelectionProperty);
 	}
 
 
@@ -446,10 +445,12 @@ public class TestMediaSegmenter {
 	}
 
 
-	protected static Detection createDetection(int frame, float confidence) {
+	protected static Detection createDetection(int frame, float confidence,
+		 String qualitySelectionProperty, float qualitySelectionValue) {
 		int dimensions = (int) confidence;
+		var detectionProps = ImmutableSortedMap.of(qualitySelectionProperty,String.valueOf(qualitySelectionValue));
 		return new Detection(dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
-				createDetectionProperties(dimensions));
+				detectionProps);
 	}
 
 
@@ -464,11 +465,11 @@ public class TestMediaSegmenter {
 				.max()
 				.getAsInt();
 
-        Detection exemplar = TopQualitySelectionService.getTopQualityItem(
+        Detection exemplar = TopQualityUtil.getTopQualityItem(
                 detectionList, "CONFIDENCE");
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, 1,
-				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "");
+				exemplar.getConfidence(), detectionList, Collections.emptyMap(), exemplar);
 		return track;
 	}
 

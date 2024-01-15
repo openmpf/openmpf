@@ -73,7 +73,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 	public void canCreateFirstStageMessages() {
 		Media media = createTestMedia();
 		DetectionContext context = createTestDetectionContext(
-				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
 
 		var detectionRequests = _audioMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
@@ -95,7 +95,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 
 		Set<Track> tracks = createTestTracks();
 
-		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
+		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks, null);
 
 		var detectionRequests = _audioMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
@@ -117,7 +117,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		Set<Track> tracks = createTestTracks();
 
 		DetectionContext context = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
@@ -144,7 +144,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 	public void noRequestsCreatedWhenNoFeedForwardTracks() {
 		Media media = createTestMedia();
 		DetectionContext feedForwardContext = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), "CONFIDENCE");
         var detectionRequests = _audioMediaSegmenter.createDetectionRequests(
                 media, feedForwardContext);
 		assertTrue(detectionRequests.isEmpty());
@@ -187,13 +187,13 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		Track track1 = new Track(1, 1, 0, 0, 0,
 		                         -1, 5, 10, 0, 5,
 		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
-		                         "");
+		                         detection1);
 
 		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(1, 1, 0, 0, 0,
 		                         -1, 15, 30, 0, 15,
 		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
-		                         "");
+		                         detection2);
 
 		return ImmutableSet.of(track1, track2);
 	}

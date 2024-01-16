@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableMap;
+
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
@@ -523,7 +525,7 @@ public class AggregateJobPropertiesUtil {
 
     public String getQualitySelectionProp(BatchJob job, Media media, Action action) {
         String prop = getValue(MpfConstants.QUALITY_SELECTION_PROPERTY, job, media, action);
-        if (prop.isEmpty()) {
+        if (StringUtils.isEmpty(prop)) {
             return "CONFIDENCE";
         }
         else {

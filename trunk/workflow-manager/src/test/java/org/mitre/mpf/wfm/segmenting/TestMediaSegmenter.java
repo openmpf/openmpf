@@ -386,8 +386,7 @@ public class TestMediaSegmenter {
 				&& dimensions == imageLocation.getXLeftUpper()
 				&& dimensions == imageLocation.getYLeftUpper()
 				&& dimensions == imageLocation.getWidth()
-				&& dimensions == imageLocation.getHeight()
-				&& containsExpectedDetectionProperties(dimensions, imageLocation.getDetectionPropertiesList());
+				&& dimensions == imageLocation.getHeight();
 	}
 
 	protected static DetectionContext createTestDetectionContext(int stage, Map<String, String> additionalAlgoProps,

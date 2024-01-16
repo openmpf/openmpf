@@ -324,13 +324,23 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         int topQualityCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyTopQualityCount();
         String topQualityCountProp = _aggregateJobPropertiesUtil
                     .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, job, media, action);
-        var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
-                    sortedDetections, topQualityCount, topQualityCountProp);
-        for (var detection : topQualityDetections) {
-            LOG.debug("Will extract frame #{} with confidence = {}",
+        try {
+            topQualityCount = Integer.parseInt(topQualityCountProp);
+        } catch (NumberFormatException e) {
+            LOG.warn("Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
+                MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, topQualityCountProp,
+                topQualityCount);
+        }
+        if (topQualityCount > 0) {
+            String topQualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
+            var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
+                    sortedDetections, topQualityCount, topQualitySelectionProp);
+            for (var detection : topQualityDetections) {
+                LOG.debug("Will extract frame #{} with confidence = {}",
                     detection.getMediaOffsetFrame(),
                     detection.getConfidence());
-            framesToExtract.add(detection.getMediaOffsetFrame());
+                framesToExtract.add(detection.getMediaOffsetFrame());
+            }
         }
 
         // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a

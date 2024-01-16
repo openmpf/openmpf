@@ -37,7 +37,7 @@ import java.util.SortedSet;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertSame;
 
-public class TestTopQualityUtil {
+public class TestTopQualitySelectionUtil {
     private final Detection _d50 = createDetection(50, 0.3);
     private final Detection _d51 = createDetection(51, 0.9);
     private final Detection _d52 = createDetection(52, 0.2);
@@ -58,21 +58,21 @@ public class TestTopQualityUtil {
 
     @Test
     public void testGetTopQualityItem() {
-        assertSame(_d51, TopQualityUtil.getTopQualityItem(_detections, "CONFIDENCE"));
-        assertSame(_d51, TopQualityUtil.getTopQualityItem(_detections, ""));
-        assertSame(_d51, TopQualityUtil.getTopQualityItem(_detections, null));
-        assertSame(_d61, TopQualityUtil.getTopQualityItem(_detectionsWithProp, "QUALITY_PROP"));
-        assertSame(_d62, TopQualityUtil.getTopQualityItem(_detectionsWithProp, "CONFIDENCE"));
+        assertSame(_d51, TopQualitySelectionUtil.getTopQualityItem(_detections, "CONFIDENCE"));
+        assertSame(_d51, TopQualitySelectionUtil.getTopQualityItem(_detections, ""));
+        assertSame(_d51, TopQualitySelectionUtil.getTopQualityItem(_detections, null));
+        assertSame(_d61, TopQualitySelectionUtil.getTopQualityItem(_detectionsWithProp, "QUALITY_PROP"));
+        assertSame(_d62, TopQualitySelectionUtil.getTopQualityItem(_detectionsWithProp, "CONFIDENCE"));
     }
 
     @Test
     public void testEqualMaxConfidence() {
         var d61 = createDetection(61, _d60.getConfidence());
         var detections = ImmutableSortedSet.of(_d50, _d52, _d54, _d60, d61);
-        assertSame(_d60, TopQualityUtil.getTopQualityItem(detections, "CONFIDENCE"));
+        assertSame(_d60, TopQualitySelectionUtil.getTopQualityItem(detections, "CONFIDENCE"));
         var d71 = createDetection(71, (double)_d61.getConfidence(), "QUALITY_PROP", 0.95);
         var detectionsWithProp = ImmutableSortedSet.of(_d61, _d62, _d63, _d64, d71);
-        assertSame(_d61, TopQualityUtil.getTopQualityItem(detectionsWithProp, "QUALITY_PROP"));
+        assertSame(_d61, TopQualitySelectionUtil.getTopQualityItem(detectionsWithProp, "QUALITY_PROP"));
     }
 
     @Test
@@ -81,16 +81,16 @@ public class TestTopQualityUtil {
         subsetDetections.add(_d50);
         subsetDetections.add(_d51);
         subsetDetections.add(_d60);
-        var resultWithConfidence = new ArrayList<Detection>(TopQualityUtil.getTopQualityDetections(_detections, 3, "CONFIDENCE"));
+        var resultWithConfidence = new ArrayList<Detection>(TopQualitySelectionUtil.getTopQualityDetections(_detections, 3, "CONFIDENCE"));
         assertArrayEquals(subsetDetections.toArray(), resultWithConfidence.toArray());
-        var resultWithNullProp = new ArrayList<Detection>(TopQualityUtil.getTopQualityDetections(_detections, 3, null));
+        var resultWithNullProp = new ArrayList<Detection>(TopQualitySelectionUtil.getTopQualityDetections(_detections, 3, null));
         assertArrayEquals(subsetDetections.toArray(), resultWithNullProp.toArray());
-        var resultWithEmptyProp = new ArrayList<Detection>(TopQualityUtil.getTopQualityDetections(_detections, 3, ""));
+        var resultWithEmptyProp = new ArrayList<Detection>(TopQualitySelectionUtil.getTopQualityDetections(_detections, 3, ""));
         assertArrayEquals(subsetDetections.toArray(), resultWithEmptyProp.toArray());
         ArrayList<Detection> subsetWithProp = new ArrayList<>();
         subsetWithProp.add(_d65);
         subsetWithProp.add(_d61);
-        var resultWithProp = new ArrayList<Detection>(TopQualityUtil.getTopQualityDetections(_detectionsWithProp, 2, "QUALITY_PROP"));
+        var resultWithProp = new ArrayList<Detection>(TopQualitySelectionUtil.getTopQualityDetections(_detectionsWithProp, 2, "QUALITY_PROP"));
         assertArrayEquals(subsetWithProp.toArray(), resultWithProp.toArray());
     }
 

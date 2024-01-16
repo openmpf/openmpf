@@ -35,7 +35,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.PropertyMap;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.util.TopQualityUtil;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.util.*;
@@ -465,7 +465,7 @@ public class TestMediaSegmenter {
 				.max()
 				.getAsInt();
 
-        Detection exemplar = TopQualityUtil.getTopQualityItem(
+        Detection exemplar = TopQualitySelectionUtil.getTopQualityItem(
                 detectionList, "CONFIDENCE");
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, 1,

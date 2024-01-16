@@ -53,7 +53,7 @@ public class ExemplarPolicyUtil {
             return findMiddle(begin, end, detections);
         }
         else {
-            return TopQualityUtil.getTopQualityItem(detections, quality_prop);
+            return TopQualitySelectionUtil.getTopQualityItem(detections, quality_prop);
         }
     }
 

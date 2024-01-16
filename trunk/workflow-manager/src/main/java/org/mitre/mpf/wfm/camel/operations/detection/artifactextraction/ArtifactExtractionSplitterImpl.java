@@ -58,7 +58,7 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
-import org.mitre.mpf.wfm.util.TopQualityUtil;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -324,7 +324,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         int topQualityCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyTopQualityCount();
         String topQualityCountProp = _aggregateJobPropertiesUtil
                     .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, job, media, action);
-        var topQualityDetections = TopQualityUtil.getTopQualityDetections(
+        var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
                     sortedDetections, topQualityCount, topQualityCountProp);
         for (var detection : topQualityDetections) {
             LOG.debug("Will extract frame #{} with confidence = {}",

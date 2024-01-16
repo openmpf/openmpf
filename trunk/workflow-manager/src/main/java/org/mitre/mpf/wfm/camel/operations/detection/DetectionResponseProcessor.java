@@ -273,7 +273,7 @@ public class DetectionResponseProcessor
                         : objectTrack.getFrameLocationsList()
                             .stream()
                             .map(flm -> toDetection(flm, frameTimeInfo))
-                            .filter(d -> TopQualityUtil.getQuality(d, qualityProp) >= qualityThreshold)
+                            .filter(d -> TopQualitySelectionUtil.getQuality(d, qualityProp) >= qualityThreshold)
                             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
                     if (!detections.isEmpty()) {

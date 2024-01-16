@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.util.MediaRange;
-import org.mitre.mpf.wfm.util.TopQualityUtil;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,7 +152,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             stopFrame = track.getEndOffsetFrameInclusive();
         }
         else {
-            includedDetections = TopQualityUtil.getTopQualityDetections(
+            includedDetections = TopQualitySelectionUtil.getTopQualityDetections(
                     track.getDetections(), topQualityCount, topQualitySelectionProp);
             var frameSummaryStats = includedDetections.stream()
                     .mapToInt(Detection::getMediaOffsetFrame)

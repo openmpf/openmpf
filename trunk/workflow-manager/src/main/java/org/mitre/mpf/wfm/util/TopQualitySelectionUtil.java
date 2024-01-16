@@ -24,39 +24,31 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.service;
+package org.mitre.mpf.wfm.util;
 
 import java.lang.NumberFormatException;
-import java.lang.NullPointerException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-public class TopQualitySelectionService {
+public class TopQualitySelectionUtil {
 
-    private final InProgressBatchJobsService _inProgressJobs;
+    private TopQualitySelectionUtil() {}
 
-
-    private TopQualitySelectionService(InProgressBatchJobsService inProgressJobs) {
-        _inProgressJobs = inProgressJobs;
-    }
-
-    public static Detection getTopQualityItem(BatchJob job,
-            Collection<Detection> detections, String qualityProperty) {
+    public static Detection getTopQualityItem(Collection<Detection> detections,
+                                              String qualityProperty) {
         return detections.stream()
             .max(getMaxQualityComparator(d -> getQuality(d, qualityProperty)))
             .orElse(null);
     }
 
     public static Collection<Detection> getTopQualityDetections(
-            BatchJob job,
-            Collection<Detection> allDetections, int topQualityCount,
-            String qualityProperty) {
+                        Collection<Detection> allDetections, int topQualityCount,
+                        String qualityProperty) {
 
         if (topQualityCount <= 0 || topQualityCount >= allDetections.size()) {
             return allDetections;

@@ -24,14 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_COMPONENTLOADERROR_H
-#define MPF_COMPONENTLOADERROR_H
+#pragma once
 
 #include <stdexcept>
-
 
 class ComponentLoadError : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
-
-#endif //MPF_COMPONENTLOADERROR_H

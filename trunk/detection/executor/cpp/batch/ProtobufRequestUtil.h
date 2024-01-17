@@ -24,65 +24,30 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-# pragma once
+#pragma once
 
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include <log4cxx/logger.h>
-
-#include <DlClassLoader.h>
 #include <MPFDetectionComponent.h>
-#include <MPFDetectionObjects.h>
 
-#include "LoggerWrapper.h"
-
-
-namespace MPF::COMPONENT {
-
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
-
-        void SetRunDirectory(const std::string &run_dir);
-
-        bool Init();
-
-        bool Supports(MPFDetectionDataType data_type);
-
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
-
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
-
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
-
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
-
-        bool Close();
-
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
+#include "detection.pb.h"
+#include "JobContext.h"
 
 
-    class CppLogger : public ILogger {
-    public:
-        explicit CppLogger(std::string_view app_dir);
+namespace MPF::COMPONENT::ProtobufRequestUtil {
+    namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
 
-        void Debug(std::string_view message) override;
+    mpf_buffers::DetectionRequest ParseRequest(const std::vector<unsigned char>& bytes);
 
-        void Info(std::string_view message) override;
+    std::string GetJobName(
+                long job_id, const mpf_buffers::DetectionRequest& detection_request);
 
-        void Warn(std::string_view message) override;
+    job_variant_t CreateComponentJob(
+            std::string_view job_name,
+            const Properties& environment_job_properties,
+            const mpf_buffers::DetectionRequest& detection_request);
 
-        void Error(std::string_view message) override;
-
-        void Fatal(std::string_view message) override;
-
-        void SetJobName(std::string_view job_name) override;
-
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
+    ProtobufMetadata GetMetadata(const mpf_buffers::DetectionRequest& detection_request);
 }

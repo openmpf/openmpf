@@ -24,65 +24,56 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-# pragma once
+#pragma once
 
-#include <string>
 #include <string_view>
 #include <vector>
 
-#include <log4cxx/logger.h>
-
-#include <DlClassLoader.h>
 #include <MPFDetectionComponent.h>
 #include <MPFDetectionObjects.h>
 
-#include "LoggerWrapper.h"
+#include "detection.pb.h"
+#include "JobContext.h"
+
+namespace MPF::COMPONENT::ProtobufResponseUtil {
+    namespace detail {
+        namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
+
+        mpf_buffers::DetectionResponse InitDetectionResponse(const JobContext& context);
+
+        std::vector<unsigned char> Serialize(
+                const mpf_buffers::DetectionResponse& detection_response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFVideoTrack> &tracks,
+                mpf_buffers::DetectionResponse& response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFImageLocation>& tracks,
+                mpf_buffers::DetectionResponse& response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFAudioTrack>& tracks,
+                mpf_buffers::DetectionResponse& response);
+
+        void AddToProtobuf(
+                const JobContext& context,
+                const std::vector<MPFGenericTrack>& tracks,
+                mpf_buffers::DetectionResponse& response);
+    }
 
 
-namespace MPF::COMPONENT {
+    template <typename TResp>
+    std::vector<unsigned char> PackResponse(const JobContext& context, const TResp& results) {
+        auto detection_response = detail::InitDetectionResponse(context);
+        detail::AddToProtobuf(context, results, detection_response);
+        return detail::Serialize(detection_response);
+    }
 
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
-
-        void SetRunDirectory(const std::string &run_dir);
-
-        bool Init();
-
-        bool Supports(MPFDetectionDataType data_type);
-
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
-
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
-
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
-
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
-
-        bool Close();
-
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
-
-
-    class CppLogger : public ILogger {
-    public:
-        explicit CppLogger(std::string_view app_dir);
-
-        void Debug(std::string_view message) override;
-
-        void Info(std::string_view message) override;
-
-        void Warn(std::string_view message) override;
-
-        void Error(std::string_view message) override;
-
-        void Fatal(std::string_view message) override;
-
-        void SetJobName(std::string_view job_name) override;
-
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
+    std::vector<unsigned char> PackErrorResponse(
+            const JobContext& context, MPFDetectionError error_code,
+            std::string_view explanation);
 }

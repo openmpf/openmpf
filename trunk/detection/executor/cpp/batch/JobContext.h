@@ -24,65 +24,67 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-# pragma once
+#pragma once
 
 #include <string>
-#include <string_view>
-#include <vector>
+#include <memory>
+#include <variant>
 
-#include <log4cxx/logger.h>
+#include <cms/Destination.h>
 
-#include <DlClassLoader.h>
 #include <MPFDetectionComponent.h>
-#include <MPFDetectionObjects.h>
 
 #include "LoggerWrapper.h"
 
 
 namespace MPF::COMPONENT {
 
-    class CppComponentHandle {
-    public:
-        explicit CppComponentHandle(const std::string &lib_path);
-
-        void SetRunDirectory(const std::string &run_dir);
-
-        bool Init();
-
-        bool Supports(MPFDetectionDataType data_type);
-
-        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
-
-        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
-
-        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
-
-        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
-
-        bool Close();
-
-    private:
-        DlClassLoader<MPFDetectionComponent> component_;
-    };
+using job_variant_t = std::variant<MPFVideoJob, MPFImageJob, MPFAudioJob, MPFGenericJob>;
 
 
-    class CppLogger : public ILogger {
-    public:
-        explicit CppLogger(std::string_view app_dir);
+struct ProtobufMetadata {
+    const long request_id;
 
-        void Debug(std::string_view message) override;
+    const long media_id;
 
-        void Info(std::string_view message) override;
+    const int task_index;
 
-        void Warn(std::string_view message) override;
+    const std::string task_name;
 
-        void Error(std::string_view message) override;
+    const int action_index;
 
-        void Fatal(std::string_view message) override;
+    const std::string action_name;
+};
 
-        void SetJobName(std::string_view job_name) override;
 
-    private:
-        log4cxx::LoggerPtr logger_;
-    };
+struct AmqMetadata {
+    const std::unique_ptr<cms::Destination> response_queue;
+
+    const int cms_priority;
+
+    const std::string correlation_id;
+
+    const std::string bread_crumb_id;
+
+    const int split_size;
+};
+
+
+struct JobContext {
+    const long job_id;
+
+    const std::string job_name;
+
+    const job_variant_t job;
+
+    const MPFDetectionDataType job_type;
+
+    const std::string job_type_name;
+
+    const JobLogContext job_log_context;
+
+    const AmqMetadata amq_metadata;
+
+    const ProtobufMetadata protobuf_metadata;
+};
 }

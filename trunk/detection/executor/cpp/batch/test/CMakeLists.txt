@@ -40,5 +40,8 @@ if (${GTEST_FOUND})
 
     add_test(NAME BatchExecutorTest COMMAND BatchExecutorTest)
     file(COPY test_python_components/ DESTINATION test_python_components)
+    file(CREATE_LINK
+        ${CMAKE_CURRENT_SOURCE_DIR}/test-health-check.ini
+        ${CMAKE_CURRENT_BINARY_DIR}/test-health-check.ini SYMBOLIC)
 
 endif()

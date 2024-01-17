@@ -39,6 +39,7 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
+import org.mitre.mpf.rest.api.util.ValidName;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
@@ -48,7 +49,7 @@ import com.google.common.collect.ImmutableList;
         method = "supportsBatchOrStreaming",
         message = "must contain batchLibrary, streamLibrary, or both")
 public record JsonComponentDescriptor(
-        @NotBlank String componentName,
+        @ValidName String componentName,
         @NotNull String componentVersion,
         @NotNull String middlewareVersion,
         String setupFile,

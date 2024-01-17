@@ -260,7 +260,7 @@ public class TestPipelineController {
         mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"MISSING ALGO\",\"properties\": []}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/actions?=name" + actionName))
+        mockMvc.perform(get("/actions/" + actionName))
                 .andExpect(status().isOk());
     }
 
@@ -330,7 +330,7 @@ public class TestPipelineController {
         mockMvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actions\": [\"MISSING ACTION1\", \"MISSING ACTION2\"]}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/tasks?name=" + taskName))
+        mockMvc.perform(get("/tasks/" + taskName))
                 .andExpect(status().isOk());
     }
 
@@ -427,7 +427,7 @@ public class TestPipelineController {
                 "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasks\": [\"MISSING TASK\"]}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/pipelines?name=" + pipelineName))
+        mockMvc.perform(get("/pipelines/" + pipelineName))
                 .andExpect(status().isOk());
     }
 

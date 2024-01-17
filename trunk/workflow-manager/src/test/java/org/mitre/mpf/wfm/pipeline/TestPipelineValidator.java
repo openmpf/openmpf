@@ -114,7 +114,7 @@ public class TestPipelineValidator {
 
     private <T extends PipelineElement> void addElement(T pipelineElement, Map<String, T> existing) {
         _pipelineValidator.validateOnAdd(pipelineElement, existing);
-        existing.put(pipelineElement.getName(), pipelineElement);
+        existing.put(pipelineElement.name(), pipelineElement);
     }
 
     private void addElement(PipelineElement pipelineElement) {
@@ -143,10 +143,10 @@ public class TestPipelineValidator {
     }
 
     private void addDescriptorPipelines(JsonComponentDescriptor descriptor) {
-        addElement(descriptor.getPipelines());
-        addElement(descriptor.getTasks());
-        addElement(descriptor.getActions());
-        addElement(descriptor.getAlgorithm());
+        addElement(descriptor.pipelines());
+        addElement(descriptor.tasks());
+        addElement(descriptor.actions());
+        addElement(descriptor.algorithm());
     }
 
 
@@ -158,7 +158,7 @@ public class TestPipelineValidator {
         addDescriptorPipelines(descriptor);
         addElement(TestDescriptorFactory.getReferencedAlgorithm());
 
-        verifyBatchPipelineRunnable(descriptor.getPipelines().get(0).getName());
+        verifyBatchPipelineRunnable(descriptor.pipelines().get(0).name());
     }
 
 
@@ -169,18 +169,18 @@ public class TestPipelineValidator {
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
-        _algorithms.put(algorithm.getName(), algorithm);
+        _algorithms.put(algorithm.name(), algorithm);
 
         var workflowPropName = "WORKFLOW_PROP_NAME";
-        var action = new Action("ACTION", "descr", algorithm.getName(),
+        var action = new Action("ACTION", "descr", algorithm.name(),
                                 List.of(new ActionProperty(workflowPropName, "WORKFLOW_PROP_VAL")));
-        _actions.put(action.getName(), action);
+        _actions.put(action.name(), action);
 
-        var task = new Task("TASK", "descr", List.of(action.getName()));
-        _tasks.put(task.getName(), task);
+        var task = new Task("TASK", "descr", List.of(action.name()));
+        _tasks.put(task.name(), task);
 
-        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
-        _pipelines.put(pipeline.getName(), pipeline);
+        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.name()));
+        _pipelines.put(pipeline.name(), pipeline);
 
         when(_mockWorkflowPropertyService.getProperty(workflowPropName))
                 .thenReturn(new WorkflowProperty(workflowPropName, "descr", ValueType.DOUBLE,
@@ -188,16 +188,16 @@ public class TestPipelineValidator {
 
 
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                                       () -> verifyBatchPipelineRunnable(pipeline.name()));
         assertEquals(
                 "The \"WORKFLOW_PROP_NAME\" property from the \"ACTION\" action has a value of \"WORKFLOW_PROP_VAL\", which is not a valid \"DOUBLE\".",
                 ex.getMessage());
 
 
-        var correctedAction = new Action(action.getName(), action.getDescription(), action.getAlgorithm(),
+        var correctedAction = new Action(action.name(), action.description(), action.algorithm(),
                                          List.of(new ActionProperty(workflowPropName, "2.997e8")));
-        _actions.put(correctedAction.getName(), correctedAction);
-        verifyBatchPipelineRunnable(pipeline.getName());
+        _actions.put(correctedAction.name(), correctedAction);
+        verifyBatchPipelineRunnable(pipeline.name());
     }
 
 
@@ -218,21 +218,21 @@ public class TestPipelineValidator {
 
         var algorithm = TestDescriptorFactory.getReferencedAlgorithm();
 
-        var action = new Action("TEST ACTION", "asdf", algorithm.getName(),
+        var action = new Action("TEST ACTION", "asdf", algorithm.name(),
                                    List.of());
         var missingAlgoAction = new Action("MISSING ALGO ACTION", "asdf", invalidAlgorithmName,
                                            List.of());
 
         var validTask = new Task("TEST TASK", "asdf",
-                                  List.of(invalidActionName, action.getName(), missingAlgoAction.getName()));
+                                  List.of(invalidActionName, action.name(), missingAlgoAction.name()));
 
         var pipeline = new Pipeline("TEST PIPELINE", "asdf",
-                                    List.of(validTask.getName(), invalidTaskName));
+                                    List.of(validTask.name(), invalidTaskName));
         addElement(List.of(algorithm, action, missingAlgoAction, validTask, pipeline));
 
 
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                                       () -> verifyBatchPipelineRunnable(pipeline.name()));
 
         var errorMsg = ex.getMessage();
 
@@ -240,10 +240,10 @@ public class TestPipelineValidator {
         assertTrue(errorMsg.contains(invalidActionName));
         assertTrue(errorMsg.contains(invalidTaskName));
 
-        assertFalse(errorMsg.contains(algorithm.getName()));
-        assertFalse(errorMsg.contains(action.getName()));
-        assertFalse(errorMsg.contains(missingAlgoAction.getName()));
-        assertFalse(errorMsg.contains(validTask.getName()));
+        assertFalse(errorMsg.contains(algorithm.name()));
+        assertFalse(errorMsg.contains(action.name()));
+        assertFalse(errorMsg.contains(missingAlgoAction.name()));
+        assertFalse(errorMsg.contains(validTask.name()));
     }
 
 
@@ -256,7 +256,7 @@ public class TestPipelineValidator {
                 true, false);
         addElement(batchAlgo);
 
-        var batchTaskName = createSingleActionTask("BATCH", batchAlgo.getName());
+        var batchTaskName = createSingleActionTask("BATCH", batchAlgo.name());
 
         var streamAlgo = new Algorithm(
                 "STREAM ALGO", "asdf", ActionType.DETECTION, "STREAM", OptionalInt.empty(),
@@ -265,7 +265,7 @@ public class TestPipelineValidator {
                 false, true);
         addElement(streamAlgo);
 
-        var streamTaskName = createSingleActionTask("STREAM", streamAlgo.getName());
+        var streamTaskName = createSingleActionTask("STREAM", streamAlgo.name());
 
 
         var pipeline = new Pipeline("TEST PIPELINE", "asdf",
@@ -275,14 +275,14 @@ public class TestPipelineValidator {
 
         {
             var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                           () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                                           () -> verifyBatchPipelineRunnable(pipeline.name()));
             var errorMsg = ex.getMessage();
             assertTrue(errorMsg.contains("support batch processing"));
             assertTrue(errorMsg.contains("STREAM ALGO"));
         }
         {
             var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> verifyStreamingPipelineRunnable(pipeline.getName()));
+                                       () -> verifyStreamingPipelineRunnable(pipeline.name()));
             var errorMsg = ex.getMessage();
             assertTrue(errorMsg.contains("support stream processing"));
             assertTrue(errorMsg.contains("BATCH ALGO"));
@@ -299,7 +299,7 @@ public class TestPipelineValidator {
                 true, false);
         addElement(batchAlgo);
 
-        var batchTaskName = createSingleActionTask("BATCH", batchAlgo.getName());
+        var batchTaskName = createSingleActionTask("BATCH", batchAlgo.name());
 
 
         var bothAlgo = new Algorithm(
@@ -309,13 +309,13 @@ public class TestPipelineValidator {
                 true, true);
         addElement(bothAlgo);
 
-        var bothTaskName = createSingleActionTask("BOTH", bothAlgo.getName());
+        var bothTaskName = createSingleActionTask("BOTH", bothAlgo.name());
 
         var pipeline = new Pipeline("TEST PIPELINE", "descr",
                                          List.of(batchTaskName, bothTaskName));
         addElement(pipeline);
 
-        verifyBatchPipelineRunnable(pipeline.getName());
+        verifyBatchPipelineRunnable(pipeline.name());
     }
 
 
@@ -328,7 +328,7 @@ public class TestPipelineValidator {
                 true, true);
         addElement(bothAlgo);
 
-        String bothTaskName = createSingleActionTask("BOTH", bothAlgo.getName());
+        String bothTaskName = createSingleActionTask("BOTH", bothAlgo.name());
 
 
         var streamAlgo = new Algorithm(
@@ -338,14 +338,14 @@ public class TestPipelineValidator {
                 false, true);
         addElement(streamAlgo);
 
-        var streamTaskName = createSingleActionTask("STREAM", streamAlgo.getName());
+        var streamTaskName = createSingleActionTask("STREAM", streamAlgo.name());
 
 
         var pipeline = new Pipeline("TEST PIPELINE", "descr",
                                          List.of(streamTaskName, bothTaskName));
         addElement(pipeline);
 
-        verifyStreamingPipelineRunnable(pipeline.getName());
+        verifyStreamingPipelineRunnable(pipeline.name());
     }
 
 
@@ -357,7 +357,7 @@ public class TestPipelineValidator {
                 new Algorithm.Provides(List.of("STATE_ONE", "STATE_THREE"), List.of()),
                 true, true);
         addElement(providesAlgo);
-        var providesTask = createSingleActionTask("PROVIDES", providesAlgo.getName());
+        var providesTask = createSingleActionTask("PROVIDES", providesAlgo.name());
 
         Algorithm requiresAlgo = new Algorithm(
                 "REQUIRES ALGO", "descr", ActionType.DETECTION, "REQUIRES", OptionalInt.empty(),
@@ -365,14 +365,14 @@ public class TestPipelineValidator {
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
         addElement(requiresAlgo);
-        var requiresTask = createSingleActionTask("REQUIRES", requiresAlgo.getName());
+        var requiresTask = createSingleActionTask("REQUIRES", requiresAlgo.name());
 
         var pipeline = new Pipeline("INVALID STATES PIPELINE", "Adf",
                                          List.of(providesTask, requiresTask));
         addElement(pipeline);
 
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                                       () -> verifyBatchPipelineRunnable(pipeline.name()));
         assertTrue(ex.getMessage().contains("The states for \"" + requiresTask + "\" are not satisfied"));
     }
 
@@ -388,18 +388,18 @@ public class TestPipelineValidator {
                 true, false);
         addElement(algorithm);
 
-        var action = new Action("ACTION", "descr", algorithm.getName(),
+        var action = new Action("ACTION", "descr", algorithm.name(),
                                    List.of(new ActionProperty("INVALID", "INVALID")));
         addElement(action);
 
-        var task = new Task("TASK", "descr", List.of(action.getName()));
+        var task = new Task("TASK", "descr", List.of(action.name()));
         addElement(task);
 
-        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
+        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.name()));
         addElement(pipeline);
 
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                              () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                              () -> verifyBatchPipelineRunnable(pipeline.name()));
         assertEquals(
                 "The \"INVALID\" property from the \"ACTION\" action does not exist in \"ALGO\" algorithm and is not the name of a workflow property.",
                 ex.getMessage());
@@ -417,19 +417,19 @@ public class TestPipelineValidator {
                 true, false);
         addElement(algorithm);
 
-        var action = new Action("ACTION", "descr", algorithm.getName(),
+        var action = new Action("ACTION", "descr", algorithm.name(),
                                    List.of(new ActionProperty("MY PROPERTY", "INVALID")));
         addElement(action);
 
-        var task = new Task("TASK", "descr", List.of(action.getName()));
+        var task = new Task("TASK", "descr", List.of(action.name()));
         addElement(task);
 
-        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
+        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.name()));
         addElement(pipeline);
 
 
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                                       () -> verifyBatchPipelineRunnable(pipeline.name()));
         assertEquals(
                 "The \"MY PROPERTY\" property from the \"ACTION\" action has a value of \"INVALID\", which is not a valid \"INT\".",
                 ex.getMessage());
@@ -444,7 +444,7 @@ public class TestPipelineValidator {
                 true, false);
         addElement(detectionAlgo);
 
-        var detectionAction = new Action("DETECTION ACTION", "descr", detectionAlgo.getName(),
+        var detectionAction = new Action("DETECTION ACTION", "descr", detectionAlgo.name(),
                                             List.of());
         addElement(detectionAction);
 
@@ -456,20 +456,20 @@ public class TestPipelineValidator {
                 true, false);
         addElement(markupAlgo);
 
-        var markupAction = new Action("MARKUP ACTION", "descr", markupAlgo.getName(),
+        var markupAction = new Action("MARKUP ACTION", "descr", markupAlgo.name(),
                                          List.of());
         addElement(markupAction);
 
         var task = new Task("DETECTION AND MARKUP TASK", "descr",
-                             List.of(detectionAction.getName(), markupAction.getName()));
+                             List.of(detectionAction.name(), markupAction.name()));
         addElement(task);
 
         var pipeline = new Pipeline("DETECTION AND MARKUP PIPELINE", "asdf",
-                                         List.of(task.getName()));
+                                         List.of(task.name()));
         addElement(pipeline);
 
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                                       () -> verifyBatchPipelineRunnable(pipeline.name()));
         assertTrue(ex.getMessage().contains("tasks cannot contain actions which have different ActionTypes"));
     }
 
@@ -479,23 +479,23 @@ public class TestPipelineValidator {
         var algorithm = TestDescriptorFactory.getReferencedAlgorithm();
         addElement(algorithm);
 
-        var action = new Action("TEST ACTION", "descr", algorithm.getName(), List.of());
+        var action = new Action("TEST ACTION", "descr", algorithm.name(), List.of());
         addElement(action);
 
         var multiActionTask = new Task("MULTI ACTION TASK", "descr",
-                                       List.of(action.getName(), action.getName()));
+                                       List.of(action.name(), action.name()));
         addElement(multiActionTask);
 
         var singleActionTask = new Task("SINGLE ACTION TASK", "descr",
-                                         List.of(action.getName()));
+                                         List.of(action.name()));
         addElement(singleActionTask);
 
         var pipeline = new Pipeline("TEST PIPELINE", "descr",
-                                    List.of(multiActionTask.getName(), singleActionTask.getName()));
+                                    List.of(multiActionTask.name(), singleActionTask.name()));
         addElement(pipeline);
 
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+                                       () -> verifyBatchPipelineRunnable(pipeline.name()));
         assertEquals("TEST PIPELINE: No tasks may follow the multi-detection task of MULTI ACTION TASK.",
                      ex.getMessage());
     }
@@ -509,7 +509,7 @@ public class TestPipelineValidator {
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
         addElement(detectionAlgo);
-        var detectionTaskName = createSingleActionTask("DETECTION", detectionAlgo.getName());
+        var detectionTaskName = createSingleActionTask("DETECTION", detectionAlgo.name());
 
 
         var markupAlgo = new Algorithm(
@@ -518,22 +518,22 @@ public class TestPipelineValidator {
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
         addElement(markupAlgo);
-        var markupAction = new Action("MARKUP ACTION", "desc", markupAlgo.getName(),
+        var markupAction = new Action("MARKUP ACTION", "desc", markupAlgo.name(),
                                          List.of());
         addElement(markupAction);
         var markupTask = new Task("MARKUP TASK", "desc",
-                                   List.of(markupAction.getName()));
+                                   List.of(markupAction.name()));
         addElement(markupTask);
 
         var pipelineWithTaskAfterMarkup = new Pipeline(
                 "TASK AFTER MARKUP PIPELINE", "descr" ,
-                List.of(detectionTaskName, markupTask.getName(), detectionTaskName));
+                List.of(detectionTaskName, markupTask.name(), detectionTaskName));
         addElement(pipelineWithTaskAfterMarkup);
 
 
         {
             var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                           () -> verifyBatchPipelineRunnable(pipelineWithTaskAfterMarkup.getName()));
+                                           () -> verifyBatchPipelineRunnable(pipelineWithTaskAfterMarkup.name()));
             assertEquals("TASK AFTER MARKUP PIPELINE: No tasks may follow a markup task of MARKUP TASK.",
                          ex.getMessage());
         }
@@ -541,12 +541,12 @@ public class TestPipelineValidator {
 
 
         var pipelineWithMarkupFirst = new Pipeline("MARKUP FIRST PIPELINE", "desc",
-                                                        List.of(markupTask.getName()));
+                                                        List.of(markupTask.name()));
         addElement(pipelineWithMarkupFirst);
 
         {
             var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                           () -> verifyBatchPipelineRunnable(pipelineWithMarkupFirst.getName()));
+                                           () -> verifyBatchPipelineRunnable(pipelineWithMarkupFirst.name()));
             assertEquals(
                     "MARKUP FIRST PIPELINE: A markup task may not be the first task in a pipeline.",
                     ex.getMessage());
@@ -554,16 +554,16 @@ public class TestPipelineValidator {
 
 
         var multiMarkupTask = new Task("PARALLEL MULTI MARKUP TASK", "desc",
-                                        List.of(markupAction.getName(), markupAction.getName()));
+                                        List.of(markupAction.name(), markupAction.name()));
         addElement(multiMarkupTask);
 
         var parallelMultiMarkupPipeline = new Pipeline("PARALLEL MULTI MARKUP PIPELINE", "desc",
-                                                          List.of(detectionTaskName, multiMarkupTask.getName()));
+                                                          List.of(detectionTaskName, multiMarkupTask.name()));
         addElement(parallelMultiMarkupPipeline);
 
         {
             var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                           () -> verifyBatchPipelineRunnable(parallelMultiMarkupPipeline.getName()));
+                                           () -> verifyBatchPipelineRunnable(parallelMultiMarkupPipeline.name()));
             assertEquals("PARALLEL MULTI MARKUP TASK: A markup task may only contain one action.",
                          ex.getMessage());
         }
@@ -571,12 +571,12 @@ public class TestPipelineValidator {
 
         var sequentialMultiMarkupPipeline = new Pipeline(
                 "SEQUENTIAL MULTI MARKUP TASK PIPELINE", "descr",
-                List.of(markupTask.getName(), markupTask.getName()));
+                List.of(markupTask.name(), markupTask.name()));
         addElement(sequentialMultiMarkupPipeline);
 
         {
             var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                           () -> verifyBatchPipelineRunnable(sequentialMultiMarkupPipeline.getName()));
+                                           () -> verifyBatchPipelineRunnable(sequentialMultiMarkupPipeline.name()));
             assertEquals(
                     "SEQUENTIAL MULTI MARKUP TASK PIPELINE: No tasks may follow a markup task of MARKUP TASK.",
                     ex.getMessage());
@@ -590,7 +590,7 @@ public class TestPipelineValidator {
         var p1 = new Pipeline("pipeline", "description", List.of("task1"));
         var p2 = new Pipeline("pipeline", "different description", List.of("task1"));
         var ex = TestUtil.assertThrows(InvalidPipelineException.class,
-                                       () -> _pipelineValidator.validateOnAdd(p2, Map.of(p1.getName(), p1)));
+                                       () -> _pipelineValidator.validateOnAdd(p2, Map.of(p1.name(), p1)));
         assertTrue(ex.getMessage().contains("same name already exists"));
     }
 
@@ -600,7 +600,7 @@ public class TestPipelineValidator {
         var p1 = new Pipeline("pipeline", "description", List.of("task1"));
         var p2 = new Pipeline("pipeline", "description", List.of("task1"));
 
-        _pipelineValidator.validateOnAdd(p2, Map.of(p1.getName(), p1));
+        _pipelineValidator.validateOnAdd(p2, Map.of(p1.name(), p1));
     }
 
 
@@ -611,14 +611,16 @@ public class TestPipelineValidator {
 
         assertValidationErrors(
                 pipeline,
-                createViolationMessage("name", pipeline.getName(), "may not be empty"),
-                createViolationMessage("description", pipeline.getDescription(), "may not be empty"),
+                createViolationMessage("name", pipeline.name(), "may not be empty"),
+                createViolationMessage("description", pipeline.description(), "may not be empty"),
                 createViolationMessage("tasks", "[]", "may not be empty"));
 
-        pipeline = new Pipeline("PIPELINE", "desc.desc", List.of("TASK", ""));
+        pipeline = new Pipeline("PIPELINE;", "desc.desc", List.of("TASK", "", "a/b"));
         assertValidationErrors(
                 pipeline,
-                createViolationMessage("tasks[1].<collection element>", pipeline.getTasks().get(1), "may not be empty"));
+                createViolationMessage("name", pipeline.name(), "may not contain / or ;"),
+                createViolationMessage("tasks[1].<collection element>", pipeline.tasks().get(1), "may not be empty"),
+                createViolationMessage("tasks[2].<collection element>", pipeline.tasks().get(2), "may not contain / or ;"));
 
         pipeline = new Pipeline("PIPELINE", "desc.desc", List.of("TASK", "ASDF"));
         _pipelineValidator.validateOnAdd(pipeline, Map.of());
@@ -631,14 +633,14 @@ public class TestPipelineValidator {
 
         assertValidationErrors(
                 task,
-                createViolationMessage("name", task.getName(), "may not be empty"),
-                createViolationMessage("description", task.getDescription(), "may not be empty"),
+                createViolationMessage("name", task.name(), "may not be empty"),
+                createViolationMessage("description", task.description(), "may not be empty"),
                 createViolationMessage("actions", "[]", "may not be empty"));
 
         task = new Task("TASK", "desc/desc", List.of("ACTION", ""));
         assertValidationErrors(
                 task,
-                createViolationMessage("actions[1].<collection element>", task.getActions().get(1), "may not be empty"));
+                createViolationMessage("actions[1].<collection element>", task.actions().get(1), "may not be empty"));
 
         task = new Task("TASK", "desc/desc", List.of("ACTION", "ASDF"));
         _pipelineValidator.validateOnAdd(task, Map.of());
@@ -655,11 +657,11 @@ public class TestPipelineValidator {
         var action = new Action(null, null, "", List.of(property1, property2, property3));
         assertValidationErrors(
                 action,
-                createViolationMessage("name", action.getName(), "may not be empty"),
-                createViolationMessage("description", action.getDescription(), "may not be empty"),
-                createViolationMessage("algorithm", action.getAlgorithm(), "may not be empty"),
-                createViolationMessage("properties[1].name", property2.getName(), "may not be empty"),
-                createViolationMessage("properties[2].value", property3.getValue(), "may not be null"));
+                createViolationMessage("name", action.name(), "may not be empty"),
+                createViolationMessage("description", action.description(), "may not be empty"),
+                createViolationMessage("algorithm", action.algorithm(), "may not be empty"),
+                createViolationMessage("properties[1].name", property2.name(), "may not be empty"),
+                createViolationMessage("properties[2].value", property3.value(), "may not be null"));
 
         action = new Action("ACTION", "descr", "ALGO", List.of(property1));
         _pipelineValidator.validateOnAdd(action, Map.of());
@@ -673,10 +675,10 @@ public class TestPipelineValidator {
                                             false, false);
         assertValidationErrors(
                 algorithm,
-                createViolationMessage("name", algorithm.getName(), "may not be empty"),
-                createViolationMessage("description", algorithm.getDescription(), "may not be empty"),
+                createViolationMessage("name", algorithm.name(), "may not be empty"),
+                createViolationMessage("description", algorithm.description(), "may not be empty"),
                 createViolationMessage("actionType", null, "may not be null"),
-                createViolationMessage("trackType", algorithm.getTrackType(), "may not be empty"),
+                createViolationMessage("trackType", algorithm.trackType(), "may not be empty"),
                 createViolationMessage("providesCollection", null, "may not be null"),
                 createViolationMessage("requiresCollection", null, "may not be null"),
                 "must support batch processing, stream processing, or both");
@@ -865,8 +867,8 @@ public class TestPipelineValidator {
         var action = new Action(namePrefix + " ACTION", "adf", algorithmName, List.of());
         addElement(action);
 
-        var task = new Task(namePrefix + " TASK", "asfd", List.of(action.getName()));
+        var task = new Task(namePrefix + " TASK", "asfd", List.of(action.name()));
         addElement(task);
-        return task.getName();
+        return task.name();
     }
 }

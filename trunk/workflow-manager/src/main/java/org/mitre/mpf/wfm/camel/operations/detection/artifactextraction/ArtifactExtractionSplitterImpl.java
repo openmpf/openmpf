@@ -107,7 +107,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         JobPipelineElements pipelineElements = job.getPipelineElements();
         int numPipelineTasks = pipelineElements.getTaskCount();
         int lastTaskIndex = numPipelineTasks - 1;
-        ActionType finalActionType = pipelineElements.getAlgorithm(lastTaskIndex, 0).getActionType();
+        ActionType finalActionType = pipelineElements.getAlgorithm(lastTaskIndex, 0).actionType();
         if (finalActionType == ActionType.MARKUP) {
             lastTaskIndex = lastTaskIndex - 1;
         }
@@ -130,7 +130,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             if (lastTaskOnly && notLastTask) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to {} property.",
-                        pipelineElements.getTask(taskIndex).getName(), media.getId(),
+                        pipelineElements.getTask(taskIndex).name(), media.getId(),
                         MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
                 continue;
             }
@@ -140,11 +140,11 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             if (_taskMergingManager.isMergeTarget(job, media, taskIndex)) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to being merged with a following task.",
-                        pipelineElements.getTask(taskIndex).getName(), media.getId());
+                        pipelineElements.getTask(taskIndex).name(), media.getId());
                 continue;
             }
 
-            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).getActions().size();
+            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).actions().size();
                  actionIndex++) {
 
                 Action action = pipelineElements.getAction(taskIndex, actionIndex);
@@ -197,8 +197,8 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             ArtifactExtractionRequest request, SortedSet<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
         if (policy == ArtifactExtractionPolicy.VISUAL_TYPES_ONLY) {
-            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
-            if (_aggregateJobPropertiesUtil.isNonVisualObjectType(algo.getTrackType())) {
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
+            if (_aggregateJobPropertiesUtil.isNonVisualObjectType(algo.trackType())) {
                 return tracks;
             }
         }

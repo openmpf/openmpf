@@ -106,11 +106,11 @@ public class TestPipelineService {
         _algorithms = List.of(_algo1, _algo2);
 
 
-        var action1 = new Action("ACTION1", "Action1 description", _algo1.getName(),
+        var action1 = new Action("ACTION1", "Action1 description", _algo1.name(),
                                  List.of(new ActionProperty("PROP1", "PROP1Val"),
                                          new ActionProperty("Prop2", "Prop2Val")));
 
-        _action2 = new Action("ACTION2", "Action 2 description", _algo2.getName(), List.of());
+        _action2 = new Action("ACTION2", "Action 2 description", _algo2.name(), List.of());
 
         var action3 = new Action("ACTION3", "Action 3 - missing algo", "SOME ALGO",
                                  List.of());
@@ -118,25 +118,25 @@ public class TestPipelineService {
 
 
         _task1 = new Task("TASK1", "Task1 description",
-                          List.of(action1.getName()));
+                          List.of(action1.name()));
 
         var task2 = new Task("TASK2", "Task2",
-                             List.of(_action2.getName()));
+                             List.of(_action2.name()));
 
         var task3 = new Task("TASK3", "Task3 description - missing action and missing algorithm",
-                             List.of("SOME ACTION", action3.getName()));
+                             List.of("SOME ACTION", action3.name()));
 
         _tasks = List.of(_task1, task2, task3);
 
 
         var pipeline1 = new Pipeline("PIPELINE1", "Pipeline 1 description",
-                                     List.of(_task1.getName(), task2.getName()));
+                                     List.of(_task1.name(), task2.name()));
 
         var pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 - missing task",
                                      List.of("SOME TASK"));
 
         var pipeline3 = new Pipeline("PIPELINE3", "Pipeline 3 - task missing action",
-                                     List.of(_task1.getName(), task3.getName()));
+                                     List.of(_task1.name(), task3.name()));
 
 
         _pipelines = List.of(pipeline1, pipeline2, pipeline3);
@@ -174,10 +174,10 @@ public class TestPipelineService {
         verifyLoaded(_algorithms, _actions, _tasks, _pipelines);
 
 
-        _pipelineService.deleteAlgorithm(_algorithms.get(0).getName());
-        _pipelineService.deleteAction(_actions.get(0).getName());
-        _pipelineService.deleteTask(_tasks.get(0).getName());
-        _pipelineService.deletePipeline(_pipelines.get(0).getName());
+        _pipelineService.deleteAlgorithm(_algorithms.get(0).name());
+        _pipelineService.deleteAction(_actions.get(0).name());
+        _pipelineService.deleteTask(_tasks.get(0).name());
+        _pipelineService.deletePipeline(_pipelines.get(0).name());
         _pipelineService.deletePipeline("DOES NOT EXIST");
 
         verifyLoaded(
@@ -202,7 +202,7 @@ public class TestPipelineService {
 
         assertEquals(expectedAlgorithms.size(), loaderPipelineService.getAlgorithms().size());
         for (var expectedAlgo : expectedAlgorithms) {
-            var loadedAlgo = loaderPipelineService.getAlgorithm(expectedAlgo.getName());
+            var loadedAlgo = loaderPipelineService.getAlgorithm(expectedAlgo.name());
             assertNotSame("Deserialized version should be a different object.", expectedAlgo, loadedAlgo);
             assertEquals("Deserialized version should be equal to original.", expectedAlgo, loadedAlgo);
 
@@ -212,7 +212,7 @@ public class TestPipelineService {
 
         assertEquals(expectedActions.size(), loaderPipelineService.getActions().size());
         for (var expectedAction : expectedActions) {
-            var loadedAction = loaderPipelineService.getAction(expectedAction.getName());
+            var loadedAction = loaderPipelineService.getAction(expectedAction.name());
             assertNotSame("Deserialized version should be a different object.", expectedAction, loadedAction);
             assertEquals("Deserialized version should be equal to original.", expectedAction, loadedAction);
 
@@ -222,7 +222,7 @@ public class TestPipelineService {
 
         assertEquals(expectedTasks.size(), loaderPipelineService.getTasks().size());
         for (var expectedTask : expectedTasks) {
-            var loadedTask = loaderPipelineService.getTask(expectedTask.getName());
+            var loadedTask = loaderPipelineService.getTask(expectedTask.name());
             assertNotSame("Deserialized version should be a different object.", expectedTask, loadedTask);
             assertEquals("Deserialized version should be equal to original.", expectedTask, loadedTask);
 
@@ -233,7 +233,7 @@ public class TestPipelineService {
 
         assertEquals(expectedPipelines.size(), loaderPipelineService.getPipelines().size());
         for (var expectedPipeline : expectedPipelines) {
-            var loadedPipeline = loaderPipelineService.getPipeline(expectedPipeline.getName());
+            var loadedPipeline = loaderPipelineService.getPipeline(expectedPipeline.name());
             assertNotSame("Deserialized version should be a different object.",
                           expectedPipeline, loadedPipeline);
             assertEquals("Deserialized version should be equal to original.", expectedPipeline, loadedPipeline);
@@ -248,29 +248,29 @@ public class TestPipelineService {
     public void canGetJobPipelineElements() {
         saveAllPipelineElements();
 
-        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(_pipelines.get(0).getName());
+        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(_pipelines.get(0).name());
 
         verify(_mockPipelineValidator)
-                .verifyBatchPipelineRunnable(eq(_pipelines.get(0).getName()),
+                .verifyBatchPipelineRunnable(eq(_pipelines.get(0).name()),
                                              same(_pipelineService));
 
         assertEquals(_pipelines.get(0), pipelineElements.getPipeline());
 
         assertEquals(2, pipelineElements.getTaskCount());
         assertEquals(2, pipelineElements.getAllTasks().size());
-        assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).getName()));
-        assertEquals(_tasks.get(1), pipelineElements.getTask(_tasks.get(1).getName()));
+        assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).name()));
+        assertEquals(_tasks.get(1), pipelineElements.getTask(_tasks.get(1).name()));
 
         assertEquals(2, pipelineElements.getAllActions().size());
-        assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).getName()));
-        assertEquals(_actions.get(1), pipelineElements.getAction(_actions.get(1).getName()));
+        assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).name()));
+        assertEquals(_actions.get(1), pipelineElements.getAction(_actions.get(1).name()));
         assertEquals(_actions.get(0), pipelineElements.getAction(0, 0));
         assertEquals(_actions.get(1), pipelineElements.getAction(1, 0));
 
 
         assertEquals(2, pipelineElements.getAllAlgorithms().size());
-        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).getName()));
-        assertEquals(_algorithms.get(1), pipelineElements.getAlgorithm(_algorithms.get(1).getName()));
+        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).name()));
+        assertEquals(_algorithms.get(1), pipelineElements.getAlgorithm(_algorithms.get(1).name()));
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(0, 0));
         assertEquals(_algorithms.get(1), pipelineElements.getAlgorithm(1, 0));
     }
@@ -282,28 +282,28 @@ public class TestPipelineService {
         saveAllPipelineElements();
 
         var pipeline = new Pipeline("with dups", "descr",
-                                    List.of(_tasks.get(0).getName(), _tasks.get(0).getName()));
+                                    List.of(_tasks.get(0).name(), _tasks.get(0).name()));
         _pipelineService.save(pipeline);
 
-        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(pipeline.getName());
+        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(pipeline.name());
 
         verify(_mockPipelineValidator)
-                .verifyBatchPipelineRunnable(eq(pipeline.getName()), same(_pipelineService));
+                .verifyBatchPipelineRunnable(eq(pipeline.name()), same(_pipelineService));
 
         assertEquals(pipeline, pipelineElements.getPipeline());
 
         assertEquals(2, pipelineElements.getTaskCount());
         assertEquals(1, pipelineElements.getAllTasks().size());
-        assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).getName()));
+        assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).name()));
 
         assertEquals(1, pipelineElements.getAllActions().size());
-        assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).getName()));
+        assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).name()));
         assertEquals(_actions.get(0), pipelineElements.getAction(0, 0));
         assertEquals(_actions.get(0), pipelineElements.getAction(1, 0));
 
 
         assertEquals(1, pipelineElements.getAllAlgorithms().size());
-        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).getName()));
+        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).name()));
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(0, 0));
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(1, 0));
     }
@@ -330,36 +330,36 @@ public class TestPipelineService {
                 .validateTransientPipeline(same(transientPipeline),
                                            any(TransientPipelinePartLookup.class));
 
-        assertEquals(List.of("TASK1", "TASK2"), pipelineElements.getPipeline().getTasks());
+        assertEquals(List.of("TASK1", "TASK2"), pipelineElements.getPipeline().tasks());
 
         var task1 = pipelineElements.getTask("TASK1");
-        assertEquals("TASK1", task1.getName());
-        assertThat(task1.getDescription(), containsString("transient"));
-        assertEquals(List.of("ACTION1"), task1.getActions());
+        assertEquals("TASK1", task1.name());
+        assertThat(task1.description(), containsString("transient"));
+        assertEquals(List.of("ACTION1"), task1.actions());
 
 
         var task2 = pipelineElements.getTask("TASK2");
-        assertEquals("TASK2", task2.getName());
-        assertThat(task2.getDescription(), containsString("transient"));
-        assertEquals(List.of("ACTION2", "ACTION3"), task2.getActions());
+        assertEquals("TASK2", task2.name());
+        assertThat(task2.description(), containsString("transient"));
+        assertEquals(List.of("ACTION2", "ACTION3"), task2.actions());
 
         var action1 = pipelineElements.getAction("ACTION1");
-        assertEquals("ALGO1", action1.getAlgorithm());
-        assertThat(action1.getDescription(), containsString("transient"));
-        assertThat(action1.getProperties(), hasSize(1));
-        assertEquals("value1", action1.getPropertyValue("prop1"));
+        assertEquals("ALGO1", action1.algorithm());
+        assertThat(action1.description(), containsString("transient"));
+        assertThat(action1.properties(), hasSize(1));
+        assertEquals("value1", action1.propertyValue("prop1"));
         assertEquals(_algo1, pipelineElements.getAlgorithm(0, 0));
 
         var action2 = pipelineElements.getAction("ACTION2");
-        assertEquals("ALGO2", action2.getAlgorithm());
-        assertThat(action2.getProperties(), hasSize(1));
-        assertEquals("value2", action2.getPropertyValue("prop2"));
+        assertEquals("ALGO2", action2.algorithm());
+        assertThat(action2.properties(), hasSize(1));
+        assertEquals("value2", action2.propertyValue("prop2"));
         assertEquals(_algo2, pipelineElements.getAlgorithm(1, 0));
 
 
         var action3 = pipelineElements.getAction("ACTION3");
-        assertEquals("ALGO2", action3.getAlgorithm());
-        assertThat(action3.getProperties(), empty());
+        assertEquals("ALGO2", action3.algorithm());
+        assertThat(action3.properties(), empty());
         assertEquals(_algo2, pipelineElements.getAlgorithm(1, 1));
     }
 
@@ -377,20 +377,20 @@ public class TestPipelineService {
                 .validateTransientPipeline(same(transientPipeline),
                                            any(TransientPipelinePartLookup.class));
 
-        assertEquals(List.of("TASK1", "TASK2"), pipelineElements.getPipeline().getTasks());
+        assertEquals(List.of("TASK1", "TASK2"), pipelineElements.getPipeline().tasks());
         assertEquals(_task1, pipelineElements.getTask("TASK1"));
         assertEquals(_action2, pipelineElements.getAction(1, 1));
 
         var task2 = pipelineElements.getTask("TASK2");
-        assertEquals("TASK2", task2.getName());
-        assertThat(task2.getDescription(), containsString("transient"));
-        assertEquals(List.of("ACTION1", "ACTION2"), task2.getActions());
+        assertEquals("TASK2", task2.name());
+        assertThat(task2.description(), containsString("transient"));
+        assertEquals(List.of("ACTION1", "ACTION2"), task2.actions());
 
         var action1 = pipelineElements.getAction("ACTION1");
-        assertEquals("ALGO1", action1.getAlgorithm());
-        assertThat(action1.getDescription(), containsString("transient"));
-        assertThat(action1.getProperties(), hasSize(1));
-        assertEquals("value1", action1.getPropertyValue("prop1"));
+        assertEquals("ALGO1", action1.algorithm());
+        assertThat(action1.description(), containsString("transient"));
+        assertThat(action1.properties(), hasSize(1));
+        assertEquals("value1", action1.propertyValue("prop1"));
         assertEquals(_algo1, pipelineElements.getAlgorithm(0, 0));
     }
 }

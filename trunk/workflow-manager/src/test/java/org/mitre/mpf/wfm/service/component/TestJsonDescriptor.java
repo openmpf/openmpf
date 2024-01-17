@@ -45,22 +45,22 @@ public class TestJsonDescriptor {
     public void canParseJsonDescriptorForCppComponent() throws IOException {
         JsonComponentDescriptor descriptor = loadDescriptor("CplusplusHelloWorldComponent.json");
 
-        assertEquals("CplusplusHelloWorld", descriptor.getComponentName());
-        assertEquals(ComponentLanguage.CPP, descriptor.getSourceLanguage());
-        assertEquals("8.0", descriptor.getComponentVersion());
+        assertEquals("CplusplusHelloWorld", descriptor.componentName());
+        assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage());
+        assertEquals("8.0", descriptor.componentVersion());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so",
-                     descriptor.getBatchLibrary());
+                     descriptor.batchLibrary());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
-                     descriptor.getStreamLibrary());
+                     descriptor.streamLibrary());
 
-        assertEquals(3, descriptor.getAlgorithm().getProvidesCollection().getProperties().size());
+        assertEquals(3, descriptor.algorithm().providesCollection().properties().size());
 
-        boolean propertiesLoaded = descriptor.getAlgorithm().getProvidesCollection().getProperties()
+        boolean propertiesLoaded = descriptor.algorithm().providesCollection().properties()
                 .stream()
-                .anyMatch(p -> p.getDescription().equals("my prop 1")
-                        && p.getName().equals("PROP1")
-                        && p.getType() == ValueType.INT
-                        && p.getDefaultValue().equals("2"));
+                .anyMatch(p -> p.description().equals("my prop 1")
+                        && p.name().equals("PROP1")
+                        && p.type() == ValueType.INT
+                        && p.defaultValue().equals("2"));
         assertTrue(propertiesLoaded);
     }
 
@@ -69,48 +69,48 @@ public class TestJsonDescriptor {
     public void canParseJsonDescriptorForCppComponentWithCustomPipeline() throws IOException {
         JsonComponentDescriptor descriptor = loadDescriptor("CplusplusHelloCustomPipelinesComponent.json");
 
-        assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.getComponentName());
-        assertEquals(ComponentLanguage.CPP, descriptor.getSourceLanguage());
-        assertEquals("8.0", descriptor.getComponentVersion());
+        assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName());
+        assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage());
+        assertEquals("8.0", descriptor.componentVersion());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
-                     descriptor.getBatchLibrary());
-        assertNull(descriptor.getStreamLibrary());
+                     descriptor.batchLibrary());
+        assertNull(descriptor.streamLibrary());
 
-        assertEquals(3, descriptor.getAlgorithm().getProvidesCollection().getProperties().size());
+        assertEquals(3, descriptor.algorithm().providesCollection().properties().size());
 
-        boolean propertiesLoaded = descriptor.getAlgorithm().getProvidesCollection().getProperties()
+        boolean propertiesLoaded = descriptor.algorithm().providesCollection().properties()
                 .stream()
-                .anyMatch(p -> p.getDescription().equals("my prop 1")
-                        && p.getName().equals("PROP1")
-                        && p.getType() == ValueType.INT
-                        && p.getDefaultValue().equals("2"));
+                .anyMatch(p -> p.description().equals("my prop 1")
+                        && p.name().equals("PROP1")
+                        && p.type() == ValueType.INT
+                        && p.defaultValue().equals("2"));
         assertTrue(propertiesLoaded);
 
 
-        assertEquals(2, descriptor.getTasks().size());
+        assertEquals(2, descriptor.tasks().size());
 
-        assertEquals(3, descriptor.getActions().size());
+        assertEquals(3, descriptor.actions().size());
 
 
         long numActionProperties = descriptor
-                .getActions()
+                .actions()
                 .stream()
-                .mapToInt(a -> a.getProperties().size())
+                .mapToInt(a -> a.properties().size())
                 .sum();
         assertEquals(3, numActionProperties);
 
 
         long numReferencedActions = descriptor
-                .getTasks()
+                .tasks()
                 .stream()
-                .mapToInt(t -> t.getActions().size())
+                .mapToInt(t -> t.actions().size())
                 .sum();
         assertEquals(3, numReferencedActions);
 
         long numReferencedTasks = descriptor
-                .getPipelines()
+                .pipelines()
                 .stream()
-                .mapToInt(p -> p.getTasks().size())
+                .mapToInt(p -> p.tasks().size())
                 .sum();
         assertEquals(2, numReferencedTasks);
 
@@ -120,27 +120,27 @@ public class TestJsonDescriptor {
     public void canParseJsonDescriptorForJavaComponent() throws IOException {
         JsonComponentDescriptor descriptor = loadDescriptor("JavaTestDetection.json");
 
-        assertTrue(descriptor.getPipelines().isEmpty());
-        assertEquals("JavaTestDetection", descriptor.getComponentName());
-        assertEquals(ComponentLanguage.JAVA, descriptor.getSourceLanguage());
-        assertEquals("8.0", descriptor.getComponentVersion());
-        assertEquals("8.0", descriptor.getMiddlewareVersion());
-        assertEquals("mpf-java-test-detection-component-8.0.jar", descriptor.getBatchLibrary());
-        assertNull(descriptor.getStreamLibrary());
-        assertEquals(1, descriptor.getEnvironmentVariables().size());
-        JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.getEnvironmentVariables().get(0);
-        assertTrue(envVar.getName().equals("DUMMY_VAR")
-                && envVar.getValue().equals("nothing")
-                && envVar.getSep() == null);
+        assertTrue(descriptor.pipelines().isEmpty());
+        assertEquals("JavaTestDetection", descriptor.componentName());
+        assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage());
+        assertEquals("8.0", descriptor.componentVersion());
+        assertEquals("8.0", descriptor.middlewareVersion());
+        assertEquals("mpf-java-test-detection-component-8.0.jar", descriptor.batchLibrary());
+        assertNull(descriptor.streamLibrary());
+        assertEquals(1, descriptor.environmentVariables().size());
+        JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables().get(0);
+        assertTrue(envVar.name().equals("DUMMY_VAR")
+                && envVar.value().equals("nothing")
+                && envVar.sep() == null);
 
-        assertEquals(3, descriptor.getAlgorithm().getProvidesCollection().getProperties().size());
+        assertEquals(3, descriptor.algorithm().providesCollection().properties().size());
 
-        boolean propertiesLoaded = descriptor.getAlgorithm().getProvidesCollection().getProperties()
+        boolean propertiesLoaded = descriptor.algorithm().providesCollection().properties()
                 .stream()
-                .anyMatch(p -> p.getDescription().equals("my prop 1")
-                        && p.getName().equals("PROP1")
-                        && p.getType() == ValueType.INT
-                        && p.getDefaultValue().equals("2"));
+                .anyMatch(p -> p.description().equals("my prop 1")
+                        && p.name().equals("PROP1")
+                        && p.type() == ValueType.INT
+                        && p.defaultValue().equals("2"));
         assertTrue(propertiesLoaded);
     }
 

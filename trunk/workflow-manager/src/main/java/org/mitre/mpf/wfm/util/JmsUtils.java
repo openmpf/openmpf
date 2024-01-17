@@ -63,16 +63,16 @@ public class JmsUtils {
                 BatchJob job = _inProgressBatchJobs.getJob(jobId);
 
                 for (Algorithm algorithm : job.getPipelineElements().getAllAlgorithms()) {
-                    String routeName = createCancellationRouteName(jobId, algorithm.getActionType().name(),
-                                                                   algorithm.getName(), "REQUEST");
+                    String routeName = createCancellationRouteName(jobId, algorithm.actionType().name(),
+                                                                   algorithm.name(), "REQUEST");
                     String routeUri = String.format("activemq:MPF.%s_%s_REQUEST?selector=JobId%%3D%d",
-                                                    algorithm.getActionType().name(), algorithm.getName(), jobId);
+                                                    algorithm.actionType().name(), algorithm.name(), jobId);
                     LOG.debug("Creating route {} with URI {}.", routeName, routeUri);
                     from(routeUri)
                             .routeId(routeName)
                             .setExchangePattern(ExchangePattern.InOnly)
                             .log(LoggingLevel.DEBUG, "Cancelling a message for ${headers.JobId}...")
-                            .to(cancellationEndpointForActionType(algorithm.getActionType()));
+                            .to(cancellationEndpointForActionType(algorithm.actionType()));
                 }
             }
         });

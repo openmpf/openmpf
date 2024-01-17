@@ -45,6 +45,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -239,11 +240,10 @@ public class TestRedis {
                 .thenReturn(List.of(media));
         when(job.getPipelineElements().getTaskCount())
                 .thenReturn(2);
-        when(job.getPipelineElements().getTask(0).getActions().size())
-                .thenReturn(1);
-        when(job.getPipelineElements().getTask(1).getActions().size())
-                .thenReturn(1);
-
+        when(job.getPipelineElements().getTask(0))
+                .thenReturn(new Task("name0", "description0", List.of("action0")));
+        when(job.getPipelineElements().getTask(1))
+                .thenReturn(new Task("name1", "description1", List.of("action1")));
 
         _redis.clearTracks(job);
 

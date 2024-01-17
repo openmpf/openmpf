@@ -48,12 +48,12 @@ public class MediaActionProps {
     }
 
     public Map<String, String> get(Media media, Action action) {
-        var cached = _propMapCache.get(media.getId(), action.getName());
+        var cached = _propMapCache.get(media.getId(), action.name());
         if (cached != null) {
             return cached;
         }
         var props = _propMapGetter.apply(media, action);
-        _propMapCache.put(media.getId(), action.getName(), props);
+        _propMapCache.put(media.getId(), action.name(), props);
         return props;
     }
 

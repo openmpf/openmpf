@@ -99,7 +99,7 @@ public class MarkupSplitter {
         List<Message> messages = new ArrayList<>(job.getMedia().size());
 
         // Markup tasks always have one action.
-        var actionName = markupTask.getActions().get(0);
+        var actionName = markupTask.actions().get(0);
         var markupAction = job.getPipelineElements().getAction(actionName);
 
         int mediaIndex = -1;
@@ -154,12 +154,12 @@ public class MarkupSplitter {
                         .setValue(entry.getValue());
             }
 
-            var algorithm = job.getPipelineElements().getAlgorithm(markupAction.getAlgorithm());
+            var algorithm = job.getPipelineElements().getAlgorithm(markupAction.algorithm());
             var message = new DefaultMessage(_camelContext);
             message.setHeader(
                     MpfHeaders.JMS_DESTINATION,
-                    String.format("MPF.%s_%s_REQUEST", algorithm.getActionType(),
-                                  markupAction.getAlgorithm()));
+                    String.format("MPF.%s_%s_REQUEST", algorithm.actionType(),
+                                  markupAction.algorithm()));
             message.setHeader(
                     MpfHeaders.JMS_REPLY_TO,
                     MarkupResponseRouteBuilder.JMS_DESTINATION);
@@ -178,7 +178,7 @@ public class MarkupSplitter {
     private static int findLastDetectionTaskIndex(JobPipelineElements pipeline) {
         int taskIndex = -1;
         for (int i = 0; i < pipeline.getTaskCount(); i++) {
-            ActionType actionType = pipeline.getAlgorithm(i, 0).getActionType();
+            ActionType actionType = pipeline.getAlgorithm(i, 0).actionType();
             if(actionType == ActionType.DETECTION) {
                 taskIndex = i;
             }
@@ -211,7 +211,7 @@ public class MarkupSplitter {
                 job.getId(), media.getId(), taskToMarkupIndex, 0);
         var algo = job.getPipelineElements().getAlgorithm(taskToMarkupIndex, 0);
         var isExemptFromIllFormedDetectionRemoval = _aggregateJobPropertiesUtil
-                .isExemptFromIllFormedDetectionRemoval(algo.getTrackType());
+                .isExemptFromIllFormedDetectionRemoval(algo.trackType());
 
         int trackIndex = 0;
         for (Track track : tracks) {

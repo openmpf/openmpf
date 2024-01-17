@@ -285,7 +285,7 @@ public class TiesDbService {
 
             var lastDetectionTask = pipelineElements.getTask(lastDetectionTaskIdx);
             // Include the track types that were merged away.
-            var mergedTaskIdxs = IntStream.range(0, lastDetectionTask.getActions().size())
+            var mergedTaskIdxs = IntStream.range(0, lastDetectionTask.actions().size())
                     .flatMap(ai -> _taskMergingManager.getTransitiveMergeTargets(
                             job, media, lastDetectionTaskIdx, ai));
 
@@ -298,7 +298,7 @@ public class TiesDbService {
         }
         return tasks
                 .flatMap(pipelineElements::getActionStreamInOrder)
-                .map(a -> pipelineElements.getAlgorithm(a.getAlgorithm()).getTrackType())
+                .map(a -> pipelineElements.getAlgorithm(a.algorithm()).trackType())
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
     }
 

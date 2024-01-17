@@ -113,7 +113,7 @@ public class BasicAdminComponentRegistrationController {
     @ResponseBody
     public ResponseMessage registerUnmanagedComponent(@RequestBody JsonComponentDescriptor descriptor) {
         return withWriteLock(() -> {
-            boolean alreadyRegistered = _componentState.getByComponentName(descriptor.getComponentName()).isPresent();
+            boolean alreadyRegistered = _componentState.getByComponentName(descriptor.componentName()).isPresent();
             try {
                 boolean reRegistered = _addComponentService.registerUnmanagedComponent(descriptor);
                 if (alreadyRegistered) {
@@ -127,7 +127,7 @@ public class BasicAdminComponentRegistrationController {
                 }
             }
             catch (ComponentRegistrationException e) {
-                return handleAddComponentExceptions(descriptor.getComponentName(), e);
+                return handleAddComponentExceptions(descriptor.componentName(), e);
             }
         });
     }

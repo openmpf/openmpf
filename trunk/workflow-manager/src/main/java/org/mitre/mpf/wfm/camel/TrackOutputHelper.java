@@ -168,6 +168,6 @@ public class TrackOutputHelper {
         }
         return job.getPipelineElements()
                 .getAction(track.getMergedTaskIndex(), actionIndex)
-                .getName();
+                .name();
     }
 }

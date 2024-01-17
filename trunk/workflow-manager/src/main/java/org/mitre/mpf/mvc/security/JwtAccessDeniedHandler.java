@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,54 +24,45 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.mvc.security;
 
+import java.io.IOException;
+import java.util.Map;
+
+import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
-public class AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
+public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 
-    private static final String BAD_CREDENTIALS_MESSAGE = "Bad credentials";
+    private final BearerTokenAccessDeniedHandler _bearerTokenAccessDeniedHandler
+            = new BearerTokenAccessDeniedHandler();
 
-    @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
+    private final ObjectMapper _objectMapper;
 
-        if (BAD_CREDENTIALS_MESSAGE.equals(exception.getMessage())) {
-            response.sendRedirect(request.getContextPath() + "/login?reason=error");
-        }
+    @Inject
+    JwtAccessDeniedHandler(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
     }
 
+    @Override
+    public void handle(
+            HttpServletRequest request, HttpServletResponse response,
+            AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        _bearerTokenAccessDeniedHandler.handle(request, response, accessDeniedException);
+        if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
+            var messageObj = Map.of("message", accessDeniedException.getMessage());
+            _objectMapper.writeValue(response.getWriter(), messageObj);
+        }
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

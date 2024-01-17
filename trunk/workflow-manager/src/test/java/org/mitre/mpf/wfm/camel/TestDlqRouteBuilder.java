@@ -35,7 +35,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -75,40 +74,36 @@ import com.google.protobuf.InvalidProtocolBufferException;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestDlqRouteBuilder extends MockitoTest.Lenient {
 
-    public static final String ACTIVE_MQ_HOST =
-            Optional.ofNullable(System.getenv("ACTIVE_MQ_HOST")).orElse("localhost");
-    public static final String ACTIVE_MQ_BROKER_URI = "tcp://" + ACTIVE_MQ_HOST + ":61616";
+    private static final String ENTRY_POINT = "activemq:MPF.TEST.ActiveMQ.DLQ";
+    private static final String EXIT_POINT = "activemq:MPF.TEST.COMPLETED_DETECTIONS";
+    private static final String AUDIT_EXIT_POINT = "activemq://MPF.TEST.DLQ_PROCESSED_MESSAGES";
+    private static final String INVALID_EXIT_POINT = "activemq:MPF.TEST.DLQ_INVALID_MESSAGES";
+    private static final String ROUTE_ID_PREFIX = "Test DLQ Route";
+    private static final String SELECTOR_REPLY_TO = "queue://MPF.TEST.COMPLETED_DETECTIONS";
 
-    public static final String ENTRY_POINT = "activemq:MPF.TEST.ActiveMQ.DLQ";
-    public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";
-    public static final String AUDIT_EXIT_POINT = "jms://MPF.TEST.DLQ_PROCESSED_MESSAGES";
-    public static final String INVALID_EXIT_POINT = "jms:MPF.TEST.DLQ_INVALID_MESSAGES";
-    public static final String ROUTE_ID_PREFIX = "Test DLQ Route";
-    public static final String SELECTOR_REPLY_TO = "queue://MPF.TEST.COMPLETED_DETECTIONS";
+    private static final String BAD_SELECTOR_REPLY_TO = "queue://MPF.TEST.BAD.COMPLETED_DETECTIONS";
 
-    public static final String BAD_SELECTOR_REPLY_TO = "queue://MPF.TEST.BAD.COMPLETED_DETECTIONS";
-
-    public static final String DUPLICATE_FROM_STORE_FAILURE_CAUSE =
+    private static final String DUPLICATE_FROM_STORE_FAILURE_CAUSE =
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
-    public static final String DUPLICATE_FROM_CURSOR_FAILURE_CAUSE =
+    private static final String DUPLICATE_FROM_CURSOR_FAILURE_CAUSE =
             "java.lang.Throwable: duplicate paged in from cursor for queue://MPF.DETECTION_DUMMY_REQUEST";
-    public static final String SUPPRESSING_DUPLICATE_FAILURE_CAUSE =
+    private static final String SUPPRESSING_DUPLICATE_FAILURE_CAUSE =
             "java.lang.Throwable: Suppressing duplicate delivery on connection, consumer ID:dummy";
-    public static final String OTHER_FAILURE_CAUSE = "some other failure";
+    private static final String OTHER_FAILURE_CAUSE = "some other failure";
 
-    public static final String RUN_ID_PROPERTY_KEY = "runId";
+    private static final String RUN_ID_PROPERTY_KEY = "runId";
 
-    public static final int NUM_MESSAGES_PER_TEST = 5;
-    public static final int NUM_LEFTOVER_RECEIVE_RETRIES = 5;
+    private static final int NUM_MESSAGES_PER_TEST = 5;
+    private static final int NUM_LEFTOVER_RECEIVE_RETRIES = 5;
 
     // time for all messages to be processed by the DetectionDeadLetterProcessor
-    public static final int HANDLE_TIMEOUT_MILLISEC = 30_000;
+    private static final int HANDLE_TIMEOUT_MILLISEC = 30_000;
 
     // time to wait for DetectionDeadLetterProcessor to see if it processes any messages when it shouldn't do anything
-    public static final int NOT_HANDLE_TIMEOUT_MILLISEC = 500;
+    private static final int NOT_HANDLE_TIMEOUT_MILLISEC = 500;
 
     // time for leftover message to be received from queue
-    public static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 10_000;
+    private static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 10_000;
 
     private static int runId = -1;
 
@@ -120,14 +115,15 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
     @Mock
     private DetectionDeadLetterProcessor mockDetectionDeadLetterProcessor;
 
+
     @Before
     public void setup() throws Exception {
         SimpleRegistry simpleRegistry = new SimpleRegistry();
         simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
         camelContext = new DefaultCamelContext(simpleRegistry);
 
-        connectionFactory = new ActiveMQConnectionFactory(ACTIVE_MQ_BROKER_URI);
-        camelContext.addComponent("jms", ActiveMQComponent.jmsComponentAutoAcknowledge(connectionFactory));
+        connectionFactory = new ActiveMQConnectionFactory(
+                "vm://test_dlq?broker.persistent=false");
         ActiveMQComponent activeMqComponent = ActiveMQComponent.activeMQComponent();
         activeMqComponent.setConnectionFactory(connectionFactory);
         camelContext.addComponent("activemq", activeMqComponent);
@@ -167,6 +163,7 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
             connection = null;
         }
     }
+
 
     private void removeQueues() {
         removeQueueQuietly(ENTRY_POINT);

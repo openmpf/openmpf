@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 
     job_properties["JOB_NAME"] = job_name;
 
-    const string default_broker_uri = "failover://(tcp://localhost:61616?jms.prefetchPolicy.all=1)?startupMaxReconnectAttempts=1";
+    const string default_broker_uri = "failover:(tcp://localhost:61616?jms.prefetchPolicy.all=1)?startupMaxReconnectAttempts=1";
     getArg<string>(jobArgs, "broker_uri", default_broker_uri, broker_uri);
     LOG4CXX_DEBUG(logger, "BROKER = " << broker_uri);
 

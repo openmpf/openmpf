@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.UserDao;
 import org.mitre.mpf.wfm.data.entities.persistent.User;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ import java.util.Optional;
 
 import javax.inject.Inject;
 
+@Profile("!oidc")
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {

@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 public class MarkupCancellationRouteBuilder extends RouteBuilder {
     private static final Logger log = LoggerFactory.getLogger(MarkupCancellationRouteBuilder.class);
 
-    public static final String ENTRY_POINT = "jms:MPF.CANCELLED_MARKUPS";
+    public static final String ENTRY_POINT = "activemq:MPF.CANCELLED_MARKUPS";
     public static final String EXIT_POINT = MarkupResponseRouteBuilder.ENTRY_POINT;
     public static final String ROUTE_ID = "Markup Cancellation Route";
 

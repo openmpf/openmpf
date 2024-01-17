@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
@@ -56,7 +57,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 	public static final String JMS_DESTINATION = "MPF.COMPLETED_DETECTIONS";
 
 	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = "jms:" + JMS_DESTINATION;
+	public static final String ENTRY_POINT = "activemq:" + JMS_DESTINATION;
 
 	/** The default exit point for this route. */
 	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
@@ -108,6 +109,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.process(DetectionTransformationProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
+                        .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 						.streaming() // Aggregate responses in any order.
                         .process(ArtifactExtractionProcessor.REF)
 					.end()

@@ -39,7 +39,7 @@ public enum StreamingEndpoints {
 	public static final String QUEUE_NAME_PREFIX = "MPF.";
 
 	public String endpointName() {
-		return "jms:" + queueName();
+		return "activemq:" + queueName();
 	}
 
 	public String queueName() {

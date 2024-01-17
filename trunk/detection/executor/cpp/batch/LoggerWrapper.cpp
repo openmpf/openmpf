@@ -24,44 +24,26 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
+#include "LoggerWrapper.h"
 
 
-import java.io.IOException;
+JobLogContext::JobLogContext(
+        std::string_view new_job,
+        std::shared_ptr<std::string> logger_job_ref,
+        std::shared_ptr<ILogger> logger_impl)
+    : logger_job_ref_{std::move(logger_job_ref)}
+    , previous_job_{std::move(*logger_job_ref_)}
+    , logger_impl_{std::move(logger_impl)}
+{
+    *logger_job_ref_ = new_job;
+    logger_impl_->SetJobName(new_job);
+}
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.csrf.InvalidCsrfTokenException;
-import org.springframework.stereotype.Service;
-
-@Service("CustomAccessDeniedHandler")
-public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
-
-    @Override
-    public void handle(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AccessDeniedException accessDeniedException) throws IOException, ServletException {
-
-        if (!(accessDeniedException instanceof InvalidCsrfTokenException)) {
-            super.handle(request, response, accessDeniedException);
-        }
-        else if (isAjax(request)) {
-            response.sendError(403, "INVALID_CSRF_TOKEN");
-        }
-        else if ("/workflow-manager/login".equals(request.getRequestURI())) {
-            response.sendRedirect("/workflow-manager/");
-        }
-        else {
-            super.handle(request, response, accessDeniedException);
-        }
-    }
-
-    private static boolean isAjax(HttpServletRequest request) {
-        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+JobLogContext::~JobLogContext() {
+    // logger_job_ref_ will be null when this instance was passed to a move constructor.
+    if (logger_job_ref_ != nullptr) {
+        *logger_job_ref_ = std::move(previous_job_);
+        logger_impl_->SetJobName(*logger_job_ref_);
     }
 }

@@ -47,7 +47,7 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(MarkupResponseRouteBuilder.class);
 
     public static final String JMS_DESTINATION = "MPF.COMPLETED_MARKUP";
-	public static final String ENTRY_POINT = "jms:" + JMS_DESTINATION;
+	public static final String ENTRY_POINT = "activemq:" + JMS_DESTINATION;
 	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Markup Response Route";
 

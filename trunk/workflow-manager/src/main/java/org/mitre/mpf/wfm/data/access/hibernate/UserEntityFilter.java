@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,58 +24,41 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.wfm.data.access.hibernate;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@Component
-public class AjaxAwareLoginUrlAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
+import javax.persistence.Entity;
 
-    public AjaxAwareLoginUrlAuthenticationEntryPoint() {
-        super("/login");
-    }
+import org.mitre.mpf.mvc.security.OidcSecurityConfig;
+import org.mitre.mpf.wfm.data.entities.persistent.User;
+import org.springframework.core.type.classreading.MetadataReader;
+import org.springframework.core.type.classreading.MetadataReaderFactory;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.TypeFilter;
+
+
+public class UserEntityFilter implements TypeFilter {
+
+    private final AnnotationTypeFilter _annotationTypeFilter
+            = new AnnotationTypeFilter(Entity.class);
+
+    private final boolean _oidcEnabled = OidcSecurityConfig.isEnabled();
 
     @Override
-    public void commence(final HttpServletRequest request, final HttpServletResponse response,
-                         final AuthenticationException authException) throws IOException, ServletException {
-
-        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-            response.sendError(401);
-        } else {
-            super.commence(request, response, authException);
+    public boolean match(
+            MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
+            throws IOException {
+        if (!_annotationTypeFilter.match(metadataReader, metadataReaderFactory)) {
+            return false;
+        }
+        else if (_oidcEnabled) {
+            // Prevent hibernate from creating user table when OIDC is enabled.
+            return !metadataReader.getClassMetadata().getClassName().equals(User.class.getName());
+        }
+        else {
+            return true;
         }
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

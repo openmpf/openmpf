@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
@@ -36,7 +37,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MediaRetrieverRouteBuilder extends RouteBuilder {
-	public static final String ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL";
+	public static final String ENTRY_POINT = "activemq:MPF.MEDIA_RETRIEVAL";
 	public static final String EXIT_POINT = MediaInspectionRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Media Retriever Route";
 
@@ -61,6 +62,7 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
             .setExchangePattern(ExchangePattern.InOnly)
             .split().method(RemoteMediaSplitter.REF, "split")
                 .parallelProcessing()
+                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
                 .streaming()
                 .process(RemoteMediaProcessor.REF)
             .end()

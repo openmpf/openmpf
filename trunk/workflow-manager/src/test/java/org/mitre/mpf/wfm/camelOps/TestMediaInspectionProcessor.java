@@ -208,7 +208,7 @@ public class TestMediaInspectionProcessor {
                 "FRAME_COUNT", "29",
                 "DURATION", "3500");
 
-        assertVideoMetadataMatches(expectedMetadata, 53.0 / 6);
+        assertVideoMetadataMatches(expectedMetadata, 25.0 / 3);
     }
 
 
@@ -430,11 +430,11 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO),
-                        eq("audio/x-hx-aac-adts"), eq(-1), _metadataCaptor.capture());
+                        eq("audio/x-aac"), eq(-1), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
 
         var expectedMetadata = Map.of(
-            "MIME_TYPE", "audio/x-hx-aac-adts",
+            "MIME_TYPE", "audio/x-aac",
             "DURATION", "2304"
         );
         assertEquals(expectedMetadata, _metadataCaptor.getValue());

@@ -65,7 +65,7 @@ public class JmsUtils {
                 for (Algorithm algorithm : job.getPipelineElements().getAllAlgorithms()) {
                     String routeName = createCancellationRouteName(jobId, algorithm.getActionType().name(),
                                                                    algorithm.getName(), "REQUEST");
-                    String routeUri = String.format("jms:MPF.%s_%s_REQUEST?selector=JobId%%3D%d",
+                    String routeUri = String.format("activemq:MPF.%s_%s_REQUEST?selector=JobId%%3D%d",
                                                     algorithm.getActionType().name(), algorithm.getName(), jobId);
                     LOG.debug("Creating route {} with URI {}.", routeName, routeUri);
                     from(routeUri)

@@ -526,13 +526,10 @@ AppServices.factory('ServerSidePush', [
         }
         initialized = true;
 
-        let baseUrl = location.href;
-        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('workflow-manager/'));
-
         let unsubscribed = false;
 
         $.atmosphere.subscribe({
-            url: baseUrl + 'workflow-manager/websocket',
+            url: 'websocket',
             contentType: "application/json",
             logLevel: 'debug',
             transport: 'websocket',
@@ -661,7 +658,7 @@ function ($q, NotificationSvc, ClientState) {
             }
             if (ClientState.getConnectionState() != ClientState.ConnectionState.LOGGING_OUT
                     && response.status == 401) {
-                window.top.location.href = 'login';
+                window.top.location.reload()
             }
 
             var respData = response.data;

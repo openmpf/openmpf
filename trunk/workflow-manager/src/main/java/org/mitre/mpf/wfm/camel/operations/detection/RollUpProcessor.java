@@ -35,6 +35,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multimap;
@@ -51,6 +52,7 @@ public class RollUpProcessor extends WfmProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(RollUpProcessor.class);
 
+    // Cache roll up files because a user is likely to use the same roll up file for many jobs.
     private final LoadingCache<String, RollUpContext> _cache = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .build(loadRollUp());
@@ -81,10 +83,14 @@ public class RollUpProcessor extends WfmProcessor {
             try {
                 var rollUpContext = getRollUpContext(jobPart);
                 if (rollUpContext.isEmpty()) {
+                    // No roll up is configured for this part of the job.
                     continue;
                 }
                 var tracks = trackCache.getTracks(jobPart.media().getId(), jobPart.actionIndex());
                 var rolledUpTracks = rollUpContext.get().applyRollUp(tracks);
+                // When no tracks need to be changed, applyRollUp returns a reference to the same
+                // collection that was passed in. Using .equals() below would be much slower than
+                // the != operator.
                 if (tracks != rolledUpTracks) {
                     trackCache.updateTracks(
                             jobPart.media().getId(), jobPart.actionIndex(), rolledUpTracks);
@@ -192,19 +198,21 @@ public class RollUpProcessor extends WfmProcessor {
 
         public SortedSet<Track> applyRollUp(SortedSet<Track> tracks) {
             var anyTracksChanged = false;
-            var rolledUpTracks = ImmutableSortedSet.<Track>naturalOrder();
+            var rolledUpTracks= ImmutableSortedSet.<Track>naturalOrder();
             for (var track : tracks) {
                 var rolledUpTrack = applyRollUp(track);
                 anyTracksChanged = anyTracksChanged || rolledUpTrack != track;
+                // The track is added to rolledUpTracks whether it was changed or not because
+                // another track in the collection may be changed.
                 rolledUpTracks.add(rolledUpTrack);
             }
             return anyTracksChanged
-                // At least one track was changed, so return the new collection.
-                ? rolledUpTracks.build()
-                // No tracks were changed. tracks and rolledUpTracks contain the same tracks,
-                // but returning the existing collection signals that the tracks do not need to
-                // be sent to Redis.
-                : tracks;
+                    // At least one track was changed, so return the new collection.
+                    ? rolledUpTracks.build()
+                    // No tracks were changed. tracks and rolledUpTracks contain the same tracks,
+                    // but returning the existing collection signals that the tracks do not need to
+                    // be sent to Redis.
+                    : tracks;
         }
 
         private Track applyRollUp(Track track) {
@@ -260,26 +268,41 @@ public class RollUpProcessor extends WfmProcessor {
         }
 
         private Map<String, String> applyRollUp(Map<String, String> existingProperties) {
-            var newDetectionProperties = ImmutableSortedMap.<String, String>naturalOrder();
+            var newProperties = ImmutableSortedMap.<String, String>naturalOrder();
+            boolean anyPropertyCopied = copyProperties(existingProperties, newProperties);
+            boolean anyPropertyRolledUp = rollUpProperties(existingProperties, newProperties);
+            return anyPropertyCopied || anyPropertyRolledUp
+                    ? newProperties.build()
+                    : existingProperties;
+        }
+
+        boolean copyProperties(
+                Map<String, String> properties, ImmutableMap.Builder<String, String> newProperties) {
             boolean anyPropertyChanged = false;
-            for (var existingEntry : existingProperties.entrySet()) {
-
-                for (var copyDest : _copySourceToDest.get(existingEntry.getKey())) {
-                    newDetectionProperties.put(copyDest, existingEntry.getValue());
-                    anyPropertyChanged = true;
-                }
-
-                var rollUpName = _propAndMemberToRollUp.get(
-                        existingEntry.getKey(), existingEntry.getValue());
-                if (rollUpName == null) {
-                    newDetectionProperties.put(existingEntry.getKey(), existingEntry.getValue());
-                }
-                else {
-                    newDetectionProperties.put(existingEntry.getKey(), rollUpName);
+            for (var prop : properties.entrySet()) {
+                for (var copyDest : _copySourceToDest.get(prop.getKey())) {
+                    newProperties.put(copyDest, prop.getValue());
                     anyPropertyChanged = true;
                 }
             }
-            return anyPropertyChanged ? newDetectionProperties.build() : existingProperties;
+            return anyPropertyChanged;
+        }
+
+        boolean rollUpProperties(
+                    Map<String, String> properties,
+                    ImmutableMap.Builder<String, String> newProperties) {
+            boolean anyPropertyChanged = false;
+            for (var prop : properties.entrySet()) {
+                var rollUpName = _propAndMemberToRollUp.get(prop.getKey(), prop.getValue());
+                if (rollUpName == null) {
+                    newProperties.put(prop);
+                }
+                else {
+                    newProperties.put(prop.getKey(), rollUpName);
+                    anyPropertyChanged = true;
+                }
+            }
+            return anyPropertyChanged;
         }
     }
 }

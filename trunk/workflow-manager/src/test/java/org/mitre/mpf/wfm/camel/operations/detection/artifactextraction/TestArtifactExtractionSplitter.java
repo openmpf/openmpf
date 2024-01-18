@@ -35,6 +35,7 @@ import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -588,11 +589,10 @@ public class TestArtifactExtractionSplitter {
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 
-        Action action = mock(Action.class);
-        Task task = mock(Task.class);
-        ImmutableList<String> actionList = ImmutableList.of("Test Action");
-        when(task.getActions())
-                .thenReturn(actionList);
+        var algorithm = new Algorithm(
+                "Test Algo", null, ActionType.DETECTION, null, null, null, null, false, false);
+        var action = new Action("Test Action", null, algorithm.name(), List.of());
+        var task = new Task(null, null, List.of(action.name()));
 
         JobPipelineElements pipelineElements = mock(JobPipelineElements.class, RETURNS_DEEP_STUBS);
         when(job.getPipelineElements())
@@ -606,8 +606,8 @@ public class TestArtifactExtractionSplitter {
         when(pipelineElements.getTaskCount())
                 .thenReturn(1);
 
-        when(pipelineElements.getAlgorithm(anyInt(), anyInt()).getActionType())
-                .thenReturn(ActionType.DETECTION);
+        when(pipelineElements.getAlgorithm(anyInt(), anyInt()))
+                .thenReturn(algorithm);
 
 
         when(_mockAggregateJobPropertiesUtil.getCombinedProperties(job, media, action))

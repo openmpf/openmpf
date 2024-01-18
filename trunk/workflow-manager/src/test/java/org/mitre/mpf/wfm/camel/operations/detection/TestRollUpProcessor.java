@@ -39,7 +39,6 @@ import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mockito.Mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Streams;
 
@@ -281,10 +280,7 @@ public class TestRollUpProcessor extends MockitoTest.Strict {
 
 
     private TrackCache runTest(String rollUpPath, Track track) {
-        var testTask = mock(Task.class);
-        when(testTask.getActions())
-                .thenReturn(ImmutableList.of("ACTION"));
-
+        var testTask = new Task("", "", List.of("ACTION"));
         var pipelineElements = mock(JobPipelineElements.class);
         when(pipelineElements.getTask(0))
                 .thenReturn(testTask);

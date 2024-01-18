@@ -47,7 +47,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 @Singleton
 public class RollUpProcessor extends WfmProcessor {
 
-    public static final String REF = "RollUpProcessor";
+    public static final String REF = "rollUpProcessor";
 
     private static final Logger LOG = LoggerFactory.getLogger(RollUpProcessor.class);
 

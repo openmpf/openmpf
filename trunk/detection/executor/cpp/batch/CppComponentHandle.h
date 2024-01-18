@@ -24,10 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_CPPCOMPONENTHANDLE_H
-#define MPF_CPPCOMPONENTHANDLE_H
+# pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <log4cxx/logger.h>
@@ -35,6 +35,8 @@
 #include <DlClassLoader.h>
 #include <MPFDetectionComponent.h>
 #include <MPFDetectionObjects.h>
+
+#include "LoggerWrapper.h"
 
 
 namespace MPF::COMPONENT {
@@ -64,26 +66,23 @@ namespace MPF::COMPONENT {
     };
 
 
-    class CppLogger {
+    class CppLogger : public ILogger {
     public:
-        explicit CppLogger(const std::string &app_dir);
+        explicit CppLogger(std::string_view app_dir);
 
-        void Debug(const std::string &message);
+        void Debug(std::string_view message) override;
 
-        void Info(const std::string &message);
+        void Info(std::string_view message) override;
 
-        void Warn(const std::string &message);
+        void Warn(std::string_view message) override;
 
-        void Error(const std::string &message);
+        void Error(std::string_view message) override;
 
-        void Fatal(const std::string &message);
+        void Fatal(std::string_view message) override;
 
-        log4cxx::MDC GetJobContext(const std::string& job_name);
+        void SetJobName(std::string_view job_name) override;
 
     private:
         log4cxx::LoggerPtr logger_;
     };
 }
-
-
-#endif //MPF_CPPCOMPONENTHANDLE_H

@@ -61,14 +61,14 @@ public class JobPartsIter {
 
     public static Stream<JobPart> taskStream(BatchJob job, int taskIdx) {
         var task = job.getPipelineElements().getTask(taskIdx);
-        var hasSingleAction = task.getActions().size() == 1;
+        var hasSingleAction = task.actions().size() == 1;
         var hasSingleMedia = job.getMedia().size() == 1;
         if (hasSingleMedia && hasSingleAction) {
             return Stream.of(new JobPart(job, job.getMedia().iterator().next(), 0, taskIdx, 0));
         }
         if (hasSingleMedia) {
             return createJobPartsForTaskAndMedia(
-                    job, job.getMedia().iterator().next(), 0, taskIdx, task.getActions().size());
+                    job, job.getMedia().iterator().next(), 0, taskIdx, task.actions().size());
         }
         if (hasSingleAction) {
             return Streams.mapWithIndex(job.getMedia().stream(),
@@ -78,7 +78,7 @@ public class JobPartsIter {
         return Streams.mapWithIndex(
                 job.getMedia().stream(),
                 (m, mi) -> createJobPartsForTaskAndMedia(
-                        job, m, mi, taskIdx, task.getActions().size()))
+                        job, m, mi, taskIdx, task.actions().size()))
             .flatMap(Function.identity());
     }
 
@@ -110,7 +110,7 @@ public class JobPartsIter {
             var pipelineParts = job.getPipelineElements();
 
             var nextActionIndex = previous.actionIndex() + 1;
-            if (previous.task().getActions().size() > nextActionIndex) {
+            if (previous.task().actions().size() > nextActionIndex) {
                 return new JobPart(
                         job,
                         previous.media(),

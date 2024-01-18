@@ -153,10 +153,10 @@ public class TestAggregateJobPropertiesUtil {
 
 
 
-        var action = new Action("ACTION", "descr", algorithm.getName(), actionPropertyList);
+        var action = new Action("ACTION", "descr", algorithm.name(), actionPropertyList);
 
-        var task = new Task("TASK", "descr", List.of(action.getName()));
-        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
+        var task = new Task("TASK", "descr", List.of(action.name()));
+        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.name()));
 
         var pipelineElements = new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
 
@@ -173,7 +173,7 @@ public class TestAggregateJobPropertiesUtil {
             var job = new BatchJobImpl(1, null, new SystemPropertiesSnapshot(snapshotContent),
                                        pipelineElements, 1, null,
                                        null, List.of(media), jobProperties,
-                                       Map.of(algorithm.getName(), overriddenAlgoProperties),
+                                       Map.of(algorithm.name(), overriddenAlgoProperties),
                                        false);
 
 
@@ -202,7 +202,7 @@ public class TestAggregateJobPropertiesUtil {
             var streamingJob = new StreamingJobImpl(
                     2, null, pipelineElements, mediaStreamInfo, 1, 1, true,
                     "somedir", null, null, jobProperties,
-                    Map.of(algorithm.getName(), overriddenAlgoProperties));
+                    Map.of(algorithm.name(), overriddenAlgoProperties));
 
             assertEquals(expectedProperties, aggregateJobPropertiesUtil.getPropertyMap(streamingJob, action));
         }

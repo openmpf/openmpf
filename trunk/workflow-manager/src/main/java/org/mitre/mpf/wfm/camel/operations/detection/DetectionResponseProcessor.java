@@ -113,7 +113,7 @@ public class DetectionResponseProcessor
                         detectionResponse.getMediaId()));
         Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
         double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
-        var trackType = job.getPipelineElements().getAlgorithm(action.getAlgorithm()).getTrackType();
+        var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();
         var mergedTaskIdx = _taskMergingManager.getMergedTaskIndex(
                 job, media,
                 detectionResponse.getTaskIndex(),

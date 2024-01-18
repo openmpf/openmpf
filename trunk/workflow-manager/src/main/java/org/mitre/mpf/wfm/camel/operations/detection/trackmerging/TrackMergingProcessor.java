@@ -106,11 +106,11 @@ public class TrackMergingProcessor extends WfmProcessor {
         BatchJob job = _inProgressBatchJobs.getJob(jobId);
 
         Task task = job.getPipelineElements().getTask(taskIndex);
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
             Action action = job.getPipelineElements()
                     .getAction(taskIndex, actionIndex);
-            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
-            if (_aggregateJobPropertiesUtil.isExemptFromTrackMerging(algo.getTrackType())) {
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
+            if (_aggregateJobPropertiesUtil.isExemptFromTrackMerging(algo.trackType())) {
                 continue;
             }
 
@@ -305,8 +305,8 @@ public class TrackMergingProcessor extends WfmProcessor {
         var track2Algo = pipelineElements.getAlgorithm(
                 track2.getTaskIndex(), track2.getActionIndex());
 
-        return StringUtils.equalsIgnoreCase(track1Algo.getTrackType(), track2Algo.getTrackType())
-                && isEligibleForMerge(track1, track2, track1Algo.getTrackType())
+        return StringUtils.equalsIgnoreCase(track1Algo.trackType(), track2Algo.trackType())
+                && isEligibleForMerge(track1, track2, track1Algo.trackType())
                 && isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
                 && intersects(track1, track2, plan.getMinTrackOverlap());
     }

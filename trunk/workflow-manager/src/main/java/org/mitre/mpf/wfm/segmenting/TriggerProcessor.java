@@ -140,8 +140,8 @@ public class TriggerProcessor {
         var task = job.getPipelineElements().getTask(taskIdx);
         var taskTrigger = NONE_MATCH;
         for (var action : job.getPipelineElements().getActionsInOrder(task)) {
-            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
-            if (algo.getActionType() == ActionType.MARKUP) {
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
+            if (algo.actionType() == ActionType.MARKUP) {
                 continue;
             }
             var actionTrigger = parseTriggerProperty(job, media, action);

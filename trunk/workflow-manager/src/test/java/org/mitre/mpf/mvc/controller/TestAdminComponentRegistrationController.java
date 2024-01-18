@@ -55,6 +55,7 @@ import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.service.component.AddComponentService;
+import org.mitre.mpf.wfm.service.component.ComponentLanguage;
 import org.mitre.mpf.wfm.service.component.ComponentReRegisterService;
 import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
 import org.mitre.mpf.wfm.service.component.ComponentRegistrationStatusException;
@@ -201,9 +202,9 @@ public class TestAdminComponentRegistrationController extends MockitoTest.Lenien
         when(_mockStateService.getByComponentName(_testComponentName))
                 .thenReturn(Optional.ofNullable(rcm));
 
-        JsonComponentDescriptor descriptor = mock(JsonComponentDescriptor.class);
-        when(descriptor.getComponentName())
-                .thenReturn(_testComponentName);
+        var descriptor = new JsonComponentDescriptor(
+            _testComponentName, "", "", null, null, ComponentLanguage.CPP, "", "",
+            List.of(), null, List.of(), List.of(), List.of());
 
         when(_mockAddComponentService.registerUnmanagedComponent(descriptor))
                 .thenReturn(wasReregistered);
@@ -395,4 +396,3 @@ public class TestAdminComponentRegistrationController extends MockitoTest.Lenien
                 .addEntryForUploadedPackage(any());
     }
 }
-

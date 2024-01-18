@@ -91,19 +91,19 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                 "ALGO4", "", ActionType.DETECTION, "", OptionalInt.empty(), null, null, true,
                 false);
 
-        var action1 = new Action("ACTION1", "", algo1.getName(), List.of());
-        var action2 = new Action("ACTION2", "", algo2.getName(), List.of());
-        var action3 = new Action("ACTION3", "", algo3.getName(), List.of());
-        var action4 = new Action("ACTION4", "", algo4.getName(), List.of());
+        var action1 = new Action("ACTION1", "", algo1.name(), List.of());
+        var action2 = new Action("ACTION2", "", algo2.name(), List.of());
+        var action3 = new Action("ACTION3", "", algo3.name(), List.of());
+        var action4 = new Action("ACTION4", "", algo4.name(), List.of());
 
-        var task1 = new Task("TASK1", "", List.of(action1.getName()));
-        var task2 = new Task("TASK2", "", List.of(action2.getName()));
-        var task3 = new Task("TASK3", "", List.of(action3.getName()));
-        var task4 = new Task("TASK4", "", List.of(action4.getName()));
+        var task1 = new Task("TASK1", "", List.of(action1.name()));
+        var task2 = new Task("TASK2", "", List.of(action2.name()));
+        var task3 = new Task("TASK3", "", List.of(action3.name()));
+        var task4 = new Task("TASK4", "", List.of(action4.name()));
 
         var pipeline = new Pipeline(
                 "PIPELINE", "",
-                List.of(task1.getName(), task2.getName(), task3.getName(), task4.getName()));
+                List.of(task1.name(), task2.name(), task3.name(), task4.name()));
         var pipelineElements = new JobPipelineElements(
                 pipeline,
                 List.of(task1, task2, task3, task4),
@@ -142,13 +142,13 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
         when(_mockAggJobPropUtil.getValue(
                     eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
                     eq(_testJob), eq(_testMedia),
-                    argThat(a -> a.getName().equals("ACTION4"))))
+                    argThat(a -> a.name().equals("ACTION4"))))
                 .thenReturn("TRUE");
 
         when(_mockAggJobPropUtil.getValue(
                     eq(MpfConstants.TRIGGER),
                     eq(_testJob), eq(_testMedia),
-                    argThat(a -> a.getName().equals("ACTION1"))))
+                    argThat(a -> a.name().equals("ACTION1"))))
                 .thenReturn("TEST=TRUE");
 
         assertTrue(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 3, 0));
@@ -182,8 +182,8 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
         when(_mockAggJobPropUtil.getValue(
                 eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
                 eq(_testJob), eq(_testMedia),
-                argThat(a -> a.getName().equals("ACTION3")
-                    || a.getName().equals("ACTION4"))))
+                argThat(a -> a.name().equals("ACTION3")
+                    || a.name().equals("ACTION4"))))
             .thenReturn("TRUE");
 
         when(_mockAggJobPropUtil.actionAppliesToMedia(

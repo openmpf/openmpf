@@ -100,7 +100,7 @@ public class DetectionErrorUtil {
     private static JsonIssueDetails convertDetectionErrorToIssue(BatchJob job, DetectionProcessingError error) {
         var source = job.getPipelineElements()
                 .getAlgorithm(error.getTaskIndex(), error.getActionIndex())
-                .getName();
+                .name();
         return new JsonIssueDetails(source, error.getErrorCode(), error.getErrorMessage());
     }
 

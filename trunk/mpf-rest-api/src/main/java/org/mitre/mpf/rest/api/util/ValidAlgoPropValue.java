@@ -58,8 +58,8 @@ public @interface ValidAlgoPropValue {
 
         @Override
         public boolean isValid(AlgorithmProperty property, ConstraintValidatorContext ctx) {
-            boolean bothProvided = property.getDefaultValue() != null && property.getPropertiesKey() != null;
-            boolean neitherProvided = property.getDefaultValue() == null && property.getPropertiesKey() == null;
+            boolean bothProvided = property.defaultValue() != null && property.propertiesKey() != null;
+            boolean neitherProvided = property.defaultValue() == null && property.propertiesKey() == null;
             if (bothProvided || neitherProvided) {
                 ctx.disableDefaultConstraintViolation();
                 ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
@@ -72,7 +72,7 @@ public @interface ValidAlgoPropValue {
                 return false;
             }
 
-            if (property.getPropertiesKey() != null && property.getPropertiesKey().trim().isEmpty()) {
+            if (property.propertiesKey() != null && property.propertiesKey().trim().isEmpty()) {
                 ctx.disableDefaultConstraintViolation();
                 ctx.buildConstraintViolationWithTemplate("may not be empty")
                         .addPropertyNode("propertiesKey")

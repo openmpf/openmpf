@@ -116,7 +116,7 @@ public class DetectionResponseProcessor
         Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
         String qualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
         double qualityThreshold = calculateQualityThreshold(qualitySelectionProp, job, media, action);
-        var trackType = job.getPipelineElements().getAlgorithm(action.getAlgorithm()).getTrackType();
+        var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();
         var mergedTaskIdx = _taskMergingManager.getMergedTaskIndex(
                 job, media,
                 detectionResponse.getTaskIndex(),

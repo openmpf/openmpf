@@ -84,9 +84,9 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         BatchJob job = _inProgressBatchJobs.getJob(trackCache.getJobId());
         Task task = job.getPipelineElements().getTask(trackCache.getTaskIndex());
 
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
             Action action = job.getPipelineElements().getAction(trackCache.getTaskIndex(), actionIndex);
-            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
 
             for (Media media : job.getMedia()) {
                 if (media.isFailed() || !media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
@@ -105,7 +105,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
                     Collection<Track> updatedTracks = removeIllFormedDetections(
                         trackCache, media.getId(), actionIndex, frameWidth, frameHeight,
-                        algo.getTrackType(), tracks);
+                        algo.trackType(), tracks);
 
                     try {
                         if (requiresPadding(combinedProperties)) {

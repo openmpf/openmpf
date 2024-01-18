@@ -134,12 +134,12 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
                 true, true);
 
 
-        Action action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.getName(),
+        Action action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.name(),
                                    Collections.emptyList());
 
-        Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", Collections.singleton(action.getName()));
+        Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", List.of(action.name()));
         Pipeline pipeline = new Pipeline(DETECTION_RESPONSE_PIPELINE_NAME, "pipeline description",
-                                         Collections.singleton(task.getName()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));

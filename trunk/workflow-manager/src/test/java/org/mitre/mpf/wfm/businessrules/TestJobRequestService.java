@@ -148,9 +148,9 @@ public class TestJobRequestService {
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
-        var action = new Action("TEST ACTION", "descr", algorithm.getName(), List.of());
-        var task = new Task("Test Task", "desc", List.of(action.getName()));
-        var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.getName()));
+        var action = new Action("TEST ACTION", "descr", algorithm.name(), List.of());
+        var task = new Task("Test Task", "desc", List.of(action.name()));
+        var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.name()));
         return new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
     }
 

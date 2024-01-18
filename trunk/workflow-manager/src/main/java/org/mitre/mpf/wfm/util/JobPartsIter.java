@@ -74,7 +74,7 @@ public class JobPartsIter {
             var pipelineParts = job.getPipelineElements();
 
             var nextActionIndex = previous.getActionIndex() + 1;
-            if (previous.getTask().getActions().size() > nextActionIndex) {
+            if (previous.getTask().actions().size() > nextActionIndex) {
                 return new JobPart(
                         job,
                         previous.getMedia(),

@@ -96,7 +96,7 @@ public class DefaultTaskSplitter {
             Task task = job.getPipelineElements().getTask(job.getCurrentTaskIndex());
             ActionType actionType = job.getPipelineElements()
                     .getAlgorithm(job.getCurrentTaskIndex(), 0)
-                    .getActionType();
+                    .actionType();
             LOG.info("Task {}/{} - Operation: {} - ActionType: {}.",
                     job.getCurrentTaskIndex() + 1,
                     job.getPipelineElements().getTaskCount(),
@@ -117,7 +117,7 @@ public class DefaultTaskSplitter {
                 default -> {
                     LOG.warn("Task {} calls an unsupported operation '{}'. " +
                                     "No work will be performed in this task.",
-                            job.getCurrentTaskIndex(), task.getName());
+                            job.getCurrentTaskIndex(), task.name());
                     yield List.<Message>of();
                 }
             };

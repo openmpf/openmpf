@@ -139,14 +139,14 @@ public class TestStreamingJobMessageSender extends MockitoTest.Lenient {
                 new ActionProperty("OVERRIDDEN ACTION PROPERTY", "ACTION VAL"),
                 new ActionProperty("OVERRIDDEN JOB PROPERTY", "Bad Value")
         );
-        var action = new Action("ActionName", "Action description", algorithm.getName(),
+        var action = new Action("ActionName", "Action description", algorithm.name(),
                                 actionProperties);
 
         var task = new Task("TaskName", "Task description",
-                             List.of(action.getName()));
+                             List.of(action.name()));
 
         var pipeline = new Pipeline("MyStreamingPipeline", "Pipeline description",
-                                    List.of(task.getName()));
+                                    List.of(task.name()));
         var pipelineElements = new JobPipelineElements(
                 pipeline,
                 List.of(task),
@@ -183,7 +183,7 @@ public class TestStreamingJobMessageSender extends MockitoTest.Lenient {
                 new EnvironmentVariableModel("var2", "val2", null));
 
         var streamingServiceModel = new StreamingServiceModel(
-                "MyService", algorithm.getName(), ComponentLanguage.CPP,
+                "MyService", algorithm.name(), ComponentLanguage.CPP,
                 "my-component/lib/libComponent.so", envVars);
 
         when(_mockServiceManager.getServices())

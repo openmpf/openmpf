@@ -46,6 +46,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 import org.mitre.mpf.rest.api.pipelines.Task;
@@ -96,8 +97,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("PROP", 0, 1, "VAL2")
             .getHash();
@@ -105,8 +106,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("PROP", 0, 1, "VAL2")
             .getHash();
@@ -118,11 +119,11 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     @Test
     public void changingAlgorithmChangesHash() {
         var hash1 = builder().addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         var hash2 = builder().addMedia(MediaType.IMAGE)
-            .addAction("algo2")
+            .addAction("ALGO2")
             .getHash();
 
         assertNotEquals(hash1, hash2);
@@ -132,16 +133,16 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void changingImportantJobPropertyChangesHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("PROP", 0, 1, "VAL2")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("PROP", 0, 1, "VAL3")
             .getHash();
@@ -153,15 +154,15 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void addingImportantPropertyChangesHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("PROP", 0, 1, "VAL1")
             .getHash();
@@ -173,13 +174,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void testNullAndEmptyStringDifferent() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, "")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, null)
             .getHash();
 
@@ -191,8 +192,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("PROP", 0, 1, "VAL2")
             .getHash();
@@ -200,8 +201,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .setProperty("PROP", 0, 0, "VAL1")
             .getHash();
 
@@ -213,14 +214,14 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void changingIgnorableJobPropertyDoesNotChangeHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("NOT_IMPORTANT", 0, 0, "VAL2")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("NOT_IMPORTANT", 0, 0, "VAL3")
             .getHash();
@@ -234,13 +235,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         for (var mediaType : MediaType.values()) {
             var hash1 = builder()
                 .addMedia(mediaType)
-                .addAction("algo")
+                .addAction("ALGO")
                 .setProperty("TEST_UNION_IS_USED_FOR_DUPLICATES", 0, 0, "VAL1")
                 .getHash();
 
             var hash2 = builder()
                 .addMedia(mediaType)
-                .addAction("algo")
+                .addAction("ALGO")
                 .setProperty("TEST_UNION_IS_USED_FOR_DUPLICATES", 0, 0, "VAL2")
                 .getHash();
             assertEquals(hash1, hash2);
@@ -253,13 +254,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void addingIgnorablePropertyDoesNotChangeHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, "VAL1")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("NOT_IMPORTANT", 0, 0, "VAL3")
             .getHash();
@@ -272,14 +273,14 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void removingIgnorablePropertyDoesNotChangeHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, "VAL1")
             .setProperty("NOT_IMPORTANT", 0, 0, "VAL3")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("PROP", 0, 0, "VAL1")
             .getHash();
 
@@ -290,12 +291,12 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void changingMediaHashChangesJobHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE, "HASH1")
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE, "HASH2")
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         assertNotEquals(hash1, hash2);
@@ -305,13 +306,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void addingMediaHashChangesJobHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE, "HASH1")
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE, "HASH1")
             .addMedia(MediaType.IMAGE, "HASH1")
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         assertNotEquals(hash1, hash2);
@@ -322,15 +323,15 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void parallelActionsDifferentFromSequential() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
-            .addAction("algo2")
+            .addAction("ALGO")
+            .addAction("ALGO2")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .newTask()
-            .addAction("algo2")
+            .addAction("ALGO2")
             .getHash();
 
         assertNotEquals(hash1, hash2);
@@ -341,16 +342,16 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void testAlgorithmOutputChangedCounter() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo", OptionalInt.empty())
+            .addAction("ALGO", OptionalInt.empty())
             .newTask()
-            .addAction("algo2", OptionalInt.of(2))
+            .addAction("ALGO2", OptionalInt.of(2))
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo", OptionalInt.empty())
+            .addAction("ALGO", OptionalInt.empty())
             .newTask()
-            .addAction("algo2", OptionalInt.of(2))
+            .addAction("ALGO2", OptionalInt.of(2))
             .getHash();
 
         assertEquals(
@@ -359,9 +360,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
         var hash3 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo", OptionalInt.of(0))
+            .addAction("ALGO", OptionalInt.of(0))
             .newTask()
-            .addAction("algo2", OptionalInt.of(2))
+            .addAction("ALGO2", OptionalInt.of(2))
             .getHash();
 
         assertNotEquals(
@@ -370,9 +371,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
         var hash4 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo", OptionalInt.of(10))
+            .addAction("ALGO", OptionalInt.of(10))
             .newTask()
-            .addAction("algo2", OptionalInt.of(2))
+            .addAction("ALGO2", OptionalInt.of(2))
             .getHash();
         assertNotEquals(
                 "Different output changed counters should not match.", hash3, hash4);
@@ -384,13 +385,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE, "MEDIA_HASH1")
             .addMedia(MediaType.IMAGE, "MEDIA_HASH2")
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE, "MEDIA_HASH2")
             .addMedia(MediaType.IMAGE, "MEDIA_HASH1")
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         assertEquals(hash1, hash2);
@@ -401,14 +402,14 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void testMediaTypeProperties() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("VIDEO_PROP", 0, 0, "VIDEO1")
             .setProperty("IMAGE_PROP", 0, 0, "IMAGE1")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("VIDEO_PROP", 0, 0, "VIDEO2")
             .setProperty("IMAGE_PROP", 0, 0, "IMAGE1")
             .getHash();
@@ -418,7 +419,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
         var hash3 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setProperty("VIDEO_PROP", 0, 0, "VIDEO2")
             .setProperty("IMAGE_PROP", 0, 0, "IMAGE2")
             .getHash();
@@ -432,13 +433,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void changingPropNotUsedByAlgoDoesNotChangeHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setJobProperty("PROP", "VAL1")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setJobProperty("PROP", "VAL2")
             .getHash();
         assertEquals(hash1, hash2);
@@ -452,13 +453,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setJobProperty("PROP", "VAL1")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .setJobProperty("PROP", "VAL2")
             .getHash();
         assertNotEquals(hash1, hash2);
@@ -469,14 +470,14 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     public void testMediaRanges() {
         var fullVideo = builder()
             .addMedia(Set.of(), Set.of())
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         var videoWithFrameRange = builder()
             .addMedia(
                 Set.of(new MediaRange(5, 10)),
                 Set.of())
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         assertNotEquals(fullVideo, videoWithFrameRange);
@@ -485,7 +486,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             .addMedia(
                 Set.of(),
                 Set.of(new MediaRange(5, 10)))
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         assertNotEquals(fullVideo, videoWithTimeRange);
@@ -496,7 +497,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             .addMedia(
                 Set.of(new MediaRange(5, 10)),
                 Set.of(new MediaRange(5, 10)))
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         assertNotEquals(fullVideo, videoWithBothRanges);
@@ -508,14 +509,14 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     @Test
     public void testOutputChangedCounter() {
         var hash1 = builder().addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         when(_mockPropsUtil.getOutputChangedCounter())
             .thenReturn("2");
 
         var hash2 = builder().addMedia(MediaType.IMAGE)
-            .addAction("algo")
+            .addAction("ALGO")
             .getHash();
 
         assertNotEquals(hash1, hash2);
@@ -548,7 +549,10 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             int actionIdx = -1;
             var algoToPropNames = HashMultimap.<String, String>create();
             for (var actionList : _taskContents) {
-                var task = mock(Task.class);
+                var actionNames = actionList.stream()
+                        .map(Action::name)
+                        .toList();
+                var task = new Task(null, null, actionNames);
                 when(pipelineElements.getActionsInOrder(task))
                     .thenReturn(actionList);
                 tasks.add(task);
@@ -562,7 +566,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                         }
                         else {
                             map.putAll(_jobProperties);
-                            algoToPropNames.putAll(action.getAlgorithm(), map.keySet());
+                            algoToPropNames.putAll(action.algorithm(), map.keySet());
                         }
                         when(_mockPropMapGetter.apply(_media.get(mediaIdx), action))
                             .thenReturn(map);
@@ -573,19 +577,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                 .thenReturn(tasks);
 
             for (var entry : _algoNameToOutputCounter.entrySet()) {
-                var algo = mock(Algorithm.class);
-                when(algo.getName())
-                    .thenReturn(entry.getKey());
-                when(algo.getOutputChangedCounter())
-                    .thenReturn(entry.getValue());
-
                 var algoProps = algoToPropNames.get(entry.getKey())
                         .stream()
                         .map(pn -> new AlgorithmProperty(pn, "", ValueType.STRING, "", null))
                         .toList();
-
-                when(algo.getProvidesCollection())
-                    .thenReturn(new Algorithm.Provides(List.of(), algoProps));
+                var algo = new Algorithm(
+                        entry.getKey(), null, ActionType.DETECTION, null, entry.getValue(),
+                        null, new Algorithm.Provides(List.of(), algoProps), true, true);
                 when(pipelineElements.getAlgorithm(entry.getKey()))
                     .thenReturn(algo);
             }
@@ -646,11 +644,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             var prev = _algoNameToOutputCounter.put(algorithm, outputChangedCounter);
             assertTrue(prev == null || prev.equals(outputChangedCounter));
 
-            var action = mock(Action.class);
-            when(action.getName())
-                .thenReturn(String.valueOf(++_actionNames));
-            when(action.getAlgorithm())
-                .thenReturn(algorithm);
+            var action = new Action(String.valueOf(++_actionNames), null, algorithm, List.of());
             _taskContents.get(_taskContents.size() - 1).add(action);
 
             return this;

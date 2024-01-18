@@ -77,8 +77,8 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
         var job = _inProgressJobs.getJob(trackCache.getJobId());
         var task = job.getPipelineElements().getTask(trackCache.getTaskIndex());
 
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-            var action = job.getPipelineElements().getAction(
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
+           var action = job.getPipelineElements().getAction(
                     trackCache.getTaskIndex(), actionIndex);
 
            for (var media : job.getMedia())  {

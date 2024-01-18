@@ -346,10 +346,10 @@ public class TestTrackMergingProcessor {
                 .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
 
-        Action action = new Action("detectionAction", "description", algorithm.getName(), actionProps);
-        Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
+        Action action = new Action("detectionAction", "description", algorithm.name(), actionProps);
+        Task task = new Task("detectionTask", "description", List.of(action.name()));
         Pipeline pipeline = new Pipeline("trackMergePipeline", "description",
-                                         Collections.singleton(task.getName()));
+                                         List.of(task.name()));
         return new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));

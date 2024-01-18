@@ -63,7 +63,10 @@ public class TestDescriptorValidator {
                 .thenReturn(Collections.emptySet());
 
         ComponentDescriptorValidator descriptorValidator = new ComponentDescriptorValidatorImpl(mockSpringValidator);
-        descriptorValidator.validate(mock(JsonComponentDescriptor.class));
+        var descriptor = new JsonComponentDescriptor(
+                null, null, null, null, null, null, null, null,
+                List.of(), null, List.of(), List.of(), List.of());
+        descriptorValidator.validate(descriptor);
     }
 
 

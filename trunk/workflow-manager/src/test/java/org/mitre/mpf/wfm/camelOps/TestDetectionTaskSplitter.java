@@ -119,7 +119,7 @@ public class TestDetectionTaskSplitter {
                 true,
                 true);
         Action action = new Action(
-                "detectionAction", "detectionDescription", algorithm.getName(),
+                "detectionAction", "detectionDescription", algorithm.name(),
                 Arrays.asList(new ActionProperty(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1"),
                               new ActionProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1"),
                               new ActionProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10"),
@@ -127,10 +127,10 @@ public class TestDetectionTaskSplitter {
 
 
         Task task = new Task("taskName", "task description",
-                             Collections.singletonList(action.getName()));
+                             Collections.singletonList(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.getName()));
+                                         Collections.singletonList(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singletonList(task), Collections.singletonList(action),
                 Collections.singletonList(algorithm));
@@ -429,12 +429,12 @@ public class TestDetectionTaskSplitter {
                 .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
         Action action = new Action("detectionAction", "detectionDescription",
-                                   algorithm.getName(), actionPropList);
+                                   algorithm.name(), actionPropList);
 
-        Task task = new Task("taskName", "taskDescr", Collections.singletonList(action.getName()));
+        Task task = new Task("taskName", "taskDescr", Collections.singletonList(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.getName()));
+                                         Collections.singletonList(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline,
                 Collections.singletonList(task),
@@ -514,13 +514,13 @@ public class TestDetectionTaskSplitter {
                 .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
 
-        Action action = new Action("FACECV", "dummyDescriptionFACECV", algorithm.getName(),
+        Action action = new Action("FACECV", "dummyDescriptionFACECV", algorithm.name(),
                                    actionPropertyList);
         Task task = new Task("Test task", "task description",
-                             Collections.singletonList(action.getName()));
+                             Collections.singletonList(action.name()));
         Pipeline pipeline = new Pipeline("OCV FACE DETECTION PIPELINE",
                                          "TestDetectionSplitter Pipeline",
-                                         Collections.singletonList(task.getName()));
+                                         Collections.singletonList(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singletonList(task), Collections.singletonList(action),
                 Collections.singletonList(algorithm));
@@ -918,20 +918,20 @@ public class TestDetectionTaskSplitter {
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
 
-        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
-        var action2 = new Action("PARENT_ACTION", null, algo2.getName(),
+        var action1 = new Action("EXTRACT_ACTION", null, algo1.name(), List.of());
+        var action2 = new Action("PARENT_ACTION", null, algo2.name(),
                 List.of(new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE")));
-        var action3 = new Action("CHILD_ACTION", null, algo3.getName(),
+        var action3 = new Action("CHILD_ACTION", null, algo3.name(),
                 List.of(new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE")));
-        var action4 = new Action("SHARED_ACTION", null, algo4.getName(), List.of());
+        var action4 = new Action("SHARED_ACTION", null, algo4.name(), List.of());
 
-        var task1 = new Task("TASK1", null, List.of(action1.getName()));
-        var task2 = new Task("TASK2", null, List.of(action2.getName()));
-        var task3 = new Task("TASK3", null, List.of(action3.getName()));
-        var task4 = new Task("TASK4", null, List.of(action4.getName()));
+        var task1 = new Task("TASK1", null, List.of(action1.name()));
+        var task2 = new Task("TASK2", null, List.of(action2.name()));
+        var task3 = new Task("TASK3", null, List.of(action3.name()));
+        var task4 = new Task("TASK4", null, List.of(action4.name()));
 
         var pipeline = new Pipeline("PIPELINE", null,
-                List.of(task1.getName(), task2.getName(), task3.getName(), task4.getName()));
+                List.of(task1.name(), task2.name(), task3.name(), task4.name()));
         var pipelineElements = new JobPipelineElements(
                 pipeline,
                 List.of(task1, task2, task3, task4),

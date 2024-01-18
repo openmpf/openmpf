@@ -24,46 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
+package org.mitre.mpf.rest.api.util;
+
+import java.lang.annotation.Target;
+
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+import javax.validation.ReportAsSingleViolation;
 
 import org.hibernate.validator.constraints.NotBlank;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
-import org.mitre.mpf.rest.api.pipelines.Pipeline;
-import org.mitre.mpf.rest.api.pipelines.Task;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Null;
-import javax.validation.constraints.Size;
-import java.util.List;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
+        ElementType.ANNOTATION_TYPE })
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = ValidName.Validator.class)
+@NotBlank
+public @interface ValidName {
+    String message() default "may not contain / or ;";
+    Class<?>[] groups() default { };
+    Class<? extends Payload>[] payload() default { };
 
 
-public record JsonExtrasDescriptor(
-        @NotBlank String componentName,
-        String componentVersion,
-        String middlewareVersion,
-        @Null ComponentLanguage sourceLanguage,
-        @Null String batchLibrary,
-        @Null String streamLibrary,
-        @Size(max = 0) List<JsonComponentDescriptor.EnvironmentVariable> environmentVariables,
-        @Null Algorithm algorithm,
-        @Valid List<Action> actions,
-        @Valid List<Task> tasks,
-        @Valid List<Pipeline> pipelines) {
+    public static class Validator implements ConstraintValidator<ValidName, String> {
 
-    public JsonExtrasDescriptor(JsonComponentDescriptor jsonDescriptor) {
-        this(
-            jsonDescriptor.componentName(),
-            jsonDescriptor.componentVersion(),
-            jsonDescriptor.middlewareVersion(),
-            jsonDescriptor.sourceLanguage(),
-            jsonDescriptor.batchLibrary(),
-            jsonDescriptor.streamLibrary(),
-            jsonDescriptor.environmentVariables(),
-            jsonDescriptor.algorithm(),
-            jsonDescriptor.actions(),
-            jsonDescriptor.tasks(),
-            jsonDescriptor.pipelines());
+        @Override
+        public void initialize(ValidName constraintAnnotation) {
+        }
+
+        @Override
+        public boolean isValid(String value, ConstraintValidatorContext context) {
+            if (value == null) {
+                // Use the error message from @NotBlank when the value is null.
+                return true;
+            }
+            return !value.contains("/") && !value.contains(";");
+        }
     }
-
 }

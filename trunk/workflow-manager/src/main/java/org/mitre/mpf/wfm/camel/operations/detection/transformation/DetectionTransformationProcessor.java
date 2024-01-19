@@ -118,7 +118,11 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                                     xPadding, yPadding, frameWidth, frameHeight, updatedTracks,
                                     exemplarPolicy, qualitySelectionProp);
                         }
-                    } catch (DetectionTransformationException e) {
+                    } catch (NumberFormatException e) {
+                        _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.INVALID_DETECTION, e.getMessage());
+                        throw new WfmProcessingException(e);
+                    }
+                    catch (DetectionTransformationException e) {
                         // This should not happen because we checked that the detection properties were valid when the
                         // job was created.
                         throw new WfmProcessingException(e);

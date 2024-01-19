@@ -36,6 +36,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -169,7 +170,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             }
             catch (NumberFormatException e) {
                 _inProgressJobs.addError(context.getJobId(), media.getId(), IssueCodes.INVALID_DETECTION, e.getMessage());
-                throw e;
+                throw new WfmProcessingException(e);
             }
         }
 

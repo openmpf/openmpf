@@ -45,6 +45,7 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmLocalSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.TrackCache;
@@ -346,7 +347,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             }
             catch (NumberFormatException e) {
                 _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.ARTIFACT_EXTRACTION, e.getMessage());
-                throw e;
+                throw new WfmProcessingException(e);
             }
         }
 

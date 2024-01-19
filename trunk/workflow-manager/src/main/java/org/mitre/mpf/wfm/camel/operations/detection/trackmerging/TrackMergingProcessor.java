@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -137,17 +138,22 @@ public class TrackMergingProcessor extends WfmProcessor {
                     continue;
                 }
 
-                if (mergeRequested) {
-                    int initialSize = tracks.size();
-                    var exemplarPolicy = _aggregateJobPropertiesUtil.getValue(ExemplarPolicyUtil.PROPERTY, job, media, action);
-                    var qualitySelectionProp = _aggregateJobPropertiesUtil.getValue(MpfConstants.QUALITY_SELECTION_PROPERTY,
-                                                                                    job, media, action);
-                    tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan, exemplarPolicy, qualitySelectionProp));
+                try {
+                    if (mergeRequested) {
+                        int initialSize = tracks.size();
+                        var exemplarPolicy = _aggregateJobPropertiesUtil.getValue(ExemplarPolicyUtil.PROPERTY, job, media, action);
+                        var qualitySelectionProp = _aggregateJobPropertiesUtil.getValue(MpfConstants.QUALITY_SELECTION_PROPERTY,
+                                                                                        job, media, action);
+                        tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan, exemplarPolicy, qualitySelectionProp));
 
-                    log.debug("Merging {} tracks down to {} in Media {}.",
-                              initialSize, tracks.size(), media.getId());
+                        log.debug("Merging {} tracks down to {} in Media {}.",
+                                  initialSize, tracks.size(), media.getId());
+                    }
                 }
-
+                catch (NumberFormatException e) {
+                    _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.INVALID_DETECTION, e.getMessage());
+                    throw new WfmProcessingException(e);
+                }
                 if (pruneRequested) {
                     int initialSize = tracks.size();
                     int minTrackLength = trackMergingPlan.getMinTrackLength();

@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -107,7 +108,8 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
 
                 var originalTracks = trackCache.getTracks(media.getId(), actionIndex);
 
-               var labeledTracks = updateMovingTracks(movingTracksOnly, maxIou,
+               var labeledTracks = updateMovingTracks(job.getId(), media.getId(),
+                                                      movingTracksOnly, maxIou,
                                                       minMovingDetections, originalTracks,
                                                       exemplarPolicy, qualitySelectionProp);
 
@@ -125,24 +127,24 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
     }
 
 
-    private static SortedSet<Track> updateMovingTracks(
+    private SortedSet<Track> updateMovingTracks(long jobId, long mediaId,
             boolean movingTracksOnly, double maxIou, int minMovingDetections,
             Collection<Track> originalTracks, String exemplarPolicy, String qualitySelectionProp) {
         if (movingTracksOnly) {
             return originalTracks.stream()
-                    .map(t -> processTrack(maxIou, minMovingDetections, t, exemplarPolicy, qualitySelectionProp))
+                    .map(t -> processTrack(jobId, mediaId, maxIou, minMovingDetections, t, exemplarPolicy, qualitySelectionProp))
                     .filter(t -> Boolean.parseBoolean(t.getTrackProperties().get("MOVING")))
                     .collect(toCollection(TreeSet::new));
         }
         else {
             return originalTracks.stream()
-                    .map(t -> processTrack(maxIou, minMovingDetections, t, exemplarPolicy, qualitySelectionProp))
+                    .map(t -> processTrack(jobId, mediaId, maxIou, minMovingDetections, t, exemplarPolicy, qualitySelectionProp))
                     .collect(toCollection(TreeSet::new));
         }
     }
 
 
-    private static Track processTrack(double maxIou, int minMovingDetections, Track track,
+    private Track processTrack(long jobId, long mediaId, double maxIou, int minMovingDetections, Track track,
                                       String exemplarPolicy, String qualitySelectionProp) {
         double avgX = 0, avgY = 0, avgWidth = 0, avgHeight = 0;
         for (Detection detection : track.getDetections()) {
@@ -176,10 +178,12 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 .build();
 
         var detections = newDetectionsBuilder.build();
-        var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
+        
+        try {
+            var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
                                                       detections.first().getMediaOffsetFrame(),
                                                       detections.last().getMediaOffsetFrame(), detections);
-        return new Track(
+            return new Track(
                 track.getJobId(),
                 track.getMediaId(),
                 track.getTaskIndex(),
@@ -193,6 +197,11 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 newDetectionsBuilder.build(),
                 newTrackProperties,
                 exemplar);
+            }
+        catch (NumberFormatException e) {
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.INVALID_DETECTION, e.getMessage());
+            throw e;
+        }
     }
 
 

@@ -258,7 +258,9 @@ public class DetectionResponseProcessor
 
                 try {
                     String qualityProp;
-                    if ((qualitySelectionProp == null) || StringUtils.isBlank(qualitySelectionProp)) {
+                    if (StringUtils.isBlank(qualitySelectionProp)) {
+                        String errString = "Quality selection property not found. Using CONFIDENCE for quality selection.";
+                        _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.OTHER, errString);
                         qualityProp = "CONFIDENCE";
                     }
                     else {

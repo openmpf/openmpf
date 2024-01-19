@@ -39,9 +39,11 @@ import javax.inject.Inject;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
@@ -56,9 +58,13 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private final TriggerProcessor _triggerProcessor;
 
+    private final InProgressBatchJobsService _inProgressJobs;
+
     @Inject
-    VideoMediaSegmenter(TriggerProcessor triggerProcessor) {
+    VideoMediaSegmenter(TriggerProcessor triggerProcessor,
+        InProgressBatchJobsService inProgressJobs) {
         _triggerProcessor = triggerProcessor;
+        _inProgressJobs = inProgressJobs;
     }
 
 
@@ -141,7 +147,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     }
 
 
-    private static DetectionRequest createFeedForwardRequest(
+    private DetectionRequest createFeedForwardRequest(
             Track track, int topQualityCount, String topQualitySelectionProp, Media media, DetectionContext context) {
         Collection<Detection> includedDetections;
         int startFrame;
@@ -152,13 +158,19 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             stopFrame = track.getEndOffsetFrameInclusive();
         }
         else {
-            includedDetections = TopQualitySelectionUtil.getTopQualityDetections(
-                    track.getDetections(), topQualityCount, topQualitySelectionProp);
-            var frameSummaryStats = includedDetections.stream()
-                    .mapToInt(Detection::getMediaOffsetFrame)
-                    .summaryStatistics();
-            startFrame = frameSummaryStats.getMin();
-            stopFrame = frameSummaryStats.getMax();
+            try {
+                includedDetections = TopQualitySelectionUtil.getTopQualityDetections(
+                              track.getDetections(), topQualityCount, topQualitySelectionProp);
+                var frameSummaryStats = includedDetections.stream()
+                       .mapToInt(Detection::getMediaOffsetFrame)
+                       .summaryStatistics();
+                startFrame = frameSummaryStats.getMin();
+                stopFrame = frameSummaryStats.getMax();
+            }
+            catch (NumberFormatException e) {
+                _inProgressJobs.addError(context.getJobId(), media.getId(), IssueCodes.INVALID_DETECTION, e.getMessage());
+                throw e;
+            }
         }
 
         var protobufTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()

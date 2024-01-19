@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableSortedSet;
 import org.junit.Test;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
 import java.util.ArrayList;
@@ -35,7 +36,9 @@ import java.util.Map;
 import java.util.SortedSet;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 
 public class TestTopQualitySelectionUtil {
     private final Detection _d50 = createDetection(50, 0.3);
@@ -66,6 +69,16 @@ public class TestTopQualitySelectionUtil {
     }
 
     @Test
+    public void testGetTopQualityWithSingleDetection() {
+        ArrayList<Detection> detList = new ArrayList<>();
+        detList.add(_d51);
+        assertSame(_d51, TopQualitySelectionUtil.getTopQualityItem(detList, "CONFIDENCE"));
+        assertSame(_d51, TopQualitySelectionUtil.getTopQualityItem(detList, ""));
+        assertSame(_d51, TopQualitySelectionUtil.getTopQualityItem(detList, null));
+        assertSame(detList, TopQualitySelectionUtil.getTopQualityDetections(detList, 1, "CONFIDENCE"));
+    }
+
+    @Test
     public void testEqualMaxConfidence() {
         var d61 = createDetection(61, _d60.getConfidence());
         var detections = ImmutableSortedSet.of(_d50, _d52, _d54, _d60, d61);
@@ -92,6 +105,33 @@ public class TestTopQualitySelectionUtil {
         subsetWithProp.add(_d61);
         var resultWithProp = new ArrayList<Detection>(TopQualitySelectionUtil.getTopQualityDetections(_detectionsWithProp, 2, "QUALITY_PROP"));
         assertArrayEquals(subsetWithProp.toArray(), resultWithProp.toArray());
+    }
+
+    @Test
+    public void TestNumberFormatException() {
+        ArrayList<Detection> detList = new ArrayList<>();
+        Detection det1 = new Detection(1, 1, 1, 1, (float)0.5,
+                             1, 1, Map.of("quality_prop", "foobar"));
+        Detection det2 = new Detection(1, 1, 1, 1, (float)0.5,
+                                                  1, 1, Map.of("quality_prop", "foobar"));
+        detList.add(det1);
+        detList.add(det2);
+
+        String expectedString = "The quality selection property \"quality_prop\" could not be converted to a double value: \"foobar\"";
+        try {
+            var topDet = TopQualitySelectionUtil.getTopQualityDetections(detList, 1, "quality_prop");
+            fail("Expected NumberFormatException to be thrown");
+        }
+        catch (NumberFormatException ex) {
+            assertEquals(expectedString, ex.getMessage());
+        }
+        try {
+            var topDet = TopQualitySelectionUtil.getTopQualityItem(detList, "quality_prop");
+            fail("Expected NumberFormatException to be thrown");
+        }
+        catch (NumberFormatException ex) {
+            assertEquals(expectedString, ex.getMessage());
+        }
     }
 
     private static Detection createDetection(int frame, double confidence) {

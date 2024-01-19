@@ -55,6 +55,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
@@ -333,13 +334,19 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         }
         if (topQualityCount > 0) {
             String topQualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
-            var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
-                    sortedDetections, topQualityCount, topQualitySelectionProp);
-            for (var detection : topQualityDetections) {
-                LOG.debug("Will extract frame #{} with confidence = {}",
-                    detection.getMediaOffsetFrame(),
-                    detection.getConfidence());
-                framesToExtract.add(detection.getMediaOffsetFrame());
+            try {
+                var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
+                                        sortedDetections, topQualityCount, topQualitySelectionProp);
+                for (var detection : topQualityDetections) {
+                    LOG.debug("Will extract frame #{} with confidence = {}",
+                        detection.getMediaOffsetFrame(),
+                        detection.getConfidence());
+                    framesToExtract.add(detection.getMediaOffsetFrame());
+                }
+            }
+            catch (NumberFormatException e) {
+                _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.ARTIFACT_EXTRACTION, e.getMessage());
+                throw e;
             }
         }
 

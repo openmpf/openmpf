@@ -28,5 +28,5 @@
 package org.mitre.mpf.rest.api.pipelines;
 
 public interface PipelineElement {
-    public String getName();
+    public String name();
 }

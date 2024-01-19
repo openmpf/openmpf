@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camelOps;
 import org.junit.Test;
 import org.mitre.mpf.wfm.camel.operations.detection.transformation.DetectionTransformationProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
@@ -396,7 +397,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -424,7 +425,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -451,7 +452,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -478,7 +479,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -505,7 +506,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -532,12 +533,13 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "SPEECH", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(
+                tracks, "SPEECH", 200, 400, false, false);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -555,7 +557,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection1);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 1,
-                1, 1, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 1, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -576,7 +578,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -669,6 +671,16 @@ public class TestDetectionTransformationProcessor {
                                                                   int frameWidth, int frameHeight,
                                                                   boolean hasWidthHeightWarning,
                                                                   boolean hasOutsideFrameWarning) {
+        return runRemoveIllFormedDetections(
+                tracks, "FACE", frameWidth, frameHeight, hasWidthHeightWarning,
+                hasOutsideFrameWarning);
+    }
+
+    private static Collection<Track> runRemoveIllFormedDetections(SortedSet<Track> tracks,
+                                                                  String trackType,
+                                                                  int frameWidth, int frameHeight,
+                                                                  boolean hasWidthHeightWarning,
+                                                                  boolean hasOutsideFrameWarning) {
         JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
         InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
         AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
@@ -680,16 +692,18 @@ public class TestDetectionTransformationProcessor {
         long jobId = 123;
         long mediaId = 5321;
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Collection<Track>> captor = ArgumentCaptor.forClass(Collection.class);
+        var trackCache = new TrackCache(jobId, 0, _mockInProgressJobs);
 
-        Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(jobId, mediaId,
-                0, 0, frameWidth, frameHeight, tracks);
+        Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(
+                trackCache, mediaId, 0, frameWidth, frameHeight, trackType, tracks);
+
         if (!hasWidthHeightWarning && !hasOutsideFrameWarning) {
             verify(_mockInProgressJobs, times(0))
                     .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
-            verify(_mockInProgressJobs, times(0))
-                    .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
+            trackCache.commit();
+            verify(_mockInProgressJobs, never())
+                    .setTracks(anyLong(), anyLong(), anyInt(), anyInt(), any());
+            assertEquals(0, trackCache.getTracks(mediaId, 0).size());
         } else {
             if (hasWidthHeightWarning) {
                 verify(_mockInProgressJobs, times(1))
@@ -701,6 +715,9 @@ public class TestDetectionTransformationProcessor {
                         .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION),
                                 contains("completely outside frame"));
             }
+
+            trackCache.commit();
+            var captor = ArgumentCaptor.forClass(SortedSet.class);
             verify(_mockInProgressJobs)
                     .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
             assertTrue(isEqualCollection(new_tracks, captor.getValue()));
@@ -762,7 +779,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection);
 
         Track track = new Track(1, 2, 1, 1, 0, 0,
-                0, 0, "FACE", 1, detections, Collections.emptyMap(), "");
+                0, 0, 1, 1, detections, Collections.emptyMap(), "");
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track);
 

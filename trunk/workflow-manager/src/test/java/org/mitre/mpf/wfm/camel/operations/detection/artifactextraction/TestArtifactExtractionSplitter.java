@@ -35,10 +35,11 @@ import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -48,9 +49,8 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 
 import java.nio.file.Paths;
 import java.util.*;
@@ -60,16 +60,17 @@ import static org.mockito.Mockito.*;
 
 public class TestArtifactExtractionSplitter {
 
-    private final JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
     private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
     private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
+    private final TaskMergingManager _mockTaskMergingManager = mock(TaskMergingManager.class);
+
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
-            _jsonUtils,
             _mockInProgressJobs,
-            _mockAggregateJobPropertiesUtil);
+            _mockAggregateJobPropertiesUtil,
+            _mockTaskMergingManager);
 
 
 
@@ -588,11 +589,10 @@ public class TestArtifactExtractionSplitter {
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 
-        Action action = mock(Action.class);
-        Task task = mock(Task.class);
-        ImmutableList<String> actionList = ImmutableList.of("Test Action");
-        when(task.getActions())
-                .thenReturn(actionList);
+        var algorithm = new Algorithm(
+                "Test Algo", null, ActionType.DETECTION, null, null, null, null, false, false);
+        var action = new Action("Test Action", null, algorithm.name(), List.of());
+        var task = new Task(null, null, List.of(action.name()));
 
         JobPipelineElements pipelineElements = mock(JobPipelineElements.class, RETURNS_DEEP_STUBS);
         when(job.getPipelineElements())
@@ -606,8 +606,8 @@ public class TestArtifactExtractionSplitter {
         when(pipelineElements.getTaskCount())
                 .thenReturn(1);
 
-        when(pipelineElements.getAlgorithm(anyInt(), anyInt()).getActionType())
-                .thenReturn(ActionType.DETECTION);
+        when(pipelineElements.getAlgorithm(anyInt(), anyInt()))
+                .thenReturn(algorithm);
 
 
         when(_mockAggregateJobPropertiesUtil.getCombinedProperties(job, media, action))
@@ -628,14 +628,14 @@ public class TestArtifactExtractionSplitter {
 
 
         Exchange exchange = TestUtil.createTestExchange();
-        TrackMergingContext trackMergingContext = new TrackMergingContext(jobId, 0);
-        exchange.getIn().setBody(_jsonUtils.serialize(trackMergingContext));
+        var trackCache = new TrackCache(jobId, 0, _mockInProgressJobs);
+        exchange.getIn().setBody(trackCache);
 
 
         List<Message> resultMessages = _artifactExtractionSplitter.wfmSplit(exchange);
 
         ImmutableSet<Integer> actualFrameNumbers = resultMessages.stream()
-                .map(m -> _jsonUtils.deserialize(m.getBody(byte[].class), ArtifactExtractionRequest.class))
+                .map(m -> m.getBody(ArtifactExtractionRequest.class))
                 .flatMap(req -> req.getExtractionsMap().keySet().stream())
                 .collect(ImmutableSet.toImmutableSet());
 

@@ -48,6 +48,7 @@ import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
@@ -396,6 +397,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
                     S3StorageBackend.validateS3Properties(combinedProperties);
                     DetectionTransformationProcessor.validatePaddingProperties(combinedProperties);
+                    TriggerProcessor.validateTrigger(combinedProperties);
                 }
             }
         }

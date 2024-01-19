@@ -42,10 +42,10 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     public static final String TRACKS_SUPPRESSED_TYPE = "TRACKS SUPPRESSED";
     public static final String TRACKS_MERGED_TYPE = "TRACKS MERGED";
 
-    @JsonProperty("source")
-    @JsonPropertyDescription("The action source.")
-    private String source;
-    public String getSource() { return source; }
+    @JsonProperty("action")
+    @JsonPropertyDescription("The action name.")
+    private String action;
+    public String getAction() { return action; }
 
     @JsonProperty("algorithm")
     @JsonPropertyDescription("The action algorithm.")
@@ -58,8 +58,8 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     private SortedSet<JsonTrackOutputObject> tracks;
     public SortedSet<JsonTrackOutputObject> getTracks() { return tracks; }
 
-    public JsonActionOutputObject(String source, String algorithm) {
-        this.source = source;
+    public JsonActionOutputObject(String action, String algorithm) {
+        this.action = action;
         this.algorithm = algorithm;
         this.tracks = new TreeSet<>();
     }
@@ -67,10 +67,10 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     public JsonActionOutputObject(){}
 
     @JsonCreator
-    public static JsonActionOutputObject factory(@JsonProperty("source") String source,
+    public static JsonActionOutputObject factory(@JsonProperty("action") String action,
                                                  @JsonProperty("algorithm") String algorithm,
                                                  @JsonProperty("tracks") SortedSet<JsonTrackOutputObject> tracks) {
-        JsonActionOutputObject trackOutputObject = new JsonActionOutputObject(source, algorithm);
+        JsonActionOutputObject trackOutputObject = new JsonActionOutputObject(action, algorithm);
         if(tracks != null) {
             trackOutputObject.tracks.addAll(tracks);
         }
@@ -78,7 +78,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     }
 
     public int hashCode() {
-        return Objects.hash(source, algorithm, tracks);
+        return Objects.hash(action, algorithm, tracks);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
 
     private static final Comparator<JsonActionOutputObject> DEFAULT_COMPARATOR = Comparator
             .nullsFirst(Comparator
-                    .comparing(JsonActionOutputObject::getSource)
+                    .comparing(JsonActionOutputObject::getAction)
                     .thenComparing(JsonActionOutputObject::getAlgorithm)
                     .thenComparing(sortedSetCompare(JsonActionOutputObject::getTracks))
             );

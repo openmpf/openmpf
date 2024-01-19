@@ -441,7 +441,6 @@ namespace MPF::COMPONENT {
 
 
         struct ComponentAttrs {
-            std::string detection_type;
             py::function get_detections_from_image_method;
             py::function get_detections_from_video_method;
             py::function get_detections_from_audio_method;
@@ -454,8 +453,7 @@ namespace MPF::COMPONENT {
             }
 
             explicit ComponentAttrs(py::object &&component_instance)
-                : detection_type(GetDetectionType(component_instance))
-                , get_detections_from_image_method(get_method(component_instance, "get_detections_from_image"))
+                : get_detections_from_image_method(get_method(component_instance, "get_detections_from_image"))
                 , get_detections_from_video_method(get_method(component_instance, "get_detections_from_video"))
                 , get_detections_from_audio_method(get_method(component_instance, "get_detections_from_audio"))
                 , get_detections_from_generic_method(get_method(component_instance, "get_detections_from_generic"))
@@ -470,14 +468,6 @@ namespace MPF::COMPONENT {
                             "get_detections_from_image, get_detections_from_video, get_detections_from_audio, "
                             "or get_detections_from_generic.");
                 }
-            }
-
-        private:
-            static std::string GetDetectionType(py::handle obj) {
-                if (!py::hasattr(obj, "detection_type")) {
-                    throw ComponentLoadError("The Python component does not contain a field named \"detection_type\".");
-                }
-                return to_std_string(obj.attr("detection_type"));
             }
         };
 
@@ -560,11 +550,6 @@ namespace MPF::COMPONENT {
                     return false;
             }
         }
-
-        std::string GetDetectionType() const {
-            return component_.detection_type;
-        }
-
 
         std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job) {
             try {
@@ -728,11 +713,6 @@ namespace MPF::COMPONENT {
 
     bool PythonComponentHandle::Init() {
         return true;
-    }
-
-
-    std::string PythonComponentHandle::GetDetectionType() {
-        return impl_->GetDetectionType();
     }
 
 

@@ -82,6 +82,7 @@ public class TestDescriptorFactory {
                 "Test Algorithm Name",
                 "Test Algorithm Description",
                 ActionType.DETECTION,
+                "TEST",
                 OptionalInt.empty(),
                 requiresCollection,
                 providesCollection,
@@ -118,17 +119,17 @@ public class TestDescriptorFactory {
             tasks.add(new Task(
                     TASK_NAMES.get(0),
                     TASK_NAMES.get(0) + " description",
-                    Collections.singletonList(actions.get(0).getName())));
+                    Collections.singletonList(actions.get(0).name())));
 
             tasks.add(new Task(
                     TASK_NAMES.get(1),
                     TASK_NAMES.get(1) + " description",
-                    Arrays.asList(actions.get(1).getName(), actions.get(2).getName())));
+                    Arrays.asList(actions.get(1).name(), actions.get(2).name())));
 
             pipelines.add(new Pipeline(
                     PIPELINE_NAME,
                     "Pipeline description",
-                    Arrays.asList(tasks.get(0).getName(), tasks.get(1).getName())));
+                    Arrays.asList(tasks.get(0).name(), tasks.get(1).name())));
 
         }
 
@@ -165,7 +166,8 @@ public class TestDescriptorFactory {
         propertyList.add(new AlgorithmProperty("foo", "2", ValueType.INT, "0", null));
 
         return new Algorithm(
-                REFERENCED_ALGO_NAME, "description", ActionType.DETECTION, OptionalInt.empty(),
+                REFERENCED_ALGO_NAME, "description", ActionType.DETECTION, "TEST",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), propertyList),
                 true, false);

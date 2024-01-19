@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "8.0",
   "jobId": 46,
   "errors": [],
   "warnings": [],
@@ -55,7 +55,7 @@
       "output": {
         "TEXT": [
           {
-            "source": "+#TEST OALPR TEXT DETECTION ACTION",
+            "action": "TEST OALPR TEXT DETECTION ACTION",
             "algorithm": "OALPR",
             "tracks": [
               {
@@ -65,7 +65,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 89.48069,
                 "trackProperties": {
                   "TEXT": "LV42DY"
@@ -125,7 +124,7 @@
       "output": {
         "TEXT": [
           {
-            "source": "+#TEST OALPR TEXT DETECTION ACTION",
+            "action": "TEST OALPR TEXT DETECTION ACTION",
             "algorithm": "OALPR",
             "tracks": [
               {
@@ -135,7 +134,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.87361,
                 "trackProperties": {
                   "TEXT": "0116G"
@@ -195,7 +193,7 @@
       "output": {
         "TEXT": [
           {
-            "source": "+#TEST OALPR TEXT DETECTION ACTION",
+            "action": "TEST OALPR TEXT DETECTION ACTION",
             "algorithm": "OALPR",
             "tracks": [
               {
@@ -205,7 +203,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.93294,
                 "trackProperties": {
                   "TEXT": "6EMZ948"

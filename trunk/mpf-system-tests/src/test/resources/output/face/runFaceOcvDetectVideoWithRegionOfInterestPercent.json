@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "8.0",
   "jobId": 18,
   "errors": [],
   "warnings": [],
@@ -62,7 +62,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#TEST OCV FACE WITH ROI PERCENT ACTION",
+            "action": "TEST OCV FACE WITH ROI PERCENT ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -72,7 +72,6 @@
                 "startOffsetTime": 2569,
                 "stopOffsetTime": 3436,
                 "type": "FACE",
-                "source": "+#TEST OCV FACE WITH ROI PERCENT ACTION",
                 "confidence": 38.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -421,7 +420,6 @@
                 "startOffsetTime": 3803,
                 "stopOffsetTime": 4504,
                 "type": "FACE",
-                "source": "+#TEST OCV FACE WITH ROI PERCENT ACTION",
                 "confidence": 22.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -710,7 +708,6 @@
                 "startOffsetTime": 7774,
                 "stopOffsetTime": 7841,
                 "type": "FACE",
-                "source": "+#TEST OCV FACE WITH ROI PERCENT ACTION",
                 "confidence": 21.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -771,7 +768,6 @@
                 "startOffsetTime": 8375,
                 "stopOffsetTime": 8475,
                 "type": "FACE",
-                "source": "+#TEST OCV FACE WITH ROI PERCENT ACTION",
                 "confidence": 35.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -844,7 +840,6 @@
                 "startOffsetTime": 8808,
                 "stopOffsetTime": 9342,
                 "type": "FACE",
-                "source": "+#TEST OCV FACE WITH ROI PERCENT ACTION",
                 "confidence": 20.0,
                 "trackProperties": {},
                 "exemplar": {

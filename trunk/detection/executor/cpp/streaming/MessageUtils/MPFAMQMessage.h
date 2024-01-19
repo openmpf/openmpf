@@ -69,7 +69,6 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
         int seg_num = -1;
         int start_frame = -1;
         int stop_frame = -1;
-        std::string detection_type;
         MPF::COMPONENT::MPFDetectionError err = MPF::COMPONENT::MPFDetectionError::MPF_DETECTION_SUCCESS;
 
         const cms::BytesMessage &bytes_msg = dynamic_cast<const cms::BytesMessage&>(msg);
@@ -82,7 +81,6 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
             seg_num = response.segment_number();
             start_frame = response.start_frame();
             stop_frame = response.stop_frame();
-            detection_type = response.detection_type();
             err = translateProtobufError(response.error());
             for (auto &msg_track : response.video_tracks()) {
                 MPF::COMPONENT::MPFVideoTrack mpf_track;
@@ -117,8 +115,7 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
         return MPFSegmentSummaryMessage(msg.getStringProperty("JOB_NAME"),
                                         msg.getIntProperty("JOB_ID"),
                                         seg_num, start_frame, stop_frame,
-                                        detection_type, err,
-                                        mpfTracks);
+                                        err, mpfTracks);
     }
 
     virtual void toCMSMessage(const MPFSegmentSummaryMessage &mpfMsg, cms::Message &msg) override {
@@ -132,7 +129,6 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
         response.set_segment_number(mpfMsg.segment_number_);
         response.set_start_frame(mpfMsg.segment_start_frame_);
         response.set_stop_frame(mpfMsg.segment_stop_frame_);
-        response.set_detection_type(mpfMsg.detection_type_);
         response.set_error(translateMPFDetectionError(mpfMsg.segment_error_));
 
         for (auto &track : mpfMsg.tracks_) {

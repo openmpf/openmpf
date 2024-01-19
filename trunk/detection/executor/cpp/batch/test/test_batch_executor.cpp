@@ -139,8 +139,6 @@ void assert_has_echo_properties(const Properties &properties) {
 
 TEST(PythonComponentHandleTest, TestImageJob) {
     PythonComponentHandle py_component = get_test_component();
-    ASSERT_EQ(py_component.GetDetectionType(), "TEST DETECTION TYPE");
-
     MPFImageJob job("Test Job Name", "path/to/media",
                     { { "job prop 1" , "job val 1" }, job_echo_pair },
                     { { "media prop 1" , "media val 1" }, media_echo_pair });

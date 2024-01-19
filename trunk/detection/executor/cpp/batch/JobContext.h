@@ -75,8 +75,6 @@ struct JobContext {
 
     const std::string job_name;
 
-    const std::string detection_type;
-
     const job_variant_t job;
 
     const MPFDetectionDataType job_type;

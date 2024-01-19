@@ -45,8 +45,7 @@ class JobReceiver {
 
 public:
     JobReceiver(
-            LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue,
-            std::string_view detection_type);
+            LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue);
 
     JobContext GetJob();
 
@@ -76,8 +75,6 @@ private:
     LoggerWrapper logger_;
 
     Messenger messenger_;
-
-    std::string detection_type_;
 
     JobContext TryGetJob();
 };

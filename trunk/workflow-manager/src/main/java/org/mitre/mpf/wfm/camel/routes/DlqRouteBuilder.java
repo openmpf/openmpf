@@ -32,7 +32,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
@@ -47,12 +46,12 @@ import org.springframework.stereotype.Component;
 public class DlqRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(DlqRouteBuilder.class);
 
-	public static final String ENTRY_POINT = MpfEndpoints.DEAD_LETTER_QUEUE;
-	public static final String EXIT_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
-	public static final String AUDIT_EXIT_POINT = MpfEndpoints.DLQ_PROCESSED_MESSAGES;
-	public static final String INVALID_EXIT_POINT = MpfEndpoints.DLQ_INVALID_MESSAGES;
+	public static final String ENTRY_POINT = "activemq:ActiveMQ.DLQ";
+	public static final String EXIT_POINT = DetectionResponseRouteBuilder.ENTRY_POINT;
+	public static final String AUDIT_EXIT_POINT = "activemq:MPF.DLQ_PROCESSED_MESSAGES";
+	public static final String INVALID_EXIT_POINT = "activemq:MPF.DLQ_INVALID_MESSAGES";
 	public static final String ROUTE_ID_PREFIX = "DLQ Route";
-	public static final String SELECTOR_REPLY_TO = MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO;
+	public static final String SELECTOR_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS";
 	public static final String DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
 	public static final int DUPLICATE_PREFETCH_SIZE = 1500;
 

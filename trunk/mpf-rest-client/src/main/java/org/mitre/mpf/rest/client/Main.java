@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 public class Main {
 
     public static final String DEFAULT_HOST_PREFIX = "http://localhost:8080";
-    public static final String WFM_REST_PATH = "/workflow-manager/rest/";
+    public static final String WFM_REST_PATH = "/rest/";
 
     private static final String DEFAULT_MPF_USER = "mpf";
     private static final String DEFAULT_MPF_USER_PWD = "mpf123";
@@ -133,7 +133,7 @@ public class Main {
 
         System.out.println("Number of available pipelines: " + pipelines.size());
         System.out.println("Available pipelines:\n" +
-                pipelines.stream().map(Pipeline::getName).collect(Collectors.joining("\n")) + "\n");
+                pipelines.stream().map(Pipeline::name).collect(Collectors.joining("\n")) + "\n");
 
 
         // Get the first FACE pipeline
@@ -142,7 +142,7 @@ public class Main {
         jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPath.toUri().toString()));
         jobCreationRequest.setExternalId("external id");
 
-        Optional<String> firstFacePipeline = pipelines.stream().map(Pipeline::getName)
+        Optional<String> firstFacePipeline = pipelines.stream().map(Pipeline::name)
                 .filter(pipelineName -> pipelineName.contains("FACE"))
                 .findFirst();
 

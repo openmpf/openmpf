@@ -32,7 +32,7 @@
 
     var module = angular.module('mpf.wfm.pipeline2');
 
-    module.directive('actionProperty',
+    module.directive('mpfActionProperty',
         [
             function () {
                 return {

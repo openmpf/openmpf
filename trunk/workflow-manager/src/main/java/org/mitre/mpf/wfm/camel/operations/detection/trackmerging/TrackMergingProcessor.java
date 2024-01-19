@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
@@ -42,8 +43,8 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -81,18 +82,14 @@ public class TrackMergingProcessor extends WfmProcessor {
     public static final String REF = "trackMergingProcessor";
     private static final Logger log = LoggerFactory.getLogger(TrackMergingProcessor.class);
 
-    private final JsonUtils _jsonUtils;
-
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     @Inject
     public TrackMergingProcessor(
-            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
-        _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
@@ -100,15 +97,22 @@ public class TrackMergingProcessor extends WfmProcessor {
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-        TrackMergingContext trackMergingContext =
-                _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
+        var jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        var taskIndex = exchange.getIn().getHeader(MpfHeaders.TASK_INDEX, Integer.class);
 
-        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
+        var trackCache = new TrackCache(jobId, taskIndex, _inProgressBatchJobs);
+        exchange.getOut().setBody(trackCache);
 
-        Task task = job.getPipelineElements().getTask(trackMergingContext.getTaskIndex());
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        BatchJob job = _inProgressBatchJobs.getJob(jobId);
+
+        Task task = job.getPipelineElements().getTask(taskIndex);
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
             Action action = job.getPipelineElements()
-                    .getAction(trackMergingContext.getTaskIndex(), actionIndex);
+                    .getAction(taskIndex, actionIndex);
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
+            if (_aggregateJobPropertiesUtil.isExemptFromTrackMerging(algo.trackType())) {
+                continue;
+            }
 
             for (Media media : job.getMedia()) {
 
@@ -126,17 +130,15 @@ public class TrackMergingProcessor extends WfmProcessor {
                     continue; // nothing to do
                 }
 
-                SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
-                        trackMergingContext.getJobId(), media.getId(), trackMergingContext.getTaskIndex(),
-                        actionIndex);
+                SortedSet<Track> tracks = trackCache.getTracks(media.getId(), actionIndex);
 
-                if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
+                if (tracks.isEmpty()) {
                     continue;
                 }
 
                 if (mergeRequested) {
                     int initialSize = tracks.size();
-                    tracks = new TreeSet<>(combine(tracks, trackMergingPlan));
+                    tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan));
 
                     log.debug("Merging {} tracks down to {} in Media {}.",
                               initialSize, tracks.size(), media.getId());
@@ -153,12 +155,9 @@ public class TrackMergingProcessor extends WfmProcessor {
                               initialSize, tracks.size(), minTrackLength, media.getId());
                 }
 
-                _inProgressBatchJobs.setTracks(trackMergingContext.getJobId(), media.getId(),
-                                         trackMergingContext.getTaskIndex(), actionIndex, tracks);
+                trackCache.updateTracks(media.getId(), actionIndex, tracks);
             }
         }
-
-        exchange.getOut().setBody(_jsonUtils.serialize(trackMergingContext));
     }
 
     private TrackMergingPlan createTrackMergingPlan(BatchJob job, Media media,
@@ -223,7 +222,8 @@ public class TrackMergingProcessor extends WfmProcessor {
         return new TrackMergingPlan(mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
     }
 
-    private static Set<Track> combine(SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
+    private static Set<Track> combine(
+            BatchJob job, SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
         // Do not attempt to merge an empty or null set.
         if (sourceTracks.isEmpty()) {
             return sourceTracks;
@@ -240,7 +240,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
             for (Track candidate : tracks) {
                 // Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
-                if (canMerge(merged, candidate, plan)) {
+                if (canMerge(job, merged, candidate, plan)) {
                     // If one is found, merge them and then push this track back to the beginning of the collection.
                     tracks.add(0, merge(merged, candidate));
                     performedMerge = true;
@@ -266,7 +266,6 @@ public class TrackMergingProcessor extends WfmProcessor {
         return new HashSet<>(mergedTracks);
     }
 
-    /** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
     public static Track merge(Track track1, Track track2){
 
         Collection<Detection> detections = Stream.of(track1, track2)
@@ -290,7 +289,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 track2.getEndOffsetFrameInclusive(),
                 track1.getStartOffsetTimeInclusive(),
                 track2.getEndOffsetTimeInclusive(),
-                track1.getType(),
+                track1.getMergedTaskIndex(),
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
                 properties,
@@ -298,28 +297,25 @@ public class TrackMergingProcessor extends WfmProcessor {
         return merged;
     }
 
-    private static boolean canMerge(Track track1, Track track2, TrackMergingPlan plan) {
-        return StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())
-                && isEligibleForMerge(track1, track2)
+    private static boolean canMerge(
+            BatchJob job, Track track1, Track track2, TrackMergingPlan plan) {
+        var pipelineElements = job.getPipelineElements();
+        var track1Algo = pipelineElements.getAlgorithm(
+                track1.getTaskIndex(), track1.getActionIndex());
+        var track2Algo = pipelineElements.getAlgorithm(
+                track2.getTaskIndex(), track2.getActionIndex());
+
+        return StringUtils.equalsIgnoreCase(track1Algo.trackType(), track2Algo.trackType())
+                && isEligibleForMerge(track1, track2, track1Algo.trackType())
                 && isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
                 && intersects(track1, track2, plan.getMinTrackOverlap());
     }
 
-    private boolean isEligibleForFixup(SortedSet<Track> tracks) {
-        // NOTE: All tracks should be the same type.
-        String type = tracks.first().getType();
-        return !_aggregateJobPropertiesUtil.isExemptFromTrackMerging(type);
-    }
 
-    // This method assumes that isEligibleForFixup() has been checked.
-    private static boolean isEligibleForMerge(Track track1, Track track2) {
+    // This method assumes that we've already checked that both tracks have the same track type.
+    private static boolean isEligibleForMerge(Track track1, Track track2, String trackType) {
         // NOTE: All tracks should be the same type.
-        switch (track1.getType().toUpperCase()) {
-            case "CLASS":
-                return isSameClassification(track1, track2);
-            default:
-                return true;
-        }
+        return !trackType.equals("CLASS") || isSameClassification(track1, track2);
     }
 
     private static boolean isSameClassification(Track track1, Track track2) {

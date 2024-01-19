@@ -26,13 +26,13 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.wfm.data.TrackCache;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 
 public class ArtifactExtractionRequest {
@@ -73,23 +73,33 @@ public class ArtifactExtractionRequest {
     private final boolean _rotationFillIsBlack;
     public boolean getRotationFillIsBlack() { return _rotationFillIsBlack; }
 
+    private final TrackCache _trackCache;
+    public SortedSet<Track> getTracks() {
+        return _trackCache.getTracks(_mediaId, _actionIndex);
+    }
+
+    public void updateTracks(SortedSet<Track> tracks) {
+        _trackCache.updateTracks(_mediaId, _actionIndex, tracks);
+    }
+
     /** Maps frame numbers to pairs of trackIndex and detection to be extracted. */
     private final SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
     public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
         return extractionsMap;
     }
 
-    @JsonCreator
+
     public ArtifactExtractionRequest(
-            @JsonProperty("jobId") long jobId,
-            @JsonProperty("mediaId") long mediaId,
-            @JsonProperty("mediaPath") String mediaPath,
-            @JsonProperty("mediaType") MediaType mediaType,
-            @JsonProperty("mediaMetadata") Map<String, String> mediaMetadata,
-            @JsonProperty("taskIndex") int taskIndex,
-            @JsonProperty("actionIndex") int actionIndex,
-            @JsonProperty("croppingFlag") boolean croppingFlag,
-            @JsonProperty("rotationFillIsBlack") boolean rotationFillIsBlack) {
+            long jobId,
+            long mediaId,
+            String mediaPath,
+            MediaType mediaType,
+            Map<String, String> mediaMetadata,
+            int taskIndex,
+            int actionIndex,
+            boolean croppingFlag,
+            boolean rotationFillIsBlack,
+            TrackCache trackCache) {
         _jobId = jobId;
         _mediaId = mediaId;
         _mediaPath = mediaPath;
@@ -99,5 +109,6 @@ public class ArtifactExtractionRequest {
         _actionIndex = actionIndex;
         _croppingFlag = croppingFlag;
         _rotationFillIsBlack = rotationFillIsBlack;
+        _trackCache = trackCache;
     }
 }

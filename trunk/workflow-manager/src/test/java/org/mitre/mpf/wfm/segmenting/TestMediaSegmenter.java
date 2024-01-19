@@ -27,11 +27,9 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSortedMap;
-import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.ImageLocation;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.PropertyMap;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -344,30 +342,40 @@ public class TestMediaSegmenter {
 
 
 
-	protected static void assertContainsAlgoProperty(String key, String value, Collection<DetectionRequest> requests) {
-		for (DetectionRequest request : requests) {
+	protected static void assertContainsAlgoProperty(
+            String key, String value, Collection<DetectionRequest> requests) {
+		for (var request : requests) {
+            boolean foundMatchingProperty = request.protobuf()
+                .getAlgorithmPropertyList()
+                .stream()
+                .anyMatch(ap -> ap.getPropertyName().equals(key) &&
+                            ap.getPropertyValue().equals(value));
 			assertTrue(
 					String.format("Expected request to contain algorithm property: %s: %s", key, value),
-					request.getAlgorithmPropertyList().stream()
-							.anyMatch(ap -> ap.getPropertyName().equals(key) && ap.getPropertyValue().equals(value)));
+                    foundMatchingProperty);
 		}
 	}
 
 
-
-	protected static void assertContainsExpectedMediaMetadata(Collection<DetectionRequest> requests) {
-		assertTrue("Expected each request to contain 1 media metadata field", requests.stream()
-				.allMatch(dr -> dr.getMediaMetadataList().size() == 1));
+	protected static void assertContainsExpectedMediaMetadata(
+            Collection<DetectionRequest> requests) {
+		assertTrue("Expected each request to contain 1 media metadata field",
+                requests.stream()
+                        .allMatch(dr -> dr.protobuf().getMediaMetadataList().size() == 1));
 		assertContainsMediaMetadata("mediaKey1", "mediaValue1", requests);
-
 	}
 
-	protected static void assertContainsMediaMetadata(String key, String value, Collection<DetectionRequest> requests) {
-		for (DetectionRequest request : requests) {
+
+	protected static void assertContainsMediaMetadata(
+            String key, String value, Collection<DetectionRequest> requests) {
+		for (var request : requests) {
+            boolean foundMatchingMetadata = request.protobuf()
+                .getMediaMetadataList()
+                .stream()
+                .anyMatch(mp -> mp.getKey().equals(key) && mp.getValue().equals(value));
 			assertTrue(
 					String.format("Expected request to contain media metadata: %s: %s", key, value),
-					request.getMediaMetadataList().stream()
-							.anyMatch(mp -> mp.getKey().equals(key) && mp.getValue().equals(value)));
+                    foundMatchingMetadata);
 		}
 	}
 
@@ -458,17 +466,17 @@ public class TestMediaSegmenter {
         Detection exemplar = TopConfidenceUtil.getTopConfidenceItem(
                 detectionList, Detection::getConfidence);
 
-		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, "type",
+		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, 1,
 				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "");
 		return track;
 	}
 
 
+    protected static void assertAllHaveFeedForwardTrack(Collection<DetectionRequest> requests) {
+        assertTrue(requests.stream().allMatch(r -> r.feedForwardTrack().isPresent()));
+    }
 
-	protected static List<DetectionRequest> unwrapMessages(Collection<Message> messages) {
-		return messages
-				.stream()
-				.map(m -> m.getBody(DetectionRequest.class))
-				.collect(toList());
-	}
+    protected static void assertNoneHaveFeedForwardTrack(Collection<DetectionRequest> requests) {
+        assertTrue(requests.stream().allMatch(r -> r.feedForwardTrack().isEmpty()));
+    }
 }

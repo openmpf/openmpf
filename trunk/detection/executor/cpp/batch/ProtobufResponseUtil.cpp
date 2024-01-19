@@ -41,30 +41,24 @@ namespace MPF::COMPONENT::ProtobufResponseUtil {
         switch (context.job_type) {
             case MPFDetectionDataType::VIDEO: {
                 auto video_response = detection_response.add_video_responses();
-                video_response->set_detection_type(context.detection_type);
-
                 const auto& video_job = std::get<MPFVideoJob>(context.job);
                 video_response->set_start_frame(video_job.start_frame);
                 video_response->set_stop_frame(video_job.stop_frame);
                 break;
             }
             case MPFDetectionDataType::IMAGE: {
-                detection_response.add_image_responses()->set_detection_type(
-                        context.detection_type);
+                detection_response.add_image_responses();
                 break;
             }
             case MPFDetectionDataType::AUDIO: {
                 auto audio_response = detection_response.add_audio_responses();
-                audio_response->set_detection_type(context.detection_type);
-
                 const auto& audio_job = std::get<MPFAudioJob>(context.job);
                 audio_response->set_start_time(audio_job.start_time);
                 audio_response->set_stop_time(audio_job.stop_time);
                 break;
             }
             default: {
-                detection_response.add_generic_responses()->set_detection_type(
-                        context.detection_type);
+                detection_response.add_generic_responses();
                 break;
             }
         }
@@ -115,7 +109,6 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const std::vector<MPFVideoTrack>& tracks,
             mpf_buffers::DetectionResponse& response) {
         auto video_response = response.add_video_responses();
-        video_response->set_detection_type(context.detection_type);
 
         const auto& video_job = std::get<MPFVideoJob>(context.job);
         video_response->set_start_frame(video_job.start_frame);
@@ -145,7 +138,6 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const std::vector<MPFImageLocation>& image_locations,
             mpf_buffers::DetectionResponse& response) {
         auto image_response = response.add_image_responses();
-        image_response->set_detection_type(context.detection_type);
         for (const auto& img_loc : image_locations) {
             AddToProtobuf(img_loc, *image_response->add_image_locations());
         }
@@ -157,7 +149,6 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const std::vector<MPFAudioTrack>& tracks,
             mpf_buffers::DetectionResponse& response) {
         auto audio_response = response.add_audio_responses();
-        audio_response->set_detection_type(context.detection_type);
         const auto& audio_job = std::get<MPFAudioJob>(context.job);
         audio_response->set_start_time(audio_job.start_time);
         audio_response->set_stop_time(audio_job.stop_time);
@@ -175,11 +166,10 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
     }
 
     void AddToProtobuf(
-            const JobContext& context,
+            const JobContext&,
             const std::vector<MPFGenericTrack>& tracks,
             mpf_buffers::DetectionResponse& response) {
         auto generic_response = response.add_generic_responses();
-        generic_response->set_detection_type(context.detection_type);
         for (const auto &track : tracks) {
             auto pb_track = generic_response->add_generic_tracks();
             pb_track->set_confidence(track.confidence);

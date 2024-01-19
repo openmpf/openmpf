@@ -37,50 +37,33 @@ import javax.validation.constraints.Null;
 import javax.validation.constraints.Size;
 import java.util.List;
 
-public class JsonExtrasDescriptor {
 
-    // @Pattern(regexp = "^Extras$") // exact match
-    @NotBlank
-    public String componentName;
-
-    public String componentVersion;
-
-    public String middlewareVersion;
-
-    @Null
-    public ComponentLanguage sourceLanguage;
-
-    @Null
-    public String batchLibrary;
-
-    @Null
-    public String streamLibrary;
-
-    @Size(max = 0)
-    public List<JsonComponentDescriptor.EnvironmentVariable> environmentVariables;
-
-    @Null
-    public Algorithm algorithm;
-
-    @Valid
-    public List<Action> actions;
-
-    @Valid
-    public List<Task> tasks;
-
-    @Valid
-    public List<Pipeline> pipelines;
+public record JsonExtrasDescriptor(
+        @NotBlank String componentName,
+        String componentVersion,
+        String middlewareVersion,
+        @Null ComponentLanguage sourceLanguage,
+        @Null String batchLibrary,
+        @Null String streamLibrary,
+        @Size(max = 0) List<JsonComponentDescriptor.EnvironmentVariable> environmentVariables,
+        @Null Algorithm algorithm,
+        @Valid List<Action> actions,
+        @Valid List<Task> tasks,
+        @Valid List<Pipeline> pipelines) {
 
     public JsonExtrasDescriptor(JsonComponentDescriptor jsonDescriptor) {
-        this.componentName        = jsonDescriptor.getComponentName();
-        this.componentVersion     = jsonDescriptor.getComponentVersion();
-        this.middlewareVersion    = jsonDescriptor.getMiddlewareVersion();
-        this.sourceLanguage       = jsonDescriptor.getSourceLanguage();
-        this.batchLibrary         = jsonDescriptor.getBatchLibrary();
-        this.streamLibrary        = jsonDescriptor.getStreamLibrary();
-        this.environmentVariables = jsonDescriptor.getEnvironmentVariables();
-        this.algorithm            = jsonDescriptor.getAlgorithm();
-        this.actions              = jsonDescriptor.getActions();
-        this.pipelines            = jsonDescriptor.getPipelines();
+        this(
+            jsonDescriptor.componentName(),
+            jsonDescriptor.componentVersion(),
+            jsonDescriptor.middlewareVersion(),
+            jsonDescriptor.sourceLanguage(),
+            jsonDescriptor.batchLibrary(),
+            jsonDescriptor.streamLibrary(),
+            jsonDescriptor.environmentVariables(),
+            jsonDescriptor.algorithm(),
+            jsonDescriptor.actions(),
+            jsonDescriptor.tasks(),
+            jsonDescriptor.pipelines());
     }
+
 }

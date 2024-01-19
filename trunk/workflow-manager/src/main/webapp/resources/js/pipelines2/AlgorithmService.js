@@ -51,7 +51,7 @@
     module.factory('AlgorithmService',
         ['$resource',
             function ($resource) {
-                var algoResource = $resource('algorithms', {}, {
+                var algoResource = $resource('algorithms/:name', {}, {
                     get: {
                         cache: true
                     }

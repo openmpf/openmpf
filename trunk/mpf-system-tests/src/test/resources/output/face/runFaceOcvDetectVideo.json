@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "8.0",
   "jobId": 15,
   "errors": [],
   "warnings": [],
@@ -56,7 +56,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -66,7 +66,6 @@
                 "startOffsetTime": 1501,
                 "stopOffsetTime": 2335,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 34.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -403,7 +402,6 @@
                 "startOffsetTime": 2469,
                 "stopOffsetTime": 3470,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 46.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -800,7 +798,6 @@
                 "startOffsetTime": 3670,
                 "stopOffsetTime": 4571,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 40.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1161,7 +1158,6 @@
                 "startOffsetTime": 4637,
                 "stopOffsetTime": 5638,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 15.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1558,7 +1554,6 @@
                 "startOffsetTime": 7407,
                 "stopOffsetTime": 7574,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 38.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1655,7 +1650,6 @@
                 "startOffsetTime": 7741,
                 "stopOffsetTime": 8541,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 52.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -1980,7 +1974,6 @@
                 "startOffsetTime": 8742,
                 "stopOffsetTime": 9476,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 34.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -2281,7 +2274,6 @@
                 "startOffsetTime": 9576,
                 "stopOffsetTime": 10810,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 16.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -2784,7 +2776,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -2794,7 +2786,6 @@
                 "startOffsetTime": 2202,
                 "stopOffsetTime": 4237,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 52.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -3563,7 +3554,6 @@
                 "startOffsetTime": 3436,
                 "stopOffsetTime": 4004,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 35.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -3804,7 +3794,6 @@
                 "startOffsetTime": 13646,
                 "stopOffsetTime": 14781,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 29.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -4249,7 +4238,6 @@
                 "startOffsetTime": 14748,
                 "stopOffsetTime": 15582,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 16.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -4608,7 +4596,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -4618,7 +4606,6 @@
                 "startOffsetTime": 33,
                 "stopOffsetTime": 3002,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 24.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -5723,7 +5710,6 @@
                 "startOffsetTime": 33,
                 "stopOffsetTime": 3002,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 59.0,
                 "trackProperties": {},
                 "exemplar": {

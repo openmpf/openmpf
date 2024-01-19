@@ -181,21 +181,21 @@ var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
 
 
     $scope.deleteAction = function (actionName) {
-        $http.delete('actions?name=' + actionName)
+        $http.delete('actions/' + actionName)
             .success(function () {
                 $scope.actions = _.reject($scope.actions, {name: actionName});
             });
     };
 
     $scope.deleteTask = function (taskName) {
-        $http.delete('tasks?name=' + taskName)
+        $http.delete('tasks/' + taskName)
             .success(function () {
                 $scope.tasks = _.reject($scope.tasks, {name: taskName});
             });
     };
 
     $scope.deletePipeline = function (pipelineName) {
-        $http.delete('pipelines?name=' + pipelineName)
+        $http.delete('pipelines/' + pipelineName)
             .success(function () {
                 $scope.pipelines = _.reject($scope.pipelines, {name: pipelineName});
             });

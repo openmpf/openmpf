@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "8.0",
   "jobId": 45,
   "errors": [],
   "warnings": [],
@@ -57,7 +57,7 @@
       "output": {
         "SPEECH": [
           {
-            "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "action": "SPHINX SPEECH DETECTION ACTION",
             "algorithm": "SPHINX",
             "tracks": [
               {
@@ -67,7 +67,6 @@
                 "startOffsetTime": 833,
                 "stopOffsetTime": 2541,
                 "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "TRANSCRIPT": "what zero zero zero one"
@@ -110,7 +109,6 @@
                 "startOffsetTime": 3916,
                 "stopOffsetTime": 4916,
                 "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "TRANSCRIPT": "nine oh two one oh"
@@ -153,7 +151,6 @@
                 "startOffsetTime": 6250,
                 "stopOffsetTime": 7833,
                 "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
                 "confidence": -1.0,
                 "trackProperties": {
                   "TRANSCRIPT": "cyril one eight zero three"

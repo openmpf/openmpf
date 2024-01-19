@@ -29,8 +29,9 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.DefaultTaskSplitter;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
+import org.mitre.mpf.wfm.camel.BeginTaskProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ import org.springframework.stereotype.Component;
 public class JobRouterRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(JobRouterRouteBuilder.class);
 
-	public static final String ENTRY_POINT = "jms:MPF.JOB_ROUTER";
+	public static final String ENTRY_POINT = "activemq:MPF.JOB_ROUTER";
 	public static final String ROUTE_ID = "Job Router Route";
 
 	private final String entryPoint, routeId;
@@ -65,23 +66,25 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.choice()
-				.when(header(MpfHeaders.JOB_COMPLETE).isEqualTo(true))
-                    .process(JobCompleteProcessorImpl.REF)
-				.otherwise()
-					.split().method(DefaultTaskSplitter.REF, "split")
-						.parallelProcessing() // Create work units and process them in any order.
-						.streaming() // Aggregate responses in any order.
-						.choice()
-							.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
-								.removeHeader(MpfHeaders.EMPTY_SPLIT)
-								.to(MpfEndpoints.TASK_RESULTS_AGGREGATOR)
-							.otherwise()
-								.marshal().protobuf()
-								.recipientList(header(MpfHeaders.RECIPIENT_QUEUE))
-				.endChoice()
-					.endChoice() // For unknown reasons, the split() DSL is ended by 'endChoice'.
-				.end()
-			.endChoice();
+            .filter(header(MpfHeaders.JOB_COMPLETE).isNotEqualTo(true))
+                .process(BeginTaskProcessor.REF)
+            .end()
+            .filter(header(MpfHeaders.JOB_COMPLETE).isEqualTo(true))
+                .process(JobCompleteProcessorImpl.REF)
+                .stop()
+            .end()
+            .split(method(DefaultTaskSplitter.REF, "split"))
+                .parallelProcessing()
+                .streaming()
+                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
+                .marshal().protobuf()
+                // Splitter will set the "CamelJmsDestinationName" header to
+                // specify the destination.
+                // Adapted from: https://camel.apache.org/components/3.20.x/jms-component.html#_reuse_endpoint_and_send_to_different_destinations_computed_at_runtime
+                .to("activemq:queue:dummy")
+            .end()
+            .filter(exchangeProperty(MpfHeaders.EMPTY_SPLIT))
+                .to(entryPoint)
+            .end();
 	}
 }

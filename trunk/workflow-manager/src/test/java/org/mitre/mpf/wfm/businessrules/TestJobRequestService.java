@@ -143,14 +143,14 @@ public class TestJobRequestService {
 
 
     private static JobPipelineElements createJobPipelineElements() {
-        var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION,
+        var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION, "TEST",
                                       OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
-        var action = new Action("TEST ACTION", "descr", algorithm.getName(), List.of());
-        var task = new Task("Test Task", "desc", List.of(action.getName()));
-        var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.getName()));
+        var action = new Action("TEST ACTION", "descr", algorithm.name(), List.of());
+        var task = new Task("Test Task", "desc", List.of(action.name()));
+        var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.name()));
         return new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
     }
 
@@ -232,7 +232,7 @@ public class TestJobRequestService {
 
         assertEquals(123, job.getId());
         assertEquals(jobCreationRequest.getExternalId(), job.getExternalId().get());
-        assertEquals(0, job.getCurrentTaskIndex());
+        assertEquals(-1, job.getCurrentTaskIndex());
         assertSame(systemPropsSnapshot, job.getSystemPropertiesSnapshot());
         assertSame(pipelineElements, job.getPipelineElements());
         assertEquals(defaultPriority, job.getPriority());
@@ -358,7 +358,7 @@ public class TestJobRequestService {
         assertNotSame(newJob.getPipelineElements(), originalJob.getPipelineElements());
         assertEquals(newJob.getPipelineElements().getName(), originalJob.getPipelineElements().getName());
         assertEquals("10", newJob.getSystemPropertiesSnapshot().lookup("my.property"));
-        assertEquals(0, newJob.getCurrentTaskIndex());
+        assertEquals(-1, newJob.getCurrentTaskIndex());
         assertEquals(newJob.getExternalId().get(), originalJob.getExternalId().get());
         assertEquals(newJob.getPriority(), originalJob.getPriority());
         assertEquals(newJob.getOverriddenAlgorithmProperties(), originalJob.getOverriddenAlgorithmProperties());

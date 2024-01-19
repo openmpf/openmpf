@@ -122,7 +122,7 @@ public class MediaInspectionHelper {
 
     public void inspectMedia(Media media, long jobId) throws WfmProcessingException {
         if (media.isFailed()) {
-            LOG.error("Skipping inspection of Media #{} as it is in an error state.", media.getId());
+            LOG.error("Skipping media {}. It is in an error state.", media.getId());
             return;
         }
         if (_mediaMetadataValidator.skipInspection(jobId, media)) {

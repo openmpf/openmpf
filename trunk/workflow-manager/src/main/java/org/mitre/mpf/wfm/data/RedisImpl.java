@@ -26,9 +26,20 @@
 
 package org.mitre.mpf.wfm.data;
 
+import static java.util.stream.Collectors.toCollection;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Stream;
+
+import javax.annotation.PostConstruct;
+
+import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.util.JobPartsIter;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,22 +49,14 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import static java.util.stream.Collectors.toCollection;
-
-
+@Monitored
 @Component
 public class RedisImpl implements Redis {
 
     private static final Logger log = LoggerFactory.getLogger(RedisImpl.class);
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<String, byte[]> redisTemplate;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -80,7 +83,7 @@ public class RedisImpl implements Redis {
                                        Collection<Track> tracks) {
         String key = createTrackKey(jobId, mediaId, taskIndex, actionIndex);
         redisTemplate.delete(key);
-        BoundListOperations<String, Object> redisTracks = redisTemplate.boundListOps(key);
+        BoundListOperations<String, byte[]> redisTracks = redisTemplate.boundListOps(key);
         for (Track track : tracks) {
             redisTracks.rightPush(jsonUtils.serialize(track));
         }
@@ -88,28 +91,38 @@ public class RedisImpl implements Redis {
 
 
     @Override
-    public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
-        return redisTemplate
-                .boundListOps(createTrackKey(jobId, mediaId, taskIndex, actionIndex))
+    public synchronized SortedSet<Track> getTracks(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        return getTracksStream(jobId, mediaId, taskIndex, actionIndex)
+                .collect(toCollection(TreeSet::new));
+    }
+
+
+    public synchronized Stream<Track> getTracksStream(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        return getTrackListOps(jobId, mediaId, taskIndex, actionIndex)
                 .range(0, -1)
                 .stream()
-                .map(o -> jsonUtils.deserialize((byte[]) o, Track.class))
-                .collect(toCollection(TreeSet::new));
+                .map(o -> jsonUtils.deserialize(o, Track.class));
+    }
+
+
+    public synchronized int getTrackCount(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        Long size = getTrackListOps(jobId, mediaId, taskIndex, actionIndex).size();
+        return size == null
+                ? 0
+                : size.intValue();
     }
 
 
     @Override
     public void clearTracks(BatchJob job) {
-        Collection<String> trackKeys = new ArrayList<>();
-        int taskCount = job.getPipelineElements().getPipeline().getTasks().size();
-        for (Media media : job.getMedia()) {
-            for (int taskIndex = 0; taskIndex < taskCount; taskIndex++) {
-                int actionCount = job.getPipelineElements().getTask(taskIndex).getActions().size();
-                for (int actionIndex = 0; actionIndex < actionCount; actionIndex++) {
-                    trackKeys.add(createTrackKey(job.getId(), media.getId(), taskIndex, actionIndex));
-                }
-            }
-        }
+        var trackKeys = JobPartsIter.stream(job)
+                .map(jp -> createTrackKey(
+                        job.getId(), jp.getMedia().getId(), jp.getTaskIndex(),
+                        jp.getActionIndex()))
+                .toList();
         redisTemplate.delete(trackKeys);
     }
 
@@ -122,5 +135,10 @@ public class RedisImpl implements Redis {
     private static String createTrackKey(long jobId, long mediaId, int taskIndex, int actionIndex) {
         return String.format("BATCH_JOB:%s:MEDIA:%s:TASK:%s:ACTION:%s:TRACKS",
                              jobId, mediaId, taskIndex, actionIndex);
+    }
+
+    private BoundListOperations<String, byte[]> getTrackListOps(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        return redisTemplate.boundListOps(createTrackKey(jobId, mediaId, taskIndex, actionIndex));
     }
 }

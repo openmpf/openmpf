@@ -54,11 +54,9 @@ namespace {
 JobReceiver::JobReceiver(
         LoggerWrapper logger,
         std::string_view broker_uri,
-        std::string_view request_queue,
-        std::string_view detection_type)
+        std::string_view request_queue)
     : logger_{std::move(logger)}
-    , messenger_{logger_, broker_uri, request_queue}
-    , detection_type_{detection_type} {
+    , messenger_{logger_, broker_uri, request_queue} {
 }
 
 JobContext JobReceiver::GetJob() {
@@ -91,7 +89,6 @@ JobContext JobReceiver::TryGetJob() {
     return {
         job_id,
         job_name,
-        detection_type_,
         std::move(component_job),
         job_type,
         type_name,

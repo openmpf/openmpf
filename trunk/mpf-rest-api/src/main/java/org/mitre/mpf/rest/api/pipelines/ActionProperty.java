@@ -27,50 +27,18 @@
 
 package org.mitre.mpf.rest.api.pipelines;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.validation.constraints.NotNull;
+
 import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
 
-import javax.validation.constraints.NotNull;
-import java.util.Objects;
 
-public class ActionProperty {
+public record ActionProperty(
+        @NotBlank String name,
+        @NotNull String value) {
 
-    private final String _name;
-    @NotBlank
-    public String getName() {
-        return _name;
-    }
-
-    private final String _value;
-    @NotNull
-    public String getValue() {
-        return _value;
-    }
-
-
-    public ActionProperty(
-            @JsonProperty("name") String name,
-            @JsonProperty("value") String value) {
-        _name = Utils.trimAndUpper(name);
-        _value = Utils.trim(value);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof ActionProperty)) {
-            return false;
-        }
-        var property = (ActionProperty) obj;
-        return Objects.equals(_name, property._name)
-                && Objects.equals(_value, property._value);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(_name, _value);
+    public ActionProperty {
+        name = Utils.trimAndUpper(name);
+        value = Utils.trim(value);
     }
 }

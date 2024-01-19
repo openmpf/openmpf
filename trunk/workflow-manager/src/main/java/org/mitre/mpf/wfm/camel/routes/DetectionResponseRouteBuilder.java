@@ -28,10 +28,11 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
-import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
+import org.mitre.mpf.wfm.camel.operations.CommitUpdatedTracksProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
@@ -53,17 +54,19 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 
 	private static final Logger log = LoggerFactory.getLogger(DetectionResponseRouteBuilder.class);
 
+	public static final String JMS_DESTINATION = "MPF.COMPLETED_DETECTIONS";
+
 	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
+	public static final String ENTRY_POINT = "activemq:" + JMS_DESTINATION;
 
 	/** The default exit point for this route. */
-	public static final String EXIT_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
+	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
 
 	/** The default id route. */
 	public static final String ROUTE_ID = "Detection Response Route";
 
 	@Autowired
-	@Qualifier(BroadcastEnabledCountBasedWfmAggregator.REF)
+    @Qualifier(BroadcastEnabledAggregator.REF)
 	private WfmAggregator aggregator;
 
 	@Autowired
@@ -96,32 +99,22 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 			.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionResponse::newBuilder)) // Unpack the protobuf response.
 			.process(DetectionResponseProcessor.REF) // Run the response through the response processor.
 			.choice()
-				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
+				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(true))
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
 				.otherwise()
 					.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
-					.completionPredicate(new SplitCompletedPredicate(true)) // We need to forward the body of the last message on to the next processor.
-					.removeHeader(MpfHeaders.SPLIT_COMPLETED)
+                        .completionSize(header(MpfHeaders.SPLIT_SIZE))
 					.process(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
 					.process(MovingTrackLabelProcessor.REF) // Detect and flag moving tracks. Remove stationary tracks if requested by job.
 					.process(DetectionTransformationProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
+                        .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 						.streaming() // Aggregate responses in any order.
-						.choice()
-							.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
-								.removeHeader(MpfHeaders.EMPTY_SPLIT)
-								.to(exitPoint)
-							.otherwise()
-								.to(MpfEndpoints.ARTIFACT_EXTRACTION_WORK_QUEUE)
-						.endChoice()
+                        .process(ArtifactExtractionProcessor.REF)
 					.end()
+                    .process(CommitUpdatedTracksProcessor.REF)
+                    .to(exitPoint)
 			.end();
-
-		from(MpfEndpoints.ARTIFACT_EXTRACTION_WORK_QUEUE)
-			.process(ArtifactExtractionProcessor.REF)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.setHeader(MpfHeaders.SUPPRESS_BROADCAST, constant(Boolean.TRUE))
-			.to(exitPoint);
 	}
 }

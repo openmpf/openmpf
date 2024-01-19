@@ -114,9 +114,9 @@ public class JobConfigHasher {
 
             for (var task : pipelineElements.getTasksInOrder()) {
                 for (var action : pipelineElements.getActionsInOrder(task)) {
-                    var algorithm = pipelineElements.getAlgorithm(action.getAlgorithm());
-                    hasher.add(algorithm.getName());
-                    algorithm.getOutputChangedCounter()
+                    var algorithm = pipelineElements.getAlgorithm(action.algorithm());
+                    hasher.add(algorithm.name());
+                    algorithm.outputChangedCounter()
                             .ifPresentOrElse(
                                     ov -> hasher.add(String.valueOf(ov)),
                                     () -> hasher.add("none"));
@@ -141,10 +141,10 @@ public class JobConfigHasher {
 
     private Predicate<Map.Entry<String, String>> createIsRequiredFilter(
             Algorithm algorithm, MediaType mediaType) {
-        var algoPropertySet = algorithm.getProvidesCollection()
-            .getProperties()
+        var algoPropertySet = algorithm.providesCollection()
+            .properties()
             .stream()
-            .map(ap -> ap.getName())
+            .map(ap -> ap.name())
             .collect(toSet());
 
         return entry -> {

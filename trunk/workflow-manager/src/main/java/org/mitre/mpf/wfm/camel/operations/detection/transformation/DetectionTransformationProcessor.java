@@ -32,9 +32,9 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.DetectionErrorUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -63,8 +63,6 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
     private static final Logger _log = LoggerFactory.getLogger(DetectionTransformationProcessor.class);
 
-    private final JsonUtils _jsonUtils;
-
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
@@ -74,7 +72,6 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
-        _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
@@ -82,13 +79,13 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-        TrackMergingContext trackMergingContext = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
-                                                                         TrackMergingContext.class);
-        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
-        Task task = job.getPipelineElements().getTask(trackMergingContext.getTaskIndex());
+        var trackCache = exchange.getIn().getBody(TrackCache.class);
+        BatchJob job = _inProgressBatchJobs.getJob(trackCache.getJobId());
+        Task task = job.getPipelineElements().getTask(trackCache.getTaskIndex());
 
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-            Action action = job.getPipelineElements().getAction(trackMergingContext.getTaskIndex(), actionIndex);
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
+            Action action = job.getPipelineElements().getAction(trackCache.getTaskIndex(), actionIndex);
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
 
             for (Media media : job.getMedia()) {
                 if (media.isFailed() || !media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
@@ -98,17 +95,16 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 Function<String, String> combinedProperties =
                         _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
 
-                Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
-                        trackMergingContext.getTaskIndex(), actionIndex);
+                Collection<Track> tracks = trackCache.getTracks(media.getId(), actionIndex);
 
                 if (tracks.size() > 0) {
 
                     int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
-                    Collection<Track> updatedTracks = removeIllFormedDetections(job.getId(), media.getId(),
-                            trackMergingContext.getTaskIndex(), actionIndex,
-                            frameWidth, frameHeight, tracks);
+                    Collection<Track> updatedTracks = removeIllFormedDetections(
+                        trackCache, media.getId(), actionIndex, frameWidth, frameHeight,
+                        algo.trackType(), tracks);
 
                     try {
                         if (requiresPadding(combinedProperties)) {
@@ -116,7 +112,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                             String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
 
-                            padTracks(job.getId(), media.getId(), trackMergingContext.getTaskIndex(), actionIndex,
+                            padTracks(trackCache, media.getId(), actionIndex,
                                     xPadding, yPadding, frameWidth, frameHeight, updatedTracks);
                         }
                     } catch (DetectionTransformationException e) {
@@ -181,14 +177,14 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         }
     }
 
-    public Collection<Track> removeIllFormedDetections(long jobId, long mediaId, int taskIndex, int actionIndex,
-                                                       int frameWidth, int frameHeight,
-                                                       Collection<Track> tracks) {
+    public Collection<Track> removeIllFormedDetections(
+            TrackCache trackCache, long mediaId, int actionIndex, int frameWidth, int frameHeight,
+            String trackType, Collection<Track> tracks) {
         // Remove any detections with zero width/height, or that are entirely outside of the frame.
         // If the number of detections goes to 0, drop the track.
         // Do not remove ill-formed detections for those types that are exempted, because they normally do not generate
         // bounding boxes for detections.
-        if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(tracks.iterator().next().getType())) {
+        if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(trackType)) {
             return tracks;
         }
 
@@ -235,7 +231,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         goodDetections.last().getMediaOffsetFrame(),
                         goodDetections.first().getMediaOffsetTime(),
                         goodDetections.last().getMediaOffsetTime(),
-                        track.getType(),
+                        track.getMergedTaskIndex(),
                         track.getConfidence(),
                         goodDetections,
                         track.getTrackProperties(),
@@ -255,6 +251,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 .boxed()
                 .collect(DetectionErrorUtil.toFrameRangesString());
 
+        long jobId = trackCache.getJobId();
         if (zeroSizeFramesString.isPresent()) {
             _log.warn(String.format("Dropped one or more ill-formed detection regions for job id %s with width or " +
                             "height equal to 0. %s",
@@ -275,7 +272,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                             outsideFramesString.get()));
         }
         if (zeroSizeFramesString.isPresent() || outsideFramesString.isPresent()) {
-            _inProgressBatchJobs.setTracks(jobId, mediaId, taskIndex, actionIndex, newTracks);
+            trackCache.updateTracks(mediaId, actionIndex, newTracks);
         }
 
         return newTracks;
@@ -334,7 +331,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         return detectionTransform;
     }
 
-    private void padTracks(long jobId, long mediaId, int taskIndex, int actionIndex,
+    private void padTracks(TrackCache trackCache, long mediaId, int actionIndex,
                            String xPadding, String yPadding, int frameWidth,
                            int frameHeight, Collection<Track> tracks) {
         var newTracks = new TreeSet<Track>();
@@ -360,7 +357,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getEndOffsetFrameInclusive(),
                     track.getStartOffsetTimeInclusive(),
                     track.getEndOffsetTimeInclusive(),
-                    track.getType(),
+                    track.getMergedTaskIndex(),
                     track.getConfidence(),
                     newDetections,
                     track.getTrackProperties(),
@@ -372,6 +369,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 .collect(DetectionErrorUtil.toFrameRangesString());
 
         if (shrunkToNothingString.isPresent()) {
+            long jobId = trackCache.getJobId();
             _log.warn(String.format("Shrunk one or more detection regions for job id %s to nothing. " +
                                             "1-pixel detection regions used instead. %s",
                                     jobId, shrunkToNothingString.get()));
@@ -382,8 +380,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                             "1-pixel detection regions used instead. %s", shrunkToNothingString.get()));
         }
 
-        _inProgressBatchJobs.setTracks(jobId, mediaId, taskIndex,
-                actionIndex, newTracks);
+        trackCache.updateTracks(mediaId, actionIndex, newTracks);
     }
 
 

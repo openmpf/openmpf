@@ -35,11 +35,11 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
 
     @Override
     public List<MPFVideoTrack> getDetections(MPFVideoJob job) {
-        MPFImageLocation loc = new MPFImageLocation(0, 0, 0, 0, -1, generateDetectionProperties());
+        MPFImageLocation loc = new MPFImageLocation(0, 0, 100, 100, 0.80f, generateDetectionProperties());
         List<MPFVideoTrack> tracks = new LinkedList<>();
         Map<Integer, MPFImageLocation> locations = new HashMap<>();
         locations.put(0, loc);
-        MPFVideoTrack track = new MPFVideoTrack(job.getStartFrame(), job.getStopFrame(), locations, -1, Collections.emptyMap());
+        MPFVideoTrack track = new MPFVideoTrack(job.getStartFrame(), job.getStopFrame(), locations, 0.80f, Collections.emptyMap());
         tracks.add(track);
         return tracks;
     }
@@ -47,7 +47,7 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
     @Override
     public List<MPFAudioTrack> getDetections(MPFAudioJob job) {
         List<MPFAudioTrack> tracks = new LinkedList<>();
-        MPFAudioTrack track = new MPFAudioTrack(0, 0, -1, generateDetectionProperties());
+        MPFAudioTrack track = new MPFAudioTrack(job.getStartTime(), job.getStartTime()+1, 0.80f, generateDetectionProperties());
         tracks.add(track);
         return tracks;
     }
@@ -55,7 +55,7 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
     @Override
     public List<MPFImageLocation> getDetections(MPFImageJob job) {
         List<MPFImageLocation> locations = new LinkedList<>();
-        MPFImageLocation loc = new MPFImageLocation(0, 0, 0, 0, -1, generateDetectionProperties());
+        MPFImageLocation loc = new MPFImageLocation(0, 0, 100, 100, 0.80f, generateDetectionProperties());
         locations.add(loc);
         return locations;
     }
@@ -63,7 +63,7 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
     @Override
     public List<MPFGenericTrack> getDetections(MPFGenericJob job) {
         List<MPFGenericTrack> tracks = new LinkedList<>();
-        MPFGenericTrack track = new MPFGenericTrack(0, generateDetectionProperties());
+        MPFGenericTrack track = new MPFGenericTrack(0.80f, generateDetectionProperties());
         tracks.add(track);
         return tracks;
     }
@@ -83,13 +83,7 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
     }
 
     @Override
-    public String getDetectionType() {
-        return "HELLO";
-    }
-
-    @Override
     public MPFComponentType getComponentType() {
         return MPFComponentType.DETECTION;
     }
-
 }

@@ -144,7 +144,7 @@ public class AggregateJobPropertiesUtil {
         }
 
         if (action != null) {
-            Map<String, String> algoProperties = overriddenAlgorithmProperties.get(action.getAlgorithm());
+            Map<String, String> algoProperties = overriddenAlgorithmProperties.get(action.algorithm());
             if (algoProperties != null) {
                 var propVal = algoProperties.get(propertyName);
                 if (propVal != null) {
@@ -159,27 +159,27 @@ public class AggregateJobPropertiesUtil {
         }
 
         if (action != null) {
-            var actionPropVal = action.getPropertyValue(propertyName);
+            var actionPropVal = action.propertyValue(propertyName);
             if (actionPropVal != null) {
                 return new PropertyInfo(propertyName, actionPropVal, PropertyLevel.ACTION);
             }
 
-            var algorithm = pipeline.getAlgorithm(action.getAlgorithm());
+            var algorithm = pipeline.getAlgorithm(action.algorithm());
 
-            var algoProperty = algorithm.getProperty(propertyName);
+            var algoProperty = algorithm.property(propertyName);
             if (algoProperty != null) {
-                if (algoProperty.getDefaultValue() != null) {
-                    return new PropertyInfo(propertyName, algoProperty.getDefaultValue(), PropertyLevel.ALGORITHM);
+                if (algoProperty.defaultValue() != null) {
+                    return new PropertyInfo(propertyName, algoProperty.defaultValue(), PropertyLevel.ALGORITHM);
                 }
 
                 if (systemPropertiesSnapshot != null) {
-                    var snapshotValue = systemPropertiesSnapshot.lookup(algoProperty.getPropertiesKey());
+                    var snapshotValue = systemPropertiesSnapshot.lookup(algoProperty.propertiesKey());
                     if (snapshotValue != null) {
                         return new PropertyInfo(propertyName, snapshotValue, PropertyLevel.ALGORITHM);
                     }
                 }
 
-                var propertiesUtilValue = _propertiesUtil.lookup(algoProperty.getPropertiesKey());
+                var propertiesUtilValue = _propertiesUtil.lookup(algoProperty.propertiesKey());
                 if (propertiesUtilValue != null) {
                     return new PropertyInfo(propertyName, propertiesUtilValue, PropertyLevel.ALGORITHM);
                 }
@@ -251,20 +251,20 @@ public class AggregateJobPropertiesUtil {
 
         var allKeys = new HashSet<>(mediaProperties.keySet());
 
-        Map<String, String> overriddenAlgoProps = allOverriddenAlgorithmProperties.get(action.getAlgorithm());
+        Map<String, String> overriddenAlgoProps = allOverriddenAlgorithmProperties.get(action.algorithm());
         if (overriddenAlgoProps != null) {
             allKeys.addAll(overriddenAlgoProps.keySet());
         }
 
         allKeys.addAll(jobProperties.keySet());
 
-        action.getProperties().forEach(p -> allKeys.add(p.getName()));
+        action.properties().forEach(p -> allKeys.add(p.name()));
 
-        pipelineElements.getAlgorithm(action.getAlgorithm())
-                .getProvidesCollection()
-                .getProperties()
+        pipelineElements.getAlgorithm(action.algorithm())
+                .providesCollection()
+                .properties()
                 .stream()
-                .map(AlgorithmProperty::getName)
+                .map(AlgorithmProperty::name)
                 .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
                 .forEach(allKeys::add);
 
@@ -496,7 +496,7 @@ public class AggregateJobPropertiesUtil {
 
         for (var jobPart : JobPartsIter.of(job, media)) {
             if (jobPart.getTaskIndex() == 0
-                    || jobPart.getAlgorithm().getActionType() != ActionType.DETECTION) {
+                    || jobPart.getAlgorithm().actionType() != ActionType.DETECTION) {
                 continue;
             }
 
@@ -507,9 +507,10 @@ public class AggregateJobPropertiesUtil {
             }
 
             for (int prevTaskIndex = jobPart.getTaskIndex() - 1;
-                 prevTaskIndex >= 0;
+                 prevTaskIndex > media.getCreationTask();
                  prevTaskIndex--) {
-                if (media.wasActionProcessed(prevTaskIndex, 0)) {
+                var prevAction = job.getPipelineElements().getAction(prevTaskIndex, 0);
+                if (actionAppliesToMedia(job, media, prevAction)) {
                     tasksToMerge.put(jobPart.getTaskIndex(), prevTaskIndex);
                     break;
                 }

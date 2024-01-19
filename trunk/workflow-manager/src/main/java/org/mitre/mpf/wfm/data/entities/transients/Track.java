@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
-import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.*;
 
@@ -86,9 +85,13 @@ public class Track implements Comparable<Track> {
     private final int _endOffsetTimeInclusive;
     public int getEndOffsetTimeInclusive() { return _endOffsetTimeInclusive; }
 
-    /** The type of object associated with this track (for example, FACE). */
-    private final String _type;
-    public String getType() { return _type; }
+    /**
+     * The index of the task that should be reported after applying task merging. If task
+     * merging does not apply to this track, this field will contain the index of the task that
+     * actually generated this track.
+     */
+    private final int _mergedTaskIndex;
+    public int getMergedTaskIndex() { return _mergedTaskIndex; }
 
     private final float _confidence;
     public float getConfidence() { return _confidence; }
@@ -126,8 +129,7 @@ public class Track implements Comparable<Track> {
      *                                      Time is given in milliseconds, and is relevant for video and audio files.
      * @param endOffsetTimeInclusive The zero-based and inclusive stop index where the track ends in the medium.
      *                                      Time is given in milliseconds, and is relevant for video and audio files.
-     * @param type The type of object associated with this track.
-     *                  This value is trimmed (to null) and converted to uppercase for convenience.
+     * @param mergedTaskIndex The index of the task that should be reported after applying task merging.
      * @param confidence The track confidence
      * @param detections The collection of detections which correspond to the position of the object as it
      *                   moves through the track.
@@ -143,7 +145,7 @@ public class Track implements Comparable<Track> {
             @JsonProperty("endOffsetFrameInclusive") int endOffsetFrameInclusive,
             @JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
             @JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
-            @JsonProperty("type") String type,
+            @JsonProperty("mergedTaskIndex") int mergedTaskIndex,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
@@ -156,7 +158,7 @@ public class Track implements Comparable<Track> {
         _endOffsetFrameInclusive = endOffsetFrameInclusive;
         _startOffsetTimeInclusive = startOffsetTimeInclusive;
         _endOffsetTimeInclusive = endOffsetTimeInclusive;
-        _type = StringUtils.upperCase(StringUtils.trimToNull(type));
+        _mergedTaskIndex = mergedTaskIndex;
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
@@ -172,9 +174,11 @@ public class Track implements Comparable<Track> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(_jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
-                            _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
-                            TextUtils.nullSafeHashCode(_type), _confidence, _trackProperties, _exemplar, _detections);
+        return Objects.hash(
+                _jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
+                _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
+                _mergedTaskIndex, _confidence, _trackProperties, _exemplar,
+                _detections);
     }
 
     @Override
@@ -209,7 +213,7 @@ public class Track implements Comparable<Track> {
                 .thenComparingInt(Track::getEndOffsetFrameInclusive)
                 .thenComparingInt(Track::getStartOffsetTimeInclusive)
                 .thenComparingInt(Track::getEndOffsetTimeInclusive)
-                .thenComparing(Track::getType, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparingInt(Track::getMergedTaskIndex)
                 .thenComparingDouble(Track::getConfidence)
                 .thenComparing(Track::getTrackProperties, CompareUtils.MAP_COMPARATOR)
                 .thenComparing(Track::getExemplar, Comparator.nullsFirst(Comparator.naturalOrder()))
@@ -234,4 +238,3 @@ public class Track implements Comparable<Track> {
                 _endOffsetTimeInclusive);
     }
 }
-

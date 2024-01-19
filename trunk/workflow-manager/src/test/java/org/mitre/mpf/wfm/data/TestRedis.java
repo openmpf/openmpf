@@ -27,14 +27,25 @@
 
 package org.mitre.mpf.wfm.data;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.ImmutableSortedSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -47,10 +58,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-import java.util.*;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 
 @WebAppConfiguration
 @ContextConfiguration(locations = "classpath:applicationContext.xml")
@@ -85,7 +94,7 @@ public class TestRedis {
                 123,
                 4321,
                 5423,
-                "type1",
+                0,
                 0.5f,
                 createDetections(),
                 ImmutableSortedMap.of("a", "b", "c", "d"),
@@ -99,7 +108,7 @@ public class TestRedis {
                 133,
                 4341,
                 5433,
-                "type2",
+                0,
                 0.6f,
                 createDetections(),
                 Map.of(),
@@ -115,7 +124,7 @@ public class TestRedis {
                 133,
                 4341,
                 5433,
-                "type3",
+                0,
                 0.6f,
                 createDetections(),
                 ImmutableSortedMap.of("e", "f"),
@@ -130,7 +139,7 @@ public class TestRedis {
                 133,
                 4341,
                 5433,
-                "type2",
+                0,
                 0.6f,
                 createDetections(),
                 Map.of(),
@@ -189,7 +198,7 @@ public class TestRedis {
                 124,
                 4322,
                 5424,
-                "replacement",
+                0,
                 0.6f,
                 createDetections(),
                 ImmutableSortedMap.of("a", "b", "c", "d", "e", "f"),
@@ -221,19 +230,20 @@ public class TestRedis {
         var media = mock(Media.class);
         when(media.getId())
                 .thenReturn(TEST_MEDIA_ID);
+        when(media.getCreationTask())
+                .thenReturn(-1);
 
         var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);
         when(job.getMedia())
-                .thenAnswer(invocation -> ImmutableList.of(media));
-        when(job.getPipelineElements().getPipeline().getTasks().size())
+                .thenReturn(List.of(media));
+        when(job.getPipelineElements().getTaskCount())
                 .thenReturn(2);
-        when(job.getPipelineElements().getTask(0).getActions().size())
-                .thenReturn(1);
-        when(job.getPipelineElements().getTask(1).getActions().size())
-                .thenReturn(1);
-
+        when(job.getPipelineElements().getTask(0))
+                .thenReturn(new Task("name0", "description0", List.of("action0")));
+        when(job.getPipelineElements().getTask(1))
+                .thenReturn(new Task("name1", "description1", List.of("action1")));
 
         _redis.clearTracks(job);
 

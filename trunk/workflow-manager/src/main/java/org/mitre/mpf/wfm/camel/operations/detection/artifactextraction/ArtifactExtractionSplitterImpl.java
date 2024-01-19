@@ -26,15 +26,29 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.wfm.camel.WfmSplitter;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
+import org.mitre.mpf.wfm.camel.WfmLocalSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -44,38 +58,34 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.TopConfidenceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 @Component(ArtifactExtractionSplitterImpl.REF)
-public class ArtifactExtractionSplitterImpl extends WfmSplitter {
+public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
     public static final String REF = "detectionExtractionSplitter";
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactExtractionSplitterImpl.class);
-
-    private final JsonUtils _jsonUtils;
 
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
+    private final TaskMergingManager _taskMergingManager;
+
     @Inject
     ArtifactExtractionSplitterImpl(
-            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
-        _jsonUtils = jsonUtils;
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            TaskMergingManager taskMergingManager) {
+        super(inProgressBatchJobs);
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _taskMergingManager = taskMergingManager;
     }
 
     @Override
@@ -85,20 +95,19 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
     @Override
     public List<Message> wfmSplit(Exchange exchange) {
-        TrackMergingContext trackMergingContext = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
-                TrackMergingContext.class);
-        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
+        var trackCache = exchange.getIn().getBody(TrackCache.class);
+        BatchJob job = _inProgressBatchJobs.getJob(trackCache.getJobId());
 
         if (job.isCancelled()) {
             LOG.warn("Artifact extraction will not be performed because this job has been cancelled.");
             return Collections.emptyList();
         }
 
-        int taskIndex = trackMergingContext.getTaskIndex();
+        int taskIndex = trackCache.getTaskIndex();
         JobPipelineElements pipelineElements = job.getPipelineElements();
         int numPipelineTasks = pipelineElements.getTaskCount();
         int lastTaskIndex = numPipelineTasks - 1;
-        ActionType finalActionType = pipelineElements.getAlgorithm(lastTaskIndex, 0).getActionType();
+        ActionType finalActionType = pipelineElements.getAlgorithm(lastTaskIndex, 0).actionType();
         if (finalActionType == ActionType.MARKUP) {
             lastTaskIndex = lastTaskIndex - 1;
         }
@@ -121,22 +130,21 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             if (lastTaskOnly && notLastTask) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to {} property.",
-                        pipelineElements.getTask(taskIndex).getName(), media.getId(),
+                        pipelineElements.getTask(taskIndex).name(), media.getId(),
                         MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
                 continue;
             }
 
             // If the user has requested that this task be merged with one that follows, then skip artifact extraction.
             // Artifact extraction will be performed for the next task this one is merged with.
-            Map<Integer, Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
-            if (tasksToMerge.containsValue(taskIndex)) {
+            if (_taskMergingManager.isMergeTarget(job, media, taskIndex)) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to being merged with a following task.",
-                        pipelineElements.getTask(taskIndex).getName(), media.getId());
+                        pipelineElements.getTask(taskIndex).name(), media.getId());
                 continue;
             }
 
-            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).getActions().size();
+            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).actions().size();
                  actionIndex++) {
 
                 Action action = pipelineElements.getAction(taskIndex, actionIndex);
@@ -158,16 +166,18 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                         taskIndex,
                         actionIndex,
                         cropping,
-                        isRotationFillBlack);
+                        isRotationFillBlack,
+                        trackCache);
 
-                Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
-                        request.getTaskIndex(), request.getActionIndex());
+                var tracks = trackCache.getTracks(media.getId(), actionIndex);
 
                 LOG.debug("Action {} has {} tracks", actionIndex, tracks.size());
-                processTracks(request, tracks, job, media, action, actionIndex, extractionPolicy);
+                var updatedTracks = processTracks(
+                        request, tracks, job, media, action, actionIndex, extractionPolicy);
+                trackCache.updateTracks(media.getId(), actionIndex, updatedTracks);
 
                 Message message = new DefaultMessage(exchange.getContext());
-                message.setBody(_jsonUtils.serialize(request));
+                message.setBody(request);
                 messages.add(message);
             }
         }
@@ -183,10 +193,17 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         }
     }
 
-    private void processTracks(ArtifactExtractionRequest request, Collection<Track> tracks, BatchJob job, Media media,
+    private SortedSet<Track> processTracks(
+            ArtifactExtractionRequest request, SortedSet<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
+        if (policy == ArtifactExtractionPolicy.VISUAL_TYPES_ONLY) {
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
+            if (_aggregateJobPropertiesUtil.isNonVisualObjectType(algo.trackType())) {
+                return tracks;
+            }
+        }
 
-        Integer trackIndex = 0;
+        int trackIndex = 0;
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractableDetectionsMap = request.getExtractionsMap();
         for (Track track : tracks) {
 
@@ -201,10 +218,6 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     break;
                 }
                 case VISUAL_TYPES_ONLY:
-                    if (_aggregateJobPropertiesUtil.isNonVisualObjectType(track.getType())) {
-                        break;
-                    }
-                    // fall through
                 case ALL_TYPES: {
                     SortedSet<JsonDetectionOutputObject> extractableDetections = processExtractionsInTrack(job, track, media, action,
                             actionIndex);
@@ -220,8 +233,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             // a don't care. This simplifies the process of setting the artifact extraction status later.
             if (request.getCroppingFlag()) trackIndex++;
         }
-        _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getTaskIndex(), request.getActionIndex(), tracks);
-
+        return tracks;
     }
 
     private SortedSet<JsonDetectionOutputObject> processExtractionsInTrack(BatchJob job, Track track, Media media,

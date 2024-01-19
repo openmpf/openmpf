@@ -90,20 +90,18 @@ public class TestDetectionErrorUtil {
                 .thenReturn(true);
 
         var mockPipelineElements = mock(JobPipelineElements.class);
-        var mockAlgorithm1 = mock(Algorithm.class);
         when(mockPipelineElements.getName())
                 .thenReturn("TEST PIPELINE");
 
-        when(mockAlgorithm1.getName())
-                .thenReturn(_TEST_ALGO1_NAME);
+        var algorithm1 = new Algorithm(
+                _TEST_ALGO1_NAME, null, null, null, null, null, null, false, false);
         when(mockPipelineElements.getAlgorithm(0, 0))
-                .thenReturn(mockAlgorithm1);
+                .thenReturn(algorithm1);
 
-        var mockAlgorithm2 = mock(Algorithm.class);
-        when(mockAlgorithm2.getName())
-                .thenReturn(_TEST_ALGO2_NAME);
+        var algorithm2 = new Algorithm(
+                _TEST_ALGO2_NAME, null, null, null, null, null, null, false, false);
         when(mockPipelineElements.getAlgorithm(1, 0))
-                .thenReturn(mockAlgorithm2);
+                .thenReturn(algorithm2);
 
 
         _testJob = new BatchJobImpl(

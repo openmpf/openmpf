@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.enums.UserRole;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -50,6 +51,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Profile("!oidc")
 @Service("mpfUserService")
 public class UserService implements UserDetailsService {
 

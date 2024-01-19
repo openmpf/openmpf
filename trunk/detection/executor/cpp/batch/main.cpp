@@ -234,7 +234,7 @@ int run_jobs(LoggerWrapper& logger, std::string_view broker_uri, std::string_vie
         return 1;
     }
 
-    JobReceiver job_receiver{logger, broker_uri, request_queue, component.GetDetectionType()};
+    JobReceiver job_receiver{logger, broker_uri, request_queue};
     HealthCheck health_check{logger};
     auto service_name = get_service_name();
     logger.Info("Completed initialization of ", service_name, '.');

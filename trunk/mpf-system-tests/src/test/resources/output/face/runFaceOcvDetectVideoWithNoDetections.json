@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "8.0",
   "jobId": 16,
   "errors": [],
   "warnings": [],
@@ -57,7 +57,7 @@
       "output": {
         "NO TRACKS": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV"
           }
         ]

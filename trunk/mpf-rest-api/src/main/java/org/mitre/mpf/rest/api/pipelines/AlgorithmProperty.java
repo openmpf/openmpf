@@ -27,82 +27,25 @@
 
 package org.mitre.mpf.rest.api.pipelines;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.validation.constraints.NotNull;
+
 import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
 import org.mitre.mpf.rest.api.util.ValidAlgoPropValue;
 
-import javax.validation.constraints.NotNull;
-import java.util.Objects;
-
 
 @ValidAlgoPropValue
-public class AlgorithmProperty {
-
-    private final String _name;
-    @NotBlank
-    public String getName() {
-        return _name;
-    }
-
-    private final String _description;
-    @NotBlank
-    public String getDescription() {
-        return _description;
-    }
-
-    private final ValueType _type;
-    @NotNull
-    public ValueType getType() {
-        return _type;
-    }
-
-    // option A
-    private final String _defaultValue;
-    public String getDefaultValue() {
-        return _defaultValue;
-    }
-
-    // option B
-    private final String _propertiesKey;
-    public String getPropertiesKey() {
-        return _propertiesKey;
-    }
-
-
-    public AlgorithmProperty(
-            @JsonProperty("name") String name,
-            @JsonProperty("description") String description,
-            @JsonProperty("type") ValueType type,
-            @JsonProperty("defaultValue") String defaultValue,
-            @JsonProperty("propertiesKey") String propertiesKey) {
-        _name = Utils.trimAndUpper(name);
-        _description = Utils.trim(description);
-        _type = type;
-        _defaultValue = Utils.trim(defaultValue);
-        _propertiesKey = Utils.trim(propertiesKey);
-    }
-
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof AlgorithmProperty)) {
-            return false;
-        }
-        var other = (AlgorithmProperty) obj;
-        return Objects.equals(_name, other._name)
-                && Objects.equals(_description, other._description)
-                && _type == other._type
-                && Objects.equals(_defaultValue, other._defaultValue)
-                && Objects.equals(_propertiesKey, other._propertiesKey);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(_name, _description, _type, _defaultValue, _propertiesKey);
+public record AlgorithmProperty(
+        @NotBlank String name,
+        @NotBlank String description,
+        @NotNull ValueType type,
+        String defaultValue,
+        String propertiesKey
+) {
+    public AlgorithmProperty {
+        name = Utils.trimAndUpper(name);
+        description = Utils.trim(description);
+        defaultValue = Utils.trim(defaultValue);
+        propertiesKey = Utils.trim(propertiesKey);
     }
 }
-

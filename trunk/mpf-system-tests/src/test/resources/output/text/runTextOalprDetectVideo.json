@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "8.0",
   "jobId": 47,
   "errors": [],
   "warnings": [],
@@ -57,7 +57,7 @@
       "output": {
         "TEXT": [
           {
-            "source": "+#TEST OALPR TEXT DETECTION ACTION",
+            "action": "TEST OALPR TEXT DETECTION ACTION",
             "algorithm": "OALPR",
             "tracks": [
               {
@@ -67,7 +67,6 @@
                 "startOffsetTime": 7005,
                 "stopOffsetTime": 7005,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 75.707115,
                 "trackProperties": {
                   "TEXT": "HBJD"
@@ -110,7 +109,6 @@
                 "startOffsetTime": 7047,
                 "stopOffsetTime": 7047,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 76.01417,
                 "trackProperties": {
                   "TEXT": "HJD4"
@@ -153,7 +151,6 @@
                 "startOffsetTime": 7297,
                 "stopOffsetTime": 7297,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 78.867905,
                 "trackProperties": {
                   "TEXT": "RMJ0D4"
@@ -196,7 +193,6 @@
                 "startOffsetTime": 7673,
                 "stopOffsetTime": 7673,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 82.21856,
                 "trackProperties": {
                   "TEXT": "RDJDD4"
@@ -239,7 +235,6 @@
                 "startOffsetTime": 7714,
                 "stopOffsetTime": 7714,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.14274,
                 "trackProperties": {
                   "TEXT": "DMJDD"
@@ -282,7 +277,6 @@
                 "startOffsetTime": 7798,
                 "stopOffsetTime": 7798,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 82.294716,
                 "trackProperties": {
                   "TEXT": "D300"
@@ -325,7 +319,6 @@
                 "startOffsetTime": 7881,
                 "stopOffsetTime": 7881,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.655235,
                 "trackProperties": {
                   "TEXT": "BD3004"
@@ -368,7 +361,6 @@
                 "startOffsetTime": 7923,
                 "stopOffsetTime": 7923,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.57253,
                 "trackProperties": {
                   "TEXT": "DJD04"
@@ -411,7 +403,6 @@
                 "startOffsetTime": 7964,
                 "stopOffsetTime": 7964,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 79.943535,
                 "trackProperties": {
                   "TEXT": "8D3D4"
@@ -454,7 +445,6 @@
                 "startOffsetTime": 8048,
                 "stopOffsetTime": 8048,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.381645,
                 "trackProperties": {
                   "TEXT": "BD30Q4"
@@ -497,7 +487,6 @@
                 "startOffsetTime": 8090,
                 "stopOffsetTime": 8090,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.15271,
                 "trackProperties": {
                   "TEXT": "DBJ0D"
@@ -540,7 +529,6 @@
                 "startOffsetTime": 8131,
                 "stopOffsetTime": 8131,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.16548,
                 "trackProperties": {
                   "TEXT": "DD300"
@@ -583,7 +571,6 @@
                 "startOffsetTime": 8173,
                 "stopOffsetTime": 8173,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 82.990585,
                 "trackProperties": {
                   "TEXT": "BDB306"
@@ -626,7 +613,6 @@
                 "startOffsetTime": 8215,
                 "stopOffsetTime": 8215,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 80.198715,
                 "trackProperties": {
                   "TEXT": "BDBJ64"
@@ -669,7 +655,6 @@
                 "startOffsetTime": 8256,
                 "stopOffsetTime": 8256,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.89504,
                 "trackProperties": {
                   "TEXT": "BDB30U4"
@@ -712,7 +697,6 @@
                 "startOffsetTime": 8298,
                 "stopOffsetTime": 8298,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.15336,
                 "trackProperties": {
                   "TEXT": "3DB36"
@@ -755,7 +739,6 @@
                 "startOffsetTime": 8340,
                 "stopOffsetTime": 8423,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.58569,
                 "trackProperties": {
                   "TEXT": "BDB36U4"
@@ -826,7 +809,6 @@
                 "startOffsetTime": 8465,
                 "stopOffsetTime": 8465,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.36802,
                 "trackProperties": {
                   "TEXT": "BDB3U"
@@ -869,7 +851,6 @@
                 "startOffsetTime": 8507,
                 "stopOffsetTime": 8548,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 89.07426,
                 "trackProperties": {
                   "TEXT": "BDB3G6"
@@ -926,7 +907,6 @@
                 "startOffsetTime": 8590,
                 "stopOffsetTime": 8757,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 89.73609,
                 "trackProperties": {
                   "TEXT": "BDB3664"
@@ -1025,7 +1005,6 @@
                 "startOffsetTime": 8798,
                 "stopOffsetTime": 9257,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.93717,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -1222,7 +1201,6 @@
                 "startOffsetTime": 9299,
                 "stopOffsetTime": 9299,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.63706,
                 "trackProperties": {
                   "TEXT": "BD3G6"
@@ -1265,7 +1243,6 @@
                 "startOffsetTime": 9341,
                 "stopOffsetTime": 9424,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.58075,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -1336,7 +1313,6 @@
                 "startOffsetTime": 9466,
                 "stopOffsetTime": 9466,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.85871,
                 "trackProperties": {
                   "TEXT": "8DB3"
@@ -1379,7 +1355,6 @@
                 "startOffsetTime": 9507,
                 "stopOffsetTime": 9507,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.26526,
                 "trackProperties": {
                   "TEXT": "BDB36"
@@ -1422,7 +1397,6 @@
                 "startOffsetTime": 9549,
                 "stopOffsetTime": 10383,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 89.67278,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -1745,7 +1719,6 @@
                 "startOffsetTime": 10425,
                 "stopOffsetTime": 10550,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.2608,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -1830,7 +1803,6 @@
                 "startOffsetTime": 10592,
                 "stopOffsetTime": 10675,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 87.51368,
                 "trackProperties": {
                   "TEXT": "BDB36G"
@@ -1901,7 +1873,6 @@
                 "startOffsetTime": 10717,
                 "stopOffsetTime": 11634,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 89.59982,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -2252,7 +2223,6 @@
                 "startOffsetTime": 11676,
                 "stopOffsetTime": 11676,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 87.1034,
                 "trackProperties": {
                   "TEXT": "BUB36"
@@ -2295,7 +2265,6 @@
                 "startOffsetTime": 11718,
                 "stopOffsetTime": 11884,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.627716,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -2394,7 +2363,6 @@
                 "startOffsetTime": 11926,
                 "stopOffsetTime": 11926,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.06446,
                 "trackProperties": {
                   "TEXT": "BUB36"
@@ -2437,7 +2405,6 @@
                 "startOffsetTime": 11968,
                 "stopOffsetTime": 12176,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.14147,
                 "trackProperties": {
                   "TEXT": "BDB3G6"
@@ -2550,7 +2517,6 @@
                 "startOffsetTime": 12218,
                 "stopOffsetTime": 12218,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.85854,
                 "trackProperties": {
                   "TEXT": "BBJ66"
@@ -2593,7 +2559,6 @@
                 "startOffsetTime": 12260,
                 "stopOffsetTime": 12802,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 89.9365,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -2818,7 +2783,6 @@
                 "startOffsetTime": 12844,
                 "stopOffsetTime": 12844,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.0046,
                 "trackProperties": {
                   "TEXT": "BUB36G"
@@ -2861,7 +2825,6 @@
                 "startOffsetTime": 12885,
                 "stopOffsetTime": 13886,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.89378,
                 "trackProperties": {
                   "TEXT": "BDB3"
@@ -3240,7 +3203,6 @@
                 "startOffsetTime": 13928,
                 "stopOffsetTime": 13928,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 87.25832,
                 "trackProperties": {
                   "TEXT": "8D36"
@@ -3283,7 +3245,6 @@
                 "startOffsetTime": 14011,
                 "stopOffsetTime": 14136,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.22866,
                 "trackProperties": {
                   "TEXT": "BDB36"
@@ -3368,7 +3329,6 @@
                 "startOffsetTime": 14178,
                 "stopOffsetTime": 14178,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.49627,
                 "trackProperties": {
                   "TEXT": "BDB3G4"
@@ -3411,7 +3371,6 @@
                 "startOffsetTime": 14220,
                 "stopOffsetTime": 14220,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.4453,
                 "trackProperties": {
                   "TEXT": "BDB366"
@@ -3454,7 +3413,6 @@
                 "startOffsetTime": 14303,
                 "stopOffsetTime": 14303,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.536545,
                 "trackProperties": {
                   "TEXT": "8DB36"
@@ -3497,7 +3455,6 @@
                 "startOffsetTime": 14345,
                 "stopOffsetTime": 14386,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.99798,
                 "trackProperties": {
                   "TEXT": "BDB36"
@@ -3554,7 +3511,6 @@
                 "startOffsetTime": 14428,
                 "stopOffsetTime": 14512,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 89.62613,
                 "trackProperties": {
                   "TEXT": "BDB64"
@@ -3625,7 +3581,6 @@
                 "startOffsetTime": 14553,
                 "stopOffsetTime": 14553,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.44184,
                 "trackProperties": {
                   "TEXT": "BDB36"
@@ -3668,7 +3623,6 @@
                 "startOffsetTime": 14595,
                 "stopOffsetTime": 14595,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 80.93202,
                 "trackProperties": {
                   "TEXT": "DB34"
@@ -3711,7 +3665,6 @@
                 "startOffsetTime": 14637,
                 "stopOffsetTime": 14637,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.9713,
                 "trackProperties": {
                   "TEXT": "BDBU"
@@ -3754,7 +3707,6 @@
                 "startOffsetTime": 14678,
                 "stopOffsetTime": 14720,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.232376,
                 "trackProperties": {
                   "TEXT": "BDB36U4"
@@ -3811,7 +3763,6 @@
                 "startOffsetTime": 14762,
                 "stopOffsetTime": 14762,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 82.56334,
                 "trackProperties": {
                   "TEXT": "DB6U"
@@ -3854,7 +3805,6 @@
                 "startOffsetTime": 14804,
                 "stopOffsetTime": 14804,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.26963,
                 "trackProperties": {
                   "TEXT": "9DB36U4"
@@ -3897,7 +3847,6 @@
                 "startOffsetTime": 14845,
                 "stopOffsetTime": 14845,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.26516,
                 "trackProperties": {
                   "TEXT": "DB300"
@@ -3940,7 +3889,6 @@
                 "startOffsetTime": 14929,
                 "stopOffsetTime": 14970,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 82.7865,
                 "trackProperties": {
                   "TEXT": "3DBJD04"
@@ -3997,7 +3945,6 @@
                 "startOffsetTime": 15221,
                 "stopOffsetTime": 15221,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.47157,
                 "trackProperties": {
                   "TEXT": "8D364"
@@ -4040,7 +3987,6 @@
                 "startOffsetTime": 15262,
                 "stopOffsetTime": 15262,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 77.45817,
                 "trackProperties": {
                   "TEXT": "DJ64"
@@ -4083,7 +4029,6 @@
                 "startOffsetTime": 15304,
                 "stopOffsetTime": 15304,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 77.01121,
                 "trackProperties": {
                   "TEXT": "8DJ4"
@@ -4126,7 +4071,6 @@
                 "startOffsetTime": 15346,
                 "stopOffsetTime": 15346,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.66184,
                 "trackProperties": {
                   "TEXT": "DH3664"
@@ -4169,7 +4113,6 @@
                 "startOffsetTime": 15429,
                 "stopOffsetTime": 15554,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.37712,
                 "trackProperties": {
                   "TEXT": "DB3664"
@@ -4254,7 +4197,6 @@
                 "startOffsetTime": 15638,
                 "stopOffsetTime": 15679,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.066284,
                 "trackProperties": {
                   "TEXT": "DB3664"
@@ -4311,7 +4253,6 @@
                 "startOffsetTime": 15721,
                 "stopOffsetTime": 15721,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.14644,
                 "trackProperties": {
                   "TEXT": "UB3664I1"
@@ -4354,7 +4295,6 @@
                 "startOffsetTime": 15763,
                 "stopOffsetTime": 15804,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.32783,
                 "trackProperties": {
                   "TEXT": "RDB3664"
@@ -4411,7 +4351,6 @@
                 "startOffsetTime": 15846,
                 "stopOffsetTime": 15846,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.71281,
                 "trackProperties": {
                   "TEXT": "UB36"
@@ -4454,7 +4393,6 @@
                 "startOffsetTime": 15888,
                 "stopOffsetTime": 15888,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 80.94915,
                 "trackProperties": {
                   "TEXT": "BB3B"
@@ -4497,7 +4435,6 @@
                 "startOffsetTime": 15971,
                 "stopOffsetTime": 15971,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 78.25009,
                 "trackProperties": {
                   "TEXT": "BU36"
@@ -4540,7 +4477,6 @@
                 "startOffsetTime": 16096,
                 "stopOffsetTime": 16096,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 82.14191,
                 "trackProperties": {
                   "TEXT": "DB36"
@@ -4583,7 +4519,6 @@
                 "startOffsetTime": 16221,
                 "stopOffsetTime": 16221,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 78.59698,
                 "trackProperties": {
                   "TEXT": "1D3B"
@@ -4626,7 +4561,6 @@
                 "startOffsetTime": 16263,
                 "stopOffsetTime": 16263,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.8644,
                 "trackProperties": {
                   "TEXT": "BDB34"
@@ -4669,7 +4603,6 @@
                 "startOffsetTime": 16305,
                 "stopOffsetTime": 16305,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.8164,
                 "trackProperties": {
                   "TEXT": "DBJD"
@@ -4712,7 +4645,6 @@
                 "startOffsetTime": 16346,
                 "stopOffsetTime": 16346,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.186935,
                 "trackProperties": {
                   "TEXT": "RDB3664"
@@ -4755,7 +4687,6 @@
                 "startOffsetTime": 16430,
                 "stopOffsetTime": 16472,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.36861,
                 "trackProperties": {
                   "TEXT": "DR3664"
@@ -4812,7 +4743,6 @@
                 "startOffsetTime": 16555,
                 "stopOffsetTime": 16638,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 80.04491,
                 "trackProperties": {
                   "TEXT": "DH36"
@@ -4883,7 +4813,6 @@
                 "startOffsetTime": 16680,
                 "stopOffsetTime": 16680,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 75.84888,
                 "trackProperties": {
                   "TEXT": "QR36"
@@ -4926,7 +4855,6 @@
                 "startOffsetTime": 16722,
                 "stopOffsetTime": 16763,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 83.41301,
                 "trackProperties": {
                   "TEXT": "DB36"
@@ -4983,7 +4911,6 @@
                 "startOffsetTime": 16805,
                 "stopOffsetTime": 16805,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 78.89529,
                 "trackProperties": {
                   "TEXT": "DHBD"
@@ -5026,7 +4953,6 @@
                 "startOffsetTime": 16847,
                 "stopOffsetTime": 16847,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 80.06923,
                 "trackProperties": {
                   "TEXT": "0HHD"
@@ -5069,7 +4995,6 @@
                 "startOffsetTime": 18140,
                 "stopOffsetTime": 18140,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 79.8511,
                 "trackProperties": {
                   "TEXT": "BDB64"
@@ -5112,7 +5037,6 @@
                 "startOffsetTime": 18223,
                 "stopOffsetTime": 18223,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 77.459114,
                 "trackProperties": {
                   "TEXT": "8DJ64"
@@ -5155,7 +5079,6 @@
                 "startOffsetTime": 18265,
                 "stopOffsetTime": 18265,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 77.60168,
                 "trackProperties": {
                   "TEXT": "RDMJ"
@@ -5198,7 +5121,6 @@
                 "startOffsetTime": 18390,
                 "stopOffsetTime": 18390,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 78.31842,
                 "trackProperties": {
                   "TEXT": "3DJ4"
@@ -5241,7 +5163,6 @@
                 "startOffsetTime": 18515,
                 "stopOffsetTime": 18515,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 77.21159,
                 "trackProperties": {
                   "TEXT": "9D66"
@@ -5284,7 +5205,6 @@
                 "startOffsetTime": 18557,
                 "stopOffsetTime": 18557,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 76.35348,
                 "trackProperties": {
                   "TEXT": "BD3D"
@@ -5327,7 +5247,6 @@
                 "startOffsetTime": 18640,
                 "stopOffsetTime": 18640,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.64209,
                 "trackProperties": {
                   "TEXT": "9D3D4"
@@ -5370,7 +5289,6 @@
                 "startOffsetTime": 18682,
                 "stopOffsetTime": 18682,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 79.234146,
                 "trackProperties": {
                   "TEXT": "DB3D"
@@ -5413,7 +5331,6 @@
                 "startOffsetTime": 18723,
                 "stopOffsetTime": 18723,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 82.88654,
                 "trackProperties": {
                   "TEXT": "BDJD04"
@@ -5456,7 +5373,6 @@
                 "startOffsetTime": 18765,
                 "stopOffsetTime": 18849,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 81.22621,
                 "trackProperties": {
                   "TEXT": "D364"
@@ -5527,7 +5443,6 @@
                 "startOffsetTime": 18890,
                 "stopOffsetTime": 18890,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 87.63644,
                 "trackProperties": {
                   "TEXT": "DB36"
@@ -5570,7 +5485,6 @@
                 "startOffsetTime": 19182,
                 "stopOffsetTime": 19182,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 79.319,
                 "trackProperties": {
                   "TEXT": "336I"
@@ -5613,7 +5527,6 @@
                 "startOffsetTime": 19307,
                 "stopOffsetTime": 19307,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 86.54748,
                 "trackProperties": {
                   "TEXT": "D836"
@@ -5656,7 +5569,6 @@
                 "startOffsetTime": 19432,
                 "stopOffsetTime": 19432,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.61103,
                 "trackProperties": {
                   "TEXT": "DB366"
@@ -5699,7 +5611,6 @@
                 "startOffsetTime": 19474,
                 "stopOffsetTime": 19474,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.082664,
                 "trackProperties": {
                   "TEXT": "DDJ06"
@@ -5742,7 +5653,6 @@
                 "startOffsetTime": 19516,
                 "stopOffsetTime": 19516,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.297295,
                 "trackProperties": {
                   "TEXT": "DD366"
@@ -5785,7 +5695,6 @@
                 "startOffsetTime": 19599,
                 "stopOffsetTime": 19599,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 88.136055,
                 "trackProperties": {
                   "TEXT": "D366"
@@ -5850,7 +5759,7 @@
       "output": {
         "TEXT": [
           {
-            "source": "+#TEST OALPR TEXT DETECTION ACTION",
+            "action": "TEST OALPR TEXT DETECTION ACTION",
             "algorithm": "OALPR",
             "tracks": [
               {
@@ -5860,7 +5769,6 @@
                 "startOffsetTime": 33,
                 "stopOffsetTime": 500,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.5212,
                 "trackProperties": {
                   "TEXT": "SR3549"
@@ -6099,7 +6007,6 @@
                 "startOffsetTime": 566,
                 "stopOffsetTime": 566,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 85.28633,
                 "trackProperties": {
                   "TEXT": "SR354"
@@ -6142,7 +6049,6 @@
                 "startOffsetTime": 933,
                 "stopOffsetTime": 1968,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 91.28538,
                 "trackProperties": {
                   "TEXT": "SR3549"
@@ -6619,7 +6525,6 @@
                 "startOffsetTime": 2001,
                 "stopOffsetTime": 2602,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 91.10432,
                 "trackProperties": {
                   "TEXT": "SR3549"
@@ -6914,7 +6819,6 @@
                 "startOffsetTime": 2635,
                 "stopOffsetTime": 6472,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.58547,
                 "trackProperties": {
                   "TEXT": "SR3549"
@@ -8567,7 +8471,6 @@
                 "startOffsetTime": 6506,
                 "stopOffsetTime": 6672,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.5089,
                 "trackProperties": {
                   "TEXT": "SR3549"
@@ -8680,7 +8583,6 @@
                 "startOffsetTime": 6706,
                 "stopOffsetTime": 8708,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.245155,
                 "trackProperties": {
                   "TEXT": "SR3549"
@@ -9563,7 +9465,6 @@
                 "startOffsetTime": 8808,
                 "stopOffsetTime": 8808,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 84.86515,
                 "trackProperties": {
                   "TEXT": "SR3549"
@@ -9606,7 +9507,6 @@
                 "startOffsetTime": 9308,
                 "stopOffsetTime": 9308,
                 "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 79.60481,
                 "trackProperties": {
                   "TEXT": "S354"

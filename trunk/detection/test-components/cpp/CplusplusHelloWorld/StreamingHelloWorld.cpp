@@ -87,11 +87,6 @@ std::vector<MPFVideoTrack> StreamingHelloWorld::EndSegment() {
 }
 
 
-std::string StreamingHelloWorld::GetDetectionType() {
-    return "HELLO";
-}
-
-
 StreamingHelloWorld::~StreamingHelloWorld() {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Destroying component");
 }

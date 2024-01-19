@@ -96,8 +96,8 @@ public class OutputChecker {
 
         _errorCollector.checkThat("MarkupResult", actMedia.getMarkupResult() != null, is(expMedia.getMarkupResult() != null));
 
-        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getDetectionTypes();
-        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getDetectionTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getTrackTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getTrackTypes();
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ActionOutputs size", actExtrResults.size(), is(expExtrResults.size()));
 
@@ -115,31 +115,50 @@ public class OutputChecker {
         Iterator<JsonActionOutputObject> expIter = expectedTypeEntry.getValue().iterator();
         Iterator<JsonActionOutputObject> actIter = actualTypeEntry.getValue().iterator();
 
-        JsonActionOutputObject expTrackOutput;
-        JsonActionOutputObject actTrackOutput;
-        _errorCollector.checkThat("Expected Type", actualTypeEntry.getKey(), is(expectedTypeEntry.getKey()));
+        _errorCollector.checkThat(
+                "Expected Type", actualTypeEntry.getKey(), is(expectedTypeEntry.getKey()));
         while (expIter.hasNext()){
-            expTrackOutput = expIter.next();
-            actTrackOutput = actIter.next();
-            log.debug("Comparing expected actions at Source={} to actual actions at Source={}",
-                    expTrackOutput.getSource(), actTrackOutput.getSource());
+            var expActionOutput = expIter.next();
+            var actActionOutput = actIter.next();
+            _errorCollector.checkThat(
+                    "Action Name", actActionOutput.getAction(),
+                    is(expActionOutput.getAction()));
+            _errorCollector.checkThat(
+                    "Algorithm Name", actActionOutput.getAlgorithm(),
+                    is(expActionOutput.getAlgorithm()));
             compareJsonTrackOutputObjects(
-                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expTrackOutput),
-                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actTrackOutput),
+                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expActionOutput),
+                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actActionOutput),
                     pipeline);
         }
     }
 
-    private SortedSet<JsonTrackOutputObject> sortJsonActionOutputObjectSets(String detectionType, JsonActionOutputObject actionOutput) {
-        // MEDIA track default sort order is determined by DERIVATIVE_MEDIA_ID, which can cause issues. For example,
-        // a track with { DERIVATIVE_MEDIA_ID=10, PAGE_NUM=2 } will appear before { DERIVATIVE_MEDIA_ID=9, PAGE_NUM=1 }
-        // due to lexicographical String ordering. To address this, we sort by PAGE_NUM after converting to an int.
-        if (detectionType.equals("MEDIA") &&
-                actionOutput.getTracks().stream().allMatch(t -> t.getTrackProperties().containsKey("PAGE_NUM"))) {
-            return new TreeSet<>(Comparator.comparingInt(
-                    t -> Integer.parseInt(t.getTrackProperties().get("PAGE_NUM"))));
+    private SortedSet<JsonTrackOutputObject> sortJsonActionOutputObjectSets(
+            String trackType, JsonActionOutputObject actionOutput) {
+        if (!trackType.equals("MEDIA")) {
+            return actionOutput.getTracks();
         }
-        return actionOutput.getTracks();
+        // Remove PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES from track properties so they don't
+        // affect the sort order.
+        // Copy to a temporary unsorted collection because we are changing the value of comparison
+        // criteria.
+        var tracks = new ArrayList<>(actionOutput.getTracks());
+        for (var track : tracks) {
+            for (var propName : PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES) {
+                track.getTrackProperties().remove(propName);
+                track.getExemplar().getDetectionProperties().remove(propName);
+            }
+
+            var detections = new ArrayList<>(track.getDetections());
+            track.getDetections().clear();
+            for (var detection : detections) {
+                for (var propName : PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES) {
+                    detection.getDetectionProperties().remove(propName);
+                }
+            }
+            track.getDetections().addAll(detections);
+        }
+        return new TreeSet<>(tracks);
     }
 
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,
@@ -197,7 +216,7 @@ public class OutputChecker {
         _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
                 closeTo(expExtrResult.getConfidence(), 0.01));
 
-        compareProperties("Track", actExtrResult.getTrackProperties(), expExtrResult.getTrackProperties());
+        compareProperties("Track", expExtrResult.getTrackProperties(), actExtrResult.getTrackProperties());
 
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
@@ -280,8 +299,8 @@ public class OutputChecker {
                         is(expObjLocation.getOffsetFrame()));
                 _errorCollector.checkThat("X", actObjLocation.getX(), is(expObjLocation.getX()));
                 _errorCollector.checkThat("Y", actObjLocation.getY(), is(expObjLocation.getY()));
-                compareProperties("Detection", actObjLocation.getDetectionProperties(),
-                        expObjLocation.getDetectionProperties());
+                compareProperties("Detection", expObjLocation.getDetectionProperties(),
+                        actObjLocation.getDetectionProperties());
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
                         closeTo(expObjLocation.getConfidence(), confidenceDelta));
         }

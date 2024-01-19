@@ -47,6 +47,6 @@ fi
 set -x
 exec "$java_prog" \
     "-Djava.library.path=${MPF_HOME}/lib:${MPF_HOME}/jars" \
-    -cp "${MPF_HOME}/jars/mpf-java-component-executor-7.2.jar:${MPF_HOME}/plugins/$3/$1" \
+    -cp "${MPF_HOME}/jars/mpf-java-component-executor-8.0.jar:${MPF_HOME}/plugins/$3/$1" \
     "-DACTIVE_MQ_BROKER_URI=${ACTIVE_MQ_BROKER_URI}" \
     org.mitre.mpf.component.executor.detection.MPFDetectionMain "$2"

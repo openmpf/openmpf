@@ -509,5 +509,12 @@
         "type": "BOOLEAN",
         "propertiesKey": "ties.db.use.oidc",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "ROLL_UP_FILE",
+        "description": "When provided, Workflow Manager will load the roll up JSON file from the specified path and apply the roll up to track and detection properties.",
+        "type": "STRING",
+        "defaultValue": "",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

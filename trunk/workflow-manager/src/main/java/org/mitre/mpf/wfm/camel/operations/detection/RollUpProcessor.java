@@ -50,6 +50,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JobPart;
 import org.mitre.mpf.wfm.util.JobPartsIter;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -112,8 +113,10 @@ public class RollUpProcessor extends WfmProcessor {
                     // No roll up is configured for this part of the job.
                     continue;
                 }
+                String qualityProperty = _aggregateJobPropertiesUtil.getQualitySelectionProp(job,
+                                                                 jobPart.media(), jobPart.action());
                 var tracks = trackCache.getTracks(jobPart.media().getId(), jobPart.actionIndex());
-                var rolledUpTracks = rollUpContext.get().applyRollUp(tracks);
+                var rolledUpTracks = rollUpContext.get().applyRollUp(tracks, qualityProperty);
                 // When no tracks need to be changed, applyRollUp returns a reference to the same
                 // collection that was passed in. Using .equals() below would be much slower than
                 // the != operator.
@@ -121,6 +124,11 @@ public class RollUpProcessor extends WfmProcessor {
                     trackCache.updateTracks(
                             jobPart.media().getId(), jobPart.actionIndex(), rolledUpTracks);
                 }
+            }
+            catch (NumberFormatException e) {
+                LOG.error("Failed to apply roll up due to: " + e, e);
+                _inProgressJobs.addError(
+                    job.getId(), jobPart.media().getId(), IssueCodes.INVALID_DETECTION, e.getMessage());
             }
             catch (WfmProcessingException e) {
                 LOG.error("Failed to apply roll up due to: " + e, e);
@@ -222,11 +230,11 @@ public class RollUpProcessor extends WfmProcessor {
             }
         }
 
-        public SortedSet<Track> applyRollUp(SortedSet<Track> tracks) {
+        public SortedSet<Track> applyRollUp(SortedSet<Track> tracks, String qualityProperty) {
             var anyTracksChanged = false;
             var rolledUpTracks= ImmutableSortedSet.<Track>naturalOrder();
             for (var track : tracks) {
-                var rolledUpTrack = applyRollUp(track);
+                var rolledUpTrack = applyRollUp(track, qualityProperty);
                 anyTracksChanged = anyTracksChanged || rolledUpTrack != track;
                 // The track is added to rolledUpTracks whether it was changed or not because
                 // another track in the collection may be changed.
@@ -241,13 +249,14 @@ public class RollUpProcessor extends WfmProcessor {
                     : tracks;
         }
 
-        private Track applyRollUp(Track track) {
+        private Track applyRollUp(Track track, String qualityProperty) {
             var rolledUpDetections = applyRollUpToDetections(track.getDetections());
             var rolledUpTrackProperties = applyRollUp(track.getTrackProperties());
             if (rolledUpDetections == track.getDetections()
                     && rolledUpTrackProperties == track.getTrackProperties()) {
                 return track;
             }
+            var exemplar = TopQualitySelectionUtil.getTopQualityItem(rolledUpDetections, qualityProperty);
             return new Track(
                     track.getJobId(),
                     track.getMediaId(),
@@ -261,7 +270,7 @@ public class RollUpProcessor extends WfmProcessor {
                     track.getConfidence(),
                     rolledUpDetections,
                     rolledUpTrackProperties,
-                    track.getExemplarPolicy());
+                    exemplar);
         }
 
         private SortedSet<Detection> applyRollUpToDetections(

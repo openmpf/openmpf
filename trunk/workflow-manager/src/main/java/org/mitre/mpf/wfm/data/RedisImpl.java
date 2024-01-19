@@ -120,8 +120,8 @@ public class RedisImpl implements Redis {
     public void clearTracks(BatchJob job) {
         var trackKeys = JobPartsIter.stream(job)
                 .map(jp -> createTrackKey(
-                        job.getId(), jp.getMedia().getId(), jp.getTaskIndex(),
-                        jp.getActionIndex()))
+                        jp.id(), jp.media().getId(), jp.taskIndex(),
+                        jp.actionIndex()))
                 .toList();
         redisTemplate.delete(trackKeys);
     }

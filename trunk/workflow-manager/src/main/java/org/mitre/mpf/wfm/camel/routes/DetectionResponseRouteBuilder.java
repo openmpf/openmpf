@@ -35,6 +35,7 @@ import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.CommitUpdatedTracksProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.RollUpProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitterImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
@@ -107,6 +108,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.process(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
 					.process(MovingTrackLabelProcessor.REF) // Detect and flag moving tracks. Remove stationary tracks if requested by job.
 					.process(DetectionTransformationProcessor.REF)
+                    .process(RollUpProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
                         .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)

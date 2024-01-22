@@ -104,7 +104,8 @@ public class MpfConstants {
             FFPROBE_STDERR_NUM_LINES = "FFPROBE_STDERR_NUM_LINES",
             TRIGGER = "TRIGGER",
             CALLBACK_USE_OIDC = "CALLBACK_USE_OIDC",
-            TIES_DB_USE_OIDC = "TIES_DB_USE_OIDC";
+            TIES_DB_USE_OIDC = "TIES_DB_USE_OIDC",
+            ROLL_UP_FILE = "ROLL_UP_FILE";
 
     private MpfConstants() {
     }

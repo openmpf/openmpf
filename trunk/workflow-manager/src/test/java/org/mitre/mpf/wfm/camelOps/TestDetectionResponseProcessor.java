@@ -119,6 +119,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
     private static final String DETECTION_RESPONSE_PIPELINE_NAME = "TEST_DETECTION_RESPONSE_PIPELINE";
     private static final String DETECTION_RESPONSE_TASK_NAME = "TEST_DETECTION_RESPONSE_TASK";
 
+    private Action action;
+
     @Before
     public void init() {
         detectionResponseProcessor = new DetectionResponseProcessor(
@@ -135,7 +137,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
                 true, true);
 
 
-        Action action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.name(),
+        action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.name(),
                                    Collections.emptyList());
 
         Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", List.of(action.name()));
@@ -218,6 +220,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().getHeaders().put(MpfHeaders.PROCESSING_TIME, 1234L);
         exchange.getIn().setBody(detectionResponse);
 
         when(mockTaskMergingManager.getMergedTaskIndex(
@@ -238,6 +241,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
                 .addDetectionProcessingError(any());
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
+        verify(mockInProgressJobs)
+                .addProcessingTime(JOB_ID, action, 1234);
 
         var trackCaptor = ArgumentCaptor.forClass(Track.class);
         verify(mockInProgressJobs, times(1))
@@ -272,6 +277,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
                         START_TIME, STOP_TIME));
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
+        verify(mockInProgressJobs)
+                .reportMissingProcessingTime(JOB_ID, action);
     }
 
     private void processVideoJob(DetectionProtobuf.DetectionError error) {
@@ -314,6 +321,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().getHeaders().put(MpfHeaders.PROCESSING_TIME, "1234");
         exchange.getIn().setBody(detectionResponse);
 
         detectionResponseProcessor.wfmProcess(exchange);
@@ -322,6 +330,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, START_TIME, STOP_TIME));
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
+        verify(mockInProgressJobs)
+                .reportMissingProcessingTime(JOB_ID, action);
     }
 
     @Test

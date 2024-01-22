@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -96,6 +97,11 @@ public class DetectionResponseProcessor
                     // Camel will print out the exchange, including the message body content, in the stack trace.
                     String.format("Unsupported operation. More than one DetectionResponse sub-message found for job %d.", jobId));
         }
+
+        BatchJob job = _inProgressJobs.getJob(jobId);
+        Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
+        addProcessingTime(jobId, action, headers);
+
         if (totalResponses == 0) {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
             log.warn("Response received, but no tracks were found for {}.", mediaLabel);
@@ -103,15 +109,12 @@ public class DetectionResponseProcessor
             return null;
         }
 
-        BatchJob job = _inProgressJobs.getJob(jobId);
-
         Media media = job.getMedia()
                 .stream()
                 .filter(m -> m.getId() == detectionResponse.getMediaId())
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException("Unable to locate media with id: " +
                         detectionResponse.getMediaId()));
-        Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
         double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
         var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();
         var mergedTaskIdx = _taskMergingManager.getMergedTaskIndex(
@@ -518,5 +521,30 @@ public class DetectionResponseProcessor
         }
 
         return trackProperties;
+    }
+
+
+    private void addProcessingTime(long jobId, Action action, Map<String, Object> headers) {
+        try {
+            var processingTime = (Long) headers.get(MpfHeaders.PROCESSING_TIME);
+            if (processingTime == null) {
+                log.warn("""
+                    The component executor for the "{}" action did not set the "{}" \
+                    header. Timing information will not be reported for that action.""",
+                    action.name(), MpfHeaders.PROCESSING_TIME);
+                _inProgressJobs.reportMissingProcessingTime(jobId, action);
+            }
+            else {
+                _inProgressJobs.addProcessingTime(jobId, action, processingTime);
+            }
+        }
+        catch (ClassCastException e) {
+            log.error("""
+                Expected the "%s" header to contain a Long, but the component \
+                executor for the "%s" action set the header to a value of the wrong the type. \
+                Timing information will not be reported for that action."""
+                .formatted(MpfHeaders.PROCESSING_TIME, action.name()), e);
+            _inProgressJobs.reportMissingProcessingTime(jobId, action);
+        }
     }
 }

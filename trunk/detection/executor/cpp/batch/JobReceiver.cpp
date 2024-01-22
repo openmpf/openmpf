@@ -92,6 +92,7 @@ JobContext JobReceiver::TryGetJob() {
         std::move(component_job),
         job_type,
         type_name,
+        {},
         logger_.GetJobContext(job_name),
         Messenger::GetAmqMetadata(*request_message),
         ProtobufRequestUtil::GetMetadata(detection_request)

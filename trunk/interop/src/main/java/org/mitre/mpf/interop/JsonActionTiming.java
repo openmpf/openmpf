@@ -24,34 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.interop;
 
-public class MpfHeaders {
-	public static final String
-		CORRELATION_ID = "CorrelationId",
+import java.util.Comparator;
+import java.util.Objects;
 
-		EMPTY_SPLIT = "EmptySplit",
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-		JMS_PRIORITY = "JMSPriority",
-		JMS_REPLY_TO = "JMSReplyTo",
-		JOB_COMPLETE = "JobComplete",
-		JOB_ID = "JobId",
-        TASK_INDEX = "TaskIndex",
-        PROCESSING_TIME = "ProcessingTime",
+@JsonPropertyOrder({"name", "processingTime"})
+public class JsonActionTiming implements Comparable<JsonActionTiming> {
 
-		MEDIA_ID = "MediaId",
-		MEDIA_TYPE = "MediaType",
+    @JsonPropertyDescription("The name of the action.")
+    private final String _name;
+    public String getName() { return _name; }
 
-        JMS_DESTINATION = "CamelJmsDestinationName",
+    @JsonPropertyDescription(
+            "The amount of time in milliseconds that a component spent executing the action.")
+    private final long _processingTime;
+    public long getProcessingTime() { return _processingTime; }
 
-		SPLIT_SIZE = "SplitSize",
-		SPLITTING_ERROR = "JobSplitError",
+    public JsonActionTiming(
+            @JsonProperty("name") String name,
+            @JsonProperty("processingTime") long processingTime) {
+        _name = name;
+        _processingTime = processingTime;
+    }
 
-		UNSOLICITED = "Unsolicited",
 
-		OUTPUT_OBJECT_URI_FROM_TIES_DB = "OUTPUT_OBJECT_URI_FROM_TIES_DB";
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof JsonActionTiming && compareTo((JsonActionTiming) other) == 0;
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(_name, _processingTime);
+    }
 
-	private MpfHeaders() {
-	}
+    private static final Comparator<JsonActionTiming> DEFAULT_COMPARATOR = Comparator
+            .nullsFirst(Comparator
+                .comparing(JsonActionTiming::getName)
+                .thenComparingLong(JsonActionTiming::getProcessingTime));
+
+    @Override
+    public int compareTo(JsonActionTiming other) {
+        return this == other
+                ? 0
+                : DEFAULT_COMPARATOR.compare(this, other);
+    }
 }

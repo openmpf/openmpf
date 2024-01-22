@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import java.util.*;
 
@@ -72,4 +73,8 @@ public interface BatchJob {
     public List<DetectionProcessingError> getDetectionProcessingErrors();
 
     public boolean shouldCheckTiesDbAfterMediaInspection();
+
+    public long getTotalProcessingTime();
+
+    public long getProcessingTime(Action action);
 }

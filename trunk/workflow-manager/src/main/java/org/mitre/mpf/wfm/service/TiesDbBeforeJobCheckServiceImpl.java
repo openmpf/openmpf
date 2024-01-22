@@ -692,7 +692,8 @@ public class TiesDbBeforeJobCheckServiceImpl
                 oldOutputObject.getEnvironmentVariableProperties(),
                 newMediaList,
                 oldOutputObject.getErrors(),
-                oldOutputObject.getWarnings());
+                oldOutputObject.getWarnings(),
+                oldOutputObject.getTiming());
     }
 
     private static SortedSet<JsonActionOutputObject> updateActions(

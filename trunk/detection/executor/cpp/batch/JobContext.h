@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <string>
 #include <memory>
 #include <variant>
@@ -81,10 +82,22 @@ struct JobContext {
 
     const std::string job_type_name;
 
+    std::chrono::system_clock::time_point job_start_time;
+
     const JobLogContext job_log_context;
 
     const AmqMetadata amq_metadata;
 
     const ProtobufMetadata protobuf_metadata;
+
+    void OnJobStarted() {
+        job_start_time = std::chrono::system_clock::now();
+    }
+
+    long GetMillisSinceStart() const {
+        auto duration = std::chrono::system_clock::now() - job_start_time;
+        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        return duration_ms.count();
+    }
 };
 }

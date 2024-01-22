@@ -242,16 +242,18 @@ int run_jobs(LoggerWrapper& logger, std::string_view broker_uri, std::string_vie
     while (true) {
         logger.Info("Waiting for next job.");
         auto job_context = job_receiver.GetJob();
-        if (!component.Supports(job_context.job_type)) {
-            job_receiver.ReportUnsupportedDataType(job_context);
-            continue;
-        }
+
         bool can_process_job = health_check.Check(
             component, [&job_receiver] { job_receiver.RejectJob(); });
         if (!can_process_job) {
             continue;
         }
 
+        job_context.OnJobStarted();
+        if (!component.Supports(job_context.job_type)) {
+            job_receiver.ReportUnsupportedDataType(job_context);
+            continue;
+        }
         try {
             logger.Info("Processing ", job_context.job_type_name, " job on ", service_name);
             std::visit([&component, &logger, &job_context, &job_receiver](const auto& job) {

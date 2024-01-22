@@ -38,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.lang.IllegalStateException;
+import java.time.Duration;
+import java.time.Instant;
 
 public class MPFDetectionMessenger {
 
@@ -87,6 +89,7 @@ public class MPFDetectionMessenger {
 			LOG.info("Detection request received with job ID " + msgMetadata.getJobId() +
 						" for media file " + msgMetadata.getDataUri());
 
+			var startTime = Instant.now();
 			if(component.supports(msgMetadata.getDataType())) {
 
 				byte[] responseBytes = null;
@@ -180,6 +183,7 @@ public class MPFDetectionMessenger {
 					responseBytesMessage = session.createBytesMessage();
 					responseBytesMessage.writeBytes(responseBytes);
 					ProtoUtils.setMsgProperties(headerProperties, responseBytesMessage);
+					setProcessingTime(responseBytesMessage, startTime);
 					replyProducer.setPriority(message.getJMSPriority());
 					replyProducer.send(message.getJMSReplyTo(), responseBytesMessage);
 					session.commit();
@@ -200,7 +204,9 @@ public class MPFDetectionMessenger {
 					buildUnsupportedMediaTypeResponse(msgMetadata, responseBuilder);
 				}
 
-				buildAndSend(responseBuilder.build(), message.getJMSReplyTo(), headerProperties);
+				buildAndSend(
+						responseBuilder.build(), message.getJMSReplyTo(), headerProperties,
+						startTime);
 			}
         } catch (Exception e) {
 			// TODO: Send error message.
@@ -209,11 +215,16 @@ public class MPFDetectionMessenger {
         }
     }
 
-	private void buildAndSend(DetectionProtobuf.DetectionResponse detectionResponse, Destination destination, Map<String, Object> headers) {
+	private void buildAndSend(
+			DetectionProtobuf.DetectionResponse detectionResponse,
+			Destination destination,
+			Map<String, Object> headers,
+			Instant startTime) {
 		try {
 			// Create a new response message and re-use the incoming headers.
 			BytesMessage response = session.createBytesMessage();
 			ProtoUtils.setMsgProperties(headers, response);
+			setProcessingTime(response, startTime);
 
 			// Set the body of the message.
 			response.writeBytes(detectionResponse.toByteArray());
@@ -316,6 +327,11 @@ public class MPFDetectionMessenger {
 		        .collect(ImmutableMap.toImmutableMap(
 		        		e -> e.getKey().substring(propertyPrefix.length()),
 				        Map.Entry::getValue));
+	}
+
+	private static void setProcessingTime(Message message, Instant startTime) throws JMSException {
+		long duration = Duration.between(startTime, Instant.now()).toMillis();
+		message.setLongProperty("ProcessingTime", duration);
 	}
 
 	private void rollback() {

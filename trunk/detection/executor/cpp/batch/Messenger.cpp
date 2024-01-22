@@ -97,6 +97,7 @@ void Messenger::SendResponse(
     message->setLongProperty("JobId", job_context.job_id);
     message->setStringProperty("breadcrumbId", amq_meta.bread_crumb_id);
     message->setIntProperty("SplitSize", amq_meta.split_size);
+    message->setLongProperty("ProcessingTime", job_context.GetMillisSinceStart());
     message->writeBytes(response_bytes);
 
     response_producer_->send(

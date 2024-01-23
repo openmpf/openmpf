@@ -96,7 +96,7 @@ struct JobContext {
 
     long GetMillisSinceStart() const {
         auto duration = std::chrono::system_clock::now() - job_start_time;
-        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        auto duration_ms = std::chrono::round<std::chrono::milliseconds>(duration);
         return duration_ms.count();
     }
 };

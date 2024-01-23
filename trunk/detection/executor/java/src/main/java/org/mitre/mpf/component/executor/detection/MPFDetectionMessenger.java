@@ -224,10 +224,10 @@ public class MPFDetectionMessenger {
 			// Create a new response message and re-use the incoming headers.
 			BytesMessage response = session.createBytesMessage();
 			ProtoUtils.setMsgProperties(headers, response);
-			setProcessingTime(response, startTime);
 
 			// Set the body of the message.
 			response.writeBytes(detectionResponse.toByteArray());
+			setProcessingTime(response, startTime);
 
 			replyProducer.send(destination, response);
 			session.commit();
@@ -329,9 +329,15 @@ public class MPFDetectionMessenger {
 				        Map.Entry::getValue));
 	}
 
+
+	private static final double NANOS_PER_MS = Duration.ofMillis(1).toNanos();
+
 	private static void setProcessingTime(Message message, Instant startTime) throws JMSException {
-		long duration = Duration.between(startTime, Instant.now()).toMillis();
-		message.setLongProperty("ProcessingTime", duration);
+		var duration = Duration.between(startTime, Instant.now());
+		// Manually convert nanoseconds to milliseconds so that the value can be rounded.
+		// Duration.toMillis() always rounds down.
+		long millis = Math.round(duration.toNanos() / NANOS_PER_MS);
+		message.setLongProperty("ProcessingTime", millis);
 	}
 
 	private void rollback() {

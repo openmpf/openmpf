@@ -295,7 +295,7 @@ public class DetectionResponseProcessor
                                 (float)trackQuality,
                                 detections,
                                 trackProperties,
-                                exemplar);
+                                exemplar.getMediaOffsetFrame());
                         _inProgressJobs.addTrack(track);
                     }
                 }
@@ -383,7 +383,7 @@ public class DetectionResponseProcessor
                         (float)trackQuality,
                         ImmutableSortedSet.of(detection),
                         trackProperties,
-                        detection);
+                        detection.getMediaOffsetFrame());
 
                 _inProgressJobs.addTrack(track);
             }
@@ -449,7 +449,7 @@ public class DetectionResponseProcessor
                         (float)imageQuality,
                         ImmutableSortedSet.of(exemplar),
                         locationProperties,
-                        exemplar);
+                        exemplar.getMediaOffsetFrame());
                 _inProgressJobs.addTrack(track);
             }
         }
@@ -536,7 +536,7 @@ public class DetectionResponseProcessor
                 (float)trackQuality,
                 ImmutableSortedSet.of(detection),
                 trackProperties,
-                detection);
+                detection.getMediaOffsetFrame());
 
         _inProgressJobs.addTrack(track);
     }

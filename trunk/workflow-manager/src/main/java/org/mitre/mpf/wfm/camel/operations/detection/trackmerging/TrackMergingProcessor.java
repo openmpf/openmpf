@@ -308,7 +308,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
                 properties,
-                exemplar);
+                exemplar.getMediaOffsetFrame());
         return merged;
     }
 

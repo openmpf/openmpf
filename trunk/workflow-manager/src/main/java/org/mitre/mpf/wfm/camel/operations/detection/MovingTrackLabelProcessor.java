@@ -196,7 +196,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 track.getConfidence(),
                 newDetectionsBuilder.build(),
                 newTrackProperties,
-                exemplar);
+                exemplar.getMediaOffsetFrame());
             }
         catch (NumberFormatException e) {
             _inProgressJobs.addError(jobId, mediaId, IssueCodes.INVALID_DETECTION, e.getMessage());

@@ -401,16 +401,4 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         return ImmutableSet.of(shortTrack, longTrack);
     }
-    private static Set<Track> createTestTracksWithQualityProp() {
-        Track shortTrack = createTrack(createDetection(5, 5, "QUALITY_PROP", (float)0.5));
-
-        Track longTrack = createTrack(
-                createDetection(2, 2, "QUALITY_PROP", (float)0.1),
-                createDetection(20, 20, "QUALITY_PROP", (float)0.3),
-                createDetection(40, 40, "QUALITY_PROP", (float)0.4),
-                createDetection(50, 20, "QUALITY_PROP", (float)0.5));
-
-        return ImmutableSet.of(shortTrack, longTrack);
-    }
-
 }

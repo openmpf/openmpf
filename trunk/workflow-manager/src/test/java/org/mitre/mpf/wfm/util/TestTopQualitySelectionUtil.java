@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableSortedSet;
 import org.junit.Test;
-import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
 import java.util.ArrayList;

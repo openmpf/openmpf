@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -105,6 +106,7 @@ public class Track implements Comparable<Track> {
 
     /** The detection with the highest confidence in the track. */
     private final Detection _exemplar;
+    @JsonIgnore
     public Detection getExemplar() { return _exemplar; }
 
     /**
@@ -142,7 +144,7 @@ public class Track implements Comparable<Track> {
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
-            @JsonProperty("exemplar") Detection exemplar) {
+            @JsonProperty("exemplarFrameNumber") int exemplarFrameNumber) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
@@ -155,7 +157,12 @@ public class Track implements Comparable<Track> {
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
-        _exemplar = exemplar;
+        if (_detections == null || _detections.isEmpty()) {
+            _exemplar =null;
+        }
+        else {
+            _exemplar = _detections.stream().filter(d -> d.getMediaOffsetFrame() == exemplarFrameNumber).findFirst().orElse(null);
+        }
     }
 
 

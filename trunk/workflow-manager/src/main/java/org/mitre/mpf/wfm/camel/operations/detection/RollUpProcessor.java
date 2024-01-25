@@ -270,7 +270,7 @@ public class RollUpProcessor extends WfmProcessor {
                     track.getConfidence(),
                     rolledUpDetections,
                     rolledUpTrackProperties,
-                    exemplar);
+                    exemplar.getMediaOffsetFrame());
         }
 
         private SortedSet<Detection> applyRollUpToDetections(

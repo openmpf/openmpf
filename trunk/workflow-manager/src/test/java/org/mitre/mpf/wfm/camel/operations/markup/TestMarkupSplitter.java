@@ -68,7 +68,7 @@ public class TestMarkupSplitter {
                          7.7777f, // confidence
                          List.of(exemplar),
                          trackProperties,
-                         exemplar);
+                         exemplar.getMediaOffsetFrame());
     }
 
     @Test

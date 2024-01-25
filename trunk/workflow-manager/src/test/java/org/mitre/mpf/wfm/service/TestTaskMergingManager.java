@@ -209,7 +209,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
         return new Track(
             0, 0, 0, 0, 0, 0, 0, 0,
             mergedTask,
-            0, List.of(), Map.of(), null);
+            0, List.of(), Map.of(), 0);
     }
 
 }

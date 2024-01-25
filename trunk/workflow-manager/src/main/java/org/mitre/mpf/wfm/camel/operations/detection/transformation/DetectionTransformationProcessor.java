@@ -50,6 +50,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
+import static org.mockito.Mockito.mockingDetails;
+
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
@@ -102,18 +105,18 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
                     int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
+                    var exemplarPolicy = combinedProperties.apply(ExemplarPolicyUtil.PROPERTY);
+                    var qualitySelectionProp = combinedProperties.apply(MpfConstants.QUALITY_SELECTION_PROPERTY);
 
                     Collection<Track> updatedTracks = removeIllFormedDetections(
                         trackCache, media.getId(), actionIndex, frameWidth, frameHeight,
-                        algo.trackType(), tracks);
+                        algo.trackType(), tracks, exemplarPolicy, qualitySelectionProp);
 
                     try {
                         if (requiresPadding(combinedProperties)) {
 
                             String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
-                            var qualitySelectionProp = combinedProperties.apply(MpfConstants.QUALITY_SELECTION_PROPERTY);
-                            var exemplarPolicy = combinedProperties.apply(ExemplarPolicyUtil.PROPERTY);
                             padTracks(trackCache, media.getId(), actionIndex,
                                     xPadding, yPadding, frameWidth, frameHeight, updatedTracks,
                                     exemplarPolicy, qualitySelectionProp);
@@ -186,7 +189,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
     public Collection<Track> removeIllFormedDetections(
             TrackCache trackCache, long mediaId, int actionIndex, int frameWidth, int frameHeight,
-            String trackType, Collection<Track> tracks) {
+            String trackType, Collection<Track> tracks, String exemplarPolicy, String qualitySelectionProp) {
         // Remove any detections with zero width/height, or that are entirely outside of the frame.
         // If the number of detections goes to 0, drop the track.
         // Do not remove ill-formed detections for those types that are exempted, because they normally do not generate
@@ -216,7 +219,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 if (false) { // if true show visualization
                     DebugCanvas.clear();
                     DebugCanvas.draw(frameBoundingBox, Color.yellow);
-                    DebugCanvas.draw(detection, Color.green, Color.red);
+                    DebugCanvas.draw(detection, Color.green, Color.red);    
                     DebugCanvas.show("removeIllFormedDetections");
                 }
                 */
@@ -229,6 +232,10 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 }
             }
             if (goodDetections.size() > 0) {
+                var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
+                                        goodDetections.first().getMediaOffsetFrame(),
+                                        goodDetections.last().getMediaOffsetFrame(),
+                                        goodDetections);
                 newTracks.add(new Track(
                         track.getJobId(),
                         track.getMediaId(),
@@ -242,7 +249,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         track.getConfidence(),
                         goodDetections,
                         track.getTrackProperties(),
-                        track.getExemplar()));
+                        exemplar.getMediaOffsetFrame()));
             }
             else {
                 _log.warn(String.format("Empty track dropped after removing ill-formed detection(s): %s", track));
@@ -372,7 +379,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getConfidence(),
                     newDetections,
                     track.getTrackProperties(),
-                    exemplar));
+                    exemplar.getMediaOffsetFrame()));
         }
 
         Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()

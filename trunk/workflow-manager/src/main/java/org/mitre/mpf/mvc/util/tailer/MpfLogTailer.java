@@ -53,6 +53,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -297,9 +300,9 @@ public class MpfLogTailer {
         long pos = reader.getFilePointer();
         long rePos = pos; // position to re-read
 
-        byte ch;
+        int ch;
         boolean seenCR = false;
-        while ( ((ch = (byte)(reader.read())) != -1) && (numLines < maxLines)) {
+        while ( ((ch = reader.read()) != -1) && (numLines < maxLines)) {
             switch (ch) {
                 case '\n':
                     seenCR = false; // swallow CR before LF
@@ -324,7 +327,7 @@ public class MpfLogTailer {
                         sb.setLength(0);
                         rePos = pos + 1;
                     }
-                    sb.append((char) ch); // add character, not its ascii value
+                    addChar(ch, reader, sb);
             }
 
             pos = reader.getFilePointer();
@@ -336,4 +339,47 @@ public class MpfLogTailer {
         return numLines;
     }
 
+    private static void addChar(int firstCharByte, RandomAccessFile file, StringBuilder output) {
+        try {
+            int numBytes = getNumberOfBytesInChar(firstCharByte);
+            if (numBytes == 1) {
+                // UTF-8 characters with a single byte are the same as ASCII, so casting is safe here.
+                output.append((char) firstCharByte);
+                return;
+            }
+            var buffer = ByteBuffer.allocate(numBytes);
+            buffer.put((byte) firstCharByte);
+            file.readFully(buffer.array(), 1, numBytes - 1);
+            buffer.position(0).limit(numBytes);
+            output.append(StandardCharsets.UTF_8.decode(buffer).toString());
+        }
+        catch (IOException e) {
+            output.append('�');
+        }
+    }
+
+    // For UTF-8 multi-byte characters, the number of leading 1 bits is the total number of
+    // bytes in the character.
+    private static final int TWO_BITS = 0b11000000;
+    private static final int THREE_BITS = 0b11100000;
+    private static final int FOUR_BITS = 0b11110000;
+    private static final int FIVE_BITS = 0b11111000;
+
+    private static int getNumberOfBytesInChar(int firstCharByte) throws CharacterCodingException {
+        if (firstCharByte < 128) {
+            return 1;
+        }
+        else if ((firstCharByte & THREE_BITS) == TWO_BITS) {
+            return 2;
+        }
+        else if ((firstCharByte & FOUR_BITS) == THREE_BITS) {
+            return 3;
+        }
+        else if ((firstCharByte & FIVE_BITS) == FOUR_BITS) {
+            return 4;
+        }
+        else {
+            throw new CharacterCodingException();
+        }
+    }
 }

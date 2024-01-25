@@ -359,17 +359,28 @@ public class MpfLogTailer {
         }
     }
 
-    private static final int MSB_MASK = 0b1000_0000;
+    // For UTF-8 multi-byte characters, the number of leading 1 bits is the total number of
+    // bytes in the character.
+    private static final int TWO_BITS = 0b11000000;
+    private static final int THREE_BITS = 0b11100000;
+    private static final int FOUR_BITS = 0b11110000;
+    private static final int FIVE_BITS = 0b11111000;
 
     private static int getNumberOfBytesInChar(int firstCharByte) throws CharacterCodingException {
         if (firstCharByte < 128) {
             return 1;
         }
-        // For UTF-8 multi-byte characters, the number of leading 1 bits is the total number of
-        // bytes in the character.
-        return IntStream.rangeClosed(2, 4)
-                .filter(i -> ((firstCharByte << i) & MSB_MASK) == 0)
-                .findFirst()
-                .orElseThrow(CharacterCodingException::new);
+        else if ((firstCharByte & THREE_BITS) == TWO_BITS) {
+            return 2;
+        }
+        else if ((firstCharByte & FOUR_BITS) == THREE_BITS) {
+            return 3;
+        }
+        else if ((firstCharByte & FIVE_BITS) == FOUR_BITS) {
+            return 4;
+        }
+        else {
+            throw new CharacterCodingException();
+        }
     }
 }

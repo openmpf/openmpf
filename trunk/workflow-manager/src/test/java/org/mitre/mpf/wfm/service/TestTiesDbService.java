@@ -67,6 +67,8 @@ import org.apache.http.message.BasicHttpResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mitre.mpf.interop.JsonActionTiming;
+import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
@@ -190,6 +192,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 null,
                 null,
                 null,
+                null,
                 null);
 
         verify(_mockJobRequestDao)
@@ -244,13 +247,18 @@ public class TestTiesDbService extends MockitoTest.Strict {
         trackCounter.add(_tiesDbParentMedia, 8);
         trackCounter.add(_tiesDbChildMedia, 2);
 
+        var timing = new JsonTiming(
+            1349,
+            List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION2", 473)));
+
         _tiesDbService.prepareAssertions(
                 _job,
                 BatchJobStatusType.COMPLETE,
                 PROCESS_DATE,
                 URI.create("file:///fake-path"),
                 "FAKE_OUTPUT_OBJECT_SHA",
-                trackCounter);
+                trackCounter,
+                timing);
 
         {
             var tiesDbInfoCaptor = ArgumentCaptor.forClass(TiesDbInfo.class);
@@ -539,6 +547,10 @@ public class TestTiesDbService extends MockitoTest.Strict {
     }
 
     private static TiesDbInfo createExpectedTiesDbInfo() {
+        var timing = new JsonTiming(
+                1349,
+                List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION2", 473)));
+
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",
                 ImmutableSortedSet.of(
@@ -552,7 +564,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 "X.Y",
                 "host",
                 20,
-                "FAKE_JOB_CONFIG_HASH");
+                "FAKE_JOB_CONFIG_HASH",
+                timing);
 
         var assertion = new TiesDbInfo.Assertion("ASSERTION_ID", dataObject);
         return new TiesDbInfo("http://tiesdb", assertion);
@@ -560,6 +573,10 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
 
     private static TiesDbInfo createExpectedParentTiesDbInfo() {
+        var timing = new JsonTiming(
+                1349,
+                List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION2", 473)));
+
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",
                 ImmutableSortedSet.of(
@@ -573,7 +590,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 "X.Y",
                 "host",
                 10,
-                "FAKE_JOB_CONFIG_HASH");
+                "FAKE_JOB_CONFIG_HASH",
+                timing);
 
         var assertion = new TiesDbInfo.Assertion("ASSERTION_ID", dataObject);
         return new TiesDbInfo("http://tiesdbForParent", assertion);

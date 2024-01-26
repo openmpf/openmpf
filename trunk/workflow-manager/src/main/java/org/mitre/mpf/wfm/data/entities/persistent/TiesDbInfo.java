@@ -30,6 +30,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import java.time.Instant;
 import java.util.SortedSet;
 
+import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
@@ -61,5 +62,6 @@ public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
             String systemVersion,
             String systemHostname,
             int trackCount,
-            String jobConfigHash) {}
+            String jobConfigHash,
+            JsonTiming timing) {}
 }

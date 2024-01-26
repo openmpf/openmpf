@@ -228,7 +228,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     jobRequest.getTimeCompleted(),
                     outputObjectUri,
                     outputSha.getValue(),
-                    trackCounter);
+                    trackCounter,
+                    getTiming(job));
         }
 
         jobProgressStore.setJobProgress(jobId, 100);

@@ -232,22 +232,27 @@ public class DetectionResponseProcessor
                         "Unsupported operation. Derivative media is not supported for jobs with video source media.");
             }
 
-            double trackQuality = qualityThreshold + 1;
-            if ((qualitySelectionProp == null) ||
-                    StringUtils.isBlank(qualitySelectionProp) || 
-                    qualitySelectionProp.toLowerCase().equals("confidence")) {
-                trackQuality = objectTrack.getConfidence();
-            }
-            else {  
-                if (trackProperties.containsKey(qualitySelectionProp)) {
+            String qualityProp = "CONFIDENCE";
+            double trackQuality = objectTrack.getConfidence();
+            if (!StringUtils.isBlank(qualitySelectionProp)) {
+
+                if (trackProperties.containsKey(qualityProp)) {
                     try {
-                        trackQuality = Double.parseDouble(trackProperties.get(qualitySelectionProp));
+                        trackQuality = Double.parseDouble(trackProperties.get(qualityProp));
+                        qualityProp = qualitySelectionProp;
                     }
-                    catch(Exception e) {
-                        log.warn("The value of quality selection property \"" + qualitySelectionProp +
-                                "\" could not be converted to a double value: "
-                                + e.getMessage());
+                    catch(NumberFormatException e) {
+                        String exceptionString = "The value of quality selection property \"" + qualitySelectionProp +
+                        "\" could not be converted to a double value: "
+                        + e.getMessage() + ". Using CONFIDENCE instead.";
+                        log.warn(exceptionString);
+                        _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.INVALID_DETECTION, exceptionString);
                     }
+                }
+                else {
+                    String warningString = "Track did not have quality property \"" + qualityProp + "\". Using track confidence instead.";
+                    log.warn(warningString);
+                    _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.INVALID_DETECTION, warningString);
                 }
             }
 
@@ -257,15 +262,6 @@ public class DetectionResponseProcessor
                 int stopOffsetTime  = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStopFrame());
 
                 try {
-                    String qualityProp;
-                    if (StringUtils.isBlank(qualitySelectionProp)) {
-                        String errString = "Quality selection property not found. Using CONFIDENCE for quality selection.";
-                        _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.OTHER, errString);
-                        qualityProp = "CONFIDENCE";
-                    }
-                    else {
-                        qualityProp = qualitySelectionProp;
-                    }
                     ImmutableSortedSet<Detection> detections = (qualityProp.toLowerCase().equals("confidence")) ?
                         objectTrack.getFrameLocationsList()
                             .stream()
@@ -275,7 +271,7 @@ public class DetectionResponseProcessor
                         : objectTrack.getFrameLocationsList()
                             .stream()
                             .map(flm -> toDetection(flm, frameTimeInfo))
-                            .filter(d -> TopQualitySelectionUtil.getQuality(d, qualityProp) >= qualityThreshold)
+                            .filter(d -> TopQualitySelectionUtil.getQuality(d, qualitySelectionProp) >= qualityThreshold)
                             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
                     if (!detections.isEmpty()) {

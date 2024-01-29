@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import org.mitre.mpf.interop.util.CompareUtils;
+import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 
 import java.util.*;
 
@@ -109,6 +110,12 @@ public class Track implements Comparable<Track> {
     @JsonIgnore
     public Detection getExemplar() { return _exemplar; }
 
+    private final String _exemplarPolicy;
+    public String getExemplarPolicy() { return _exemplarPolicy; }
+
+    private final String _qualitySelectionProperty;
+    public String getQualitySelectionProperty() { return _qualitySelectionProperty; }
+
     /**
      * Creates a new track instance with the given immutable parameters.
      *
@@ -144,7 +151,8 @@ public class Track implements Comparable<Track> {
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
-            @JsonProperty("exemplarFrameNumber") int exemplarFrameNumber) {
+            @JsonProperty("exemplarPolicy") String exemplarPolicy,
+            @JsonProperty("qualitySelectionProperty") String qualitySelectionProperty) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
@@ -157,12 +165,14 @@ public class Track implements Comparable<Track> {
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
-        if (_detections == null || _detections.isEmpty()) {
-            _exemplar =null;
-        }
-        else {
-            _exemplar = _detections.stream().filter(d -> d.getMediaOffsetFrame() == exemplarFrameNumber).findFirst().orElse(null);
-        }
+        _exemplarPolicy = exemplarPolicy;
+        _qualitySelectionProperty = qualitySelectionProperty;
+            _exemplar = ExemplarPolicyUtil.getExemplar(
+                    _exemplarPolicy,
+                    _qualitySelectionProperty,
+                    _startOffsetTimeInclusive,
+                    _endOffsetFrameInclusive,
+                    _detections);
     }
 
 

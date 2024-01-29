@@ -46,7 +46,6 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -141,10 +140,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 try {
                     if (mergeRequested) {
                         int initialSize = tracks.size();
-                        var exemplarPolicy = _aggregateJobPropertiesUtil.getValue(ExemplarPolicyUtil.PROPERTY, job, media, action);
-                        var qualitySelectionProp = _aggregateJobPropertiesUtil.getValue(MpfConstants.QUALITY_SELECTION_PROPERTY,
-                                                                                        job, media, action);
-                        tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan, exemplarPolicy, qualitySelectionProp));
+                        tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan));
 
                         log.debug("Merging {} tracks down to {} in Media {}.",
                                   initialSize, tracks.size(), media.getId());
@@ -233,8 +229,7 @@ public class TrackMergingProcessor extends WfmProcessor {
     }
 
     private static Set<Track> combine(
-            BatchJob job, SortedSet<Track> sourceTracks, TrackMergingPlan plan,
-            String exemplarPolicy, String qualitySelectionProp) {
+            BatchJob job, SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
         // Do not attempt to merge an empty or null set.
         if (sourceTracks.isEmpty()) {
             return sourceTracks;
@@ -253,7 +248,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 // Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
                 if (canMerge(job, merged, candidate, plan)) {
                     // If one is found, merge them and then push this track back to the beginning of the collection.
-                    tracks.add(0, merge(merged, candidate, exemplarPolicy, qualitySelectionProp));
+                    tracks.add(0, merge(merged, candidate));
                     performedMerge = true;
 
                     // Keep a reference to the track which was merged into the original - it will be removed.
@@ -277,7 +272,7 @@ public class TrackMergingProcessor extends WfmProcessor {
         return new HashSet<>(mergedTracks);
     }
 
-    public static Track merge(Track track1, Track track2, String exemplarPolicy, String qualitySelectionProp){
+    public static Track merge(Track track1, Track track2){
 
         ImmutableSortedSet<Detection> detections = Stream.of(track1, track2)
                 .flatMap(t -> t.getDetections().stream())
@@ -291,10 +286,6 @@ public class TrackMergingProcessor extends WfmProcessor {
                         Map.Entry::getValue,
                         (v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2));
 
-        var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
-                                                      detections.first().getMediaOffsetFrame(),
-                                                      detections.last().getMediaOffsetFrame(),
-                                                        detections);
         Track merged = new Track(
                 track1.getJobId(),
                 track1.getMediaId(),
@@ -308,7 +299,8 @@ public class TrackMergingProcessor extends WfmProcessor {
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
                 properties,
-                exemplar.getMediaOffsetFrame());
+                track1.getExemplarPolicy(),
+                track1.getQualitySelectionProperty());
         return merged;
     }
 

@@ -398,7 +398,7 @@ public class TestDetectionTransformationProcessor {
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
                 1, 3, 1, 1,
-                 detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                 detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -427,7 +427,7 @@ public class TestDetectionTransformationProcessor {
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
                 1, 3, 1, 1,
-                detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -454,8 +454,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,
-                 detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -482,8 +481,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,
-                 detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                1, 3, 1, 1,detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -510,8 +508,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,
-                 detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -538,8 +535,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,
-                 detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -563,8 +559,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection1);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 1,
-                1, 1, 1, 1,
-                 detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                1, 1, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -585,8 +580,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,
-                 detections, Collections.emptyMap(), detection1.getMediaOffsetFrame());
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -701,11 +695,9 @@ public class TestDetectionTransformationProcessor {
         long mediaId = 5321;
 
         var trackCache = new TrackCache(jobId, 0, _mockInProgressJobs);
-        String exemplarPolicy = "FIRST";
-        String qualitySelectionProp = "CONFIDENCE";
+
         Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(
-                trackCache, mediaId, 0, frameWidth, frameHeight, trackType, tracks,
-                exemplarPolicy, qualitySelectionProp);
+                trackCache, mediaId, 0, frameWidth, frameHeight, trackType, tracks);
 
         if (!hasWidthHeightWarning && !hasOutsideFrameWarning) {
             verify(_mockInProgressJobs, times(0))
@@ -789,8 +781,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection);
 
         Track track = new Track(1, 2, 1, 1, 0, 0,
-                0, 0, 1, 1,
-                 detections, Collections.emptyMap(), detection.getMediaOffsetFrame());
+                0, 0, 1, 1, detections, Collections.emptyMap(), "", "");
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track);
 

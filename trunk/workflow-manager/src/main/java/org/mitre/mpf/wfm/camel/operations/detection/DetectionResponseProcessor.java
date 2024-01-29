@@ -279,9 +279,6 @@ public class DetectionResponseProcessor
                             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
                     if (!detections.isEmpty()) {
-                        var exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualitySelectionProp,
-                                                                      detections.first().getMediaOffsetFrame(),
-                                                                      detections.last().getMediaOffsetFrame(), detections);
                         Track track = new Track(
                                 jobId,
                                 detectionResponse.getMediaId(),
@@ -295,7 +292,8 @@ public class DetectionResponseProcessor
                                 (float)trackQuality,
                                 detections,
                                 trackProperties,
-                                exemplar.getMediaOffsetFrame());
+                                exemplarPolicy,
+                                qualitySelectionProp);
                         _inProgressJobs.addTrack(track);
                     }
                 }
@@ -383,7 +381,8 @@ public class DetectionResponseProcessor
                         (float)trackQuality,
                         ImmutableSortedSet.of(detection),
                         trackProperties,
-                        detection.getMediaOffsetFrame());
+                        "",
+                        qualitySelectionProp);
 
                 _inProgressJobs.addTrack(track);
             }
@@ -435,7 +434,6 @@ public class DetectionResponseProcessor
             }
 
             if (imageQuality >= qualityThreshold) {
-                var exemplar = toDetection(location, 0, 0);
                 Track track = new Track(
                         jobId,
                         detectionResponse.getMediaId(),
@@ -447,9 +445,10 @@ public class DetectionResponseProcessor
                         0,
                         mergedTaskIdx,
                         (float)imageQuality,
-                        ImmutableSortedSet.of(exemplar),
+                        ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
-                        exemplar.getMediaOffsetFrame());
+                        "",
+                        qualitySelectionProp);
                 _inProgressJobs.addTrack(track);
             }
         }
@@ -536,7 +535,8 @@ public class DetectionResponseProcessor
                 (float)trackQuality,
                 ImmutableSortedSet.of(detection),
                 trackProperties,
-                detection.getMediaOffsetFrame());
+                "",
+                "");
 
         _inProgressJobs.addTrack(track);
     }

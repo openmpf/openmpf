@@ -362,8 +362,7 @@ public class TestRollUpProcessor extends MockitoTest.Strict {
         var detections = Streams.mapWithIndex(
                 detectionPropertyMaps.stream(), TestRollUpProcessor::createDetection)
                 .toList();
-        return new Track(0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                     detections, trackProperties, detections.get(0).getMediaOffsetFrame());
+        return new Track(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, detections, trackProperties, null, null);
     }
 
 

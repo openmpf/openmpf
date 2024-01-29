@@ -281,6 +281,7 @@ public class TestMovingTrackLabelProcessor {
                 -1, //confidence
                 detections, //detections
                 Map.of(), //trackProperties
-                detections.iterator().next().getMediaOffsetFrame());
+                "",
+                "");
     }
 }

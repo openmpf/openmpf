@@ -62,6 +62,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -258,7 +259,13 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         }
 
         if (exemplarPlusCount >= 0) {
-            Detection exemplar = track.getExemplar();
+            // Detection exemplar = track.getExemplar();
+            String qualityProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
+            String exemplarPolicy = _aggregateJobPropertiesUtil.getValue(ExemplarPolicyUtil.PROPERTY, job, media, action);
+            Detection exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualityProp, 
+                                    track.getDetections().first().getMediaOffsetFrame(),
+                                    track.getDetections().last().getMediaOffsetFrame(),
+                                    track.getDetections());
             int exemplarFrame = exemplar.getMediaOffsetFrame();
             LOG.debug("Will extract exemplar frame {}", exemplarFrame);
             framesToExtract.add(exemplarFrame);

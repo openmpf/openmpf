@@ -259,13 +259,13 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         }
 
         if (exemplarPlusCount >= 0) {
-            // Detection exemplar = track.getExemplar();
-            String qualityProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
-            String exemplarPolicy = _aggregateJobPropertiesUtil.getValue(ExemplarPolicyUtil.PROPERTY, job, media, action);
-            Detection exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualityProp, 
-                                    track.getDetections().first().getMediaOffsetFrame(),
-                                    track.getDetections().last().getMediaOffsetFrame(),
-                                    track.getDetections());
+            Detection exemplar = track.getExemplar();
+            // String qualityProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
+            // String exemplarPolicy = _aggregateJobPropertiesUtil.getValue(ExemplarPolicyUtil.PROPERTY, job, media, action);
+            // Detection exemplar = ExemplarPolicyUtil.getExemplar(exemplarPolicy, qualityProp, 
+            //                         track.getDetections().first().getMediaOffsetFrame(),
+            //                         track.getDetections().last().getMediaOffsetFrame(),
+            //                         track.getDetections());
             int exemplarFrame = exemplar.getMediaOffsetFrame();
             LOG.debug("Will extract exemplar frame {}", exemplarFrame);
             framesToExtract.add(exemplarFrame);

@@ -234,7 +234,8 @@ public class DetectionResponseProcessor
 
             String qualityProp = "CONFIDENCE";
             double trackQuality = objectTrack.getConfidence();
-            if (!StringUtils.isBlank(qualitySelectionProp)) {
+            if (!StringUtils.isBlank(qualitySelectionProp) &&
+                 qualitySelectionProp != "CONFIDENCE") {
 
                 if (trackProperties.containsKey(qualityProp)) {
                     try {

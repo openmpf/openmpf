@@ -112,6 +112,13 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
+        "name": "QUALITY_SELECTION_THRESHOLD",
+        "description": "When using something other than CONFIDENCE as the quality selection property, this is the minimum value of the quality selection property which must be met or exceeded. Detections below this threshold are silently discarded.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.quality.selection.threshold",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "MIN_GAP_BETWEEN_SEGMENTS",
         "description": "In the context of videos, the minimum number of frames between segments which are not adjacent. Value must be greater than or equal to 1.",
         "type": "INT",

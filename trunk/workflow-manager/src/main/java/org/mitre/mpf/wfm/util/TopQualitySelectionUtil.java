@@ -86,10 +86,7 @@ public class TopQualitySelectionUtil {
                 return Double.parseDouble(det.getDetectionProperties().get(qualityProperty));
         }
         catch(NumberFormatException e) {
-            String errMsg = "The quality selection property \"" + qualityProperty +
-                            "\" could not be converted to a double value: \"" +
-                             det.getDetectionProperties().get(qualityProperty) + "\"";
-            throw new NumberFormatException(errMsg);
+            return Double.NEGATIVE_INFINITY;
         }
     }
 

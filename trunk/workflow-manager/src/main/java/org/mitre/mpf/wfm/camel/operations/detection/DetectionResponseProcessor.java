@@ -237,9 +237,9 @@ public class DetectionResponseProcessor
             if (!StringUtils.isBlank(qualitySelectionProp) &&
                  qualitySelectionProp != "CONFIDENCE") {
 
-                if (trackProperties.containsKey(qualityProp)) {
+                if (trackProperties.containsKey(qualitySelectionProp)) {
                     try {
-                        trackQuality = Double.parseDouble(trackProperties.get(qualityProp));
+                        trackQuality = Double.parseDouble(trackProperties.get(qualitySelectionProp));
                         qualityProp = qualitySelectionProp;
                     }
                     catch(NumberFormatException e) {

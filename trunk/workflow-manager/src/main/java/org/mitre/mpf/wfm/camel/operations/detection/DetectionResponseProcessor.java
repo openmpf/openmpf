@@ -114,8 +114,8 @@ public class DetectionResponseProcessor
                 .orElseThrow(() -> new IllegalStateException("Unable to locate media with id: " +
                         detectionResponse.getMediaId()));
         Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
-        String qualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
-        double qualityThreshold = calculateQualityThreshold(qualitySelectionProp, job, media, action);
+        var qualityFilter = createQualityFilter(job, media, action);
+        var qualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
         var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();
         var mergedTaskIdx = _taskMergingManager.getMergedTaskIndex(
                 job, media,
@@ -130,8 +130,8 @@ public class DetectionResponseProcessor
                     jobId,
                     detectionResponse,
                     detectionResponse.getVideoResponses(0),
+                    qualityFilter,
                     qualitySelectionProp,
-                    qualityThreshold,
                     media,
                     exemplarPolicy,
                     trackType,
@@ -142,8 +142,7 @@ public class DetectionResponseProcessor
                     jobId,
                     detectionResponse,
                     detectionResponse.getAudioResponses(0),
-                    qualitySelectionProp,
-                    qualityThreshold,
+                    qualityFilter,
                     trackType,
                     mergedTaskIdx);
         }
@@ -152,8 +151,7 @@ public class DetectionResponseProcessor
                     jobId,
                     detectionResponse,
                     detectionResponse.getImageResponses(0),
-                    qualitySelectionProp,
-                    qualityThreshold,
+                    qualityFilter,
                     trackType,
                     mergedTaskIdx);
         }
@@ -162,44 +160,19 @@ public class DetectionResponseProcessor
                     jobId,
                     detectionResponse,
                     detectionResponse.getGenericResponses(0),
-                    qualitySelectionProp,
-                    qualityThreshold,
+                    qualityFilter,
                     trackType,
                     mergedTaskIdx);
         }
         return null;
     }
 
-    private double calculateQualityThreshold(String qualitySelectionProperty,
-                                             BatchJob job, Media media, Action action) {
-        String qualityThresholdProperty;
-        if  ((qualitySelectionProperty == null) ||
-                StringUtils.isBlank(qualitySelectionProperty) ||
-                qualitySelectionProperty.toLowerCase().equals("confidence")) {
-            qualityThresholdProperty = _aggregateJobPropertiesUtil.getValue(
-                MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action);
-        }
-        else {
-            qualityThresholdProperty = _aggregateJobPropertiesUtil.getValue(
-                            MpfConstants.QUALITY_THRESHOLD_PROPERTY, job, media, action);
-        }
-
-        try {
-            return Double.parseDouble(qualityThresholdProperty);
-        }
-        catch (NumberFormatException e) {
-            log.warn("Invalid quality threshold specified: value should be numeric. Provided value was: \""
-                             + qualityThresholdProperty + "\". Using confidence threshold system property.");
-            return job.getSystemPropertiesSnapshot().getConfidenceThreshold();
-        }
-   }
-
     private void processVideoResponse(
             long jobId,
             DetectionProtobuf.DetectionResponse detectionResponse,
             DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
+            QualityFilter qualityFilter,
             String qualitySelectionProp,
-            double qualityThreshold,
             Media media,
             String exemplarPolicy,
             String trackType,
@@ -232,47 +205,16 @@ public class DetectionResponseProcessor
                         "Unsupported operation. Derivative media is not supported for jobs with video source media.");
             }
 
-            String qualityProp = "CONFIDENCE";
-            double trackQuality = objectTrack.getConfidence();
-            if (!StringUtils.isBlank(qualitySelectionProp) &&
-                 qualitySelectionProp != "CONFIDENCE") {
-
-                if (trackProperties.containsKey(qualitySelectionProp)) {
-                    try {
-                        trackQuality = Double.parseDouble(trackProperties.get(qualitySelectionProp));
-                        qualityProp = qualitySelectionProp;
-                    }
-                    catch(NumberFormatException e) {
-                        String exceptionString = "The value of quality selection property \"" + qualitySelectionProp +
-                        "\" could not be converted to a double value: "
-                        + e.getMessage() + ". Using CONFIDENCE instead.";
-                        log.warn(exceptionString);
-                        _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.INVALID_DETECTION, exceptionString);
-                    }
-                }
-                else {
-                    String warningString = "Track did not have quality property \"" + qualityProp + "\". Using track confidence instead.";
-                    log.warn(warningString);
-                    _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.INVALID_DETECTION, warningString);
-                }
-            }
-
-            if (trackQuality >= qualityThreshold) {
+            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties)) {
 
                 int startOffsetTime = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStartFrame());
                 int stopOffsetTime  = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStopFrame());
 
                 try {
-                    ImmutableSortedSet<Detection> detections = (qualityProp.toLowerCase().equals("confidence")) ?
-                        objectTrack.getFrameLocationsList()
-                            .stream()
-                            .filter(flm -> flm.getImageLocation().getConfidence() >= qualityThreshold)
-                            .map(flm -> toDetection(flm, frameTimeInfo))
-                            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()))
-                        : objectTrack.getFrameLocationsList()
+                    ImmutableSortedSet<Detection> detections = objectTrack.getFrameLocationsList()
                             .stream()
                             .map(flm -> toDetection(flm, frameTimeInfo))
-                            .filter(d -> TopQualitySelectionUtil.getQuality(d, qualitySelectionProp) >= qualityThreshold)
+                            .filter(d -> qualityFilter.meetsThreshold(d.getConfidence(), d.getDetectionProperties()))
                             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
                     if (!detections.isEmpty()) {
@@ -286,7 +228,7 @@ public class DetectionResponseProcessor
                                 startOffsetTime,
                                 stopOffsetTime,
                                 mergedTaskIdx,
-                                (float)trackQuality,
+                                (float)objectTrack.getConfidence(),
                                 detections,
                                 trackProperties,
                                 exemplarPolicy,
@@ -295,7 +237,7 @@ public class DetectionResponseProcessor
                     }
                 }
                 catch (Exception e) {
-                    String exceptionString = "Exception caught while creating detections list: " + e.getMessage();
+                    String exceptionString = "Exception caught while creating detections list and new Track: " + e.getMessage();
                     _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.INVALID_DETECTION, exceptionString);
                 }
             }
@@ -306,8 +248,7 @@ public class DetectionResponseProcessor
             long jobId,
             DetectionProtobuf.DetectionResponse detectionResponse,
             DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
-            String qualitySelectionProp,
-            double qualityThreshold,
+            QualityFilter qualityFilter,
             String tracktype,
             int mergedTaskIdx) {
 
@@ -335,32 +276,13 @@ public class DetectionResponseProcessor
                         "Unsupported operation. Derivative media is not supported for jobs with audio source media.");
             }
 
-            double trackQuality = qualityThreshold + 1;
-            if ((qualitySelectionProp == null) ||
-                    StringUtils.isBlank(qualitySelectionProp) ||
-                    qualitySelectionProp.toLowerCase().equals("confidence")) {
-                trackQuality = objectTrack.getConfidence();
-            }
-            else {  
-                if (trackProperties.containsKey(qualitySelectionProp)) {
-                    try {
-                        trackQuality = Double.parseDouble(trackProperties.get(qualitySelectionProp));
-                    }
-                    catch(Exception e) {
-                        log.warn("The value of quality selection property \"" + qualitySelectionProp +
-                                "\" could not be converted to a double value: "
-                                + e.getMessage());
-                    }
-                }
-            }
-
-            if (trackQuality >= qualityThreshold) {
+            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties)) {
                 Detection detection = new Detection(
                         0,
                         0,
                         0,
                         0,
-                        (float)trackQuality,
+                        (float)objectTrack.getConfidence(),
                         0,
                         objectTrack.getStartTime(),
                         trackProperties);
@@ -375,11 +297,11 @@ public class DetectionResponseProcessor
                         objectTrack.getStartTime(),
                         objectTrack.getStopTime(),
                         mergedTaskIdx,
-                        (float)trackQuality,
+                        (float)objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         trackProperties,
                         "",
-                        qualitySelectionProp);
+                        "");
 
                 _inProgressJobs.addTrack(track);
             }
@@ -390,8 +312,7 @@ public class DetectionResponseProcessor
             long jobId,
             DetectionProtobuf.DetectionResponse detectionResponse,
             DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
-            String qualitySelectionProp,
-            double qualityThreshold,
+            QualityFilter qualityFilter,
             String trackType,
             int mergedTaskIdx) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
@@ -411,26 +332,7 @@ public class DetectionResponseProcessor
                         "Unsupported operation. Derivative media is not supported for jobs with image source media.");
             }
 
-            double imageQuality = qualityThreshold + 1;
-            if ((qualitySelectionProp == null) ||
-                    StringUtils.isBlank(qualitySelectionProp) || 
-                    qualitySelectionProp.toLowerCase().equals("confidence")) {
-                imageQuality = location.getConfidence();
-            }
-            else {  
-                if (locationProperties.containsKey(qualitySelectionProp)) {
-                    try {
-                        imageQuality = Double.parseDouble(locationProperties.get(qualitySelectionProp));
-                    }
-                    catch(Exception e) {
-                        log.warn("The value of quality selection property \"" + qualitySelectionProp +
-                                "\" could not be converted to a double value: "
-                                + e.getMessage());
-                    }
-                }
-            }
-
-            if (imageQuality >= qualityThreshold) {
+            if (qualityFilter.meetsThreshold(location.getConfidence(), locationProperties)) {
                 Track track = new Track(
                         jobId,
                         detectionResponse.getMediaId(),
@@ -441,11 +343,11 @@ public class DetectionResponseProcessor
                         0,
                         0,
                         mergedTaskIdx,
-                        (float)imageQuality,
+                        (float)location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
                         "",
-                        qualitySelectionProp);
+                        "");
                 _inProgressJobs.addTrack(track);
             }
         }
@@ -455,8 +357,7 @@ public class DetectionResponseProcessor
             long jobId,
             DetectionProtobuf.DetectionResponse detectionResponse,
             DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
-            String qualitySelectionProp,
-            double qualityThreshold,
+            QualityFilter qualityFilter,
             String trackType,
             int mergedTaskIdx) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
@@ -476,27 +377,9 @@ public class DetectionResponseProcessor
                         detectionResponse.getTaskIndex(), trackProperties);
             }
 
-            double trackQuality = qualityThreshold + 1;
-            if ((qualitySelectionProp == null) ||
-                    StringUtils.isBlank(qualitySelectionProp) || 
-                    qualitySelectionProp.toLowerCase().equals("confidence")) {
-                trackQuality = objectTrack.getConfidence();
-            }
-            else {  
-                if (trackProperties.containsKey(qualitySelectionProp)) {
-                    try {
-                        trackQuality = Double.parseDouble(trackProperties.get(qualitySelectionProp));
-                    }
-                    catch(Exception e) {
-                        log.warn("The value of quality selection property \"" + qualitySelectionProp +
-                                "\" could not be converted to a double value: "
-                                + e.getMessage());
-                    }
-                }
-            }
-            if (trackQuality >= qualityThreshold)
+            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties))
                 processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack,
-                                    trackQuality, trackProperties, mergedTaskIdx);
+                                    trackProperties, mergedTaskIdx);
         }
     }
 
@@ -506,7 +389,6 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse detectionResponse,
             DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
             DetectionProtobuf.GenericTrack objectTrack,
-            double trackQuality,
             SortedMap<String, String> trackProperties,
             int mergedTaskIdx) {
         Detection detection = new Detection(
@@ -514,7 +396,7 @@ public class DetectionResponseProcessor
                 0,
                 0,
                 0,
-                (float)trackQuality,
+                (float)objectTrack.getConfidence(),
                 0,
                 0,
                 trackProperties);
@@ -529,7 +411,7 @@ public class DetectionResponseProcessor
                 0,
                 0,
                 mergedTaskIdx,
-                (float)trackQuality,
+                (float)objectTrack.getConfidence(),
                 ImmutableSortedSet.of(detection),
                 trackProperties,
                 "",
@@ -634,5 +516,62 @@ public class DetectionResponseProcessor
         }
 
         return trackProperties;
+    }
+    private static interface QualityFilter {
+        boolean meetsThreshold(double confidence, Map<String, String> detectionProperties);
+    }
+
+
+    private QualityFilter createQualityFilter(BatchJob job, Media media, Action action) {
+        var qualityThresholdProp = _aggregateJobPropertiesUtil.getValue(
+                MpfConstants.QUALITY_THRESHOLD_PROPERTY, job, media, action);
+        if (qualityThresholdProp == null || qualityThresholdProp.isBlank()) {
+            return (c, p) -> true;
+        }
+
+        double qualityThreshold;
+        try {
+            qualityThreshold = Double.parseDouble(qualityThresholdProp);
+            if (qualityThreshold == Double.NEGATIVE_INFINITY) {
+                return (c, p) -> true;
+            }
+        }
+        catch (NumberFormatException e) {
+            _inProgressJobs.addWarning(
+                    job.getId(), media.getId(), IssueCodes.OTHER,
+                    "Expected %s to be a number but it was was: %s".formatted(
+                        MpfConstants.QUALITY_THRESHOLD_PROPERTY, qualityThresholdProp));
+            return (c, p) -> true;
+        }
+
+        var qualityProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
+        if (qualityProp.equalsIgnoreCase("CONFIDENCE")) {
+            return (c, p) -> c >= qualityThreshold;
+        }
+        else {
+            return createQualityFilter(qualityProp, qualityThreshold);
+        }
+    }
+
+    private static QualityFilter createQualityFilter(
+            String qualityPropName, double qualityThreshold) {
+        return new QualityFilter() {
+            boolean _loggedWarning;
+
+            public boolean meetsThreshold(
+                    double confidence, Map<String, String> detectionProperties) {
+                var qualityValue = detectionProperties.getOrDefault(qualityPropName, "");
+                try {
+                    return Double.parseDouble(qualityValue) >= qualityThreshold;
+                }
+                catch (NumberFormatException e) {
+                    if (!_loggedWarning) {
+                        log.warn("One or more detections did not have a valid quality property.");
+                        _loggedWarning = true;
+                    }
+                    return false;
+                }
+            }
+        };
     }
 }

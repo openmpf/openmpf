@@ -105,15 +105,15 @@
         "mediaTypes": ["VIDEO"]
     },
     {
-        "name": "CONFIDENCE_THRESHOLD",
-        "description": "When using confidence as the quality selection property, this is the minimum confidence score which must be met or exceeded. Detections below this threshold are silently discarded.",
-        "type": "DOUBLE",
-        "propertiesKey": "detection.confidence.threshold",
+        "name": "QUALITY_SELECTION_PROPERTY",
+        "description": "The detection property to be used to rank the quality of a track and the quality of the detections in a track. This property would be used, for example, to select the exemplar detection for a track.",
+        "type": "STRING",
+        "propertiesKey": "detection.quality.selection.prop",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
         "name": "QUALITY_SELECTION_THRESHOLD",
-        "description": "When using something other than CONFIDENCE as the quality selection property, this is the minimum value of the quality selection property which must be met or exceeded. Detections below this threshold are silently discarded.",
+        "description": "This is the minimum value of the quality selection property which must be met or exceeded. Detections below this threshold are silently discarded.",
         "type": "STRING",
         "propertiesKey": "detection.quality.selection.threshold",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
@@ -470,7 +470,7 @@
     },
     {
         "name": "EXEMPLAR_POLICY",
-        "description": "Sets the policy for determining a track's exemplar. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track). When set to anything other than a named policy, the detection with the maximum quality, according to the QUALITY_SELECTION_RPOP job property, is selected.",
+        "description": "Sets the policy for determining a track's exemplar. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track). When set to anything other than a named policy, the detection with the maximum quality, according to the QUALITY_SELECTION_PROP job property, is selected.",
         "type": "STRING",
         "propertiesKey": "detection.quality.selection.prop",
         "mediaTypes": ["VIDEO"]

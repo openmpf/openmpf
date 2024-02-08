@@ -37,7 +37,6 @@ import java.util.SortedSet;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
 
 public class TestTopQualitySelectionUtil {
     private final Detection _d50 = createDetection(50, 0.3);
@@ -107,30 +106,22 @@ public class TestTopQualitySelectionUtil {
     }
 
     @Test
-    public void TestNumberFormatException() {
+    public void TestQualityValueNotANumber() {
         ArrayList<Detection> detList = new ArrayList<>();
         Detection det1 = new Detection(1, 1, 1, 1, (float)0.5,
-                             1, 1, Map.of("quality_prop", "foobar"));
-        Detection det2 = new Detection(1, 1, 1, 1, (float)0.5,
+                             1, 1, Map.of("quality_prop", "1"));
+        Detection det2 = new Detection(2, 2, 2, 2, (float)0.6,
                                                   1, 1, Map.of("quality_prop", "foobar"));
         detList.add(det1);
         detList.add(det2);
 
-        String expectedString = "The quality selection property \"quality_prop\" could not be converted to a double value: \"foobar\"";
-        try {
-            var topDet = TopQualitySelectionUtil.getTopQualityDetections(detList, 1, "quality_prop");
-            fail("Expected NumberFormatException to be thrown");
-        }
-        catch (NumberFormatException ex) {
-            assertEquals(expectedString, ex.getMessage());
-        }
-        try {
-            var topDet = TopQualitySelectionUtil.getTopQualityItem(detList, "quality_prop");
-            fail("Expected NumberFormatException to be thrown");
-        }
-        catch (NumberFormatException ex) {
-            assertEquals(expectedString, ex.getMessage());
-        }
+        var topDetections = TopQualitySelectionUtil.getTopQualityDetections(detList, 1, "quality_prop");
+        assertEquals(1, topDetections.size());
+        Detection actualDet = topDetections.iterator().next();
+        assertEquals(det1, actualDet);
+
+        var topDet = TopQualitySelectionUtil.getTopQualityItem(detList, "quality_prop");
+        assertEquals(det1, topDet);
     }
 
     private static Detection createDetection(int frame, double confidence) {

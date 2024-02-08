@@ -177,8 +177,10 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         when(mockInProgressJobs.getJob(JOB_ID))
                 .thenReturn(job);
 
-        when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
+        when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.QUALITY_THRESHOLD_PROPERTY, job, media, action))
                 .thenReturn(String.valueOf(0.1));
+        when(mockAggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action))
+                .thenReturn("CONFIDENCE");
     }
 
 

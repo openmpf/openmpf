@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 
-import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -517,10 +516,10 @@ public class DetectionResponseProcessor
 
         return trackProperties;
     }
+
     private static interface QualityFilter {
         boolean meetsThreshold(double confidence, Map<String, String> detectionProperties);
     }
-
 
     private QualityFilter createQualityFilter(BatchJob job, Media media, Action action) {
         var qualityThresholdProp = _aggregateJobPropertiesUtil.getValue(

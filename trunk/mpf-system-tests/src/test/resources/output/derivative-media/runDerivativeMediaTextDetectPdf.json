@@ -118,7 +118,7 @@
       "ENABLE_OSD_AUTOMATION": "false"
     },
     "EAST": {
-      "CONFIDENCE_THRESHOLD": "0.2",
+      "QUALITY_SELECTION_THRESHOLD": "0.2",
       "TEMPORARY_PADDING_Y": "1.0",
       "TEMPORARY_PADDING_X": "1.0",
       "FINAL_PADDING": "0.5"

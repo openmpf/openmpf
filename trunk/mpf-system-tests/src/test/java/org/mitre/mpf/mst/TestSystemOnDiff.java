@@ -1234,7 +1234,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runDerivativeMediaTextDetectPdf() throws Exception {
         var algorithmProperties = Map.of(
                 "EAST", Map.of(
-                        "CONFIDENCE_THRESHOLD", "0.2",
+                        "QUALITY_SELECTION_PROPERTY", "CONFIDENCE",
+                        "QUALITY_SELECTION_THRESHOLD", "0.2",
                         "TEMPORARY_PADDING_X", "1.0",
                         "TEMPORARY_PADDING_Y", "1.0",
                         "FINAL_PADDING", "0.5"

@@ -36,15 +36,12 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
@@ -59,13 +56,10 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private final TriggerProcessor _triggerProcessor;
 
-    private final InProgressBatchJobsService _inProgressJobs;
 
     @Inject
-    VideoMediaSegmenter(TriggerProcessor triggerProcessor,
-        InProgressBatchJobsService inProgressJobs) {
+    VideoMediaSegmenter(TriggerProcessor triggerProcessor) {
         _triggerProcessor = triggerProcessor;
-        _inProgressJobs = inProgressJobs;
     }
 
 
@@ -159,19 +153,13 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             stopFrame = track.getEndOffsetFrameInclusive();
         }
         else {
-            try {
-                includedDetections = TopQualitySelectionUtil.getTopQualityDetections(
+            includedDetections = TopQualitySelectionUtil.getTopQualityDetections(
                               track.getDetections(), topQualityCount, topQualitySelectionProp);
-                var frameSummaryStats = includedDetections.stream()
-                       .mapToInt(Detection::getMediaOffsetFrame)
-                       .summaryStatistics();
-                startFrame = frameSummaryStats.getMin();
-                stopFrame = frameSummaryStats.getMax();
-            }
-            catch (NumberFormatException e) {
-                _inProgressJobs.addError(context.getJobId(), media.getId(), IssueCodes.INVALID_DETECTION, e.getMessage());
-                throw new WfmProcessingException(e);
-            }
+            var frameSummaryStats = includedDetections.stream()
+                    .mapToInt(Detection::getMediaOffsetFrame)
+                    .summaryStatistics();
+            startFrame = frameSummaryStats.getMin();
+            stopFrame = frameSummaryStats.getMax();
         }
 
         var protobufTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()

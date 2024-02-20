@@ -62,7 +62,6 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -336,19 +335,13 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         }
         if (topQualityCount > 0) {
             String topQualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
-            try {
-                var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
-                                        sortedDetections, topQualityCount, topQualitySelectionProp);
-                for (var detection : topQualityDetections) {
-                    LOG.debug("Will extract frame #{} with confidence = {}",
-                        detection.getMediaOffsetFrame(),
-                        detection.getConfidence());
-                    framesToExtract.add(detection.getMediaOffsetFrame());
-                }
-            }
-            catch (NumberFormatException e) {
-                _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.ARTIFACT_EXTRACTION, e.getMessage());
-                throw new WfmProcessingException(e);
+            var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
+                                                      sortedDetections, topQualityCount, topQualitySelectionProp);
+            for (var detection : topQualityDetections) {
+                LOG.debug("Will extract frame #{} with confidence = {}",
+                    detection.getMediaOffsetFrame(),
+                    detection.getConfidence());
+                framesToExtract.add(detection.getMediaOffsetFrame());
             }
         }
 

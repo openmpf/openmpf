@@ -111,11 +111,11 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
                             String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
+
                             padTracks(trackCache, media.getId(), actionIndex,
                                     xPadding, yPadding, frameWidth, frameHeight, updatedTracks);
                         }
-                    }
-                    catch (DetectionTransformationException e) {
+                    } catch (DetectionTransformationException e) {
                         // This should not happen because we checked that the detection properties were valid when the
                         // job was created.
                         throw new WfmProcessingException(e);
@@ -209,7 +209,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 if (false) { // if true show visualization
                     DebugCanvas.clear();
                     DebugCanvas.draw(frameBoundingBox, Color.yellow);
-                    DebugCanvas.draw(detection, Color.green, Color.red);    
+                    DebugCanvas.draw(detection, Color.green, Color.red);
                     DebugCanvas.show("removeIllFormedDetections");
                 }
                 */

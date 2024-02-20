@@ -137,19 +137,14 @@ public class TrackMergingProcessor extends WfmProcessor {
                     continue;
                 }
 
-                try {
-                    if (mergeRequested) {
-                        int initialSize = tracks.size();
-                        tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan));
+                if (mergeRequested) {
+                    int initialSize = tracks.size();
+                    tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan));
 
-                        log.debug("Merging {} tracks down to {} in Media {}.",
-                                  initialSize, tracks.size(), media.getId());
-                    }
+                    log.debug("Merging {} tracks down to {} in Media {}.",
+                              initialSize, tracks.size(), media.getId());
                 }
-                catch (NumberFormatException e) {
-                    _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.INVALID_DETECTION, e.getMessage());
-                    throw new WfmProcessingException(e);
-                }
+                
                 if (pruneRequested) {
                     int initialSize = tracks.size();
                     int minTrackLength = trackMergingPlan.getMinTrackLength();
@@ -274,7 +269,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
     public static Track merge(Track track1, Track track2){
 
-        ImmutableSortedSet<Detection> detections = Stream.of(track1, track2)
+        Collection<Detection> detections = Stream.of(track1, track2)
                 .flatMap(t -> t.getDetections().stream())
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 

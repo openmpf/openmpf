@@ -167,7 +167,7 @@ public class Track implements Comparable<Track> {
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
         _exemplarPolicy = exemplarPolicy;
         _qualitySelectionProperty = qualitySelectionProperty;
-            _exemplar = ExemplarPolicyUtil.getExemplar(
+        _exemplar = ExemplarPolicyUtil.getExemplar(
                     _exemplarPolicy,
                     _qualitySelectionProperty,
                     _startOffsetTimeInclusive,

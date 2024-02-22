@@ -276,6 +276,9 @@ public class BatchJobImpl implements BatchJob {
 
 
     private static long mergeTimes(long time1, long time2) {
+        // If any sub-job reports a time < 0 then the overall time will be -1. We do this to
+        // reflect that we have incomplete information rather than reporting that an action took
+        // less time than it actually did.
         return time1 >= 0 && time2 >= 0 ? time1 + time2 : -1;
     }
 }

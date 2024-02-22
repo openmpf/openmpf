@@ -26,21 +26,16 @@
 
 package org.mitre.mpf.interop;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import static org.mitre.mpf.interop.util.CompareUtils.sortedSetCompare;
-
 @JsonPropertyOrder({"processingTime", "actions"})
-public class JsonTiming implements Comparable<JsonTiming> {
+public class JsonTiming {
 
     @JsonPropertyDescription(
             "The amount of time in milliseconds that all components spent executing the job.")
@@ -48,37 +43,33 @@ public class JsonTiming implements Comparable<JsonTiming> {
     private final long _processingTime;
 
     @JsonPropertyDescription("The processing time for each action.")
-    private final SortedSet<JsonActionTiming> _actions;
-    public SortedSet<JsonActionTiming> getActions() { return _actions; }
+    private final List<JsonActionTiming> _actions;
+    public List<JsonActionTiming> getActions() { return _actions; }
 
     public JsonTiming(
                 @JsonProperty("processingTime") long processingTime,
-                @JsonProperty("actions") Collection<JsonActionTiming> actions) {
+                // The creator will pass in the actions in the order they appear in the pipeline.
+                @JsonProperty("actions") List<JsonActionTiming> actions) {
         _processingTime = processingTime;
-        _actions = Collections.unmodifiableSortedSet(new TreeSet<>(actions));
+        _actions = Collections.unmodifiableList(actions);
     }
 
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof JsonTiming && compareTo((JsonTiming) other) == 0;
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof JsonTiming)) {
+            return false;
+        }
+        JsonTiming otherTiming = (JsonTiming) other;
+        return _processingTime == otherTiming.getProcessingTime()
+                && _actions.equals(otherTiming.getActions());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(_processingTime, _actions);
-    }
-
-
-    private static final Comparator<JsonTiming> DEFAULT_COMPARATOR = Comparator
-            .nullsFirst(Comparator
-                .comparingLong(JsonTiming::getProcessingTime)
-                .thenComparing(sortedSetCompare(JsonTiming::getActions)));
-
-    @Override
-    public int compareTo(JsonTiming other) {
-        return this == other
-                ? 0
-                : DEFAULT_COMPARATOR.compare(this, other);
     }
 }

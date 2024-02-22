@@ -522,29 +522,4 @@ public class DetectionResponseProcessor
 
         return trackProperties;
     }
-
-
-    private void addProcessingTime(long jobId, Action action, Map<String, Object> headers) {
-        try {
-            var processingTime = (Long) headers.get(MpfHeaders.PROCESSING_TIME);
-            if (processingTime == null) {
-                log.warn("""
-                    The component executor for the "{}" action did not set the "{}" \
-                    header. Timing information will not be reported for that action.""",
-                    action.name(), MpfHeaders.PROCESSING_TIME);
-                _inProgressJobs.reportMissingProcessingTime(jobId, action);
-            }
-            else {
-                _inProgressJobs.addProcessingTime(jobId, action, processingTime);
-            }
-        }
-        catch (ClassCastException e) {
-            log.error("""
-                Expected the "%s" header to contain a Long, but the component \
-                executor for the "%s" action set the header to a value of the wrong the type. \
-                Timing information will not be reported for that action."""
-                .formatted(MpfHeaders.PROCESSING_TIME, action.name()), e);
-            _inProgressJobs.reportMissingProcessingTime(jobId, action);
-        }
-    }
 }

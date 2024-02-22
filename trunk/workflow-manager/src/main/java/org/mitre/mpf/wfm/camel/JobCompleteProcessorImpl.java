@@ -763,8 +763,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private static JsonTiming getTiming(BatchJob job) {
         var actionTimes = job.getPipelineElements()
-                .getAllActions()
-                .stream()
+                .getTaskStreamInOrder()
+                .flatMap(job.getPipelineElements()::getActionStreamInOrder)
+                // Use distinct to prevent duplicate entries in the unlikely case of the same
+                // action being used by more than one stage.
+                .distinct()
                 .map(a -> new JsonActionTiming(a.name(), job.getProcessingTime(a)))
                 .toList();
         return new JsonTiming(job.getTotalProcessingTime(), actionTimes);

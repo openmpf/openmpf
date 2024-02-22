@@ -549,7 +549,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private static TiesDbInfo createExpectedTiesDbInfo() {
         var timing = new JsonTiming(
                 1349,
-                List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION2", 473)));
+                List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION_2", 473)));
 
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",
@@ -575,7 +575,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private static TiesDbInfo createExpectedParentTiesDbInfo() {
         var timing = new JsonTiming(
                 1349,
-                List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION2", 473)));
+                List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION_2", 473)));
 
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",

@@ -95,6 +95,10 @@ struct JobContext {
     }
 
     long GetMillisSinceStart() const {
+        if (job_start_time == std::chrono::system_clock::time_point{}) {
+            // The job was never started.
+            return -1;
+        }
         auto duration = std::chrono::system_clock::now() - job_start_time;
         auto duration_ms = std::chrono::round<std::chrono::milliseconds>(duration);
         return duration_ms.count();

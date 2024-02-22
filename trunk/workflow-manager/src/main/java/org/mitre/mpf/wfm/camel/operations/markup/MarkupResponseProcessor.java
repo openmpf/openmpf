@@ -96,7 +96,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         }
 
         BatchJob job = _inProgressJobs.getJob(jobId);
-        addProcessingTime(job, markupResponse);
+        var action = job.getPipelineElements().getAction(
+                markupResponse.getTaskIndex(), markupResponse.getActionIndex());
+        addProcessingTime(jobId, action, headers);
 
         Media media = job.getMedia(markupResponse.getMediaId());
         markupResult.setPipeline(job.getPipelineElements().getName());
@@ -123,12 +125,5 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         }
         _markupResultDao.persist(markupResult);
         return null;
-    }
-
-    private void addProcessingTime(BatchJob job, Markup.MarkupResponse markupResponse) {
-        var action = job.getPipelineElements().getAction(
-                markupResponse.getTaskIndex(), markupResponse.getActionIndex());
-        _inProgressJobs.addProcessingTime(
-                job.getId(), action, markupResponse.getTimeProcessing());
     }
 }

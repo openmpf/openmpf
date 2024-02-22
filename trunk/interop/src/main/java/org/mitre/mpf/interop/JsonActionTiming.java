@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.interop;
 
-import java.util.Comparator;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,7 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({"name", "processingTime"})
-public class JsonActionTiming implements Comparable<JsonActionTiming> {
+public class JsonActionTiming {
 
     @JsonPropertyDescription("The name of the action.")
     private final String _name;
@@ -55,23 +54,19 @@ public class JsonActionTiming implements Comparable<JsonActionTiming> {
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof JsonActionTiming && compareTo((JsonActionTiming) other) == 0;
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof JsonActionTiming)) {
+            return false;
+        }
+        JsonActionTiming otherTiming = (JsonActionTiming) other;
+        return _name.equals(otherTiming.getName())
+                && _processingTime == otherTiming._processingTime;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(_name, _processingTime);
-    }
-
-    private static final Comparator<JsonActionTiming> DEFAULT_COMPARATOR = Comparator
-            .nullsFirst(Comparator
-                .comparing(JsonActionTiming::getName)
-                .thenComparingLong(JsonActionTiming::getProcessingTime));
-
-    @Override
-    public int compareTo(JsonActionTiming other) {
-        return this == other
-                ? 0
-                : DEFAULT_COMPARATOR.compare(this, other);
     }
 }

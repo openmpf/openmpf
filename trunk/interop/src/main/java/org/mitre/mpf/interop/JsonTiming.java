@@ -26,9 +26,11 @@
 
 package org.mitre.mpf.interop;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -43,15 +45,15 @@ public class JsonTiming {
     private final long _processingTime;
 
     @JsonPropertyDescription("The processing time for each action.")
-    private final List<JsonActionTiming> _actions;
-    public List<JsonActionTiming> getActions() { return _actions; }
+    private final Set<JsonActionTiming> _actions;
+    public Set<JsonActionTiming> getActions() { return _actions; }
 
     public JsonTiming(
                 @JsonProperty("processingTime") long processingTime,
                 // The creator will pass in the actions in the order they appear in the pipeline.
-                @JsonProperty("actions") List<JsonActionTiming> actions) {
+                @JsonProperty("actions") Collection<JsonActionTiming> actions) {
         _processingTime = processingTime;
-        _actions = Collections.unmodifiableList(actions);
+        _actions = Collections.unmodifiableSet(new LinkedHashSet<>(actions));
     }
 
 

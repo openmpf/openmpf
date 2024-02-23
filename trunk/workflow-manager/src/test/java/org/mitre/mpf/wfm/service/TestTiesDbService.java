@@ -249,7 +249,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         var timing = new JsonTiming(
             1349,
-            List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION2", 473)));
+            List.of(new JsonActionTiming("ACTION", 876), new JsonActionTiming("ACTION_2", 473)));
 
         _tiesDbService.prepareAssertions(
                 _job,

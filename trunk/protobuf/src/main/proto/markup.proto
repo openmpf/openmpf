@@ -94,7 +94,7 @@ message MarkupResponse {
     optional string error_message     = 5; // The serialized representation of the exception.
     optional string output_file_uri   = 6; // The URI of the path.
     optional int64 request_timestamp  = 7; // The timestamp when the request was received.
-    optional int64 time_processing    = 8; // The number of milliseconds spent processing the request.
+    reserved 8; // optional int64 time_processing = 8;
     optional string error_stack_trace = 9; // The stack trace associated with the exception.
 
     required int32 task_index         = 501; // The index of the task which produced this request.

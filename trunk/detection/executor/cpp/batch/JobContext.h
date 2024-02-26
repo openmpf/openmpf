@@ -82,7 +82,8 @@ struct JobContext {
 
     const std::string job_type_name;
 
-    std::chrono::system_clock::time_point job_start_time;
+    using clock_t = std::chrono::steady_clock;
+    clock_t::time_point job_start_time;
 
     const JobLogContext job_log_context;
 
@@ -91,15 +92,15 @@ struct JobContext {
     const ProtobufMetadata protobuf_metadata;
 
     void OnJobStarted() {
-        job_start_time = std::chrono::system_clock::now();
+        job_start_time = clock_t::now();
     }
 
     long GetMillisSinceStart() const {
-        if (job_start_time == std::chrono::system_clock::time_point{}) {
+        if (job_start_time == clock_t::time_point{}) {
             // The job was never started.
             return -1;
         }
-        auto duration = std::chrono::system_clock::now() - job_start_time;
+        auto duration = clock_t::now() - job_start_time;
         auto duration_ms = std::chrono::round<std::chrono::milliseconds>(duration);
         return duration_ms.count();
     }

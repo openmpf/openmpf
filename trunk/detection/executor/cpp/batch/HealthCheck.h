@@ -76,7 +76,8 @@ private:
 
     HealthCheckJob health_check_job_;
 
-    std::chrono::system_clock::time_point next_check_time_ = std::chrono::system_clock::now();
+    using clock_t = std::chrono::steady_clock;
+    clock_t::time_point next_check_time_ = clock_t::now();
 
     int failure_count_{0};
 

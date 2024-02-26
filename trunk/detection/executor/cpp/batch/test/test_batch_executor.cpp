@@ -24,6 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <chrono>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
@@ -424,11 +425,13 @@ struct TestComponent {
 
 struct FailureCounter {
     int counter = 0;
-    std::chrono::system_clock::time_point last_failure_time;
+
+    using clock_t = std::chrono::steady_clock;
+    clock_t::time_point last_failure_time;
 
     void operator()() {
         counter++;
-        last_failure_time = std::chrono::system_clock::now();
+        last_failure_time = clock_t::now();
     }
 };
 
@@ -481,9 +484,10 @@ TEST(HealthCheckTest, TestHealthCheckTimeout) {
     // Wait until cool down period is over.
     std::this_thread::sleep_for(1s);
 
-    auto time_before_failed_check = std::chrono::system_clock::now();
+    using clock_t = FailureCounter::clock_t;
+    auto time_before_failed_check = clock_t::now();
     ASSERT_FALSE(health_check.Check(test_component, failure_counter));
-    ASSERT_GE(std::chrono::system_clock::now() - time_before_failed_check, 1s)
+    ASSERT_GE(clock_t::now() - time_before_failed_check, 1s)
         << "When a health check fails, the call to HealthCheck::Check should wait the cool down period before returning.";
     ASSERT_EQ(1, failure_counter.counter);
     // The call to check should take much less than 900ms, but we do not want the test to fail
@@ -492,9 +496,9 @@ TEST(HealthCheckTest, TestHealthCheckTimeout) {
     ASSERT_LE(failure_counter.last_failure_time - time_before_failed_check, 900ms)
         << "When a health check fails, the call to HealthCheck::Check should not wait before calling the failure callback.";
 
-    auto time_before_final_check = std::chrono::system_clock::now();
+    auto time_before_final_check = clock_t::now();
     ASSERT_THROW({health_check.Check(test_component, failure_counter);}, FailedHealthCheck);
-    auto time_in_final_health_check = std::chrono::system_clock::now() - time_before_final_check;
+    auto time_in_final_health_check = clock_t::now() - time_before_final_check;
     ASSERT_LE(time_in_final_health_check, 900ms)
         << "The call to HealthCheck::Check should not wait the cooldown period before throwing.";
     ASSERT_EQ(2, failure_counter.counter);

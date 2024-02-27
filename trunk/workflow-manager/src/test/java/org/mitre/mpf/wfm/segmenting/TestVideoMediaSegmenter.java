@@ -79,7 +79,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
     public void canCreateFirstStageMessages() {
         Media media = createTestMedia();
         DetectionContext context = createTestDetectionContext(
-                0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
+                0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
@@ -108,7 +108,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 ),
                 List.of());
         DetectionContext context = createTestDetectionContext(
-                0, Map.of("FEED_FORWARD_TYPE", "FRAME"), Set.of(), null);
+                0, Map.of("FEED_FORWARD_TYPE", "FRAME"), Set.of());
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(4, detectionRequests.size());
@@ -131,7 +131,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 )
         );
         DetectionContext context = createTestDetectionContext(
-                0,  Map.of(), Set.of(), null);
+                0,  Map.of(), Set.of());
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
         assertEquals(6, detectionRequests.size());
@@ -176,7 +176,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 List.of(new MediaRange(100, 250)),
                 List.of()
         );
-        DetectionContext context = createTestDetectionContext(0, Map.of(), Set.of(), null);
+        DetectionContext context = createTestDetectionContext(0, Map.of(), Set.of());
 
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
@@ -330,11 +330,11 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
     public void noMessagesCreatedWhenNoTracks() {
         Media media = createTestMedia();
 
-        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet(), null);
+        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet());
         assertTrue(_videoMediaSegmenter.createDetectionRequests(media, context).isEmpty());
 
         DetectionContext feedForwardContext = createTestDetectionContext(
-                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
+                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
         assertTrue(_videoMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
     }
 
@@ -391,13 +391,13 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
 
     private static Set<Track> createTestTracks() {
-        Track shortTrack = createTrack(createDetection(5, 5, "", 1));
+        Track shortTrack = createTrack(createDetection(5, 5));
 
         Track longTrack = createTrack(
-                createDetection(2, 2, "", 1),
-                createDetection(20, 20, "", 1),
-                createDetection(40, 40, "", 1),
-                createDetection(50, 20, "", 1));
+                createDetection(2, 2),
+                createDetection(20, 20),
+                createDetection(40, 40),
+                createDetection(50, 20));
 
         return ImmutableSet.of(shortTrack, longTrack);
     }

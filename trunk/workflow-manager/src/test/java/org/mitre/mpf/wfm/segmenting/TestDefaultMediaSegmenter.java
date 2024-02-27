@@ -62,7 +62,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 	public void canCreateFirstStageMessages() {
 		Media media = createTestMedia();
 		DetectionContext context = createTestDetectionContext(
-				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), null);
+				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
 		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
@@ -84,7 +84,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
 		Set<Track> tracks = createTestTracks();
 
-		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks, null);
+		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
 
 		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());

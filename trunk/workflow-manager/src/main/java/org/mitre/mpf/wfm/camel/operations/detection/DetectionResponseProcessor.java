@@ -204,41 +204,46 @@ public class DetectionResponseProcessor
                         "Unsupported operation. Derivative media is not supported for jobs with video source media.");
             }
 
-            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties)) {
-
-                int startOffsetTime = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStartFrame());
-                int stopOffsetTime  = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStopFrame());
-
-                try {
-                    ImmutableSortedSet<Detection> detections = objectTrack.getFrameLocationsList()
-                            .stream()
-                            .map(flm -> toDetection(flm, frameTimeInfo))
-                            .filter(d -> qualityFilter.meetsThreshold(d.getConfidence(), d.getDetectionProperties()))
-                            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
-
-                    if (!detections.isEmpty()) {
-                        Track track = new Track(
-                                jobId,
-                                detectionResponse.getMediaId(),
-                                detectionResponse.getTaskIndex(),
-                                detectionResponse.getActionIndex(),
-                                objectTrack.getStartFrame(),
-                                objectTrack.getStopFrame(),
-                                startOffsetTime,
-                                stopOffsetTime,
-                                mergedTaskIdx,
-                                (float)objectTrack.getConfidence(),
-                                detections,
-                                trackProperties,
-                                exemplarPolicy,
-                                qualitySelectionProp);
-                        _inProgressJobs.addTrack(track);
-                    }
+            // Drop the track if it doesn't pass the quality filter but we know that the quality
+            // selection property exists as a track property. Tracks that don't contain the quality selection property
+            // as a track property will still be processed.
+            if (!qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties) &&
+                    ("CONFIDENCE".equalsIgnoreCase(qualitySelectionProp) || trackProperties.containsKey(qualitySelectionProp))) {
+                continue;
                 }
-                catch (Exception e) {
-                    String exceptionString = "Exception caught while creating detections list and new Track: " + e.getMessage();
-                    _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.INVALID_DETECTION, exceptionString);
+
+            int startOffsetTime = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStartFrame());
+            int stopOffsetTime  = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStopFrame());
+
+            try {
+                ImmutableSortedSet<Detection> detections = objectTrack.getFrameLocationsList()
+                        .stream()
+                        .map(flm -> toDetection(flm, frameTimeInfo))
+                        .filter(d -> qualityFilter.meetsThreshold(d.getConfidence(), d.getDetectionProperties()))
+                        .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+
+                if (!detections.isEmpty()) {
+                    Track track = new Track(
+                            jobId,
+                            detectionResponse.getMediaId(),
+                            detectionResponse.getTaskIndex(),
+                            detectionResponse.getActionIndex(),
+                            objectTrack.getStartFrame(),
+                            objectTrack.getStopFrame(),
+                            startOffsetTime,
+                            stopOffsetTime,
+                            mergedTaskIdx,
+                            objectTrack.getConfidence(),
+                            detections,
+                            trackProperties,
+                            exemplarPolicy,
+                            qualitySelectionProp);
+                    _inProgressJobs.addTrack(track);
                 }
+            }
+            catch (Exception e) {
+                String exceptionString = "Exception caught while creating detections list and new Track: " + e.getMessage();
+                _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.INVALID_DETECTION, exceptionString);
             }
         }
     }
@@ -296,7 +301,7 @@ public class DetectionResponseProcessor
                         objectTrack.getStartTime(),
                         objectTrack.getStopTime(),
                         mergedTaskIdx,
-                        (float)objectTrack.getConfidence(),
+                        objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         trackProperties,
                         "",
@@ -342,7 +347,7 @@ public class DetectionResponseProcessor
                         0,
                         0,
                         mergedTaskIdx,
-                        (float)location.getConfidence(),
+                        location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
                         "",
@@ -395,7 +400,7 @@ public class DetectionResponseProcessor
                 0,
                 0,
                 0,
-                (float)objectTrack.getConfidence(),
+                objectTrack.getConfidence(),
                 0,
                 0,
                 trackProperties);
@@ -410,7 +415,7 @@ public class DetectionResponseProcessor
                 0,
                 0,
                 mergedTaskIdx,
-                (float)objectTrack.getConfidence(),
+                objectTrack.getConfidence(),
                 ImmutableSortedSet.of(detection),
                 trackProperties,
                 "",

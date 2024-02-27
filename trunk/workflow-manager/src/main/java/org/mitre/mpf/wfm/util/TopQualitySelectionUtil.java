@@ -80,12 +80,15 @@ public class TopQualitySelectionUtil {
         try {
             if ((qualityProperty == null) ||
                     StringUtils.isBlank(qualityProperty) ||
-                    qualityProperty.toLowerCase().equals("confidence"))
+                    qualityProperty.equalsIgnoreCase("confidence"))
                 return det.getConfidence();
             else
                 return Double.parseDouble(det.getDetectionProperties().get(qualityProperty));
         }
         catch(NumberFormatException e) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        catch(NullPointerException e) {
             return Double.NEGATIVE_INFINITY;
         }
     }

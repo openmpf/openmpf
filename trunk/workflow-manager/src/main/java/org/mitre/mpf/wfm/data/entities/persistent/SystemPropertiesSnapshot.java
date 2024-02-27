@@ -75,10 +75,6 @@ public class SystemPropertiesSnapshot {
         return Double.parseDouble(_properties.get("detection.confidence.threshold"));
     }
 
-    public String getQualitySelectionProperty() {
-        return _properties.get("detection.quality.selection.prop");
-    }
-
     public int getMinAllowableSegmentGap() {
         return Integer.parseInt(_properties.get("detection.segment.minimum.gap"));
     }

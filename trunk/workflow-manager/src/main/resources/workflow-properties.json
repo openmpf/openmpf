@@ -114,7 +114,7 @@
     {
         "name": "QUALITY_SELECTION_THRESHOLD",
         "description": "This is the minimum value of the quality selection property which must be met or exceeded. Detections below this threshold are silently discarded.",
-        "type": "STRING",
+        "type": "DOUBLE",
         "propertiesKey": "detection.quality.selection.threshold",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },

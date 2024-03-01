@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.util;
 
 import java.lang.NumberFormatException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.function.ToDoubleFunction;
@@ -51,8 +50,9 @@ public class TopQualitySelectionUtil {
                         Collection<Detection> allDetections, int topQualityCount,
                         String qualityProperty) {
 
-        if (topQualityCount <= 0)
-            return Collections.emptyList();
+        if (topQualityCount <= 0) {
+            throw new IllegalArgumentException("topQualityCount argument must be > 0.");
+        }
         if (topQualityCount >= allDetections.size()) {
             return allDetections;
         }

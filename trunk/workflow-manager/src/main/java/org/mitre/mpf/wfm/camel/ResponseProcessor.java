@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel;
 
 import com.google.protobuf.MessageLite;
 import org.apache.camel.Exchange;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -93,4 +94,29 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 			exchange.getOut().setBody(((T)(exchange.getIn().getBody())).toByteArray());
 		}
 	}
+
+
+    protected void addProcessingTime(long jobId, Action action, Map<String, Object> headers) {
+        try {
+            var processingTime = (Long) headers.get(MpfHeaders.PROCESSING_TIME);
+            if (processingTime == null) {
+                log.warn(
+                    "The response for the \"{}\" action did not have the \"{}\" header set."
+                    + " Timing information will not be reported for that action.",
+                    action.name(), MpfHeaders.PROCESSING_TIME);
+                _inProgressJobs.reportMissingProcessingTime(jobId, action);
+            }
+            else {
+                _inProgressJobs.addProcessingTime(jobId, action, processingTime);
+            }
+        }
+        catch (ClassCastException e) {
+            log.error(
+                "Expected the \"%s\" header to contain a Long, but the response for the \"%s\""
+                + " action had the header set to a value of the wrong type. Timing information"
+                + " will not be reported for that action."
+                .formatted(MpfHeaders.PROCESSING_TIME, action.name()), e);
+            _inProgressJobs.reportMissingProcessingTime(jobId, action);
+        }
+    }
 }

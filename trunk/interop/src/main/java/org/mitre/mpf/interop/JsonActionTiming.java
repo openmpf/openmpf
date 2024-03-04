@@ -24,34 +24,49 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.interop;
 
-public class MpfHeaders {
-	public static final String
-		CORRELATION_ID = "CorrelationId",
+import java.util.Objects;
 
-		EMPTY_SPLIT = "EmptySplit",
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-		JMS_PRIORITY = "JMSPriority",
-		JMS_REPLY_TO = "JMSReplyTo",
-		JOB_COMPLETE = "JobComplete",
-		JOB_ID = "JobId",
-        TASK_INDEX = "TaskIndex",
-        PROCESSING_TIME = "ProcessingTime",
+@JsonPropertyOrder({"name", "processingTime"})
+public class JsonActionTiming {
 
-		MEDIA_ID = "MediaId",
-		MEDIA_TYPE = "MediaType",
+    @JsonPropertyDescription("The name of the action.")
+    private final String _name;
+    public String getName() { return _name; }
 
-        JMS_DESTINATION = "CamelJmsDestinationName",
+    @JsonPropertyDescription(
+            "The amount of time in milliseconds that a component spent executing the action.")
+    private final long _processingTime;
+    public long getProcessingTime() { return _processingTime; }
 
-		SPLIT_SIZE = "SplitSize",
-		SPLITTING_ERROR = "JobSplitError",
+    public JsonActionTiming(
+            @JsonProperty("name") String name,
+            @JsonProperty("processingTime") long processingTime) {
+        _name = name;
+        _processingTime = processingTime;
+    }
 
-		UNSOLICITED = "Unsolicited",
 
-		OUTPUT_OBJECT_URI_FROM_TIES_DB = "OUTPUT_OBJECT_URI_FROM_TIES_DB";
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof JsonActionTiming)) {
+            return false;
+        }
+        JsonActionTiming otherTiming = (JsonActionTiming) other;
+        return _name.equals(otherTiming.getName())
+                && _processingTime == otherTiming._processingTime;
+    }
 
-
-	private MpfHeaders() {
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(_name, _processingTime);
+    }
 }

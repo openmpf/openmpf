@@ -58,6 +58,7 @@ import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.interop.JsonActionOutputObject;
+import org.mitre.mpf.interop.JsonActionTiming;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonDetectionProcessingError;
@@ -67,6 +68,7 @@ import org.mitre.mpf.interop.JsonMediaRange;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonTask;
+import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
@@ -226,7 +228,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     jobRequest.getTimeCompleted(),
                     outputObjectUri,
                     outputSha.getValue(),
-                    trackCounter);
+                    trackCounter,
+                    getTiming(job));
         }
 
         jobProgressStore.setJobProgress(jobId, 100);
@@ -457,7 +460,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 job.getExternalId().orElse(null),
                 timeReceived,
                 timeCompleted,
-                completionStatus.toString());
+                completionStatus.toString(),
+                getTiming(job));
 
         censorPropertiesService.copyAndCensorProperties(
                 job.getJobProperties(), jsonOutputObject.getJobProperties());
@@ -755,6 +759,18 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         && e.getKey().startsWith(propertyPrefix))
                 .collect(toMap(e -> e.getKey().substring(propertyPrefix.length()),
                                Map.Entry::getValue));
+    }
+
+    private static JsonTiming getTiming(BatchJob job) {
+        var actionTimes = job.getPipelineElements()
+                .getTaskStreamInOrder()
+                .flatMap(job.getPipelineElements()::getActionStreamInOrder)
+                // Use distinct to prevent duplicate entries in the unlikely case of the same
+                // action being used by more than one stage.
+                .distinct()
+                .map(a -> new JsonActionTiming(a.name(), job.getProcessingTime(a)))
+                .toList();
+        return new JsonTiming(job.getTotalProcessingTime(), actionTimes);
     }
 
     @Override

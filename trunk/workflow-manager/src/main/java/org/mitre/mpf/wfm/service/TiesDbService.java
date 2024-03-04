@@ -53,6 +53,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.TiesDbRepostResponse;
 import org.mitre.mpf.rest.api.pipelines.Task;
@@ -143,7 +144,8 @@ public class TiesDbService {
             Instant timeCompleted,
             URI outputObjectLocation,
             String outputObjectSha,
-            TrackCounter trackCounter) {
+            TrackCounter trackCounter,
+            JsonTiming timing) {
         if (anyMediaDownloadsFailed(job)) {
             return;
         }
@@ -169,7 +171,8 @@ public class TiesDbService {
                     _propertiesUtil.getSemanticVersion(),
                     _propertiesUtil.getHostName(),
                     trackCounter.get(media),
-                    getJobConfigHash(job));
+                    getJobConfigHash(job),
+                    timing);
             var assertion = new TiesDbInfo.Assertion(UUID.randomUUID().toString(), dataObject);
             var tiesDbInfo = new TiesDbInfo(tiesDbUrl, assertion);
             _inProgressJobs.addTiesDbInfo(job.getId(), media.getId(), tiesDbInfo);

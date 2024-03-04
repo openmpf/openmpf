@@ -34,6 +34,8 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 
 import javax.jms.BytesMessage;
@@ -72,7 +74,7 @@ public class MarkupRequestConsumer {
 
 
     public void onMessage(Message message) {
-        long startTimeMs = System.currentTimeMillis();
+        var startTime = Instant.now();
 
         Markup.MarkupRequest markupRequest;
         Markup.MarkupResponse.Builder responseBuilder;
@@ -99,11 +101,10 @@ public class MarkupRequestConsumer {
             LOG.error("Markup failed due to: " + e, e);
             setErrorFields(responseBuilder, e);
         }
-        responseBuilder.setTimeProcessing(System.currentTimeMillis() - startTimeMs);
 
         try {
             var response = responseBuilder.build();
-            sendResponse(message, response);
+            sendResponse(message, response, startTime);
             if (!response.getHasError()) {
                 LOG.info("Markup request for media {} completed successfully.",
                         markupRequest.getMediaId());
@@ -237,8 +238,9 @@ public class MarkupRequestConsumer {
     }
 
 
-    private void sendResponse(Message requestMessage, Markup.MarkupResponse markupResponse)
-            throws JMSException {
+    private void sendResponse(
+            Message requestMessage, Markup.MarkupResponse markupResponse, Instant startTime)
+                throws JMSException {
         var responseMessage = _session.createBytesMessage();
         responseMessage.setJMSPriority(requestMessage.getJMSPriority());
         responseMessage.writeBytes(markupResponse.toByteArray());
@@ -250,7 +252,20 @@ public class MarkupRequestConsumer {
                 responseMessage.setObjectProperty(propName, propValue);
             }
         }
+        setProcessingTime(responseMessage, startTime);
         _messageProducer.send(requestMessage.getJMSReplyTo(), responseMessage);
         _session.commit();
     }
+
+
+    private static final double NANOS_PER_MS = Duration.ofMillis(1).toNanos();
+
+	private static void setProcessingTime(Message message, Instant startTime)
+            throws JMSException {
+		var duration = Duration.between(startTime, Instant.now());
+		// Manually convert nanoseconds to milliseconds so that the value can be rounded.
+		// Duration.toMillis() always rounds down.
+		long millis = Math.round(duration.toNanos() / NANOS_PER_MS);
+		message.setLongProperty("ProcessingTime", millis);
+	}
 }

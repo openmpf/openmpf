@@ -52,6 +52,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -178,7 +179,7 @@ public class TestS3Copy extends MockitoTest.Strict {
     public void testGetOutObjectIncompleteDownloadRecovery() throws IOException, StorageException {
         var originalOutputObject = new JsonOutputObject(
                 "job id", "obj id", null, 4, "site id", "X.Y", "ext job id",
-                Instant.now(), Instant.now(), "status");
+                Instant.now(), Instant.now(), "status", new JsonTiming(-1, List.of()));
         var bytes = _objectMapper.writeValueAsBytes(originalOutputObject);
         var numAttempts = new AtomicInteger();
         setSourceGetRoute((req, resp) -> {

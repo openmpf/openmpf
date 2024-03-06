@@ -59,6 +59,10 @@ public class JniLoader {
             log.warn("Trying to load component api library using full path: {}", componentApiLibPath);
             System.load(componentApiLibPath);
 
+            String protobufLibPath = libDir + "/libmpfProtobufsShared.so";
+            log.warn("Trying to load Protobuf library using full path: {}", protobufLibPath);
+            System.load(protobufLibPath);
+
             String jniLibPath = libDir + "/libmpfopencvjni.so";
             log.warn("Trying to load JNI library using full path: {}", jniLibPath);
             System.load(jniLibPath);

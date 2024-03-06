@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camelOps;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -118,24 +119,18 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
 
     private MarkupResult runMarkupProcessor(Markup.MarkupResponse.Builder markupResponseBuilder) {
         long mediaId = 1532;
-        int mediaIndex = 2;
         int taskIndex = 4;
-        int actionIndex = 6;
 
         Markup.MarkupResponse markupResponse = markupResponseBuilder
                 .setMediaId(mediaId)
-                .setMediaIndex(mediaIndex)
-                .setTaskIndex(taskIndex)
-                .setActionIndex(actionIndex)
-                .setRequestId(mediaId)
-                .setOutputFileUri("output.txt")
+                .setOutputFilePath("output.txt")
                 .build();
 
         JobPipelineElements dummyPipeline = mock(JobPipelineElements.class);
         when(dummyPipeline.getName())
                 .thenReturn("TEST_MARKUP_PIPELINE");
         var markupAction = new Action("MARKUP", "desc", "MARKUP ALGO", List.of());
-        when(dummyPipeline.getAction(taskIndex, actionIndex))
+        when(dummyPipeline.getAction(taskIndex, 0))
                 .thenReturn(markupAction);
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
@@ -149,6 +144,10 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
                 .thenReturn(dummyPipeline);
         when(job.getMedia(mediaId))
                 .thenReturn(media);
+        when(job.getMedia())
+                .thenReturn(List.of(media));
+        when(job.getCurrentTaskIndex())
+                .thenReturn(taskIndex);
 
         when(_mockInProgressJobs.containsJob(TEST_JOB_ID))
                 .thenReturn(true);
@@ -169,11 +168,12 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
 
         MarkupResult markupResult = markupCaptor.getValue();
         assertEquals(TEST_JOB_ID, markupResult.getJobId());
-        assertEquals("output.txt", markupResult.getMarkupUri());
+        assertTrue(markupResult.getMarkupUri().startsWith("file:///"));
+        assertTrue(markupResult.getMarkupUri().endsWith("/output.txt"));
         assertEquals(taskIndex, markupResult.getTaskIndex());
-        assertEquals(actionIndex, markupResult.getActionIndex());
+        assertEquals(0, markupResult.getActionIndex());
         assertEquals(mediaId, markupResult.getMediaId());
-        assertEquals(mediaIndex, markupResult.getMediaIndex());
+        assertEquals(0, markupResult.getMediaIndex());
         assertEquals(mediaUri.toString(), markupResult.getSourceUri());
         assertEquals("TEST_MARKUP_PIPELINE", markupResult.getPipeline());
 

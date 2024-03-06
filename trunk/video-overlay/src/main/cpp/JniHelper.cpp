@@ -83,6 +83,12 @@ bool JniHelper::ToBool(jstring jString) {
     });
 }
 
+ByteArray JniHelper::GetByteArray(jbyteArray byte_array) {
+    ByteArray result(env_, byte_array);
+    CheckException();
+    return result;
+}
+
 
 std::unique_ptr<jstring, JStringDeleter> JniHelper::ToJString(const std::string &inString) {
     return {
@@ -142,4 +148,34 @@ LocalJniFrame::LocalJniFrame(JNIEnv* env, jint capacity)
 
 LocalJniFrame::~LocalJniFrame() {
     env_->PopLocalFrame(nullptr);
+}
+
+
+ByteArray::ByteArray(JNIEnv* env, jbyteArray byte_array)
+    : env_(env)
+    , j_array_(byte_array)
+    , length_(env->GetArrayLength(byte_array))
+    , bytes_(env->GetByteArrayElements(byte_array, nullptr)) {
+}
+
+ByteArray::ByteArray(ByteArray&& other) noexcept
+    : env_(std::exchange(other.env_, nullptr))
+    , j_array_(std::exchange(other.j_array_, nullptr))
+    , length_(std::exchange(other.length_, 0))
+    , bytes_(std::exchange(other.bytes_, nullptr))
+{
+}
+
+int ByteArray::GetLength() const {
+    return length_;
+}
+
+jbyte* ByteArray::GetBytes() const {
+    return bytes_;
+}
+
+ByteArray::~ByteArray() {
+    if (env_ != nullptr) {
+        env_->ReleaseByteArrayElements(j_array_, bytes_, 0);
+    }
 }

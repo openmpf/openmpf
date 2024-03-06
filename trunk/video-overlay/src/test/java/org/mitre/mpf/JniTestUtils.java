@@ -33,7 +33,6 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.List;
 
 public class JniTestUtils {
@@ -42,7 +41,10 @@ public class JniTestUtils {
 
     static {
         String mpfHome = System.getenv("MPF_HOME");
-        List<String> libNames = Arrays.asList("libmpfDetectionComponentApi.so", "libmpfopencvjni.so");
+        var libNames = List.of(
+                "libmpfDetectionComponentApi.so",
+                "libmpfProtobufsShared.so",
+                "libmpfopencvjni.so");
         for (String libName : libNames) {
             try {
                 String libraryFile = new File("install/lib", libName).getAbsolutePath();

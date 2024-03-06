@@ -36,6 +36,7 @@
 class JniException : public std::exception { };
 
 class JStringDeleter;
+class ByteArray;
 
 
 class JniHelper {
@@ -105,6 +106,8 @@ public:
 
     bool ToBool(jstring jString);
 
+    ByteArray GetByteArray(jbyteArray byte_array);
+
 private:
     JNIEnv * const env_;
 
@@ -148,6 +151,32 @@ public:
 
 private:
     JNIEnv * env_;
+};
+
+class ByteArray {
+public:
+    ByteArray(JNIEnv* env, jbyteArray byte_array);
+
+    ByteArray(ByteArray&&) noexcept;
+
+    ByteArray(const ByteArray&) = delete;
+    ByteArray& operator=(const ByteArray&) = delete;
+    ByteArray& operator=(ByteArray&&) = delete;
+
+    ~ByteArray();
+
+    int GetLength() const;
+
+    jbyte* GetBytes() const;
+
+private:
+    JNIEnv* env_;
+
+    jbyteArray j_array_;
+
+    int length_;
+
+    jbyte* bytes_;
 };
 
 #endif //MPF_JNIHELPER_H

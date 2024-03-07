@@ -71,23 +71,20 @@ public class MPFDetectionMessenger {
 			MPFMessageMetadata msgMetadata = detectionBuffer.getMessageMetadata(message);
 			msgMetadata.getAlgorithmProperties().putAll(environmentJobProperties);
 
-			LOG.debug("requestId = " + msgMetadata.getRequestId() +
-						" correlationId = " + msgMetadata.getCorrelationId() +
+			LOG.debug(" correlationId = " + msgMetadata.getCorrelationId() +
 						" breadcrumbId = " + msgMetadata.getBreadcrumbId() +
 						" splitSize = " + msgMetadata.getSplitSize() +
 						" jobId = " + msgMetadata.getJobId() +
-						" dataUri = " + msgMetadata.getDataUri() +
+						" mediaPath = " + msgMetadata.getMediaPath() +
 						" mediaId = " + msgMetadata.getMediaId() +
-						" taskName = " + msgMetadata.getTaskName() +
 						" taskIndex = " + msgMetadata.getTaskIndex() +
-						" actionName = " + msgMetadata.getActionName() +
 						" actionIndex = " + msgMetadata.getActionIndex() +
 						" dataType = " + msgMetadata.getDataType() +
 						" size of algorithmProperties = " + msgMetadata.getAlgorithmProperties().size() +
 						" size of mediaProperties = " + msgMetadata.getMediaProperties().size());
 
 			LOG.info("Detection request received with job ID " + msgMetadata.getJobId() +
-						" for media file " + msgMetadata.getDataUri());
+						" for media file " + msgMetadata.getMediaPath());
 
 			var startTime = Instant.now();
 			if(component.supports(msgMetadata.getDataType())) {
@@ -100,7 +97,7 @@ public class MPFDetectionMessenger {
 					try {
 						List<MPFAudioTrack> tracks = new ArrayList<>();
 						tracks = component.getDetections(new MPFAudioJob(msgMetadata.getJobName(),
-																		msgMetadata.getDataUri(),
+																		msgMetadata.getMediaPath(),
 																		msgMetadata.getAlgorithmProperties(),
 																		msgMetadata.getMediaProperties(),
 																		audioRequest.getStartTime(),
@@ -123,7 +120,7 @@ public class MPFDetectionMessenger {
 					List<MPFImageLocation> locations = new ArrayList<>();
 					try {
 						locations = component.getDetections(new MPFImageJob(msgMetadata.getJobName(),
-																			msgMetadata.getDataUri(),
+																			msgMetadata.getMediaPath(),
 																			msgMetadata.getAlgorithmProperties(),
 																			msgMetadata.getMediaProperties(),
 																			imageRequest.getFeedForwardLocation()));
@@ -140,7 +137,7 @@ public class MPFDetectionMessenger {
 					List<MPFVideoTrack> tracks = new ArrayList<>();
 					try {
 						tracks = component.getDetections(new MPFVideoJob(msgMetadata.getJobName(),
-																		msgMetadata.getDataUri(),
+																		msgMetadata.getMediaPath(),
 																		msgMetadata.getAlgorithmProperties(),
 																		msgMetadata.getMediaProperties(),
 																		videoRequest.getStartFrame(),
@@ -162,7 +159,7 @@ public class MPFDetectionMessenger {
 					try {
 						List<MPFGenericTrack> tracks = new ArrayList<>();
 						tracks = component.getDetections(new MPFGenericJob(msgMetadata.getJobName(),
-								msgMetadata.getDataUri(),
+								msgMetadata.getMediaPath(),
 								msgMetadata.getAlgorithmProperties(),
 								msgMetadata.getMediaProperties(),
 								genericRequest.getFeedForwardTrack()));
@@ -176,7 +173,7 @@ public class MPFDetectionMessenger {
 					}
 				}
 				// for debugging purposes
-				LOG.debug("Detection results for file " + msgMetadata.getDataUri() + ":\n" + responseBytes.toString());
+				LOG.debug("Detection results for file " + msgMetadata.getMediaPath() + ":\n" + responseBytes.toString());
 
 				BytesMessage responseBytesMessage;
 				try {
@@ -233,10 +230,10 @@ public class MPFDetectionMessenger {
 			session.commit();
 
 			// Record the success.
-			LOG.debug("[Request #{}] Built and sent response. Error: {}.", detectionResponse.getRequestId(), detectionResponse.getError());
+			LOG.debug("Request built and sent response. Error: {}.", detectionResponse.getError());
 		} catch(Exception e) {
 			// Record the failure. This is likely irrecoverable.
-			LOG.error("[Request #{}] Failed to send the response due to an exception.", detectionResponse == null ? Long.MIN_VALUE : detectionResponse.getRequestId(), e);
+			LOG.error("Failed to send the response due to an exception.", e);
 			rollback();
 		}
 	}
@@ -256,13 +253,8 @@ public class MPFDetectionMessenger {
 	}
 
     private void buildPreprocessorResponse(MPFMessageMetadata msgMetadata, DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder) {
-		detectionResponseBuilder.setDataType(MPFDetectionBuffer.translateMPFDetectionDataType(msgMetadata.getDataType()));
-		detectionResponseBuilder.setRequestId(msgMetadata.getRequestId());
-
 		detectionResponseBuilder.setMediaId(msgMetadata.getMediaId());
-		detectionResponseBuilder.setTaskName(msgMetadata.getTaskName());
 		detectionResponseBuilder.setTaskIndex(msgMetadata.getTaskIndex());
-		detectionResponseBuilder.setActionName(msgMetadata.getActionName());
 		detectionResponseBuilder.setActionIndex(msgMetadata.getActionIndex());
 
         // TODO: Refactor this code into a more generic DetectionMessenger and handle IMAGE and VIDEO data types.
@@ -270,7 +262,7 @@ public class MPFDetectionMessenger {
 		// try {
 			// BufferedImage image = ImageIO.read(new File(detectionRequestInfo.dataUri));
 
-			detectionResponseBuilder.addAudioResponsesBuilder().addAudioTracksBuilder()
+			detectionResponseBuilder.getAudioResponseBuilder().addAudioTracksBuilder()
 					.setStartTime(0)
 					.setStopTime(0)
 					.setConfidence(-1f);
@@ -302,13 +294,9 @@ public class MPFDetectionMessenger {
 	}
 
     private void buildUnsupportedMediaTypeResponse(MPFMessageMetadata msgMetadata, DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder) {
-		detectionResponseBuilder.setDataType(MPFDetectionBuffer.translateMPFDetectionDataType(msgMetadata.getDataType()));
-		detectionResponseBuilder.setRequestId(msgMetadata.getRequestId());
 		detectionResponseBuilder.setError(DetectionProtobuf.DetectionError.UNSUPPORTED_DATA_TYPE);
 		detectionResponseBuilder.setMediaId(msgMetadata.getMediaId());
-		detectionResponseBuilder.setTaskName(msgMetadata.getTaskName());
 		detectionResponseBuilder.setTaskIndex(msgMetadata.getTaskIndex());
-		detectionResponseBuilder.setActionName(msgMetadata.getActionName());
 		detectionResponseBuilder.setActionIndex(msgMetadata.getActionIndex());
 	}
 

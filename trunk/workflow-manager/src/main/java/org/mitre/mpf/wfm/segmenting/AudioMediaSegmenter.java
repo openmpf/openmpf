@@ -27,12 +27,10 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.AudioTrack;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AudioRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -77,7 +75,6 @@ public class AudioMediaSegmenter implements MediaSegmenter {
             Media media, DetectionContext context, AudioRequest audioRequest) {
         return MediaSegmenter
                 .initializeRequest(media, context)
-                .setDataType(DetectionProtobuf.DetectionRequest.DataType.AUDIO)
                 .setAudioRequest(audioRequest)
                 .build();
     }
@@ -91,16 +88,12 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
         Detection exemplar = track.getExemplar();
 
-        AudioTrack.Builder audioTrackBuilder = audioRequest.getFeedForwardTrackBuilder()
+        audioRequest.getFeedForwardTrackBuilder()
                 .setConfidence(exemplar.getConfidence())
                 .setStartTime(track.getStartOffsetTimeInclusive())
-                .setStopTime(track.getEndOffsetTimeInclusive());
+                .setStopTime(track.getEndOffsetTimeInclusive())
+                .putAllDetectionProperties(exemplar.getDetectionProperties());
 
-        for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
-            audioTrackBuilder.addDetectionPropertiesBuilder()
-                    .setKey(entry.getKey())
-                    .setValue(entry.getValue());
-        }
         var protobuf = createProtobuf(media, ctx, audioRequest.build());
         return new DetectionRequest(protobuf, track);
     }

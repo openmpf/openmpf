@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -42,7 +41,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -53,7 +51,6 @@ import javax.inject.Inject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /** Processes the responses which have been returned from a detection component. */
 @Component(DetectionResponseProcessor.REF)
@@ -87,34 +84,16 @@ public class DetectionResponseProcessor
     public Object processResponse(long jobId,
                                   DetectionProtobuf.DetectionResponse detectionResponse,
                                   Map<String, Object> headers) throws WfmProcessingException {
-        int totalResponses = detectionResponse.getVideoResponsesCount() +
-                detectionResponse.getAudioResponsesCount() +
-                detectionResponse.getImageResponsesCount() +
-                detectionResponse.getGenericResponsesCount();
-
-        if (totalResponses > 1) {
-            throw new WfmProcessingException(
-                    // Camel will print out the exchange, including the message body content, in the stack trace.
-                    String.format("Unsupported operation. More than one DetectionResponse sub-message found for job %d.", jobId));
-        }
-
-        BatchJob job = _inProgressJobs.getJob(jobId);
-        Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
+        var job = _inProgressJobs.getJob(jobId);
+        var action = job.getPipelineElements().getAction(
+                detectionResponse.getTaskIndex(), detectionResponse.getActionIndex());
         addProcessingTime(jobId, action, headers);
 
-        if (totalResponses == 0) {
-            String mediaLabel = getBasicMediaLabel(detectionResponse);
-            log.warn("Response received, but no tracks were found for {}.", mediaLabel);
-            checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
-            return null;
+        var media = job.getMedia(detectionResponse.getMediaId());
+        if (media == null) {
+            throw new IllegalStateException(
+                    "Unable to locate media with id: " + detectionResponse.getMediaId());
         }
-
-        Media media = job.getMedia()
-                .stream()
-                .filter(m -> m.getId() == detectionResponse.getMediaId())
-                .findAny()
-                .orElseThrow(() -> new IllegalStateException("Unable to locate media with id: " +
-                        detectionResponse.getMediaId()));
         double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
         var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();
         var mergedTaskIdx = _taskMergingManager.getMergedTaskIndex(
@@ -123,45 +102,50 @@ public class DetectionResponseProcessor
                 detectionResponse.getActionIndex(),
                 headers);
 
-        if (detectionResponse.getVideoResponsesCount() != 0) {
+        if (detectionResponse.hasVideoResponse()) {
             var exemplarPolicy = _aggregateJobPropertiesUtil.getValue(
                     ExemplarPolicyUtil.PROPERTY, job, media, action);
             processVideoResponse(
                     jobId,
                     detectionResponse,
-                    detectionResponse.getVideoResponses(0),
+                    detectionResponse.getVideoResponse(),
                     confidenceThreshold,
                     media,
                     exemplarPolicy,
                     trackType,
                     mergedTaskIdx);
         }
-        else if (detectionResponse.getAudioResponsesCount() != 0) {
+        else if (detectionResponse.hasAudioResponse()) {
             processAudioResponse(
                     jobId,
                     detectionResponse,
-                    detectionResponse.getAudioResponses(0),
+                    detectionResponse.getAudioResponse(),
                     confidenceThreshold,
                     trackType,
                     mergedTaskIdx);
         }
-        else if (detectionResponse.getImageResponsesCount() != 0) {
+        else if (detectionResponse.hasImageResponse()) {
             processImageResponse(
                     jobId,
                     detectionResponse,
-                    detectionResponse.getImageResponses(0),
+                    detectionResponse.getImageResponse(),
+                    confidenceThreshold,
+                    trackType,
+                    mergedTaskIdx);
+        }
+        else if (detectionResponse.hasGenericResponse()) {
+            processGenericResponse(
+                    jobId,
+                    detectionResponse,
+                    detectionResponse.getGenericResponse(),
                     confidenceThreshold,
                     trackType,
                     mergedTaskIdx);
         }
         else {
-            processGenericResponse(
-                    jobId,
-                    detectionResponse,
-                    detectionResponse.getGenericResponses(0),
-                    confidenceThreshold,
-                    trackType,
-                    mergedTaskIdx);
+            String mediaLabel = getBasicMediaLabel(detectionResponse);
+            log.warn("Response received, but no tracks were found for {}.", mediaLabel);
+            checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
         }
         return null;
     }
@@ -199,8 +183,8 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(),
                 startFrame,
                 stopFrame,
-                detectionResponse.getTaskName(),
-                detectionResponse.getActionName());
+                detectionResponse.getTaskIndex(),
+                detectionResponse.getActionIndex());
 
         log.debug("Response received for {}.", mediaLabel);
         checkErrors(jobId, mediaLabel, detectionResponse, startFrame, stopFrame, startTime, stopTime);
@@ -208,7 +192,7 @@ public class DetectionResponseProcessor
         // Begin iterating through the tracks that were found by the detector.
         boolean isMediaType = trackType.equals("MEDIA");
         for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
-            SortedMap<String, String> trackProperties = toImmutableMap(objectTrack.getDetectionPropertiesList());
+            var trackProperties = objectTrack.getDetectionPropertiesMap();
 
             boolean hasDerivativeMedia = isMediaType &&
                                          trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
@@ -224,10 +208,11 @@ public class DetectionResponseProcessor
             int startOffsetTime = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStartFrame());
             int stopOffsetTime  = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStopFrame());
 
-            ImmutableSortedSet<Detection> detections = objectTrack.getFrameLocationsList()
+            var detections = objectTrack.getFrameLocationsMap()
+                    .entrySet()
                     .stream()
-                    .filter(flm -> flm.getImageLocation().getConfidence() >= confidenceThreshold)
-                    .map(flm -> toDetection(flm, frameTimeInfo))
+                    .filter(e -> e.getValue().getConfidence() >= confidenceThreshold)
+                    .map(e -> toDetection(e.getKey(), e.getValue(), frameTimeInfo))
                     .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
             if (!detections.isEmpty()) {
@@ -264,8 +249,8 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(),
                 startTime,
                 stopTime,
-                detectionResponse.getTaskName(),
-                detectionResponse.getActionName());
+                detectionResponse.getTaskIndex(),
+                detectionResponse.getActionIndex());
 
         log.debug("Response received for {}.", mediaLabel);
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, startTime, stopTime);
@@ -273,7 +258,7 @@ public class DetectionResponseProcessor
         // Begin iterating through the tracks that were found by the detector.
         boolean isMediaType = tracktype.equals("MEDIA");
         for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
-            SortedMap<String, String> trackProperties = toImmutableMap(objectTrack.getDetectionPropertiesList());
+            var trackProperties = objectTrack.getDetectionPropertiesMap();
 
             boolean hasDerivativeMedia = isMediaType &&
                                          trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
@@ -328,7 +313,7 @@ public class DetectionResponseProcessor
         // Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
         boolean isMediaType = trackType.equals("MEDIA");
         for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
-            SortedMap<String, String> locationProperties = toImmutableMap(location.getDetectionPropertiesList());
+            var locationProperties = location.getDetectionPropertiesMap();
 
             boolean hasDerivativeMedia = isMediaType &&
                                          locationProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
@@ -372,16 +357,23 @@ public class DetectionResponseProcessor
         // Begin iterating through the tracks that were found by the detector.
         boolean isMediaType = trackType.equals("MEDIA");
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
-            SortedMap<String, String> trackProperties = toMutableMap(objectTrack.getDetectionPropertiesList());
+            var trackProperties = objectTrack.getDetectionPropertiesMap();
 
             boolean hasDerivativeMedia = isMediaType &&
                                          trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
             if (hasDerivativeMedia) {
-                trackProperties = processDerivativeMedia(jobId, detectionResponse.getMediaId(),
+                long derivativeMediaId = processDerivativeMedia(
+                        jobId, detectionResponse.getMediaId(),
                         detectionResponse.getTaskIndex(), trackProperties);
+                var mutableTrackProperties = new HashMap<>(trackProperties);
+                // Add the media id to allow users to associate media tracks with media elements
+                // in the JSON output.
+                mutableTrackProperties.put(
+                        MpfConstants.DERIVATIVE_MEDIA_ID, String.valueOf(derivativeMediaId));
+                trackProperties = mutableTrackProperties;
             }
 
-            processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
+            processGenericTrack(jobId, detectionResponse, objectTrack, confidenceThreshold,
                     trackProperties, mergedTaskIdx);
         }
     }
@@ -390,10 +382,9 @@ public class DetectionResponseProcessor
     private void processGenericTrack(
             long jobId,
             DetectionProtobuf.DetectionResponse detectionResponse,
-            DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
             DetectionProtobuf.GenericTrack objectTrack,
             double confidenceThreshold,
-            SortedMap<String, String> trackProperties,
+            Map<String, String> trackProperties,
             int mergedTaskIdx) {
         if (objectTrack.getConfidence() >= confidenceThreshold) {
             Detection detection = new Detection(
@@ -458,14 +449,14 @@ public class DetectionResponseProcessor
     }
 
     private static Detection toDetection(
-            DetectionProtobuf.VideoTrack.FrameLocationMap frameLocationMap,
+            int frame,
+            DetectionProtobuf.ImageLocation imageLocation,
             FrameTimeInfo timeInfo) {
-        int time = timeInfo.getTimeMsFromFrame(frameLocationMap.getFrame());
-        return toDetection(frameLocationMap.getImageLocation(), frameLocationMap.getFrame(), time);
+        int time = timeInfo.getTimeMsFromFrame(frame);
+        return toDetection(imageLocation, frame, time);
     }
 
     private static Detection toDetection(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
-        SortedMap<String, String> detectionProperties = toImmutableMap(location.getDetectionPropertiesList());
         return new Detection(
                 location.getXLeftUpper(),
                 location.getYLeftUpper(),
@@ -474,52 +465,33 @@ public class DetectionResponseProcessor
                 location.getConfidence(),
                 frameNumber,
                 time,
-                detectionProperties);
-    }
-
-    private static SortedMap<String, String> toImmutableMap(Collection<DetectionProtobuf.PropertyMap> properties) {
-        return properties.stream()
-                .collect(ImmutableSortedMap.toImmutableSortedMap(
-                        Comparator.naturalOrder(),
-                        DetectionProtobuf.PropertyMap::getKey,
-                        DetectionProtobuf.PropertyMap::getValue));
-    }
-
-    private static SortedMap<String, String> toMutableMap(Collection<DetectionProtobuf.PropertyMap> properties) {
-        return properties.stream()
-                .collect(Collectors.toMap(
-                        DetectionProtobuf.PropertyMap::getKey,
-                        DetectionProtobuf.PropertyMap::getValue,
-                        (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
-                        TreeMap::new));
+                location.getDetectionPropertiesMap());
     }
 
     private static String getBasicMediaLabel(DetectionProtobuf.DetectionResponse detectionResponse) {
         return String.format("Media #%d, Task: '%s', Action: '%s'",
-                detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
+                detectionResponse.getMediaId(), detectionResponse.getTaskIndex(), detectionResponse.getActionIndex());
     }
 
-    private SortedMap<String, String> processDerivativeMedia(long jobId,
-                                                             long parentMediaId,
-                                                             int taskIndex,
-                                                             SortedMap<String, String> trackProperties) {
-        Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH)).toAbsolutePath();
+    private long processDerivativeMedia(
+            long jobId,
+            long parentMediaId,
+            int taskIndex,
+            Map<String, String> trackProperties) {
+        Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH))
+                .toAbsolutePath();
 
-        long mediaId = IdGenerator.next();
-
-        // Add the media id to allow users to associate media tracks with media elements in the JSON output.
-        trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_ID, String.valueOf(mediaId));
-
+        long derivativeMediaId = IdGenerator.next();
         Media derivativeMedia = _inProgressJobs.initDerivativeMedia(
-                jobId, mediaId, parentMediaId, taskIndex, localPath, trackProperties);
+                jobId, derivativeMediaId, parentMediaId, taskIndex, localPath, trackProperties);
 
         _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
 
         if (derivativeMedia.isFailed()) {
-            _inProgressJobs.addError(jobId, derivativeMedia.getId(), IssueCodes.MEDIA_INITIALIZATION,
+            _inProgressJobs.addError(
+                    jobId, derivativeMedia.getId(), IssueCodes.MEDIA_INITIALIZATION,
                     derivativeMedia.getErrorMessage());
         }
-
-        return trackProperties;
+        return derivativeMediaId;
     }
 }

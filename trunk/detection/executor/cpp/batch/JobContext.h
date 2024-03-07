@@ -44,17 +44,11 @@ using job_variant_t = std::variant<MPFVideoJob, MPFImageJob, MPFAudioJob, MPFGen
 
 
 struct ProtobufMetadata {
-    const long request_id;
-
     const long media_id;
 
     const int task_index;
 
-    const std::string task_name;
-
     const int action_index;
-
-    const std::string action_name;
 };
 
 

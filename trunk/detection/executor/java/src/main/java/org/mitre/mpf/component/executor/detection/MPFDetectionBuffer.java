@@ -26,10 +26,8 @@
 
 package org.mitre.mpf.component.executor.detection;
 
-import com.google.common.base.Joiner;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.mitre.mpf.component.api.detection.*;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer.AlgorithmProperty;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionResponse;
@@ -38,6 +36,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
+
+import static java.util.stream.Collectors.toMap;
+
 import java.io.File;
 import java.util.*;
 
@@ -56,41 +57,25 @@ public class MPFDetectionBuffer {
         }
     }
 
-    public Map<String, String> copyProperties(List<DetectionProtobuf.PropertyMap> prop_map) {
-        Map<String, String> props = new HashMap<String, String>();
-        for (int i = 0; i < prop_map.size(); i++) {
-            props.put(prop_map.get(i).getKey(), prop_map.get(i).getValue());
-        }
-        return props;
-    }
 
     public MPFMessageMetadata getMessageMetadata(Message message) throws JMSException {
 
-        String dataUri = detectionRequest.getDataUri();
-        MPFDataType dataType = translateProtobufDataType(detectionRequest.getDataType());
-        long requestId = detectionRequest.getRequestId();
-
-        Map<String, String> algorithmProperties = new HashMap<String, String>();
-        for (int i = 0; i < detectionRequest.getAlgorithmPropertyList().size(); i++) {
-            AlgorithmProperty algProp = detectionRequest.getAlgorithmProperty(i);
-            algorithmProperties.put(algProp.getPropertyName(), algProp.getPropertyValue());
-        }
-
-        Map<String, String> mediaProperties = copyProperties(detectionRequest.getMediaMetadataList());
-
+        String mediaPath = detectionRequest.getMediaPath();
+        MPFDataType dataType = getProtobufDataType(detectionRequest);
         try {
             String correlationId = message.getStringProperty("CorrelationId");
             String breadcrumbId = message.getStringProperty("breadcrumbId");
             int splitSize = message.getIntProperty("SplitSize");
             long jobId = message.getLongProperty("JobId");
 
-            String jobName = "Job " + jobId + ":" + (new File(dataUri)).getName();
+            String jobName = "Job " + jobId + ":" + (new File(mediaPath)).getName();
 
-            return new MPFMessageMetadata(dataUri, dataType,
+            return new MPFMessageMetadata(mediaPath, dataType,
                     detectionRequest.getMediaId(),
-                    detectionRequest.getTaskName(), detectionRequest.getTaskIndex(),
-                    detectionRequest.getActionName(), detectionRequest.getActionIndex(),
-                    algorithmProperties, mediaProperties, requestId,
+                    detectionRequest.getTaskIndex(),
+                    detectionRequest.getActionIndex(),
+                    detectionRequest.getAlgorithmPropertiesMap(),
+                    detectionRequest.getMediaMetadataMap(),
                     correlationId, breadcrumbId, splitSize, jobId, jobName);
 
         } catch (JMSException e) {
@@ -102,16 +87,14 @@ public class MPFDetectionBuffer {
     public MPFDetectionAudioRequest getAudioRequest() {
         if (detectionRequest.getAudioRequest().hasFeedForwardTrack()) {
             DetectionProtobuf.AudioTrack track = detectionRequest.getAudioRequest().getFeedForwardTrack();
-            // Copy the properties
-            Map<String, String> trackProps = copyProperties(track.getDetectionPropertiesList());
-            MPFAudioTrack new_track = new MPFAudioTrack(track.getStartTime(),
-                                                        track.getStopTime(),
-                                                        track.getConfidence(),
-                                                        trackProps);
+            MPFAudioTrack newTrack = new MPFAudioTrack(track.getStartTime(),
+                                                       track.getStopTime(),
+                                                       track.getConfidence(),
+                                                       track.getDetectionPropertiesMap());
             return new MPFDetectionAudioRequest(
                            detectionRequest.getAudioRequest().getStartTime(),
                            detectionRequest.getAudioRequest().getStopTime(),
-                           new_track);
+                           newTrack);
         }
         else {
             return new MPFDetectionAudioRequest(
@@ -124,36 +107,20 @@ public class MPFDetectionBuffer {
         if (detectionRequest.getVideoRequest().hasFeedForwardTrack()) {
             DetectionProtobuf.VideoTrack track = detectionRequest.getVideoRequest().getFeedForwardTrack();
 
-            // Copy the frame locations map
-            Map<Integer, MPFImageLocation> locations = new HashMap<Integer, MPFImageLocation>();
-            for (int i = 0; i < track.getFrameLocationsList().size(); i++) {
-                DetectionProtobuf.VideoTrack.FrameLocationMap loc_map = track.getFrameLocations(i);
+            var locations = track.getFrameLocationsMap().entrySet()
+                    .stream()
+                    .collect(toMap(Map.Entry::getKey, e -> fromProtobuf(e.getValue())));
 
-                // Copy the detection properties for this location
-                Map<String, String> locationProps =
-                    copyProperties(loc_map.getImageLocation().getDetectionPropertiesList());
-                // Create a new image location and put it into the new map
-                MPFImageLocation loc = new MPFImageLocation(loc_map.getImageLocation().getXLeftUpper(),
-                                                            loc_map.getImageLocation().getYLeftUpper(),
-                                                            loc_map.getImageLocation().getWidth(),
-                                                            loc_map.getImageLocation().getHeight(),
-                                                            loc_map.getImageLocation().getConfidence(),
-                                                            locationProps);
-                locations.put(loc_map.getFrame(), loc);
-            }
-            // Copy the properties for the track itself
-            Map<String, String> trackProps = copyProperties(track.getDetectionPropertiesList());
-
-            MPFVideoTrack new_track = new MPFVideoTrack(track.getStartFrame(),
-                                                        track.getStopFrame(),
-                                                        locations,
-                                                        track.getConfidence(),
-                                                        trackProps);
+            MPFVideoTrack newTrack = new MPFVideoTrack(track.getStartFrame(),
+                                                       track.getStopFrame(),
+                                                       locations,
+                                                       track.getConfidence(),
+                                                       track.getDetectionPropertiesMap());
 
             return new MPFDetectionVideoRequest(
                 detectionRequest.getVideoRequest().getStartFrame(),
                 detectionRequest.getVideoRequest().getStopFrame(),
-                new_track);
+                newTrack);
         }
         else {
             return new MPFDetectionVideoRequest(
@@ -164,19 +131,8 @@ public class MPFDetectionBuffer {
 
     public MPFDetectionImageRequest getImageRequest() {
         if (detectionRequest.getImageRequest().hasFeedForwardLocation()) {
-            DetectionProtobuf.ImageLocation tmp_loc =
-                detectionRequest.getImageRequest().getFeedForwardLocation();
-
-            Map<String, String> locationProperties =
-                copyProperties(tmp_loc.getDetectionPropertiesList());
-
-            MPFImageLocation loc = new MPFImageLocation(tmp_loc.getXLeftUpper(),
-                                                        tmp_loc.getYLeftUpper(),
-                                                        tmp_loc.getWidth(),
-                                                        tmp_loc.getHeight(),
-                                                        tmp_loc.getConfidence(),
-                                                        locationProperties);
-            return new MPFDetectionImageRequest(loc);
+            var pbLoc = detectionRequest.getImageRequest().getFeedForwardLocation();
+            return new MPFDetectionImageRequest(fromProtobuf(pbLoc));
         }
         else {
             return new MPFDetectionImageRequest();
@@ -187,10 +143,9 @@ public class MPFDetectionBuffer {
     public MPFDetectionGenericRequest getGenericRequest() {
         if (detectionRequest.getGenericRequest().hasFeedForwardTrack()) {
             DetectionProtobuf.GenericTrack track = detectionRequest.getGenericRequest().getFeedForwardTrack();
-            // Copy the properties
-            Map<String, String> trackProps = copyProperties(track.getDetectionPropertiesList());
-            MPFGenericTrack new_track = new MPFGenericTrack(track.getConfidence(), trackProps);
-            return new MPFDetectionGenericRequest(new_track);
+            MPFGenericTrack newTrack = new MPFGenericTrack(
+                    track.getConfidence(), track.getDetectionPropertiesMap());
+            return new MPFDetectionGenericRequest(newTrack);
         }
         else {
             return new MPFDetectionGenericRequest();
@@ -203,20 +158,12 @@ public class MPFDetectionBuffer {
             final MPFDetectionError errorCode,
             final String errorMessage) {
 
-        DetectionProtobuf.DetectionResponse.Builder detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder();
-        detectionResponse.setMediaId(msgMetadata.getMediaId());
-
-        // TODO: share the same dataType enum between both the DetectionRequest and DetectionResponse protobuf
-        detectionResponse.setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()));
-
-        detectionResponse.setTaskName(msgMetadata.getTaskName());
-        detectionResponse.setTaskIndex(msgMetadata.getTaskIndex());
-        detectionResponse.setActionName(msgMetadata.getActionName());
-        detectionResponse.setActionIndex(msgMetadata.getActionIndex());
-        detectionResponse.setError(translateMPFDetectionError(errorCode));
-        detectionResponse.setErrorMessage(errorMessage);
-
-        return detectionResponse;
+        return DetectionProtobuf.DetectionResponse.newBuilder()
+                .setMediaId(msgMetadata.getMediaId())
+                .setTaskIndex(msgMetadata.getTaskIndex())
+                .setActionIndex(msgMetadata.getActionIndex())
+                .setError(translateMPFDetectionError(errorCode))
+                .setErrorMessage(errorMessage);
     }
 
     public byte[] createAudioResponseMessage(final MPFMessageMetadata msgMetadata,
@@ -225,38 +172,22 @@ public class MPFDetectionBuffer {
                                              final List<MPFAudioTrack> tracks,
                                              final MPFDetectionError errorCode,
                                              final String errorMessage) {
-        byte[] responseContents = null;
-
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
-                = packCommonFields(msgMetadata, errorCode, errorMessage);
-
-        DetectionProtobuf.DetectionResponse.AudioResponse.Builder audioResponseBuilder = detectionResponseBuilder.addAudioResponsesBuilder();
-        audioResponseBuilder.setStartTime(startTime);
-        audioResponseBuilder.setStopTime(stopTime);
-
-        if (!tracks.isEmpty()) {
-            LOG.debug("Number of audio tracks in detection response for job ID " +
-                    msgMetadata.getJobId() + " = " + tracks.size());
-
-            for (int i = 0; i < tracks.size(); i++) {
-
-                DetectionProtobuf.AudioTrack audioTrack = audioResponseBuilder.addAudioTracksBuilder()
-                        .setStartTime(tracks.get(i).getStartTime())
-                        .setStopTime(tracks.get(i).getStopTime())
-                        .setConfidence(tracks.get(i).getConfidence())
-                        .addAllDetectionProperties(convertProperties(tracks.get(i).getDetectionProperties()))
-                        .build();
-            }
+        var detectionResponseBuilder = packCommonFields(msgMetadata, errorCode, errorMessage);
+        var audioResponseBuilder = detectionResponseBuilder.getAudioResponseBuilder()
+                    .setStartTime(startTime)
+                    .setStopTime(stopTime);
+        LOG.info(
+            "Found {} tracks while processing job {}", tracks.size(), msgMetadata.getJobId());
+        for (var track : tracks) {
+            audioResponseBuilder.addAudioTracksBuilder()
+                    .setStartTime(track.getStartTime())
+                    .setStopTime(track.getStopTime())
+                    .setConfidence(track.getConfidence())
+                    .putAllDetectionProperties(track.getDetectionProperties());
         }
-
-        responseContents = detectionResponseBuilder
-                .setRequestId(msgMetadata.getRequestId())
-                .setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()))
-                .build()
-                .toByteArray();
-
-        return responseContents;
+        return detectionResponseBuilder.build().toByteArray();
     }
+
 
     public byte[] createVideoResponseMessage(final MPFMessageMetadata msgMetadata,
                                              final int startFrame,
@@ -264,157 +195,89 @@ public class MPFDetectionBuffer {
                                              final List<MPFVideoTrack> tracks,
                                              final MPFDetectionError errorCode,
                                              final String errorMessage) {
-        byte[] responseContents = null;
+        var detectionResponseBuilder = packCommonFields(msgMetadata, errorCode, errorMessage);
+        var videoResponseBuilder = detectionResponseBuilder.getVideoResponseBuilder()
+                .setStartFrame(startFrame)
+                .setStopFrame(stopFrame);
 
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
-                = packCommonFields(msgMetadata, errorCode, errorMessage);
+        LOG.info(
+            "Found {} tracks while processing job {}", tracks.size(), msgMetadata.getJobId());
 
-        DetectionProtobuf.DetectionResponse.VideoResponse.Builder videoResponseBuilder =
-                detectionResponseBuilder.addVideoResponsesBuilder();
-        videoResponseBuilder.setStartFrame(startFrame);
-        videoResponseBuilder.setStopFrame(stopFrame);
-
-        if (!tracks.isEmpty()) {
-            LOG.info("Number of video tracks in detection response for job ID " +
-                    msgMetadata.getJobId() + " = " + tracks.size());
-
-            for (int i = 0; i < tracks.size(); i++) {
-                Set<DetectionProtobuf.VideoTrack.FrameLocationMap> frameLocationMapSet = new HashSet<>();
-                for (Map.Entry<Integer,MPFImageLocation> entry : tracks.get(i).getFrameLocations().entrySet()) {
-                    MPFImageLocation mpfImageLocation = entry.getValue();
-
-                    DetectionProtobuf.VideoTrack.FrameLocationMap frameLocationMap = DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder()
-                            .setFrame(entry.getKey())
-                            .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder()
-                                    .setHeight(mpfImageLocation.getHeight())
-                                    .setWidth(mpfImageLocation.getWidth())
-                                    .setConfidence(mpfImageLocation.getConfidence())
-                                    .setXLeftUpper(mpfImageLocation.getXLeftUpper())
-                                    .setYLeftUpper(mpfImageLocation.getYLeftUpper())
-                                    .addAllDetectionProperties(convertProperties(mpfImageLocation.getDetectionProperties()))).build();
-                    frameLocationMapSet.add(frameLocationMap);
-
-                }
-                DetectionProtobuf.VideoTrack videoTrack = videoResponseBuilder.addVideoTracksBuilder()
-                        .setStartFrame(tracks.get(i).getStartFrame())
-                        .setStopFrame(tracks.get(i).getStopFrame())
-                        .setConfidence(tracks.get(i).getConfidence())
-                        .addAllDetectionProperties(convertProperties(tracks.get(i).getDetectionProperties()))
-                        .addAllFrameLocations(frameLocationMapSet)
-                        .build();
-
-                LOG.info("Detection properties: {}", Joiner.on(";").withKeyValueSeparator("=").join(tracks.get(i).getDetectionProperties()));
-            }
+        for (var track : tracks) {
+            var trackBuilder = videoResponseBuilder.addVideoTracksBuilder()
+                    .setStartFrame(track.getStartFrame())
+                    .setStopFrame(track.getStopFrame())
+                    .setConfidence(track.getConfidence())
+                    .putAllDetectionProperties(track.getDetectionProperties());
+            track.getFrameLocations()
+                .forEach((f, il) -> trackBuilder.putFrameLocations(f, toProtobuf(il)));
         }
-
-        responseContents = detectionResponseBuilder
-                .setRequestId(msgMetadata.getRequestId())
-                .setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()))
-                .build()
-                .toByteArray();
-
-        return responseContents;
+        return detectionResponseBuilder.build().toByteArray();
     }
 
     public byte[] createImageResponseMessage(final MPFMessageMetadata msgMetadata,
                                              final List<MPFImageLocation> locations,
                                              final MPFDetectionError errorCode,
                                              final String errorMessage) {
-        byte[] responseContents = null;
+        var detectionResponseBuilder = packCommonFields(msgMetadata, errorCode, errorMessage);
+        var imageResponseBuilder = detectionResponseBuilder.getImageResponseBuilder();
+        LOG.info(
+            "Found {} image locations while processing job {}",
+            locations.size(), msgMetadata.getJobId());
 
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
-                = packCommonFields(msgMetadata, errorCode, errorMessage);
+        locations.forEach(il -> imageResponseBuilder.addImageLocations(toProtobuf(il)));
+        return detectionResponseBuilder.build().toByteArray();
+    }
 
-        DetectionProtobuf.DetectionResponse.ImageResponse.Builder imageResponseBuilder = detectionResponseBuilder.addImageResponsesBuilder();
+    private static DetectionProtobuf.ImageLocation toProtobuf(MPFImageLocation imageLocation) {
+        return DetectionProtobuf.ImageLocation.newBuilder()
+                .setXLeftUpper(imageLocation.getXLeftUpper())
+                .setYLeftUpper(imageLocation.getYLeftUpper())
+                .setHeight(imageLocation.getHeight())
+                .setWidth(imageLocation.getWidth())
+                .setConfidence(imageLocation.getConfidence())
+                .putAllDetectionProperties(imageLocation.getDetectionProperties())
+                .build();
+    }
 
-        if (!locations.isEmpty()) {
-            LOG.debug("Number of image locations in detection response for job ID " +
-                    msgMetadata.getJobId() + " = " + locations.size());
-
-            for (int i = 0; i < locations.size(); i++) {
-                imageResponseBuilder.addImageLocations(DetectionProtobuf.ImageLocation.newBuilder()
-                        .setHeight(locations.get(i).getHeight())
-                        .setWidth(locations.get(i).getWidth())
-                        .setConfidence(locations.get(i).getConfidence())
-                        .setXLeftUpper(locations.get(i).getXLeftUpper())
-                        .setYLeftUpper(locations.get(i).getYLeftUpper())
-                        .addAllDetectionProperties(convertProperties(locations.get(i).getDetectionProperties())));
-
-            }
-
-        }
-
-        responseContents = detectionResponseBuilder
-                .setRequestId(msgMetadata.getRequestId())
-                .setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()))
-                .build()
-                .toByteArray();
-
-        return responseContents;
+    private static MPFImageLocation fromProtobuf(DetectionProtobuf.ImageLocation pbImgLoc) {
+        return new MPFImageLocation(
+            pbImgLoc.getXLeftUpper(),
+            pbImgLoc.getYLeftUpper(),
+            pbImgLoc.getWidth(),
+            pbImgLoc.getHeight(),
+            pbImgLoc.getConfidence(),
+            pbImgLoc.getDetectionPropertiesMap());
     }
 
     public byte[] createGenericResponseMessage(final MPFMessageMetadata msgMetadata,
                                                final List<MPFGenericTrack> tracks,
                                                final MPFDetectionError errorCode,
                                                final String errorMessage) {
-        byte[] responseContents = null;
-
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
-                = packCommonFields(msgMetadata, errorCode, errorMessage);
-
-        DetectionProtobuf.DetectionResponse.GenericResponse.Builder genericResponseBuilder = detectionResponseBuilder.addGenericResponsesBuilder();
-
-        if (!tracks.isEmpty()) {
-            LOG.debug("Number of generic tracks in detection response for job ID " +
-                    msgMetadata.getJobId() + " = " + tracks.size());
-
-            for (int i = 0; i < tracks.size(); i++) {
-
-                DetectionProtobuf.GenericTrack genericTrack = genericResponseBuilder.addGenericTracksBuilder()
-                        .setConfidence(tracks.get(i).getConfidence())
-                        .addAllDetectionProperties(convertProperties(tracks.get(i).getDetectionProperties()))
-                        .build();
-            }
+        var detectionResponseBuilder = packCommonFields(msgMetadata, errorCode, errorMessage);
+        var genericResponseBuilder = detectionResponseBuilder.getGenericResponseBuilder();
+        LOG.info(
+            "Found {} tracks while processing job {}", tracks.size(), msgMetadata.getJobId());
+        for (var track : tracks) {
+            genericResponseBuilder.addGenericTracksBuilder()
+                .setConfidence(track.getConfidence())
+                .putAllDetectionProperties(track.getDetectionProperties());
         }
-
-        responseContents = detectionResponseBuilder
-                .setRequestId(msgMetadata.getRequestId())
-                .setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()))
-                .build()
-                .toByteArray();
-
-        return responseContents;
+        return detectionResponseBuilder.build().toByteArray();
     }
 
-    public static MPFDataType translateProtobufDataType(final DetectionRequest.DataType dataType)  {
-
-        switch (dataType) {
-            case UNKNOWN:
-                return MPFDataType.UNKNOWN;
-            case VIDEO:
-                return MPFDataType.VIDEO;
-            case IMAGE:
-                return MPFDataType.IMAGE;
-            case AUDIO:
-                return MPFDataType.AUDIO;
-            default:
-                return MPFDataType.UNKNOWN;
+    public static MPFDataType getProtobufDataType(DetectionRequest request)  {
+        if (request.hasVideoRequest()) {
+            return MPFDataType.VIDEO;
         }
-    }
-
-    public static DetectionResponse.DataType translateMPFDetectionDataType(final MPFDataType dataType) {
-
-        switch (dataType) {
-            case UNKNOWN:
-                return DetectionResponse.DataType.UNKNOWN;
-            case VIDEO:
-                return DetectionResponse.DataType.VIDEO;
-            case IMAGE:
-                return DetectionResponse.DataType.IMAGE;
-            case AUDIO:
-                return DetectionResponse.DataType.AUDIO;
-            default:
-                return DetectionResponse.DataType.UNKNOWN;
+        else if (request.hasImageRequest()) {
+            return MPFDataType.IMAGE;
+        }
+        else if (request.hasAudioRequest()) {
+            return MPFDataType.AUDIO;
+        }
+        else {
+            return MPFDataType.UNKNOWN;
         }
     }
 
@@ -455,18 +318,5 @@ public class MPFDetectionBuffer {
             default:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.UNRECOGNIZED_DETECTION_ERROR;
         }
-    }
-
-    private List<DetectionProtobuf.PropertyMap> convertProperties(Map<String,String> propMap) {
-
-        LinkedList<DetectionProtobuf.PropertyMap> output = new LinkedList<>();
-        if (propMap!=null && !propMap.isEmpty()) {
-            for (Map.Entry<String, String> entry : propMap.entrySet()) {
-                output.add(DetectionProtobuf.PropertyMap.newBuilder()
-                        .setKey(entry.getKey())
-                        .setValue(entry.getValue()).build());
-            }
-        }
-        return output;
     }
 }

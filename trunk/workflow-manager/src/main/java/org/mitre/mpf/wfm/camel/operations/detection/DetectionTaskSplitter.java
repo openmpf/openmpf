@@ -43,7 +43,6 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.routes.DetectionResponseRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -175,9 +174,6 @@ public class DetectionTaskSplitter {
                                 job.getSystemPropertiesSnapshot(), combinedProperties, media);
                     }
 
-                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-                            = convertPropertiesMapToAlgorithmPropertiesList(combinedProperties);
-
                     DetectionContext detectionContext = new DetectionContext(
                             job.getId(),
                             job.getCurrentTaskIndex(),
@@ -185,7 +181,7 @@ public class DetectionTaskSplitter {
                             actionIndex,
                             action.name(),
                             isFirstDetectionTaskForMedia,
-                            algorithmProperties,
+                            combinedProperties,
                             previousTracks,
                             segmentingPlan);
 
@@ -202,30 +198,6 @@ public class DetectionTaskSplitter {
         }
 
         return messages;
-    }
-
-
-    /**
-     * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
-     * If the input is null or empty, an empty collection is returned.
-     */
-    private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty>
-    convertPropertiesMapToAlgorithmPropertiesList(Map<String, String> propertyMessages) {
-
-        if (propertyMessages == null || propertyMessages.isEmpty()) {
-            return new ArrayList<>(0);
-        }
-        else {
-            List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-                    = new ArrayList<>(propertyMessages.size());
-            for (Map.Entry<String, String> entry : propertyMessages.entrySet()) {
-                algorithmProperties.add(AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
-                                                .setPropertyName(entry.getKey())
-                                                .setPropertyValue(entry.getValue())
-                                                .build());
-            }
-            return algorithmProperties;
-        }
     }
 
 

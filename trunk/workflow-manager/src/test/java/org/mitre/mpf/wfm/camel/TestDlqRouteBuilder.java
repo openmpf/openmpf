@@ -256,7 +256,7 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
                 byte[] protoBytes = new byte[(int) bytesMessage.getBodyLength()];
                 bytesMessage.readBytes(protoBytes);
                 DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
-                Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
+                Assert.assertEquals(1, detectionRequest.getActionIndex());
 
                 Assert.assertTrue(unseenJmsCorrelationIds.remove(bytesMessage.getJMSCorrelationID()));
             }
@@ -282,11 +282,9 @@ public class TestDlqRouteBuilder extends MockitoTest.Lenient {
         for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
             BytesMessage message = session.createBytesMessage();
             DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.newBuilder()
-                    .setRequestId(123)
-                    .setDataUri("file:///test")
+                    .setMediaPath("file:///test")
                     .setTaskIndex(1)
                     .setActionIndex(1)
-                    .setActionName("TEST ACTION")
                     .build();
             message.writeBytes(detectionRequest.toByteArray());
 

@@ -30,11 +30,8 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -122,7 +119,6 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             DetectionContext context,
             VideoRequest videoRequest) {
         return MediaSegmenter.initializeRequest(media, context)
-                .setDataType(DetectionProtobuf.DetectionRequest.DataType.VIDEO)
                 .setVideoRequest(videoRequest)
                 .build();
     }
@@ -167,18 +163,13 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         var protobufTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()
                 .setStartFrame(startFrame)
                 .setStopFrame(stopFrame)
-                .setConfidence(track.getConfidence());
-
-        for (Map.Entry<String, String> entry : track.getTrackProperties().entrySet()) {
-            protobufTrackBuilder.addDetectionPropertiesBuilder()
-                    .setKey(entry.getKey())
-                    .setValue(entry.getValue());
-        }
+                .setConfidence(track.getConfidence())
+                .putAllDetectionProperties(track.getTrackProperties());
 
         for (Detection detection : includedDetections) {
-            protobufTrackBuilder.addFrameLocationsBuilder()
-                    .setFrame(detection.getMediaOffsetFrame())
-                    .setImageLocation(MediaSegmenter.createImageLocation(detection));
+            protobufTrackBuilder.putFrameLocations(
+                    detection.getMediaOffsetFrame(),
+                    MediaSegmenter.createImageLocation(detection));
         }
 
         var videoRequest = VideoRequest.newBuilder()
@@ -191,11 +182,9 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     }
 
     private static int getTopConfidenceCount(DetectionContext context) {
-        return context.getAlgorithmProperties()
-                .stream()
-                .filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
-                .mapToInt(ap -> Integer.parseInt(ap.getPropertyValue()))
-                .findAny()
+        return Optional.ofNullable(
+                    context.getAlgorithmProperties().get(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
+                .map(Integer::parseInt)
                 .orElse(0);
     }
 }

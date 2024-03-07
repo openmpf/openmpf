@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
 import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @Monitored
 public interface MediaSegmenter {
@@ -59,47 +58,37 @@ public interface MediaSegmenter {
 
     public static DetectionProtobuf.DetectionRequest.Builder initializeRequest(
             Media media, DetectionContext context) {
-
-        DetectionProtobuf.DetectionRequest.Builder requestBuilder = DetectionProtobuf.DetectionRequest.newBuilder()
-                .setRequestId(0)
+        return DetectionProtobuf.DetectionRequest.newBuilder()
                 .setMediaId(media.getId())
                 .setTaskIndex(context.getTaskIndex())
-                .setTaskName(context.getTaskName())
                 .setActionIndex(context.getActionIndex())
-                .setActionName(context.getActionName())
-                .setDataUri(media.getProcessingPath().toString())
-                .addAllAlgorithmProperty(getAlgoProps(context));
-
-        for (Map.Entry<String, String> entry : media.getMetadata().entrySet()) {
-            requestBuilder.addMediaMetadataBuilder()
-                    .setKey(entry.getKey())
-                    .setValue(entry.getValue());
-        }
-
-        return requestBuilder;
+                .setMediaPath(media.getProcessingPath().toString())
+                .putAllAlgorithmProperties(getAlgoProps(context))
+                .putAllMediaMetadata(media.getMetadata());
     }
 
 
-    static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
-        if (context.isFirstDetectionTask()) {
-            return context.getAlgorithmProperties().stream()
-                    .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
-                    .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
-                    .collect(toList());
+    static Map<String, String> getAlgoProps(DetectionContext context) {
+        var algoProps = context.getAlgorithmProperties();
+        if (!context.isFirstDetectionTask()) {
+            return algoProps;
         }
-        return context.getAlgorithmProperties();
+        else if (algoProps.containsKey(FEED_FORWARD_TYPE)
+                    || algoProps.containsKey(FEED_FORWARD_TOP_CONFIDENCE_COUNT)) {
+            return algoProps.entrySet().stream()
+                .filter(e -> !e.getKey().equals(FEED_FORWARD_TYPE))
+                .filter(e -> !e.getKey().equals(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+        else {
+            return algoProps;
+        }
     }
 
 
     public static boolean feedForwardIsEnabled(DetectionContext context) {
-        return context.getAlgorithmProperties()
-                .stream()
-                .filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
-                .findAny()
-                .map(ap -> feedForwardIsEnabled(ap.getPropertyValue()))
-                .orElse(false);
+        return feedForwardIsEnabled(context.getAlgorithmProperties().get(FEED_FORWARD_TYPE));
     }
-
 
     public static boolean feedForwardIsEnabled(String feedForwardType) {
         if (feedForwardType == null
@@ -118,20 +107,14 @@ public interface MediaSegmenter {
 
 
     public static DetectionProtobuf.ImageLocation createImageLocation(Detection detection) {
-        DetectionProtobuf.ImageLocation.Builder imageLocationBuilder = DetectionProtobuf.ImageLocation.newBuilder()
+        return DetectionProtobuf.ImageLocation.newBuilder()
                 .setXLeftUpper(detection.getX())
                 .setYLeftUpper(detection.getY())
                 .setWidth(detection.getWidth())
                 .setHeight(detection.getHeight())
-                .setConfidence(detection.getConfidence());
-
-        for (Map.Entry<String, String> entry : detection.getDetectionProperties().entrySet()) {
-            imageLocationBuilder.addDetectionPropertiesBuilder()
-                    .setKey(entry.getKey())
-                    .setValue(entry.getValue());
-        }
-
-        return imageLocationBuilder.build();
+                .setConfidence(detection.getConfidence())
+                .putAllDetectionProperties(detection.getDetectionProperties())
+                .build();
     }
 
 

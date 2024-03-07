@@ -24,23 +24,14 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.videooverlay;
 
-import org.mitre.mpf.wfm.enums.EnvVar;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
-/**
- * This class loads any JNI libraries needed by the WFM. Classes which rely on these JNI libraries
- * should be marked appropriately using the {@link org.springframework.context.annotation.DependsOn}
- * annotation.
- */
-@Component(JniLoader.REF)
-@Scope("prototype")
 public class JniLoader {
-    public static final String REF = "jniLoader";
     private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
 
     private static boolean _isLoaded;
@@ -53,29 +44,32 @@ public class JniLoader {
         }
         catch (UnsatisfiedLinkError ex) {
             log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libDir = System.getenv(EnvVar.MPF_HOME) + "/lib";
+            String libDir = System.getenv("MPF_HOME") + "/lib";
 
-            String componentApiLibPath = libDir + "/libmpfDetectionComponentApi.so";
-            log.warn("Trying to load component api library using full path: {}", componentApiLibPath);
-            System.load(componentApiLibPath);
+            var libNames = List.of(
+                    "libmpfDetectionComponentApi.so",
+                    "libmpfProtobufsShared.so",
+                    "libmpfopencvjni.so");
 
-            String protobufLibPath = libDir + "/libmpfProtobufsShared.so";
-            log.warn("Trying to load Protobuf library using full path: {}", protobufLibPath);
-            System.load(protobufLibPath);
-
-            String jniLibPath = libDir + "/libmpfopencvjni.so";
-            log.warn("Trying to load JNI library using full path: {}", jniLibPath);
-            System.load(jniLibPath);
+            for (var libName : libNames) {
+                var path = libDir + '/' + libName;
+                log.warn("Trying to load library using full path: {}", path);
+                System.load(path);
+            }
 
             _isLoaded = true;
         }
     }
 
+    private JniLoader() {
+    }
+
     /**
-     * This method exists to force the static initializer run when running unit tests. This should always return true.
+     * This method exists to force the static initializer to run when a class with native methods
+     * is first used. This should always return true.
      * @return true
      */
-    public static boolean isLoaded() {
+    public static boolean ensureLoaded() {
         return _isLoaded;
     }
 }

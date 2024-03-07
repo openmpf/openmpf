@@ -51,11 +51,6 @@ public class MarkupRequestConsumer {
 
     private final MessageProducer _messageProducer;
 
-    static {
-        LOG.debug("Loading JNI library.");
-        System.loadLibrary("mpfopencvjni");
-    }
-
     public MarkupRequestConsumer(Session session) throws JMSException {
         _session = session;
         _messageProducer = session.createProducer(null);

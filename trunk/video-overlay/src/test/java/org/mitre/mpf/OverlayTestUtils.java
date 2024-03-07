@@ -24,60 +24,21 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf;
 
-import org.junit.Assert;
-
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.List;
 
-public class JniTestUtils {
+import org.junit.Assert;
 
-    private static final boolean _jniLibsLoaded;
+public class OverlayTestUtils {
 
-    static {
-        String mpfHome = System.getenv("MPF_HOME");
-        var libNames = List.of(
-                "libmpfDetectionComponentApi.so",
-                "libmpfProtobufsShared.so",
-                "libmpfopencvjni.so");
-        for (String libName : libNames) {
-            try {
-                String libraryFile = new File("install/lib", libName).getAbsolutePath();
-                System.load(libraryFile);
-            }
-            catch (UnsatisfiedLinkError e) {
-                if (mpfHome == null) {
-                    throw e;
-                }
-                String libraryFile = new File(mpfHome, "lib/" + libName).getAbsolutePath();
-                System.load(libraryFile);
-            }
-        }
-        _jniLibsLoaded = true;
-    }
-
-
-    private JniTestUtils() {
-
-    }
-
-    /**
-     * This method exists to force the static initializer run when running unit tests. This should always return true.
-     * @return true
-     */
-    public static boolean jniLibsLoaded() {
-        return _jniLibsLoaded;
-    }
-
+    private OverlayTestUtils() { }
 
     public static URI getFileResource(String resourcePath) {
         try {
-            URL resource = JniTestUtils.class.getClassLoader().getResource(resourcePath);
+            URL resource = OverlayTestUtils.class.getClassLoader().getResource(resourcePath);
             Assert.assertNotNull(resourcePath);
             return resource.toURI();
         }

@@ -32,7 +32,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.mitre.mpf.videooverlay.JniLoader;
+
 public class HeicConverter {
+    static {
+        JniLoader.ensureLoaded();
+    }
 
     /**
      * Converts a HEIC image to another format.

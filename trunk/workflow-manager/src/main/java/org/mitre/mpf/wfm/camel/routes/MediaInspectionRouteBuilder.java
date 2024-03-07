@@ -33,10 +33,8 @@ import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcess
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckServiceImpl;
-import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,7 +44,6 @@ import org.springframework.stereotype.Component;
  * its failed flag should be set.
  */
 @Component
-@DependsOn(JniLoader.REF)
 public class MediaInspectionRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(MediaInspectionRouteBuilder.class);
 

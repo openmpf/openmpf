@@ -40,14 +40,10 @@ import javax.imageio.ImageIO;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mitre.mpf.JniTestUtils;
+import org.mitre.mpf.OverlayTestUtils;
 import org.mitre.mpf.wfm.buffers.Markup;
 
 public class TestBoundingBoxWriter {
-
-    static {
-        Assert.assertTrue(JniTestUtils.jniLibsLoaded());
-    }
 
     @Test
     public void testWriterOnVideo() throws IOException, InterruptedException {
@@ -75,7 +71,7 @@ public class TestBoundingBoxWriter {
 
     private static Pair<Integer, Integer> writeBoxOnFrames(String filePath)
             throws IOException, InterruptedException {
-        File sourceFile = new File(JniTestUtils.getFileResource(filePath));
+        File sourceFile = new File(OverlayTestUtils.getFileResource(filePath));
 
         if (!sourceFile.exists()) {
             throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
@@ -123,7 +119,7 @@ public class TestBoundingBoxWriter {
 
     @Test
     public void testWriterOnRotatedImage() throws IOException {
-        File sourceFile = new File(JniTestUtils.getFileResource("samples/Lenna-tall-rotated-with-border.jpg"));
+        File sourceFile = new File(OverlayTestUtils.getFileResource("samples/Lenna-tall-rotated-with-border.jpg"));
 
         if (!sourceFile.exists()) {
             throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
@@ -167,7 +163,7 @@ public class TestBoundingBoxWriter {
 
     @Test
     public void testWriterOnRotatedVideo() throws IOException, InterruptedException {
-        File sourceFile = new File(JniTestUtils.getFileResource("samples/video_02_rotated.mp4"));
+        File sourceFile = new File(OverlayTestUtils.getFileResource("samples/video_02_rotated.mp4"));
 
         if (!sourceFile.exists()) {
             throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));

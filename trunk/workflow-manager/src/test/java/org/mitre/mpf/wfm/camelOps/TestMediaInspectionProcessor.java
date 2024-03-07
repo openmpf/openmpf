@@ -78,7 +78,6 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -125,7 +124,6 @@ public class TestMediaInspectionProcessor {
 
     @BeforeClass
     public static void initClass() {
-        assertTrue(JniLoader.isLoaded());
         ThreadUtil.start();
     }
 

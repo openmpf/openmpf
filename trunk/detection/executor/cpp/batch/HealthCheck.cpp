@@ -172,13 +172,13 @@ bool HealthCheckImpl::IsTimeForAnotherCheck() const {
     if (!health_check_timeout_) {
         return true;
     }
-    return std::chrono::system_clock::now() >= next_check_time_;
+    return clock_t::now() >= next_check_time_;
 }
 
 
 void HealthCheckImpl::SetNextHealthCheckTime() {
     if (health_check_timeout_) {
-        next_check_time_ = std::chrono::system_clock::now() + *health_check_timeout_;
+        next_check_time_ = clock_t::now() + *health_check_timeout_;
     }
 }
 

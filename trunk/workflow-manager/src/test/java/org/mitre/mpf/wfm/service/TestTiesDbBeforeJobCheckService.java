@@ -75,6 +75,7 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonActionOutputObject;
+import org.mitre.mpf.interop.JsonActionTiming;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonDetectionProcessingError;
 import org.mitre.mpf.interop.JsonIssueDetails;
@@ -84,6 +85,7 @@ import org.mitre.mpf.interop.JsonMediaOutputObject;
 import org.mitre.mpf.interop.JsonMediaRange;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.JobCreationRequest;
@@ -949,6 +951,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ImmutableSortedMap.of(),
                 ImmutableSortedMap.of("ALGO2", ImmutableSortedSet.of()));
 
+        var timing = new JsonTiming(800, List.of(
+            new JsonActionTiming("action1", 300),
+            new JsonActionTiming("action2", 500)));
+
         var startTime = Instant.now();
         var endTime = startTime.plusSeconds(1000);
         var outputObject = JsonOutputObject.factory(
@@ -961,7 +967,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 Map.of("ENV_VAR1", "ENV_VALUE"),
                 List.of(media1, media2),
                 List.of(mediaError),
-                List.of(mediaWarning));
+                List.of(mediaWarning),
+                timing);
 
         when(_mockAggJobProps.getCombinedProperties(job))
             .thenReturn(name -> {
@@ -1030,6 +1037,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         outputObjectChecker.neq(j -> j.getMedia());
         outputObjectChecker.eq(j -> j.getErrors());
         outputObjectChecker.eq(j -> j.getWarnings());
+        outputObjectChecker.eq(j -> j.getTiming());
 
         outputObjectChecker.eq(j -> j.getMedia().size());
         var newMedia1 = newOutputObject.getMedia().first();
@@ -1117,7 +1125,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         media.getTrackTypes().put("FACE", ImmutableSortedSet.of(action));
 
         var outputObject = new JsonOutputObject(
-                null, null, null, 4, null, null, null, null, null, null);
+                null, null, null, 4, null, null, null, null, null, null, null);
         outputObject.getMedia().add(media);
 
         doThrow(new StorageException("TEST_MSG"))

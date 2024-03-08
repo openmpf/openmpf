@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -97,14 +98,17 @@ public class DetectionResponseProcessor
                     // Camel will print out the exchange, including the message body content, in the stack trace.
                     String.format("Unsupported operation. More than one DetectionResponse sub-message found for job %d.", jobId));
         }
+
+        BatchJob job = _inProgressJobs.getJob(jobId);
+        Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
+        addProcessingTime(jobId, action, headers);
+
         if (totalResponses == 0) {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
             log.warn("Response received, but no tracks were found for {}.", mediaLabel);
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
             return null;
         }
-
-        BatchJob job = _inProgressJobs.getJob(jobId);
 
         Media media = job.getMedia()
                 .stream()

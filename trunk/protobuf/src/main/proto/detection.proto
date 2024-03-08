@@ -26,7 +26,6 @@ syntax = "proto2";
 package org.mitre.mpf.wfm.buffers;
 
 import "algorithmproperty.proto";
-import "metrics.proto";
 
 option java_outer_classname = "DetectionProtobuf";
 
@@ -199,8 +198,7 @@ message DetectionResponse {
     // Copied from the request.
     optional string action_name = 404 [ default = "N/A"];
 
-    // Profiling metrics.
-    optional MetricsMessage metrics = 405;
+    reserved 405; // optional MetricsMessage metrics = 405;
 
 
     message GenericResponse {
@@ -276,7 +274,5 @@ message StreamingDetectionResponse {
 
     repeated StreamingVideoTrack video_tracks = 5;
 
-    // Profiling metrics.
-    optional MetricsMessage metrics = 400;
-
+    reserved 400; // optional MetricsMessage metrics = 400;
 }

@@ -38,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.lang.IllegalStateException;
+import java.time.Duration;
+import java.time.Instant;
 
 public class MPFDetectionMessenger {
 
@@ -87,6 +89,7 @@ public class MPFDetectionMessenger {
 			LOG.info("Detection request received with job ID " + msgMetadata.getJobId() +
 						" for media file " + msgMetadata.getDataUri());
 
+			var startTime = Instant.now();
 			if(component.supports(msgMetadata.getDataType())) {
 
 				byte[] responseBytes = null;
@@ -180,6 +183,7 @@ public class MPFDetectionMessenger {
 					responseBytesMessage = session.createBytesMessage();
 					responseBytesMessage.writeBytes(responseBytes);
 					ProtoUtils.setMsgProperties(headerProperties, responseBytesMessage);
+					setProcessingTime(responseBytesMessage, startTime);
 					replyProducer.setPriority(message.getJMSPriority());
 					replyProducer.send(message.getJMSReplyTo(), responseBytesMessage);
 					session.commit();
@@ -200,7 +204,9 @@ public class MPFDetectionMessenger {
 					buildUnsupportedMediaTypeResponse(msgMetadata, responseBuilder);
 				}
 
-				buildAndSend(responseBuilder.build(), message.getJMSReplyTo(), headerProperties);
+				buildAndSend(
+						responseBuilder.build(), message.getJMSReplyTo(), headerProperties,
+						startTime);
 			}
         } catch (Exception e) {
 			// TODO: Send error message.
@@ -209,7 +215,11 @@ public class MPFDetectionMessenger {
         }
     }
 
-	private void buildAndSend(DetectionProtobuf.DetectionResponse detectionResponse, Destination destination, Map<String, Object> headers) {
+	private void buildAndSend(
+			DetectionProtobuf.DetectionResponse detectionResponse,
+			Destination destination,
+			Map<String, Object> headers,
+			Instant startTime) {
 		try {
 			// Create a new response message and re-use the incoming headers.
 			BytesMessage response = session.createBytesMessage();
@@ -217,6 +227,7 @@ public class MPFDetectionMessenger {
 
 			// Set the body of the message.
 			response.writeBytes(detectionResponse.toByteArray());
+			setProcessingTime(response, startTime);
 
 			replyProducer.send(destination, response);
 			session.commit();
@@ -316,6 +327,17 @@ public class MPFDetectionMessenger {
 		        .collect(ImmutableMap.toImmutableMap(
 		        		e -> e.getKey().substring(propertyPrefix.length()),
 				        Map.Entry::getValue));
+	}
+
+
+	private static final double NANOS_PER_MS = Duration.ofMillis(1).toNanos();
+
+	private static void setProcessingTime(Message message, Instant startTime) throws JMSException {
+		var duration = Duration.between(startTime, Instant.now());
+		// Manually convert nanoseconds to milliseconds so that the value can be rounded.
+		// Duration.toMillis() always rounds down.
+		long millis = Math.round(duration.toNanos() / NANOS_PER_MS);
+		message.setLongProperty("ProcessingTime", millis);
 	}
 
 	private void rollback() {

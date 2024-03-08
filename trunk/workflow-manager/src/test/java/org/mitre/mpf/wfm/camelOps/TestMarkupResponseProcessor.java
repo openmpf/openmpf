@@ -42,6 +42,7 @@ import java.util.Map;
 
 import org.apache.camel.Exchange;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.Markup;
@@ -133,6 +134,9 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
         JobPipelineElements dummyPipeline = mock(JobPipelineElements.class);
         when(dummyPipeline.getName())
                 .thenReturn("TEST_MARKUP_PIPELINE");
+        var markupAction = new Action("MARKUP", "desc", "MARKUP ALGO", List.of());
+        when(dummyPipeline.getAction(taskIndex, actionIndex))
+                .thenReturn(markupAction);
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
         Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
@@ -153,6 +157,8 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
 
         Exchange exchange = TestUtil.createTestExchange();
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, TEST_JOB_ID);
+        long processingTime = 878;
+        exchange.getIn().setHeader(MpfHeaders.PROCESSING_TIME, processingTime);
         exchange.getIn().setBody(markupResponse);
 
         _markupResponseProcessor.process(exchange);
@@ -170,6 +176,9 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
         assertEquals(mediaIndex, markupResult.getMediaIndex());
         assertEquals(mediaUri.toString(), markupResult.getSourceUri());
         assertEquals("TEST_MARKUP_PIPELINE", markupResult.getPipeline());
+
+        verify(_mockInProgressJobs)
+            .addProcessingTime(TEST_JOB_ID, markupAction, processingTime);
 
         return markupResult;
     }

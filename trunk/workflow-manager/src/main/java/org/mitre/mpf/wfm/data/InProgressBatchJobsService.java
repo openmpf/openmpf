@@ -53,6 +53,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -552,5 +553,14 @@ public class InProgressBatchJobsService {
             throw new IllegalArgumentException(String.format("Job %s does not have media with id %s", jobId, mediaId));
         }
         return media;
+    }
+
+
+    public synchronized void addProcessingTime(long jobId, Action action, long processingTime) {
+        getJobImpl(jobId).addProcessingTime(action, processingTime);
+    }
+
+    public void reportMissingProcessingTime(long jobId, Action action) {
+        addProcessingTime(jobId, action, -1);
     }
 }

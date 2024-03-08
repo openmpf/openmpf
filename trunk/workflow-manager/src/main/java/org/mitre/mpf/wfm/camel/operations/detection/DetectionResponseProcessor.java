@@ -116,7 +116,6 @@ public class DetectionResponseProcessor
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException("Unable to locate media with id: " +
                         detectionResponse.getMediaId()));
-        Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
         var qualityFilter = createQualityFilter(job, media, action);
         var qualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
         var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();

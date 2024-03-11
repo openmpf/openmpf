@@ -435,6 +435,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 -1,
                 List.of(),
                 trackProps,
+                null,
                 null);
 
             _tracks.put(taskIdx, track);
@@ -488,7 +489,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 _currentTask == 0,
                 createAlgorithmProps(_triggers.get(_currentTask)),
                 Set.copyOf(_tracks.get(_currentTask - 1)),
-                null);
+                null, "");
             return _triggerProcessor.getTriggeredTracks(media, detectionContext).toList();
         }
 

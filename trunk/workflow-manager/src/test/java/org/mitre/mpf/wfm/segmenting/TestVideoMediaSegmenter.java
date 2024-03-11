@@ -151,7 +151,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         var context = new DetectionContext(
                 1, 0, "STAGE_NAME", 0, "ACTION_NAME",
                 true, List.of(), Set.of(),
-                segmentingPlan);
+                segmentingPlan, null);
 
         var media = createTestMediaWithFps(
                 List.of(
@@ -195,7 +195,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         Set<Track> tracks = createTestTracks();
 
-        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
+        DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks, "CONFIDENCE");
 
         var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, context);
 
@@ -222,7 +222,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         Set<Track> tracks = createTestTracks();
 
         var detectionContext = createTestDetectionContext(
-                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
+                1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
                 .thenReturn(tracks.stream());
@@ -271,15 +271,15 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
 
     @Test
-    public void canCreateFeedForwardMessagesWithTopConfidenceCount() {
+    public void canCreateFeedForwardMessagesWithTopQualityCount() {
         Media media = createTestMedia();
 
         Set<Track> tracks = createTestTracks();
 
         var detectionContext = createTestDetectionContext(
                 1,
-                ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_TOP_CONFIDENCE_COUNT", "2"),
-                tracks);
+                ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_TOP_QUALITY_COUNT", "2"),
+                tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
                 .thenReturn(tracks.stream());

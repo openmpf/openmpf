@@ -48,34 +48,34 @@ public class TestExemplarPolicyUtil {
 
     @Test
     public void testMatchingBounds() {
-        assertSame(_d50, ExemplarPolicyUtil.getExemplar("FIRST", 50, 60, _detections));
-        assertSame(_d60, ExemplarPolicyUtil.getExemplar("LAST", 50, 60, _detections));
-        assertSame(_d54, ExemplarPolicyUtil.getExemplar("MIDDLE", 50, 60, _detections));
-        assertSame(_d51, ExemplarPolicyUtil.getExemplar("CONFIDENCE", 50, 60, _detections));
-        assertSame(_d51, ExemplarPolicyUtil.getExemplar("", 50, 60, _detections));
+        assertSame(_d50, ExemplarPolicyUtil.getExemplar("FIRST", "", 50, 60, _detections));
+        assertSame(_d60, ExemplarPolicyUtil.getExemplar("LAST", "", 50, 60, _detections));
+        assertSame(_d54, ExemplarPolicyUtil.getExemplar("MIDDLE", "", 50, 60, _detections));
+        assertSame(_d51, ExemplarPolicyUtil.getExemplar("CONFIDENCE", "CONFIDENCE", 50, 60, _detections));
+        assertSame(_d51, ExemplarPolicyUtil.getExemplar("", "CONFIDENCE", 50, 60, _detections));
     }
 
 
     @Test
     public void testMiddleIsFirst() {
-        assertSame(_d50, ExemplarPolicyUtil.getExemplar("MIDDLE", 0, 70, _detections));
+        assertSame(_d50, ExemplarPolicyUtil.getExemplar("MIDDLE", "", 0, 70, _detections));
     }
 
     @Test
     public void testMiddleIsLast() {
-        assertSame(_d60, ExemplarPolicyUtil.getExemplar("MIDDLE", 50, 100, _detections));
+        assertSame(_d60, ExemplarPolicyUtil.getExemplar("MIDDLE", "", 50, 100, _detections));
     }
 
     @Test
     public void testMiddleIsMiddleElement() {
-        assertSame(_d52, ExemplarPolicyUtil.getExemplar("MIDDLE", 0, 104, _detections));
+        assertSame(_d52, ExemplarPolicyUtil.getExemplar("MIDDLE", "", 0, 104, _detections));
     }
 
     @Test
     public void testEqualMaxConfidence() {
         var d61 = createDetection(61, _d60.getConfidence());
         var detections = ImmutableSortedSet.of(_d50, _d52, _d54, _d60, d61);
-        assertSame(_d60, ExemplarPolicyUtil.getExemplar("CONFIDENCE", 0, 100, detections));
+        assertSame(_d60, ExemplarPolicyUtil.getExemplar("CONFIDENCE", "CONFIDENCE", 0, 100, detections));
     }
 
     private static Detection createDetection(int frame, double confidence) {

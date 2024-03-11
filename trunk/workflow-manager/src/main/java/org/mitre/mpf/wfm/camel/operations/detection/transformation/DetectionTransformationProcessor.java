@@ -235,7 +235,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         track.getConfidence(),
                         goodDetections,
                         track.getTrackProperties(),
-                        track.getExemplarPolicy()));
+                        track.getExemplarPolicy(),
+                        track.getQualitySelectionProperty()));
             }
             else {
                 _log.warn(String.format("Empty track dropped after removing ill-formed detection(s): %s", track));
@@ -361,7 +362,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getConfidence(),
                     newDetections,
                     track.getTrackProperties(),
-                    track.getExemplarPolicy()));
+                    track.getExemplarPolicy(),
+                    track.getQualitySelectionProperty()));
         }
 
         Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()

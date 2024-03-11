@@ -63,6 +63,9 @@ public class DetectionContext {
     private final Set<Track> previousTracks;
     public Set<Track> getPreviousTracks() { return previousTracks; }
 
+    private final String qualitySelectionProperty;
+    public String getQualitySelectionProperty() { return qualitySelectionProperty; }
+
     public DetectionContext(
             long jobId,
             int taskIndex,
@@ -72,7 +75,8 @@ public class DetectionContext {
             boolean isFirstDetectionTask,
             List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
             Set<Track> previousTracks,
-            SegmentingPlan segmentingPlan) {
+            SegmentingPlan segmentingPlan,
+            String qualitySelectionProperty) {
         this.jobId = jobId;
         this.taskIndex = taskIndex;
         this.taskName = taskName;
@@ -82,6 +86,7 @@ public class DetectionContext {
         this.algorithmProperties = algorithmProperties;
         this.previousTracks = previousTracks;
         this.segmentingPlan = segmentingPlan;
+        this.qualitySelectionProperty = qualitySelectionProperty;
     }
 
     @Override

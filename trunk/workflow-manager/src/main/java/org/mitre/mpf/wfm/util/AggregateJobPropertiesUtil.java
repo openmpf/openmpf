@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableMap;
+
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
@@ -519,6 +521,16 @@ public class AggregateJobPropertiesUtil {
         }
 
         return tasksToMerge;
+    }
+
+    public String getQualitySelectionProp(BatchJob job, Media media, Action action) {
+        String prop = getValue(MpfConstants.QUALITY_SELECTION_PROPERTY, job, media, action);
+        if (StringUtils.isEmpty(prop)) {
+            return "CONFIDENCE";
+        }
+        else {
+            return prop;
+        }
     }
 
     public boolean isOutputLastTaskOnly(Media media, BatchJob job) {

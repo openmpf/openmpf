@@ -48,7 +48,7 @@ public interface MediaSegmenter {
 
     public static final String FEED_FORWARD_TYPE = "FEED_FORWARD_TYPE";
 
-    public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
+    public static final String FEED_FORWARD_TOP_QUALITY_COUNT = "FEED_FORWARD_TOP_QUALITY_COUNT";
 
     static final Set<String> FEED_FORWARD_TYPES
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
@@ -84,7 +84,7 @@ public interface MediaSegmenter {
         if (context.isFirstDetectionTask()) {
             return context.getAlgorithmProperties().stream()
                     .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
-                    .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
+                    .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_QUALITY_COUNT))
                     .collect(toList());
         }
         return context.getAlgorithmProperties();

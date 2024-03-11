@@ -30,11 +30,8 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -46,7 +43,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.util.MediaRange;
-import org.mitre.mpf.wfm.util.TopConfidenceUtil;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +56,9 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private final TriggerProcessor _triggerProcessor;
 
+
     @Inject
-    VideoMediaSegmenter(
-            TriggerProcessor triggerProcessor) {
+    VideoMediaSegmenter(TriggerProcessor triggerProcessor) {
         _triggerProcessor = triggerProcessor;
     }
 
@@ -129,7 +126,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
 
     private List<DetectionRequest> createFeedForwardRequests(Media media, DetectionContext context) {
-        int topConfidenceCount = getTopConfidenceCount(context);
+        int topQualityCount = getTopQualityCount(context);
+        String topQualitySelectionProp = context.getQualitySelectionProperty();
         return _triggerProcessor.getTriggeredTracks(media, context)
                 .filter(t -> {
                     if (t.getDetections().isEmpty()) {
@@ -139,24 +137,24 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     }
                     return true;
                 })
-                .map(t -> createFeedForwardRequest(t, topConfidenceCount, media, context))
+                .map(t -> createFeedForwardRequest(t, topQualityCount, topQualitySelectionProp, media, context))
                 .toList();
     }
 
 
-    private static DetectionRequest createFeedForwardRequest(
-            Track track, int topConfidenceCount, Media media, DetectionContext context) {
+    private DetectionRequest createFeedForwardRequest(
+            Track track, int topQualityCount, String topQualitySelectionProp, Media media, DetectionContext context) {
         Collection<Detection> includedDetections;
         int startFrame;
         int stopFrame;
-        if (topConfidenceCount <= 0) {
+        if (topQualityCount <= 0) {
             includedDetections = track.getDetections();
             startFrame = track.getStartOffsetFrameInclusive();
             stopFrame = track.getEndOffsetFrameInclusive();
         }
         else {
-            includedDetections = TopConfidenceUtil.getTopConfidenceDetections(
-                    track.getDetections(), topConfidenceCount);
+            includedDetections = TopQualitySelectionUtil.getTopQualityDetections(
+                              track.getDetections(), topQualityCount, topQualitySelectionProp);
             var frameSummaryStats = includedDetections.stream()
                     .mapToInt(Detection::getMediaOffsetFrame)
                     .summaryStatistics();
@@ -190,10 +188,10 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         return new DetectionRequest(protobuf, track);
     }
 
-    private static int getTopConfidenceCount(DetectionContext context) {
+    private static int getTopQualityCount(DetectionContext context) {
         return context.getAlgorithmProperties()
                 .stream()
-                .filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
+                .filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_QUALITY_COUNT))
                 .mapToInt(ap -> Integer.parseInt(ap.getPropertyValue()))
                 .findAny()
                 .orElse(0);

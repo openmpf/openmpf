@@ -30,7 +30,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -180,8 +179,10 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         when(mockInProgressJobs.getJob(JOB_ID))
                 .thenReturn(job);
 
-        when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
+        when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.QUALITY_THRESHOLD_PROPERTY, job, media, action))
                 .thenReturn(String.valueOf(0.1));
+        when(mockAggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action))
+                .thenReturn("CONFIDENCE");
     }
 
 

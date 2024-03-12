@@ -117,7 +117,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		Set<Track> tracks = createTestTracks();
 
 		DetectionContext context = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
@@ -144,7 +144,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 	public void noRequestsCreatedWhenNoFeedForwardTracks() {
 		Media media = createTestMedia();
 		DetectionContext feedForwardContext = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), "CONFIDENCE");
         var detectionRequests = _audioMediaSegmenter.createDetectionRequests(
                 media, feedForwardContext);
 		assertTrue(detectionRequests.isEmpty());
@@ -187,13 +187,13 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		Track track1 = new Track(1, 1, 0, 0, 0,
 		                         -1, 5, 10, 0, 5,
 		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
-		                         "");
+		                         "", "");
 
 		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(1, 1, 0, 0, 0,
 		                         -1, 15, 30, 0, 15,
 		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
-		                         "");
+		                         "", "");
 
 		return ImmutableSet.of(track1, track2);
 	}

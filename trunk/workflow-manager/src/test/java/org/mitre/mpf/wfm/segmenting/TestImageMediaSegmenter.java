@@ -106,7 +106,7 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 		Set<Track> tracks = createTestTracks();
 
 		DetectionContext context = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
@@ -122,6 +122,7 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
+        detectionRequests.stream().forEach(dr -> System.out.println(dr.protobuf().getImageRequest().getFeedForwardLocation().getConfidence()));
 		assertTrue(detectionRequests.stream()
 				           .anyMatch(dr -> confidenceIsEqualToDimensions(
 						           5, dr.protobuf().getImageRequest().getFeedForwardLocation())));
@@ -159,8 +160,8 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
 	private static Set<Track> createTestTracks() {
 		return ImmutableSet.of(
-				createTrack(createDetection(0, 5)),
-				createTrack(createDetection(0, 10)));
+				createTrack(createDetection(0, 5, "CONFIDENCE", 0.1f)),
+				createTrack(createDetection(0, 10, "CONFIDENCE", 0.5f)));
 
 	}
 

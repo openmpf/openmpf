@@ -47,7 +47,7 @@ public interface MediaSegmenter {
 
     public static final String FEED_FORWARD_TYPE = "FEED_FORWARD_TYPE";
 
-    public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
+    public static final String FEED_FORWARD_TOP_QUALITY_COUNT = "FEED_FORWARD_TOP_QUALITY_COUNT";
 
     static final Set<String> FEED_FORWARD_TYPES
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
@@ -74,10 +74,10 @@ public interface MediaSegmenter {
             return algoProps;
         }
         else if (algoProps.containsKey(FEED_FORWARD_TYPE)
-                    || algoProps.containsKey(FEED_FORWARD_TOP_CONFIDENCE_COUNT)) {
+                    || algoProps.containsKey(FEED_FORWARD_TOP_QUALITY_COUNT)) {
             return algoProps.entrySet().stream()
                 .filter(e -> !e.getKey().equals(FEED_FORWARD_TYPE))
-                .filter(e -> !e.getKey().equals(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
+                .filter(e -> !e.getKey().equals(FEED_FORWARD_TOP_QUALITY_COUNT))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
         else {

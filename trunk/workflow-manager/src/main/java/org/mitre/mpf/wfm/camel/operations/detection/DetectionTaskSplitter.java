@@ -183,7 +183,8 @@ public class DetectionTaskSplitter {
                             isFirstDetectionTaskForMedia,
                             combinedProperties,
                             previousTracks,
-                            segmentingPlan);
+                            segmentingPlan,
+                            combinedProperties.get(MpfConstants.QUALITY_SELECTION_PROPERTY));
 
                     var detectionRequestMessages = createDetectionRequestMessages(
                             job, media, action, detectionContext);

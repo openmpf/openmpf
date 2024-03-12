@@ -85,6 +85,7 @@ public class TestRedis {
 
     @BeforeClass
     public static void initClass() {
+        var detections = createDetections();
         var t1 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
@@ -96,8 +97,9 @@ public class TestRedis {
                 5423,
                 0,
                 0.5f,
-                createDetections(),
+                detections,
                 ImmutableSortedMap.of("a", "b", "c", "d"),
+                "",
                 "");
         var t2 = new Track(
                 TEST_JOB_ID,
@@ -110,8 +112,9 @@ public class TestRedis {
                 5433,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 Map.of(),
+                "",
                 "");
         _currentTracks = ImmutableSortedSet.of(t1, t2);
 
@@ -126,8 +129,9 @@ public class TestRedis {
                 5433,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 ImmutableSortedMap.of("e", "f"),
+                "",
                 "");
 
         _differentJobTrack = new Track(
@@ -141,8 +145,9 @@ public class TestRedis {
                 5433,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 Map.of(),
+                "",
                 "");
     }
 
@@ -188,7 +193,7 @@ public class TestRedis {
 
         assertTrue(_redis.getTracks(1, TEST_MEDIA_ID, 0, 0).isEmpty());
 
-
+        var detections = createDetections();
         var replacementTrack = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
@@ -200,8 +205,9 @@ public class TestRedis {
                 5424,
                 0,
                 0.6f,
-                createDetections(),
+                detections,
                 ImmutableSortedMap.of("a", "b", "c", "d", "e", "f"),
+                "",
                 "");
         _redis.setTracks(TEST_JOB_ID, TEST_MEDIA_ID, 0, 0,
                          Collections.singletonList(replacementTrack));

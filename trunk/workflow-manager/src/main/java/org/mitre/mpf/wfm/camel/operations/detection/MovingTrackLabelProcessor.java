@@ -94,13 +94,12 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                    continue;
                }
 
-               var movingTracksOnly = Boolean.parseBoolean(
+                var movingTracksOnly = Boolean.parseBoolean(
                        combinedProperties.apply(MpfConstants.MOVING_TRACKS_ONLY));
-               var maxIou = Double.parseDouble(
+                var maxIou = Double.parseDouble(
                        combinedProperties.apply(MpfConstants.MOVING_TRACK_MAX_IOU));
-               int minMovingDetections = Integer.parseInt(
+                int minMovingDetections = Integer.parseInt(
                        combinedProperties.apply(MpfConstants.MOVING_TRACK_MIN_DETECTIONS));
-
 
                 var originalTracks = trackCache.getTracks(media.getId(), actionIndex);
 
@@ -183,7 +182,8 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 track.getConfidence(),
                 newDetectionsBuilder.build(),
                 newTrackProperties,
-                track.getExemplarPolicy());
+                track.getExemplarPolicy(),
+                track.getQualitySelectionProperty());
     }
 
 

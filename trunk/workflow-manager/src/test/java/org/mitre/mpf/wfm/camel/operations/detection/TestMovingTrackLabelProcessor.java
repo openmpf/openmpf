@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
-import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -282,6 +281,7 @@ public class TestMovingTrackLabelProcessor {
                 -1, //confidence
                 detections, //detections
                 Map.of(), //trackProperties
+                "",
                 "");
     }
 }

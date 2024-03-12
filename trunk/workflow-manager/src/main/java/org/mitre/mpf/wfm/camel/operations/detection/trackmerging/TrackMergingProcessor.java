@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -143,7 +144,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                     log.debug("Merging {} tracks down to {} in Media {}.",
                               initialSize, tracks.size(), media.getId());
                 }
-
+                
                 if (pruneRequested) {
                     int initialSize = tracks.size();
                     int minTrackLength = trackMergingPlan.getMinTrackLength();
@@ -293,7 +294,8 @@ public class TrackMergingProcessor extends WfmProcessor {
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
                 properties,
-                track1.getExemplarPolicy());
+                track1.getExemplarPolicy(),
+                track1.getQualitySelectionProperty());
         return merged;
     }
 

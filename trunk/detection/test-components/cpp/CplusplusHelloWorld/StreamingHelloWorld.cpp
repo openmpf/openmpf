@@ -36,7 +36,7 @@ StreamingHelloWorld::StreamingHelloWorld(const MPFStreamingVideoJob &job)
         : MPFStreamingDetectionComponent(job)
         , hw_logger_(log4cxx::Logger::getLogger("StreamingHelloWorldTest"))
         , job_name_(job.job_name)
-        , confidence_threshold_(DetectionComponentUtils::GetProperty(job.job_properties, "CONFIDENCE_THRESHOLD", -1.0))
+        , confidence_threshold_(DetectionComponentUtils::GetProperty(job.job_properties, "QUALITY_SELECTION_THRESHOLD", -1.0))
 {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Initialized StreamingHelloWorld component.")
 }

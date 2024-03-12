@@ -112,6 +112,7 @@ public class RollUpProcessor extends WfmProcessor {
                     // No roll up is configured for this part of the job.
                     continue;
                 }
+
                 var tracks = trackCache.getTracks(jobPart.media().getId(), jobPart.actionIndex());
                 var rolledUpTracks = rollUpContext.get().applyRollUp(tracks);
                 // When no tracks need to be changed, applyRollUp returns a reference to the same
@@ -261,7 +262,8 @@ public class RollUpProcessor extends WfmProcessor {
                     track.getConfidence(),
                     rolledUpDetections,
                     rolledUpTrackProperties,
-                    track.getExemplarPolicy());
+                    track.getExemplarPolicy(),
+                    track.getQualitySelectionProperty());
         }
 
         private SortedSet<Detection> applyRollUpToDetections(

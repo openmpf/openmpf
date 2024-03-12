@@ -26,15 +26,14 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableSortedMap;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.ImageLocation;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
-import org.mitre.mpf.wfm.util.TopConfidenceUtil;
 
 import java.util.*;
 
@@ -380,12 +379,19 @@ public class TestMediaSegmenter {
 				&& containsExpectedDetectionProperties(dimensions, imageLocation.getDetectionPropertiesMap());
 	}
 
-	protected static DetectionContext createTestDetectionContext(int stage, Map<String, String> additionalAlgoProps,
-																 Set<Track> tracks) {
+
+    protected static DetectionContext createTestDetectionContext(
+            int stage, Map<String, String> additionalAlgoProps, Set<Track> tracks) {
+        return createTestDetectionContext(stage, additionalAlgoProps, tracks, null);
+    }
+
+	protected static DetectionContext createTestDetectionContext(
+            int stage, Map<String, String> additionalAlgoProps, Set<Track> tracks,
+            String qualitySelectionProperty) {
 		return new DetectionContext(
 				1, stage, "STAGE_NAME", 0, "ACTION_NAME", stage == 0,
 				createTestAlgorithmProperties(additionalAlgoProps), tracks,
-				createTestSegmentingPlan());
+				createTestSegmentingPlan(), qualitySelectionProperty);
 	}
 
 
@@ -406,32 +412,41 @@ public class TestMediaSegmenter {
 
 
 	protected static SortedMap<String, String> createDetectionProperties(int detectionNumber) {
-		return ImmutableSortedMap.of("detectionKey" + detectionNumber, "detectionValue" + detectionNumber);
+		return createDetectionProperties(detectionNumber, null, -1);
 	}
+
+    protected static SortedMap<String, String> createDetectionProperties(
+            int detectionNumber, String qualitySelectionProperty, float qualitySelectionValue) {
+        var props = new TreeMap<String, String>();
+        props.put("detectionKey" + detectionNumber, "detectionValue" + detectionNumber);
+        if (qualitySelectionProperty != null) {
+            props.put(qualitySelectionProperty, String.valueOf(qualitySelectionValue));
+        }
+        return props;
+    }
 
 
 	protected static boolean containsExpectedDetectionProperties(
-			int detectionNumber, Map<String, String> properties) {
-
-		SortedMap<String, String> expectedProperties = createDetectionProperties(detectionNumber);
-		if (expectedProperties.size() != properties.size()) {
-			return false;
-		}
-
-        for (var entry : properties.entrySet()) {
-			String expectedValue = expectedProperties.get(entry.getKey());
-			if (!expectedValue.equals(entry.getValue())) {
-				return false;
-			}
-        }
-		return true;
+			int detectionNumber, Map<String, String> actualProps) {
+        var expectedProps = createDetectionProperties(detectionNumber);
+        return expectedProps.entrySet().stream()
+                .allMatch(ep -> Objects.equals(actualProps.get(ep.getKey()), ep.getValue()));
 	}
 
 
-	protected static Detection createDetection(int frame, float confidence) {
+    protected static Detection createDetection(int frame, float confidence) {
+        return createDetection(frame, confidence, null, -1);
+    }
+
+	protected static Detection createDetection(
+            int frame, float confidence,
+            String qualitySelectionProperty, float qualitySelectionValue) {
 		int dimensions = (int) confidence;
-		return new Detection(dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
-				createDetectionProperties(dimensions));
+        var properties = createDetectionProperties(
+                dimensions, qualitySelectionProperty, qualitySelectionValue);
+		return new Detection(
+                dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
+				properties);
 	}
 
 
@@ -446,11 +461,11 @@ public class TestMediaSegmenter {
 				.max()
 				.getAsInt();
 
-        Detection exemplar = TopConfidenceUtil.getTopConfidenceItem(
-                detectionList, Detection::getConfidence);
+        Detection exemplar = TopQualitySelectionUtil.getTopQualityItem(
+                detectionList, "CONFIDENCE");
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, 1,
-				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "");
+				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "", "CONFIDENCE");
 		return track;
 	}
 

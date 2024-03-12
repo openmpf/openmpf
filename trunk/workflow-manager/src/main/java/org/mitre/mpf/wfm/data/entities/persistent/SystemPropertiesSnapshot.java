@@ -139,14 +139,13 @@ public class SystemPropertiesSnapshot {
         return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.exemplar.frame.plus"));
     }
 
-    public int getArtifactExtractionPolicyTopConfidenceCount() {
-        return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.top.confidence.count"));
+    public int getArtifactExtractionPolicyTopQualityCount() {
+        return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.top.quality.count"));
     }
 
     public ArtifactExtractionPolicy getDefaultArtifactExtractionPolicy() {
         return ArtifactExtractionPolicy.parse(_properties.get("detection.artifact.extraction.policy"));
     }
-
 
     public String lookup(String propertyName) {
         return _properties.get(propertyName);

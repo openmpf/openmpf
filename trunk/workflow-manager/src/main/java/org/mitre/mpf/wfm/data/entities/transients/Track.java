@@ -31,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
-import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 
@@ -114,6 +113,9 @@ public class Track implements Comparable<Track> {
     private final String _exemplarPolicy;
     public String getExemplarPolicy() { return _exemplarPolicy; }
 
+    private final String _qualitySelectionProperty;
+    public String getQualitySelectionProperty() { return _qualitySelectionProperty; }
+
     /**
      * Creates a new track instance with the given immutable parameters.
      *
@@ -149,7 +151,8 @@ public class Track implements Comparable<Track> {
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
-            @JsonProperty("exemplarPolicy") String exemplarPolicy) {
+            @JsonProperty("exemplarPolicy") String exemplarPolicy,
+            @JsonProperty("qualitySelectionProperty") String qualitySelectionProperty) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
@@ -163,11 +166,13 @@ public class Track implements Comparable<Track> {
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
         _exemplarPolicy = exemplarPolicy;
+        _qualitySelectionProperty = qualitySelectionProperty;
         _exemplar = ExemplarPolicyUtil.getExemplar(
-                _exemplarPolicy,
-                _startOffsetFrameInclusive,
-                _endOffsetFrameInclusive,
-                _detections);
+                    _exemplarPolicy,
+                    _qualitySelectionProperty,
+                    _startOffsetTimeInclusive,
+                    _endOffsetFrameInclusive,
+                    _detections);
     }
 
 

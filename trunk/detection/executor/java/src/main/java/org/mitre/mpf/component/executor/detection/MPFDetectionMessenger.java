@@ -91,7 +91,6 @@ public class MPFDetectionMessenger {
 
 				byte[] responseBytes = null;
 
-				// TODO: Include the exception message in the response message for more detail.
 				if (MPFDataType.AUDIO == msgMetadata.getDataType()) {
 					MPFDetectionAudioRequest audioRequest = detectionBuffer.getAudioRequest();
 					try {

@@ -76,6 +76,8 @@ public interface MediaSegmenter {
         else if (algoProps.containsKey(FEED_FORWARD_TYPE)
                     || algoProps.containsKey(FEED_FORWARD_TOP_QUALITY_COUNT)) {
             return algoProps.entrySet().stream()
+                // Since this is the DetectionContext for the first detection task, the feed
+                // forward properties should be ignored.
                 .filter(e -> !e.getKey().equals(FEED_FORWARD_TYPE))
                 .filter(e -> !e.getKey().equals(FEED_FORWARD_TOP_QUALITY_COUNT))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));

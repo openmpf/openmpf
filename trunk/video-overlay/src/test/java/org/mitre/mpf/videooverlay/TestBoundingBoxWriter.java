@@ -136,7 +136,7 @@ public class TestBoundingBoxWriter {
                 .setHeight(170)
                 .setRotationDegrees(270)
                 .setFlip(false)
-                .setRed(2500)
+                .setRed(255)
                 .setGreen(0)
                 .setBlue(0)
                 .setLabel("7.777")

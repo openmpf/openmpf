@@ -200,7 +200,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
                                 .setStopFrame(5)
                                 .setConfidence(0.5f)
                                 .putDetectionProperties(
-                                        "TRACK_TEST_PROP_KEY", "TRACK_TEST_PROP_KEY")
+                                        "TRACK_TEST_PROP_KEY", "TRACK_TEST_PROP_VALUE")
                                 .putFrameLocations(5, DetectionProtobuf.ImageLocation.newBuilder()
                                         .setConfidence(0.5f)
                                         .setXLeftUpper(0)

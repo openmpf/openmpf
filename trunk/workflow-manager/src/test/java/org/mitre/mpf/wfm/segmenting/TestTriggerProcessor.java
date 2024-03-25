@@ -58,7 +58,6 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -518,18 +517,9 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
         }
     }
 
-    private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty>
-            createAlgorithmProps(String trigger) {
-
-        var prop1 = AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
-                .setPropertyName("OTHER_PROP")
-                .setPropertyValue("OTHER_PROP_VALUE")
-                .build();
-        var prop2 = AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
-                .setPropertyName("TRIGGER")
-                .setPropertyValue(Objects.requireNonNullElse(trigger, ""))
-                .build();
-
-        return List.of(prop1, prop2);
+    private static Map<String, String> createAlgorithmProps(String trigger) {
+        return Map.of(
+            "OTHER_PROP", "OTHER_PROP_VALUE",
+            "TRIGGER", Objects.requireNonNullElse(trigger, ""));
     }
 }

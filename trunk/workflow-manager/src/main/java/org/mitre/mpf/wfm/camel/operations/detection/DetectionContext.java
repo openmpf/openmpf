@@ -26,11 +26,10 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class DetectionContext {
@@ -55,8 +54,8 @@ public class DetectionContext {
     private final boolean isFirstDetectionTask;
     public boolean isFirstDetectionTask() { return isFirstDetectionTask; }
 
-    private final List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties;
-    public List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgorithmProperties() {
+    private final Map<String, String> algorithmProperties;
+    public Map<String, String> getAlgorithmProperties() {
         return algorithmProperties;
     }
 
@@ -73,7 +72,7 @@ public class DetectionContext {
             int actionIndex,
             String actionName,
             boolean isFirstDetectionTask,
-            List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
+            Map<String, String> algorithmProperties,
             Set<Track> previousTracks,
             SegmentingPlan segmentingPlan,
             String qualitySelectionProperty) {

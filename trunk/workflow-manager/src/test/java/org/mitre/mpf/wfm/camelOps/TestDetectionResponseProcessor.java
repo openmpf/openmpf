@@ -188,35 +188,29 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
     @Test
     public void testHappyPath() {
-        DetectionProtobuf.DetectionResponse detectionResponse =
-                DetectionProtobuf.DetectionResponse.newBuilder()
+        var detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setMediaId(MEDIA_ID)
-                .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                                   .setStartFrame(START_FRAME)
-                                   .setStopFrame(STOP_FRAME)
-                                   .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
-                                                   .setStartFrame(5)
-                                                   .setStopFrame(5)
-                                                   .setConfidence(0.5f)
-                                                   .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
-                                                                           .setKey("TRACK_TEST_PROP_KEY")
-                                                                           .setValue("TRACK_TEST_PROP_VALUE"))
-                                                   .addFrameLocations(DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder()
-                                                                      .setFrame(5)
-                                                                      .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder()
-                                                                                        .setConfidence(0.5f)
-                                                                                        .setXLeftUpper(0)
-                                                                                        .setYLeftUpper(10)
-                                                                                        .setHeight(10)
-                                                                                        .setWidth(10)
-                                                                                        .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
-                                                                                                                .setKey("DETECTION_TEST_PROP_KEY")
-                                                                                                                .setValue("DETECTION_TEST_PROP_VALUE"))))))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setTaskIndex(0)
+                .setActionIndex(0)
+                .setVideoResponse(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                        .setStartFrame(START_FRAME)
+                        .setStopFrame(STOP_FRAME)
+                        .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
+                                .setStartFrame(5)
+                                .setStopFrame(5)
+                                .setConfidence(0.5f)
+                                .putDetectionProperties(
+                                        "TRACK_TEST_PROP_KEY", "TRACK_TEST_PROP_VALUE")
+                                .putFrameLocations(5, DetectionProtobuf.ImageLocation.newBuilder()
+                                        .setConfidence(0.5f)
+                                        .setXLeftUpper(0)
+                                        .setYLeftUpper(10)
+                                        .setHeight(10)
+                                        .setWidth(10)
+                                        .putDetectionProperties(
+                                                "DETECTION_TEST_PROP_KEY",
+                                                "DETECTION_TEST_PROP_VALUE")
+                                        .build())))
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -227,8 +221,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         when(mockTaskMergingManager.getMergedTaskIndex(
                 argThat(j -> j.getId() == JOB_ID),
                 argThat(m -> m.getId() == MEDIA_ID),
-                eq(1),
-                eq(1),
+                eq(0),
+                eq(0),
                 eq(exchange.getIn().getHeaders())))
                 .thenReturn(0);
 
@@ -286,14 +280,11 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                .setVideoResponse(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
                         .setStartFrame(START_FRAME)
                         .setStopFrame(STOP_FRAME))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -310,14 +301,11 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
+                .setAudioResponse(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
                         .setStartTime(START_TIME)
                         .setStopTime(STOP_TIME))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -342,12 +330,9 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder())
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setImageResponse(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder())
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -369,12 +354,9 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder())
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setGenericResponse(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder())
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());

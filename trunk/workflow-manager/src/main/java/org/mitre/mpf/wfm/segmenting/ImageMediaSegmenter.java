@@ -78,7 +78,6 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 	private static DetectionProtobuf.DetectionRequest createProtobuf(
             Media media, DetectionContext context, ImageRequest imageRequest) {
 		return MediaSegmenter.initializeRequest(media, context)
-				.setDataType(DetectionProtobuf.DetectionRequest.DataType.IMAGE)
 				.setImageRequest(imageRequest)
 				.build();
 	}

@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -80,7 +79,6 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
             Media media, DetectionContext context,
             DetectionProtobuf.DetectionRequest.GenericRequest genericRequest) {
         return MediaSegmenter.initializeRequest(media, context)
-                .setDataType(DetectionProtobuf.DetectionRequest.DataType.UNKNOWN)
                 .setGenericRequest(genericRequest)
                 .build();
     }
@@ -92,14 +90,9 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
         Detection exemplar = track.getExemplar();
 
-        var genericTrackBuilder = genericRequest.getFeedForwardTrackBuilder()
-                .setConfidence(exemplar.getConfidence());
-
-        for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
-            genericTrackBuilder.addDetectionPropertiesBuilder()
-                    .setKey(entry.getKey())
-                    .setValue(entry.getValue());
-        }
+        genericRequest.getFeedForwardTrackBuilder()
+                .setConfidence(exemplar.getConfidence())
+                .putAllDetectionProperties(exemplar.getDetectionProperties());
         var protobuf = createProtobuf(media, ctx, genericRequest.build());
         return new DetectionRequest(protobuf, track);
     }

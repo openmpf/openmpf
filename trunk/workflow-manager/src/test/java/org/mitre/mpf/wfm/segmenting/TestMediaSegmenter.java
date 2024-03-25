@@ -28,9 +28,7 @@ package org.mitre.mpf.wfm.segmenting;
 
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.ImageLocation;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.PropertyMap;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -39,8 +37,6 @@ import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.util.*;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -345,14 +341,10 @@ public class TestMediaSegmenter {
 	protected static void assertContainsAlgoProperty(
             String key, String value, Collection<DetectionRequest> requests) {
 		for (var request : requests) {
-            boolean foundMatchingProperty = request.protobuf()
-                .getAlgorithmPropertyList()
-                .stream()
-                .anyMatch(ap -> ap.getPropertyName().equals(key) &&
-                            ap.getPropertyValue().equals(value));
-			assertTrue(
-					String.format("Expected request to contain algorithm property: %s: %s", key, value),
-                    foundMatchingProperty);
+            assertEquals(
+                    "Expected request to contain algorithm property: %s: %s".formatted(key, value),
+                    value,
+                    request.protobuf().getAlgorithmPropertiesMap().get(key));
 		}
 	}
 
@@ -361,7 +353,7 @@ public class TestMediaSegmenter {
             Collection<DetectionRequest> requests) {
 		assertTrue("Expected each request to contain 1 media metadata field",
                 requests.stream()
-                        .allMatch(dr -> dr.protobuf().getMediaMetadataList().size() == 1));
+                        .allMatch(dr -> dr.protobuf().getMediaMetadataCount() == 1));
 		assertContainsMediaMetadata("mediaKey1", "mediaValue1", requests);
 	}
 
@@ -369,13 +361,10 @@ public class TestMediaSegmenter {
 	protected static void assertContainsMediaMetadata(
             String key, String value, Collection<DetectionRequest> requests) {
 		for (var request : requests) {
-            boolean foundMatchingMetadata = request.protobuf()
-                .getMediaMetadataList()
-                .stream()
-                .anyMatch(mp -> mp.getKey().equals(key) && mp.getValue().equals(value));
-			assertTrue(
-					String.format("Expected request to contain media metadata: %s: %s", key, value),
-                    foundMatchingMetadata);
+            assertEquals(
+                    "Expected request to contain media metadata: %s: %s".formatted(key, value),
+                    value,
+                    request.protobuf().getMediaMetadataMap().get(key));
 		}
 	}
 
@@ -387,11 +376,11 @@ public class TestMediaSegmenter {
 				&& dimensions == imageLocation.getYLeftUpper()
 				&& dimensions == imageLocation.getWidth()
 				&& dimensions == imageLocation.getHeight()
-				&& containsExpectedDetectionProperties(dimensions, imageLocation.getDetectionPropertiesList());
+				&& containsExpectedDetectionProperties(dimensions, imageLocation.getDetectionPropertiesMap());
 	}
 
 
-	protected static DetectionContext createTestDetectionContext(
+    protected static DetectionContext createTestDetectionContext(
             int stage, Map<String, String> additionalAlgoProps, Set<Track> tracks) {
         return createTestDetectionContext(stage, additionalAlgoProps, tracks, null);
     }
@@ -406,20 +395,13 @@ public class TestMediaSegmenter {
 	}
 
 
-	private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> createTestAlgorithmProperties(
+	private static Map<String, String> createTestAlgorithmProperties(
 			Map<String, String> additionalAlgoProps) {
 		Map<String, String> algoProps = new HashMap<>();
 		algoProps.put("algoKey1", "algoValue1");
 		algoProps.put("algoKey2", "algoValue2");
 		algoProps.putAll(additionalAlgoProps);
-
-
-		return algoProps.entrySet().stream()
-				.map(e -> AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
-						.setPropertyName(e.getKey())
-						.setPropertyValue(e.getValue())
-						.build())
-				.collect(toList());
+        return algoProps;
 	}
 
 
@@ -445,13 +427,10 @@ public class TestMediaSegmenter {
 
 
 	protected static boolean containsExpectedDetectionProperties(
-			int detectionNumber, Collection<PropertyMap> properties) {
-        var actualProps = properties
-                .stream()
-                .collect(toMap(pm -> pm.getKey(), pm -> pm.getValue()));
+			int detectionNumber, Map<String, String> actualProps) {
         var expectedProps = createDetectionProperties(detectionNumber);
         return expectedProps.entrySet().stream()
-            .allMatch(ep -> Objects.equals(actualProps.get(ep.getKey()), ep.getValue()));
+                .allMatch(ep -> Objects.equals(actualProps.get(ep.getKey()), ep.getValue()));
 	}
 
 

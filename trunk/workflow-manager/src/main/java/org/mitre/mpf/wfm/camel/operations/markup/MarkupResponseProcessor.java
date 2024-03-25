@@ -44,6 +44,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
+import java.nio.file.Path;
 import java.util.Map;
 
 @Component(MarkupResponseProcessor.REF)
@@ -67,40 +69,25 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 
     @Override
     public Object processResponse(long jobId, Markup.MarkupResponse markupResponse, Map<String, Object> headers) throws WfmProcessingException {
-        log.debug("Received response for Media {} (Index = {}). Error? {}",
-                  markupResponse.getMediaId(), markupResponse.getMediaIndex(),
+        log.debug("Received response for Media {}. Error? {}",
+                  markupResponse.getMediaId(),
                   markupResponse.getHasError() ? markupResponse.getErrorMessage() : "None.");
-        MarkupResult markupResult = new MarkupResult();
-        markupResult.setTaskIndex(markupResponse.getTaskIndex());
-        markupResult.setActionIndex(markupResponse.getActionIndex());
-        markupResult.setMediaId(markupResponse.getMediaId());
-        markupResult.setMediaIndex(markupResponse.getMediaIndex());
-        markupResult.setJobId(jobId);
-        markupResult.setMarkupUri(markupResponse.getOutputFileUri());
-
-        if (markupResponse.getHasError()) {
-            if (markupResponse.hasErrorMessage()) {
-                if (markupResponse.getErrorMessage().equals(MpfConstants.REQUEST_CANCELLED)) {
-                    markupResult.setMarkupStatus(markupResult.getMarkupStatus().onCancel());
-                    markupResult.setMessage("Successfully cancelled.");
-                } else {
-                    markupResult.setMarkupStatus(markupResult.getMarkupStatus().onError());
-                    markupResult.setMessage(markupResponse.getErrorMessage());
-                }
-            } else {
-                markupResult.setMarkupStatus(markupResult.getMarkupStatus().onError());
-                markupResult.setMessage("FAILED");
-            }
-        } else {
-            markupResult.setMarkupStatus(markupResult.getMarkupStatus().onComplete());
-        }
-
         BatchJob job = _inProgressJobs.getJob(jobId);
+        Media media = job.getMedia(markupResponse.getMediaId());
+        MarkupResult markupResult = new MarkupResult();
+        markupResult.setTaskIndex(job.getCurrentTaskIndex());
+        // Markup stages can only have one action.
+        markupResult.setActionIndex(0);
+        markupResult.setMediaId(markupResponse.getMediaId());
+        markupResult.setMediaIndex(getMediaIndex(job, media));
+        markupResult.setJobId(jobId);
+        markupResult.setMarkupUri(Path.of(markupResponse.getOutputFilePath()).toUri().toString());
+        setStatus(markupResult, markupResponse);
+
         var action = job.getPipelineElements().getAction(
-                markupResponse.getTaskIndex(), markupResponse.getActionIndex());
+            markupResult.getTaskIndex(), markupResult.getActionIndex());
         addProcessingTime(jobId, action, headers);
 
-        Media media = job.getMedia(markupResponse.getMediaId());
         markupResult.setPipeline(job.getPipelineElements().getName());
         markupResult.setSourceUri(media.getUri());
 
@@ -113,9 +100,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
                 _inProgressJobs.handleMarkupCancellation(jobId, markupResult.getMediaId());
                 break;
             case COMPLETE_WITH_WARNING:
-                var warningMessage = markupResponse.hasErrorMessage()
-                        ? markupResponse.getErrorMessage()
-                        : "COMPLETE_WITH_WARNING";
+                var warningMessage = markupResponse.getErrorMessage().isEmpty()
+                        ? "COMPLETE_WITH_WARNING"
+                        : markupResponse.getErrorMessage();
                 _inProgressJobs.addWarning(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
                         warningMessage, IssueSources.MARKUP);
         }
@@ -125,5 +112,33 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         }
         _markupResultDao.persist(markupResult);
         return null;
+    }
+
+    private static void setStatus(MarkupResult markupResult, Markup.MarkupResponse response) {
+        if (!response.getHasError()) {
+            markupResult.setMarkupStatus(markupResult.getMarkupStatus().onComplete());
+            return;
+        }
+        if (response.getErrorMessage().equals(MpfConstants.REQUEST_CANCELLED)) {
+            markupResult.setMarkupStatus(markupResult.getMarkupStatus().onCancel());
+            markupResult.setMessage("Successfully cancelled.");
+            return;
+        }
+        markupResult.setMarkupStatus(markupResult.getMarkupStatus().onError());
+        markupResult.setMessage(response.getErrorMessage().isEmpty()
+                ? "FAILED"
+                : response.getErrorMessage());
+    }
+
+    private static int getMediaIndex(BatchJob job, Media media) {
+        int index = -1;
+        var mediaIter = job.getMedia().iterator();
+        while (mediaIter.hasNext()) {
+            index++;
+            if (mediaIter.next().equals(media)) {
+                break;
+            }
+        }
+        return index;
     }
 }

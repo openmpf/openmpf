@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertAllHaveFeedForwardTrack;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertContainsAlgoProperty;
@@ -92,7 +93,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         // Verify FEED_FORWARD_TYPE has been removed
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 2));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertNoneHaveFeedForwardTrack(detectionRequests);
@@ -150,7 +151,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         var segmentingPlan = new SegmentingPlan(100, 50, 1, 5);
         var context = new DetectionContext(
                 1, 0, "STAGE_NAME", 0, "ACTION_NAME",
-                true, List.of(), Set.of(),
+                true, Map.of(), Set.of(),
                 segmentingPlan, null);
 
         var media = createTestMediaWithFps(
@@ -208,7 +209,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertContainsExpectedMediaMetadata(detectionRequests);
 
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 2));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertNoneHaveFeedForwardTrack(detectionRequests);
@@ -233,7 +234,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertContainsExpectedMediaMetadata(detectionRequests);
 
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 3));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 3));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
@@ -290,7 +291,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertContainsExpectedMediaMetadata(detectionRequests);
 
         assertTrue(detectionRequests.stream()
-                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 4));
+                           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 4));
         assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
@@ -353,9 +354,9 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
     private static void assertContainsFrameLocation(float confidence, DetectionProtobuf.VideoTrack track) {
         int dimensions = (int) confidence;
-        assertTrue(track.getFrameLocationsList().stream()
-                .anyMatch(flm -> flm.getFrame() == dimensions
-                        && confidenceIsEqualToDimensions(confidence, flm.getImageLocation())));
+        var imageLocation = track.getFrameLocationsMap().get(dimensions);
+        assertNotNull(imageLocation);
+        assertTrue(confidenceIsEqualToDimensions(confidence, imageLocation));
     }
 
 

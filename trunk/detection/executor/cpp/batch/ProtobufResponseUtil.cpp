@@ -40,25 +40,25 @@ namespace MPF::COMPONENT::ProtobufResponseUtil {
         detection_response.set_error_message(explanation.data(), explanation.size());
         switch (context.job_type) {
             case MPFDetectionDataType::VIDEO: {
-                auto video_response = detection_response.add_video_responses();
+                auto video_response = detection_response.mutable_video_response();
                 const auto& video_job = std::get<MPFVideoJob>(context.job);
                 video_response->set_start_frame(video_job.start_frame);
                 video_response->set_stop_frame(video_job.stop_frame);
                 break;
             }
             case MPFDetectionDataType::IMAGE: {
-                detection_response.add_image_responses();
+                detection_response.mutable_image_response();
                 break;
             }
             case MPFDetectionDataType::AUDIO: {
-                auto audio_response = detection_response.add_audio_responses();
+                auto audio_response = detection_response.mutable_audio_response();
                 const auto& audio_job = std::get<MPFAudioJob>(context.job);
                 audio_response->set_start_time(audio_job.start_time);
                 audio_response->set_stop_time(audio_job.stop_time);
                 break;
             }
             default: {
-                detection_response.add_generic_responses();
+                detection_response.mutable_generic_response();
                 break;
             }
         }
@@ -71,13 +71,9 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
     mpf_buffers::DetectionResponse InitDetectionResponse(const JobContext& context) {
         mpf_buffers::DetectionResponse detection_response;
         const auto& pb_meta = context.protobuf_metadata;
-        detection_response.set_request_id(pb_meta.request_id);
         detection_response.set_media_id(pb_meta.media_id);
         detection_response.set_task_index(pb_meta.task_index);
-        detection_response.set_task_name(pb_meta.task_name);
         detection_response.set_action_index(pb_meta.action_index);
-        detection_response.set_action_name(pb_meta.action_name);
-        detection_response.set_data_type(translateMPFDetectionDataType(context.job_type));
         return detection_response;
     }
 
@@ -95,12 +91,9 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
         pb_img_loc.set_width(img_loc.width);
         pb_img_loc.set_height(img_loc.height);
         pb_img_loc.set_confidence(img_loc.confidence);
-
-        for (const auto& [key, value] : img_loc.detection_properties) {
-            auto prop = pb_img_loc.add_detection_properties();
-            prop->set_key(key);
-            prop->set_value(value);
-        }
+        pb_img_loc.mutable_detection_properties()->insert(
+                img_loc.detection_properties.begin(),
+                img_loc.detection_properties.end());
     }
 
 
@@ -108,7 +101,7 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const JobContext& context,
             const std::vector<MPFVideoTrack>& tracks,
             mpf_buffers::DetectionResponse& response) {
-        auto video_response = response.add_video_responses();
+        auto video_response = response.mutable_video_response();
 
         const auto& video_job = std::get<MPFVideoJob>(context.job);
         video_response->set_start_frame(video_job.start_frame);
@@ -119,15 +112,15 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             pb_track->set_start_frame(track.start_frame);
             pb_track->set_stop_frame(track.stop_frame);
             pb_track->set_confidence(track.confidence);
-            for (const auto &[key, value] : track.detection_properties) {
-                auto prop = pb_track->add_detection_properties();
-                prop->set_key(key);
-                prop->set_value(value);
-            }
-            for (const auto &[frame_idx, img_loc] : track.frame_locations) {
-                auto frame_location = pb_track->add_frame_locations();
-                frame_location->set_frame(frame_idx);
-                AddToProtobuf(img_loc, *frame_location->mutable_image_location());
+            pb_track->mutable_detection_properties()->insert(
+                    track.detection_properties.begin(),
+                    track.detection_properties.end());
+
+            auto& pb_frame_locations = *pb_track->mutable_frame_locations();
+            for (const auto& [frame_idx, img_loc] : track.frame_locations) {
+                mpf_buffers::ImageLocation frame_location;
+                AddToProtobuf(img_loc, frame_location);
+                pb_frame_locations[frame_idx] = frame_location;
             }
         }
     }
@@ -137,7 +130,7 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const JobContext& context,
             const std::vector<MPFImageLocation>& image_locations,
             mpf_buffers::DetectionResponse& response) {
-        auto image_response = response.add_image_responses();
+        auto image_response = response.mutable_image_response();
         for (const auto& img_loc : image_locations) {
             AddToProtobuf(img_loc, *image_response->add_image_locations());
         }
@@ -148,7 +141,7 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const JobContext& context,
             const std::vector<MPFAudioTrack>& tracks,
             mpf_buffers::DetectionResponse& response) {
-        auto audio_response = response.add_audio_responses();
+        auto audio_response = response.mutable_audio_response();
         const auto& audio_job = std::get<MPFAudioJob>(context.job);
         audio_response->set_start_time(audio_job.start_time);
         audio_response->set_stop_time(audio_job.stop_time);
@@ -157,11 +150,9 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             pb_track->set_start_time(track.start_time);
             pb_track->set_stop_time(track.stop_time);
             pb_track->set_confidence(track.confidence);
-            for (const auto &[key, value] : track.detection_properties) {
-                auto prop = pb_track->add_detection_properties();
-                prop->set_key(key);
-                prop->set_value(value);
-            }
+            pb_track->mutable_detection_properties()->insert(
+                    track.detection_properties.begin(),
+                    track.detection_properties.end());
         }
     }
 
@@ -169,15 +160,13 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const JobContext&,
             const std::vector<MPFGenericTrack>& tracks,
             mpf_buffers::DetectionResponse& response) {
-        auto generic_response = response.add_generic_responses();
+        auto generic_response = response.mutable_generic_response();
         for (const auto &track : tracks) {
             auto pb_track = generic_response->add_generic_tracks();
             pb_track->set_confidence(track.confidence);
-            for (const auto &[key, value] : track.detection_properties) {
-                auto prop = pb_track->add_detection_properties();
-                prop->set_key(key);
-                prop->set_value(value);
-            }
+            pb_track->mutable_detection_properties()->insert(
+                    track.detection_properties.begin(),
+                    track.detection_properties.end());
         }
     }
 }

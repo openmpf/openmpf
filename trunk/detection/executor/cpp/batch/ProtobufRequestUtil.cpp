@@ -33,13 +33,8 @@
 
 namespace MPF::COMPONENT::ProtobufRequestUtil {
     namespace {
-        Properties GetProperties(
-                const google::protobuf::RepeatedPtrField<mpf_buffers::PropertyMap>& protobuf_props) {
-            Properties detection_properties;
-            for (const auto& prop : protobuf_props) {
-                detection_properties.emplace(prop.key(), prop.value());
-            }
-            return detection_properties;
+        Properties GetProperties(const google::protobuf::Map<std::string, std::string>& protobuf_props) {
+            return {protobuf_props.begin(), protobuf_props.end()};
         }
 
         Properties GetMediaProperties(
@@ -51,9 +46,9 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 const mpf_buffers::DetectionRequest& detection_request,
                 const Properties& environment_job_properties) {
             auto job_properties = environment_job_properties;
-            for (const auto& prop : detection_request.algorithm_property()) {
-                job_properties.emplace(prop.property_name(), prop.property_value());
-            }
+            job_properties.insert(
+                detection_request.algorithm_properties().begin(),
+                detection_request.algorithm_properties().end());
             return job_properties;
         }
 
@@ -84,13 +79,13 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     GetProperties(pb_ff_track.detection_properties())
                 };
                 auto& ff_frame_locations = ff_track.frame_locations;
-                for (const auto& entry : pb_ff_track.frame_locations()) {
+                for (const auto& [frame, frame_location] : pb_ff_track.frame_locations()) {
                     ff_frame_locations.try_emplace(
-                        entry.frame(), ConvertFeedForwardLocation(entry.image_location()));
+                            frame, ConvertFeedForwardLocation(frame_location));
                 }
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     video_request.start_frame(),
                     video_request.stop_frame(),
                     std::move(ff_track),
@@ -101,7 +96,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             else {
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     video_request.start_frame(),
                     video_request.stop_frame(),
                     GetJobProperties(detection_request, environment_properties),
@@ -118,7 +113,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             if (detection_request.image_request().has_feed_forward_location()) {
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     ConvertFeedForwardLocation(
                         detection_request.image_request().feed_forward_location()),
                     GetJobProperties(detection_request, environment_properties),
@@ -128,7 +123,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             else {
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
@@ -151,7 +146,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 };
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     audio_request.start_time(),
                     audio_request.stop_time(),
                     std::move(ff_track),
@@ -162,7 +157,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             else {
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     audio_request.start_time(),
                     audio_request.stop_time(),
                     GetJobProperties(detection_request, environment_properties),
@@ -180,7 +175,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 const auto& ff_track = detection_request.generic_request().feed_forward_track();
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     MPFGenericTrack{
                         ff_track.confidence(),
                         GetProperties(ff_track.detection_properties())
@@ -192,7 +187,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             else {
                 return {
                     std::string{job_name},
-                    detection_request.data_uri(),
+                    detection_request.media_path(),
                     GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
@@ -212,7 +207,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
         std::string job_name{"Job "};
         job_name += std::to_string(job_id);
         job_name += ':';
-        job_name += std::filesystem::path{detection_request.data_uri()}.filename();
+        job_name += std::filesystem::path{detection_request.media_path()}.filename();
 
         int begin = -1;
         int end = -1;
@@ -239,29 +234,29 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             std::string_view job_name,
             const Properties& environment_job_properties,
             const mpf_buffers::DetectionRequest& detection_request) {
-        switch (detection_request.data_type()) {
-            case mpf_buffers::DetectionRequest_DataType::DetectionRequest_DataType_VIDEO:
-                return CreateVideoJob(detection_request, job_name, environment_job_properties);
-            case mpf_buffers::DetectionRequest_DataType::DetectionRequest_DataType_IMAGE:
-                return CreateImageJob(detection_request, job_name, environment_job_properties);
-            case mpf_buffers::DetectionRequest_DataType::DetectionRequest_DataType_AUDIO:
-                return CreateAudioJob(detection_request, job_name, environment_job_properties);
-            case mpf_buffers::DetectionRequest_DataType::DetectionRequest_DataType_UNKNOWN:
-                return CreateGenericJob(detection_request, job_name, environment_job_properties);
-            default:
-                throw std::runtime_error{"Received message with incorrect data type."};
+        if (detection_request.has_video_request()) {
+            return CreateVideoJob(detection_request, job_name, environment_job_properties);
+        }
+        else if (detection_request.has_image_request()) {
+            return CreateImageJob(detection_request, job_name, environment_job_properties);
+        }
+        else if (detection_request.has_audio_request()) {
+            return CreateAudioJob(detection_request, job_name, environment_job_properties);
+        }
+        else if (detection_request.has_generic_request()) {
+            return CreateGenericJob(detection_request, job_name, environment_job_properties);
+        }
+        else {
+            throw std::runtime_error{"Received message with incorrect data type."};
         }
     }
 
 
     ProtobufMetadata GetMetadata(const mpf_buffers::DetectionRequest& detection_request) {
         return {
-            detection_request.request_id(),
             detection_request.media_id(),
             detection_request.task_index(),
-            detection_request.task_name(),
-            detection_request.action_index(),
-            detection_request.action_name()
+            detection_request.action_index()
         };
     }
 }

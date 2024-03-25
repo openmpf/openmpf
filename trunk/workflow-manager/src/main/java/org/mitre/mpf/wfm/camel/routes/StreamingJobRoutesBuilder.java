@@ -172,7 +172,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 trackType,
                 /* source, */ // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
                 protobuf.getConfidence(),
-                convertProperties(protobuf.getDetectionPropertiesList()),
+                protobuf.getDetectionPropertiesMap(),
                 exemplar,
                 detections);
     }
@@ -186,17 +186,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getWidth(),
                 protobuf.getHeight(),
                 protobuf.getConfidence(),
-                convertProperties(protobuf.getDetectionPropertiesList()),
+                protobuf.getDetectionPropertiesMap(),
                 protobuf.getFrameNumber(),
                 Instant.ofEpochMilli(protobuf.getTime()));
-    }
-
-
-    private static SortedMap<String, String> convertProperties(List<DetectionProtobuf.PropertyMap> properties) {
-        return properties.stream().collect(toMap(
-                DetectionProtobuf.PropertyMap::getKey,
-                DetectionProtobuf.PropertyMap::getValue,
-                (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
-                TreeMap::new));
     }
 }

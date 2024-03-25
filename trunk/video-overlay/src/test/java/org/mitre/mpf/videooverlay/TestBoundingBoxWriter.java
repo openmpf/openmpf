@@ -26,23 +26,24 @@
 
 package org.mitre.mpf.videooverlay;
 
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+
+import javax.imageio.ImageIO;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mitre.mpf.JniTestUtils;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import org.mitre.mpf.OverlayTestUtils;
+import org.mitre.mpf.wfm.buffers.Markup;
 
 public class TestBoundingBoxWriter {
-
-    static {
-        Assert.assertTrue(JniTestUtils.jniLibsLoaded());
-    }
 
     @Test
     public void testWriterOnVideo() throws IOException, InterruptedException {
@@ -70,7 +71,7 @@ public class TestBoundingBoxWriter {
 
     private static Pair<Integer, Integer> writeBoxOnFrames(String filePath)
             throws IOException, InterruptedException {
-        File sourceFile = new File(JniTestUtils.getFileResource(filePath));
+        File sourceFile = new File(OverlayTestUtils.getFileResource(filePath));
 
         if (!sourceFile.exists()) {
             throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
@@ -79,36 +80,46 @@ public class TestBoundingBoxWriter {
         File destinationFile = File.createTempFile("markedup", ".webm");
         destinationFile.deleteOnExit();
 
-        BoundingBoxMap map = new BoundingBoxMap();
+        var requestBuilder = Markup.MarkupRequest.newBuilder()
+                .setMediaId(678)
+                .setMediaType(Markup.MediaType.VIDEO)
+                .setSourcePath(sourceFile.getAbsolutePath())
+                .setDestinationPath(destinationFile.getAbsolutePath())
+                .putMarkupProperties("MARKUP_LABELS_ENABLED", "true")
+                .putMarkupProperties("MARKUP_BORDER_ENABLED", "true")
+                .putMarkupProperties("MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", "true")
+                .putMarkupProperties("MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", "true")
+                .putMarkupProperties("MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", "true")
+                .putMarkupProperties("MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true")
+                .putMarkupProperties("MARKUP_VIDEO_ENCODER", "vp9")
+                // poor quality makes the test run faster
+                .putMarkupProperties("MARKUP_VIDEO_VP9_CRF", "60");
 
         // dummy
-        BoundingBox box = new BoundingBox(20, 60, 30, 20, 45, false, 255, 0, 0, Optional.of("some class 7.243"));
-        map.putOnFrames(1, 20, box);
+        var box = Markup.BoundingBox.newBuilder()
+                .setX(20)
+                .setY(60)
+                .setWidth(30)
+                .setHeight(20)
+                .setRotationDegrees(45)
+                .setFlip(false)
+                .setRed(255)
+                .setGreen(0)
+                .setBlue(0)
+                .setLabel("some class 7.243")
+                .build();
 
-        BoundingBoxWriter writer = new BoundingBoxWriter();
-        writer.setSourceMedium(sourceFile.toURI());
-        writer.setDestinationMedium(destinationFile.toURI());
+        IntStream.rangeClosed(1, 20)
+                .forEach(i -> requestBuilder.putBoundingBoxes(i, bboxList(box)));
 
-        writer.setRequestProperties(Map.of(
-                "MARKUP_LABELS_ENABLED", "true",
-                "MARKUP_BORDER_ENABLED", "true",
-                "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", "true",
-                "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", "true",
-                "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", "true",
-                "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true",
-                "MARKUP_VIDEO_ENCODER", "vp9",
-                "MARKUP_VIDEO_VP9_CRF", "60" // poor quality makes the test run faster
-        ));
-
-        writer.setBoundingBoxMap(map);
-        writer.markupVideo();
+        BoundingBoxWriter.markup(requestBuilder.build().toByteArray());
 
         return getVideoWidthAndHeight(destinationFile.getAbsolutePath());
     }
 
     @Test
     public void testWriterOnRotatedImage() throws IOException {
-        File sourceFile = new File(JniTestUtils.getFileResource("samples/Lenna-tall-rotated-with-border.jpg"));
+        File sourceFile = new File(OverlayTestUtils.getFileResource("samples/Lenna-tall-rotated-with-border.jpg"));
 
         if (!sourceFile.exists()) {
             throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
@@ -117,23 +128,32 @@ public class TestBoundingBoxWriter {
         File destinationFile = File.createTempFile("markedup", ".png");
         destinationFile.deleteOnExit();
 
-        BoundingBoxMap map = new BoundingBoxMap();
-
         // Lenna's face
-        BoundingBox box = new BoundingBox(290, 214, 170, 170,  270, false, 255, 0, 0, Optional.of("7.777"));
-        map.putOnFrames(0, 0, box);
+        var box = Markup.BoundingBox.newBuilder()
+                .setX(290)
+                .setY(214)
+                .setWidth(170)
+                .setHeight(170)
+                .setRotationDegrees(270)
+                .setFlip(false)
+                .setRed(255)
+                .setGreen(0)
+                .setBlue(0)
+                .setLabel("7.777")
+                .build();
 
-        BoundingBoxWriter writer = new BoundingBoxWriter();
-        writer.setSourceMedium(sourceFile.toURI());
-        writer.setDestinationMedium(destinationFile.toURI());
-        writer.setMediaMetadata(Map.of("ROTATION", "270")); // rotate cw this much to fix
+        var requestProtobytes = Markup.MarkupRequest.newBuilder()
+                .setMediaId(678)
+                .setMediaType(Markup.MediaType.IMAGE)
+                .setSourcePath(sourceFile.getAbsolutePath())
+                .setDestinationPath(destinationFile.getAbsolutePath())
+                .putMediaMetadata("ROTATION", "270") // rotate cw this much to fix
+                .putBoundingBoxes(0, bboxList(box))
+                .putMarkupProperties("MARKUP_LABELS_ENABLED", "true")
+                .build()
+                .toByteArray();
 
-        writer.setRequestProperties(Map.of(
-                "MARKUP_LABELS_ENABLED", "true"
-        ));
-
-        writer.setBoundingBoxMap(map);
-        writer.markupImage();
+        BoundingBoxWriter.markup(requestProtobytes);
 
         // Raw source file is 1024x512. Markup should be 512x1024 due to corrected orientation.
         BufferedImage bimg = ImageIO.read(destinationFile);
@@ -143,7 +163,7 @@ public class TestBoundingBoxWriter {
 
     @Test
     public void testWriterOnRotatedVideo() throws IOException, InterruptedException {
-        File sourceFile = new File(JniTestUtils.getFileResource("samples/video_02_rotated.mp4"));
+        File sourceFile = new File(OverlayTestUtils.getFileResource("samples/video_02_rotated.mp4"));
 
         if (!sourceFile.exists()) {
             throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
@@ -152,25 +172,34 @@ public class TestBoundingBoxWriter {
         File destinationFile = File.createTempFile("markedup", ".avi");
         destinationFile.deleteOnExit();
 
-        BoundingBoxMap map = new BoundingBoxMap();
-
         // Old lady's face
-        BoundingBox box = new BoundingBox(399, 492, 83, 83,  270, false, 255, 0, 0, Optional.of("56"));
-        map.putOnFrames(116, 116, box);
+        var box = Markup.BoundingBox.newBuilder()
+                .setX(399)
+                .setY(492)
+                .setWidth(83)
+                .setHeight(83)
+                .setRotationDegrees(270)
+                .setFlip(false)
+                .setRed(255)
+                .setGreen(0)
+                .setBlue(0)
+                .setLabel("56")
+                .build();
 
-        BoundingBoxWriter writer = new BoundingBoxWriter();
-        writer.setSourceMedium(sourceFile.toURI());
-        writer.setDestinationMedium(destinationFile.toURI());
-        writer.setMediaMetadata(Map.of("ROTATION", "270")); // 45
+        var requestProtobytes = Markup.MarkupRequest.newBuilder()
+                .setMediaId(789)
+                .setMediaType(Markup.MediaType.VIDEO)
+                .setSourcePath(sourceFile.getAbsolutePath())
+                .setDestinationPath(destinationFile.getAbsolutePath())
+                .putMediaMetadata("ROTATION", "270") // 45
+                .putMarkupProperties("MARKUP_LABELS_ENABLED", "true")
+                .putMarkupProperties("MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true")
+                .putMarkupProperties("MARKUP_VIDEO_ENCODER", "mjpeg")
+                .putBoundingBoxes(116, bboxList(box))
+                .build()
+                .toByteArray();
+        BoundingBoxWriter.markup(requestProtobytes);
 
-        writer.setRequestProperties(Map.of(
-                "MARKUP_LABELS_ENABLED", "true",
-                "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true",
-                "MARKUP_VIDEO_ENCODER", "mjpeg"
-        ));
-
-        writer.setBoundingBoxMap(map);
-        writer.markupVideo();
 
         var widthAndHeight = getVideoWidthAndHeight(destinationFile.getAbsolutePath());
         int width = widthAndHeight.getLeft();
@@ -196,5 +225,11 @@ public class TestBoundingBoxWriter {
         }
         Assert.assertTrue(process.waitFor(5, TimeUnit.SECONDS));
         return Pair.of(width, height);
+    }
+
+    private static Markup.BoundingBoxList bboxList(Markup.BoundingBox box) {
+        return Markup.BoundingBoxList.newBuilder()
+                .addBoundingBoxes(box)
+                .build();
     }
 }

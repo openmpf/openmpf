@@ -24,63 +24,52 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.videooverlay;
 
-package org.mitre.mpf;
-
-import org.junit.Assert;
-
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Arrays;
 import java.util.List;
 
-public class JniTestUtils {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    private static final boolean _jniLibsLoaded;
+public class JniLoader {
+    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
+
+    private static boolean _isLoaded;
 
     static {
-        String mpfHome = System.getenv("MPF_HOME");
-        List<String> libNames = Arrays.asList("libmpfDetectionComponentApi.so", "libmpfopencvjni.so");
-        for (String libName : libNames) {
-            try {
-                String libraryFile = new File("install/lib", libName).getAbsolutePath();
-                System.load(libraryFile);
-            }
-            catch (UnsatisfiedLinkError e) {
-                if (mpfHome == null) {
-                    throw e;
-                }
-                String libraryFile = new File(mpfHome, "lib/" + libName).getAbsolutePath();
-                System.load(libraryFile);
-            }
+        log.info("Loading JNI libraries...");
+        try {
+            System.loadLibrary("mpfopencvjni");
+            _isLoaded = true;
         }
-        _jniLibsLoaded = true;
+        catch (UnsatisfiedLinkError ex) {
+            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
+            String libDir = System.getenv("MPF_HOME") + "/lib";
+
+            var libNames = List.of(
+                    "libmpfDetectionComponentApi.so",
+                    "libmpfProtobufsShared.so",
+                    "libmpfopencvjni.so");
+
+            for (var libName : libNames) {
+                var path = libDir + '/' + libName;
+                log.warn("Trying to load library using full path: {}", path);
+                System.load(path);
+            }
+
+            _isLoaded = true;
+        }
     }
 
-
-    private JniTestUtils() {
-
+    private JniLoader() {
     }
 
     /**
-     * This method exists to force the static initializer run when running unit tests. This should always return true.
+     * This method exists to force the static initializer to run when a class with native methods
+     * is first used. This should always return true.
      * @return true
      */
-    public static boolean jniLibsLoaded() {
-        return _jniLibsLoaded;
-    }
-
-
-    public static URI getFileResource(String resourcePath) {
-        try {
-            URL resource = JniTestUtils.class.getClassLoader().getResource(resourcePath);
-            Assert.assertNotNull(resourcePath);
-            return resource.toURI();
-        }
-        catch (URISyntaxException e) {
-            throw new IllegalStateException(e);
-        }
+    public static boolean ensureLoaded() {
+        return _isLoaded;
     }
 }

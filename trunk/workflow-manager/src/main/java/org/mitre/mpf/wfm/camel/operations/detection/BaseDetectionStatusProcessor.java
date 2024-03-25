@@ -59,29 +59,25 @@ public abstract class BaseDetectionStatusProcessor implements Processor {
         DetectionProtobuf.DetectionResponse.Builder builder =
                 DetectionProtobuf.DetectionResponse.newBuilder()
                 .setActionIndex(detectionRequest.getActionIndex())
-                .setActionName(detectionRequest.getActionName())
-                .setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(detectionRequest.getDataType().name()))
-                .setError(error)
-                .setMediaId(detectionRequest.getMediaId())
-                .setRequestId(detectionRequest.getRequestId())
                 .setTaskIndex(detectionRequest.getTaskIndex())
-                .setTaskName(detectionRequest.getTaskName());
+                .setError(error)
+                .setMediaId(detectionRequest.getMediaId());
 
         if (detectionRequest.hasVideoRequest()) {
-            builder.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+            builder.getVideoResponseBuilder()
                     .setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
-                    .setStopFrame(detectionRequest.getVideoRequest().getStopFrame()));
-
-        } else if (detectionRequest.hasAudioRequest()) {
-            builder.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
+                    .setStopFrame(detectionRequest.getVideoRequest().getStopFrame());
+        }
+        else if (detectionRequest.hasAudioRequest()) {
+            builder.getAudioResponseBuilder()
                     .setStartTime(detectionRequest.getAudioRequest().getStartTime())
-                    .setStopTime(detectionRequest.getAudioRequest().getStopTime()));
-
-        } else if (detectionRequest.hasImageRequest()) {
-            builder.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder());
-
-        } else if (detectionRequest.hasGenericRequest()) {
-            builder.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder());
+                    .setStopTime(detectionRequest.getAudioRequest().getStopTime());
+        }
+        else if (detectionRequest.hasImageRequest()) {
+            builder.getImageResponseBuilder();
+        }
+        else if (detectionRequest.hasGenericRequest()) {
+            builder.getGenericResponseBuilder();
         }
 
         exchange.getOut().setBody(builder.build().toByteArray());

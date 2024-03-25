@@ -26,6 +26,24 @@
 
 package org.mitre.mpf.wfm.camel.operations.markup;
 
+import java.awt.Color;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.SortedSet;
+import java.util.UUID;
+import java.util.stream.DoubleStream;
+
+import javax.inject.Inject;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -33,12 +51,8 @@ import org.apache.tika.mime.MimeTypes;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.videooverlay.BoundingBox;
-import org.mitre.mpf.videooverlay.BoundingBoxMap;
-import org.mitre.mpf.videooverlay.BoundingBoxSource;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.routes.MarkupResponseRouteBuilder;
-import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -46,22 +60,18 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.awt.*;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.*;
-import java.util.stream.DoubleStream;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 
 @Component
 @Monitored
@@ -122,36 +132,27 @@ public class MarkupSplitter {
                 continue;
             }
 
-            List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
-                    = createMapEntries(job, media, markupProperties);
+            var boundingBoxMap = createMapEntries(job, media, markupProperties);
             var destinationPath = getDestinationPath(
-                    job, media, !boundingBoxMapEntryList.isEmpty(), markupProperties);
+                    job, media, !boundingBoxMap.isEmpty(), markupProperties);
 
             var mediaType = media.getType()
                     .map(mt -> Markup.MediaType.valueOf(mt.toString().toUpperCase()))
                     .orElse(Markup.MediaType.UNKNOWN);
 
-            Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
-                    .setMediaIndex(mediaIndex)
-                    .setTaskIndex(job.getCurrentTaskIndex())
-                    .setActionIndex(0)
+            var requestBuilder = Markup.MarkupRequest.newBuilder()
                     .setMediaId(media.getId())
                     .setMediaType(mediaType)
-                    .setRequestId(IdGenerator.next())
-                    .setSourceUri(media.getProcessingPath().toUri().toString())
-                    .setDestinationUri(destinationPath.toUri().toString())
-                    .addAllMapEntries(boundingBoxMapEntryList);
+                    .setSourcePath(media.getProcessingPath().toString())
+                    .setDestinationPath(destinationPath.toString())
+                    .putAllMediaMetadata(media.getMetadata())
+                    .putAllMarkupProperties(markupProperties);
 
-            for (var entry : media.getMetadata().entrySet()) {
-                requestBuilder.addMediaMetadataBuilder()
-                        .setKey(entry.getKey())
-                        .setValue(entry.getValue());
-            }
-
-            for (var entry : markupProperties.entrySet()) {
-                requestBuilder.addMarkupPropertiesBuilder()
-                        .setKey(entry.getKey())
-                        .setValue(entry.getValue());
+            for (var boxEntry : boundingBoxMap.asMap().entrySet()) {
+                var boxList = Markup.BoundingBoxList.newBuilder()
+                        .addAllBoundingBoxes(boxEntry.getValue())
+                        .build();
+                requestBuilder.putBoundingBoxes(boxEntry.getKey(), boxList);
             }
 
             var algorithm = job.getPipelineElements().getAlgorithm(markupAction.algorithm());
@@ -186,8 +187,8 @@ public class MarkupSplitter {
         return taskIndex;
     }
 
-    /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
-    private List<Markup.BoundingBoxMapEntry> createMapEntries(
+    /** Creates a Multimap containing all of the tracks which were produced by the specified action history keys. */
+    private Multimap<Integer, Markup.BoundingBox> createMapEntries(
             BatchJob job, Media media, Map<String, String> markupProperties) {
 
         var labelFromDetections = Boolean.parseBoolean(markupProperties.get(
@@ -203,7 +204,8 @@ public class MarkupSplitter {
         int labelMaxLength = getMaxLabelLength(job.getId(), media.getId(), markupProperties);
 
         Iterator<Color> trackColors = getTrackColors();
-        BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
+        var boundingBoxMap = MultimapBuilder.hashKeys().arrayListValues()
+                .<Integer, Markup.BoundingBox>build();
 
         int taskToMarkupIndex = findLastDetectionTaskIndex(job.getPipelineElements());
         // PipelineValidator made sure taskToMarkupIndex only has one action.
@@ -226,7 +228,7 @@ public class MarkupSplitter {
             trackIndex++;
         }
 
-        return boundingBoxMap.toBoundingBoxMapEntryList();
+        return boundingBoxMap;
     }
 
 
@@ -245,9 +247,9 @@ public class MarkupSplitter {
             labelMaxLength = 10;
         }
 
-        var errorMsg = """
-                Expected the value of the "%s" property to be a positive integer, \
-                but it was "%s". Using %s instead."""
+        var errorMsg =
+                "Expected the value of the \"%s\" property to be a positive integer, "
+                + "but it was \"%s\". Using %s instead."
                 .formatted(MpfConstants.MARKUP_TEXT_LABEL_MAX_LENGTH, labelMaxLengthStr,
                            labelMaxLength);
         _inProgressBatchJobs.addWarning(jobId, mediaId, IssueCodes.MARKUP,
@@ -272,7 +274,7 @@ public class MarkupSplitter {
 
     private void addTrackToBoundingBoxMap(
             Track track,
-            BoundingBoxMap boundingBoxMap,
+            Multimap<Integer, Markup.BoundingBox> boundingBoxMap,
             Color trackColor,
             String labelPrefix,
             boolean labelFromDetections,
@@ -298,9 +300,9 @@ public class MarkupSplitter {
             Detection detection = orderedDetections.get(i);
             int currentFrame = detection.getMediaOffsetFrame();
 
-            BoundingBoxSource detectionSource = BoundingBoxSource.DETECTION_ALGORITHM;
+            var detectionSource = Markup.BoundingBoxSource.DETECTION_ALGORITHM;
             if (Boolean.parseBoolean(detection.getDetectionProperties().get("FILLED_GAP"))) {
-                detectionSource = BoundingBoxSource.TRACKING_FILLED_GAP;
+                detectionSource = Markup.BoundingBoxSource.TRACKING_FILLED_GAP;
             }
 
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
@@ -313,39 +315,43 @@ public class MarkupSplitter {
             }
 
             // Create a bounding box at the location.
-            BoundingBox boundingBox = new BoundingBox(
-                    detection.getX(),
-                    detection.getY(),
-                    detection.getWidth(),
-                    detection.getHeight(),
-                    detectionRotation.orElse(trackRotation.orElse(0)),
-                    detectionFlip.orElse(trackFlip.orElse(false)),
-                    trackColor.getRed(),
-                    trackColor.getGreen(),
-                    trackColor.getBlue(),
-                    detectionSource,
-                    moving,
-                    track.getExemplar().equals(detection),
-                    label);
+            var boundingBox = Markup.BoundingBox.newBuilder()
+                    .setX(detection.getX())
+                    .setY(detection.getY())
+                    .setWidth(detection.getWidth())
+                    .setHeight(detection.getHeight())
+                    .setRotationDegrees(detectionRotation.orElse(trackRotation.orElse(0)))
+                    .setFlip(detectionFlip.orElse(trackFlip.orElse(false)))
+                    .setRed(trackColor.getRed())
+                    .setGreen(trackColor.getGreen())
+                    .setBlue(trackColor.getBlue())
+                    .setSource(detectionSource)
+                    .setMoving(moving)
+                    .setExemplar(track.getExemplar().equals(detection))
+                    .setLabel(label.orElse(""))
+                    .build();
 
             if (isExemptFromIllFormedDetectionRemoval) {
                 // Special case: Speech doesn't populate object locations for each frame in the video, so you have to
                 // go by the track start and stop frames.
-                boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),
-                                           track.getEndOffsetFrameInclusive(), boundingBox);
+                putOnFrames(
+                        track.getStartOffsetFrameInclusive(),
+                        track.getEndOffsetFrameInclusive(),
+                        boundingBox,
+                        boundingBoxMap);
                 break;
             }
 
             boolean isLastDetection = (i == (orderedDetections.size() - 1));
             if (isLastDetection) {
-                boundingBoxMap.putOnFrame(currentFrame, boundingBox);
+                boundingBoxMap.put(currentFrame, boundingBox);
                 break;
             }
 
             Detection nextDetection = orderedDetections.get(i + 1);
             int gapBetweenNextDetection = nextDetection.getMediaOffsetFrame() - detection.getMediaOffsetFrame();
             if (gapBetweenNextDetection == 1) {
-                boundingBoxMap.putOnFrame(currentFrame, boundingBox);
+                boundingBoxMap.put(currentFrame, boundingBox);
             }
             else if (animate) {
                 // Since the gap between frames is greater than 1 and we are not at the last result in the
@@ -362,26 +368,62 @@ public class MarkupSplitter {
                     label = getLabel(nextDetection, labelPrefix, labelTextPropToShow, textLength,
                                      labelNumericPropToShow);
                 }
-
-                BoundingBox nextBoundingBox = new BoundingBox(
-                        nextDetection.getX(),
-                        nextDetection.getY(),
-                        nextDetection.getWidth(),
-                        nextDetection.getHeight(),
-                        nextDetectionRotation.orElse(trackRotation.orElse(0)),
-                        nextDetectionFlip.orElse(trackFlip.orElse(false)),
-                        boundingBox.getRed(),
-                        boundingBox.getBlue(),
-                        boundingBox.getGreen(),
-                        BoundingBoxSource.ANIMATION,
-                        moving,
-                        false, // not exemplar
-                        label);
-                boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
+                var nextBoundingBox = Markup.BoundingBox.newBuilder()
+                        .setX(nextDetection.getX())
+                        .setY(nextDetection.getY())
+                        .setWidth(nextDetection.getWidth())
+                        .setHeight(nextDetection.getHeight())
+                        .setRotationDegrees(nextDetectionRotation.orElse(trackRotation.orElse(0)))
+                        .setFlip(nextDetectionFlip.orElse(trackFlip.orElse(false)))
+                        .setRed(trackColor.getRed())
+                        .setGreen(trackColor.getGreen())
+                        .setBlue(trackColor.getBlue())
+                        .setSource(Markup.BoundingBoxSource.ANIMATION)
+                        .setMoving(moving)
+                        .setExemplar(false)
+                        .setLabel(label.orElse(""))
+                        .build();
+                animate(
+                        boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection,
+                        boundingBoxMap);
             }
         }
     }
 
+    private void putOnFrames(
+            int firstFrame,
+            int lastFrame,
+            Markup.BoundingBox box,
+            Multimap<Integer, Markup.BoundingBox> boundingBoxMap) {
+        for (int i = firstFrame; i <= lastFrame; i++) {
+            boundingBoxMap.put(i, box);
+        }
+    }
+
+    private void animate(
+            Markup.BoundingBox origin,
+            Markup.BoundingBox destination,
+            int firstFrame,
+            int interval,
+            Multimap<Integer, Markup.BoundingBox> boundingBoxMap) {
+
+        boundingBoxMap.put(firstFrame, origin);
+        double dx = (destination.getX() - origin.getX()) / (1.0 * interval);
+        double dy = (destination.getY() - origin.getY()) / (1.0 * interval);
+        double dWidth = (destination.getWidth() - origin.getWidth()) / (1.0 * interval);
+        double dHeight = (destination.getHeight() - origin.getHeight()) / (1.0 * interval);
+        for (int frameOffset = 1; frameOffset < interval; frameOffset++) {
+            var translatedBox = Markup.BoundingBox.newBuilder(origin)
+                .setX((int) Math.round(origin.getX() + dx * frameOffset))
+                .setY((int) Math.round(origin.getY() + dy * frameOffset))
+                .setWidth((int) Math.round(origin.getWidth() + dWidth * frameOffset))
+                .setHeight((int) Math.round(origin.getHeight() + dHeight * frameOffset))
+                .setSource(Markup.BoundingBoxSource.ANIMATION)
+                .setExemplar(false)
+                .build();
+            boundingBoxMap.put(firstFrame + frameOffset, translatedBox);
+        }
+    }
 
     private Path getDestinationPath(
             BatchJob job, Media media, boolean hasBoxes, Map<String, String> markupProperties) {

@@ -35,7 +35,6 @@ import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionTaskSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
@@ -200,17 +199,10 @@ public class TestDetectionTaskSplitter {
 
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        boolean propertyExists = false;
-        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
-            if (propertyName.equals(prop.getPropertyName())) {
-                Assert.assertEquals(propertyValue, prop.getPropertyValue());
-                propertyExists = true;
-            }
-            else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
-                Assert.assertEquals("0", prop.getPropertyValue());
-            }
-        }
-        Assert.assertTrue(propertyExists);
+        Assert.assertEquals(propertyValue, request.getAlgorithmPropertiesOrThrow(propertyName));
+        Assert.assertEquals(
+                "0",
+                request.getAlgorithmPropertiesOrDefault(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0"));
     }
 
     @Test
@@ -236,17 +228,10 @@ public class TestDetectionTaskSplitter {
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        boolean propertyExists = false;
-        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
-            if (propertyName.equals(prop.getPropertyName())) {
-                Assert.assertEquals(propertyValue,prop.getPropertyValue());
-                propertyExists = true;
-            }
-            else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
-                Assert.assertEquals("0", prop.getPropertyValue());
-            }
-        }
-        Assert.assertTrue(propertyExists);
+        Assert.assertEquals(propertyValue, request.getAlgorithmPropertiesOrThrow(propertyName));
+        Assert.assertEquals(
+                "0",
+                request.getAlgorithmPropertiesOrDefault(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0"));
     }
 
     @Test
@@ -375,30 +360,22 @@ public class TestDetectionTaskSplitter {
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
 
-        AlgorithmPropertyProtocolBuffer.AlgorithmProperty matchingProtoProp = request.getAlgorithmPropertyList()
-                .stream()
-                .filter(p -> p.getPropertyName().equals(propertyName))
-                .findAny()
-                .orElse(null);
+        var matchingProtoPropValue = request.getAlgorithmPropertiesMap().get(propertyName);
         Assert.assertNotNull("Expected there to be a protobuf property named " + propertyName,
-                             matchingProtoProp);
+                             matchingProtoPropValue);
         Assert.assertEquals(String.format("Expected the protobuf property %s to be %s", propertyName, propertyValue),
-                            propertyValue, matchingProtoProp.getPropertyValue());
+                            propertyValue, matchingProtoPropValue);
 
         for (Map.Entry<String, String> actionPropEntry : expectedProperties.entrySet()) {
-            AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp = request.getAlgorithmPropertyList()
-                    .stream()
-                    .filter(p -> p.getPropertyName().equals(actionPropEntry.getKey()))
-                    .findAny()
-                    .orElse(null);
+            var protoPropValue = request.getAlgorithmPropertiesMap().get(actionPropEntry.getKey());
 
             Assert.assertNotNull(
                     "Expected there to be a protobuf property named " + actionPropEntry.getKey(),
-                    protoProp);
+                    protoPropValue);
 
             Assert.assertEquals(String.format("Expected the protobuf property %s to be %s",
                                               actionPropEntry.getKey(), actionPropEntry.getValue()),
-                                actionPropEntry.getValue(), protoProp.getPropertyValue());
+                                actionPropEntry.getValue(), protoPropValue);
         }
     }
 

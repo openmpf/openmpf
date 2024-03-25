@@ -81,14 +81,7 @@ public class TriggerProcessor {
 
 
     public Stream<Track> getTriggeredTracks(Media media, DetectionContext context) {
-        var trigger = context.getAlgorithmProperties()
-            .stream()
-            .filter(ap -> ap.getPropertyName().equals(MpfConstants.TRIGGER))
-            .map(ap -> ap.getPropertyValue())
-            .filter(pv -> pv != null && !pv.isBlank())
-            .findAny()
-            .orElse(null);
-
+        var trigger = context.getAlgorithmProperties().get(MpfConstants.TRIGGER);
         return Stream.concat(
                     context.getPreviousTracks().stream(),
                     findPreviousUnTriggered(media, context))

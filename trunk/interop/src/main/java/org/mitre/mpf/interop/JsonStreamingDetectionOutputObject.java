@@ -31,6 +31,7 @@ import org.mitre.mpf.interop.util.CompareUtils;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -80,7 +81,7 @@ public class JsonStreamingDetectionOutputObject implements Comparable<JsonStream
 			@JsonProperty("width") int width,
 			@JsonProperty("height") int height,
 			@JsonProperty("confidence") float confidence,
-			@JsonProperty("detectionProperties") SortedMap<String, String> detectionProperties,
+			@JsonProperty("detectionProperties") Map<String, String> detectionProperties,
 			@JsonProperty("offsetFrame") int offsetFrame,
 			@JsonProperty("timestamp") Instant timestamp) {
 		this.x = x;

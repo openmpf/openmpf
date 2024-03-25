@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -459,7 +458,7 @@ public class InProgressBatchJobsService {
                                                   long parentMediaId,
                                                   int taskIndex,
                                                   Path localPath,
-                                                  SortedMap<String, String> trackProperties) {
+                                                  Map<String, String> trackProperties) {
         LOG.info("Initializing derivative media from {} with id {}", localPath.toString(), mediaId);
 
         String errorMessage = checkForLocalFileError(localPath);

@@ -45,11 +45,7 @@ public class MarkupCancellationProcessor implements Processor {
 
         exchange.getOut().setBody(
             Markup.MarkupResponse.newBuilder()
-                .setMediaIndex(request.getMediaIndex())
-                .setTaskIndex(request.getTaskIndex())
-                .setActionIndex(request.getActionIndex())
                 .setMediaId(request.getMediaId())
-                .setRequestId(request.getRequestId())
                 .setHasError(true)
                 .setErrorMessage(MpfConstants.REQUEST_CANCELLED)
                 .build()

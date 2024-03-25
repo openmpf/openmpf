@@ -71,7 +71,7 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
 		// Verify FEED_FORWARD_TYPE has been removed
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertNoneHaveFeedForwardTrack(detectionRequests);
@@ -92,7 +92,7 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertNoneHaveFeedForwardTrack(detectionRequests);
@@ -117,11 +117,12 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertyList().size() == 3));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 3));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
+        detectionRequests.stream().forEach(dr -> System.out.println(dr.protobuf().getImageRequest().getFeedForwardLocation().getConfidence()));
 		assertTrue(detectionRequests.stream()
 				           .anyMatch(dr -> confidenceIsEqualToDimensions(
 						           5, dr.protobuf().getImageRequest().getFeedForwardLocation())));

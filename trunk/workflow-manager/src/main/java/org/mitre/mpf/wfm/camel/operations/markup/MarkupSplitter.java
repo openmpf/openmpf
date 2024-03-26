@@ -350,43 +350,43 @@ public class MarkupSplitter {
 
             Detection nextDetection = orderedDetections.get(i + 1);
             int gapBetweenNextDetection = nextDetection.getMediaOffsetFrame() - detection.getMediaOffsetFrame();
-            if (gapBetweenNextDetection == 1) {
+            if (!animate || gapBetweenNextDetection == 1) {
                 boundingBoxMap.put(currentFrame, boundingBox);
+                continue;
             }
-            else if (animate) {
-                // Since the gap between frames is greater than 1 and we are not at the last result in the
-                // collection, we draw bounding boxes on each frame in the collection such that on the
-                // first frame, the bounding box is at the position given by the object location, and on the
-                // last frame in the interval, the bounding box is very close to the position given by the object
-                // location of the next result. Consequently, the original bounding box appears to resize
-                // and translate to the position and size of the next result's bounding box.
 
-                OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
-                Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
+            // Since the gap between frames is greater than 1, and we are not at the last result in the
+            // collection, we draw bounding boxes on each frame in the collection such that on the
+            // first frame the bounding box is at the position given by the object location, and on the
+            // last frame in the interval the bounding box is very close to the position given by the object
+            // location of the next result. Consequently, the original bounding box appears to resize
+            // and translate to the position and size of the next result's bounding box.
 
-                if (labelFromDetections) { // get detection-level details
-                    label = getLabel(nextDetection, labelPrefix, labelTextPropToShow, textLength,
-                                     labelNumericPropToShow);
-                }
-                var nextBoundingBox = Markup.BoundingBox.newBuilder()
-                        .setX(nextDetection.getX())
-                        .setY(nextDetection.getY())
-                        .setWidth(nextDetection.getWidth())
-                        .setHeight(nextDetection.getHeight())
-                        .setRotationDegrees(nextDetectionRotation.orElse(trackRotation.orElse(0)))
-                        .setFlip(nextDetectionFlip.orElse(trackFlip.orElse(false)))
-                        .setRed(trackColor.getRed())
-                        .setGreen(trackColor.getGreen())
-                        .setBlue(trackColor.getBlue())
-                        .setSource(Markup.BoundingBoxSource.ANIMATION)
-                        .setMoving(moving)
-                        .setExemplar(false)
-                        .setLabel(label.orElse(""))
-                        .build();
-                animate(
-                        boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection,
-                        boundingBoxMap);
+            OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
+            Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
+
+            if (labelFromDetections) { // get detection-level details
+                label = getLabel(nextDetection, labelPrefix, labelTextPropToShow, textLength,
+                                    labelNumericPropToShow);
             }
+            var nextBoundingBox = Markup.BoundingBox.newBuilder()
+                    .setX(nextDetection.getX())
+                    .setY(nextDetection.getY())
+                    .setWidth(nextDetection.getWidth())
+                    .setHeight(nextDetection.getHeight())
+                    .setRotationDegrees(nextDetectionRotation.orElse(trackRotation.orElse(0)))
+                    .setFlip(nextDetectionFlip.orElse(trackFlip.orElse(false)))
+                    .setRed(trackColor.getRed())
+                    .setGreen(trackColor.getGreen())
+                    .setBlue(trackColor.getBlue())
+                    .setSource(Markup.BoundingBoxSource.ANIMATION)
+                    .setMoving(moving)
+                    .setExemplar(false)
+                    .setLabel(label.orElse(""))
+                    .build();
+            animate(
+                    boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection,
+                    boundingBoxMap);
         }
     }
 

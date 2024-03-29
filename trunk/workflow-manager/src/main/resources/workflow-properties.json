@@ -470,9 +470,9 @@
     },
     {
         "name": "EXEMPLAR_POLICY",
-        "description": "Sets the policy for determining a track's exemplar. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track). When set to anything other than a named policy, the detection with the maximum quality, according to the QUALITY_SELECTION_PROPERTY job property, is selected.",
+        "description": "Sets the policy for determining a track's exemplar. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track). When set to \"QUALITY\" or anything other than these named policies, the detection with the maximum quality, according to the QUALITY_SELECTION_PROPERTY job property, is selected.",
         "type": "STRING",
-        "propertiesKey": "detection.quality.selection.prop",
+        "defaultValue": "QUALITY",
         "mediaTypes": ["VIDEO"]
     },
     {

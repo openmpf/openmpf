@@ -47,6 +47,7 @@ import javax.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.mime.MimeTypes;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
@@ -526,12 +527,20 @@ public class MarkupSplitter {
         if (textStr == null) {
             textStr = track.getExemplar().getDetectionProperties().get(textProp);
         }
-        String numericStr = track.getTrackProperties().get(numericProp);
-        if (numericStr == null) {
-            numericStr = track.getExemplar().getDetectionProperties().get(numericProp);
-        }
-        if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
-            numericStr = Float.toString(track.getConfidence());
+        String numericStr = null;
+        if (!StringUtils.isBlank(numericProp)) {
+            if (numericProp.equalsIgnoreCase("CONFIDENCE")) {
+                numericStr = Float.toString(track.getConfidence());
+                if (numericStr == null) {
+                    numericStr = Float.toString(track.getExemplar().getConfidence());
+                }
+            }
+            else {
+                numericStr = track.getTrackProperties().get(numericProp)
+                if (numericStr == null) {
+                    numericStr = track.getExemplar().getDetectionProperties().get(numericProp);
+                }
+            }
         }
         return getLabel(prefix, textStr, textLength, numericStr);
     }
@@ -542,9 +551,14 @@ public class MarkupSplitter {
                                             int textLength,
                                             String numericProp) {
         String textStr = detection.getDetectionProperties().get(textProp);
-        String numericStr = detection.getDetectionProperties().get(numericProp);
-        if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
-            numericStr = Float.toString(detection.getConfidence());
+        String numericStr = null;
+        if (!StringUtils.isBlank(numericProp)) {
+            if (numericProp.equalsIgnoreCase("CONFIDENCE")) {
+                numericStr = Float.toString(detection.getConfidence());
+            }
+            else {
+                numericStr = detection.getDetectionProperties().get(numericProp);
+            }
         }
         return getLabel(prefix, textStr, textLength, numericStr);
     }

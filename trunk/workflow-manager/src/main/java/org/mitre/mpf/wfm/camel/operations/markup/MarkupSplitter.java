@@ -536,7 +536,7 @@ public class MarkupSplitter {
                 }
             }
             else {
-                numericStr = track.getTrackProperties().get(numericProp)
+                numericStr = track.getTrackProperties().get(numericProp);
                 if (numericStr == null) {
                     numericStr = track.getExemplar().getDetectionProperties().get(numericProp);
                 }

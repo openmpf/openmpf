@@ -245,6 +245,7 @@ public class TestMarkupSplitter {
     @Test
     public void getLabelWithConfidence() {
         {
+            // Numeric prop returns track confidence.
             Track track = createTrack(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "some really really long class",
                                           NUMERIC_PROP_NAME, "9.999"),
@@ -256,6 +257,7 @@ public class TestMarkupSplitter {
                                             "CONFIDENCE").get());
         }
         {
+            // Numeric prop returns detection confidence.
             Detection detection = createDetection(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
                                           NUMERIC_PROP_NAME, "1.11111"));
@@ -265,22 +267,24 @@ public class TestMarkupSplitter {
                                             "CONFIDENCE").get());
         }
         {
+            // Numeric prop returns track confidence instead of track property named CONFIDENCE.
             Track track = createTrack(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "some really really long class",
                                           "CONFIDENCE", "9.999"),
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
                                           "CONFIDENCE", "1.11111"));
             Assert.assertEquals(
-                    "some reall 9.999",
+                    "some reall 7.778",
                     MarkupSplitter.getLabel(track, "", TEXT_PROP_NAME, 10,
                                             "CONFIDENCE").get());
         }
         {
+            // Numeric prop returns detection confidence instead of detection property named CONFIDENCE.
             Detection detection = createDetection(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
                                           "CONFIDENCE", "1.11111"));
             Assert.assertEquals(
-                    "abc 1.111",
+                    "abc 8.889",
                     MarkupSplitter.getLabel(detection, "", TEXT_PROP_NAME, 10,
                                             "CONFIDENCE").get());
         }

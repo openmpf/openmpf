@@ -1,7 +1,7 @@
 {
   "componentName": "CplusplusHelloWorld",
-  "componentVersion": "8.0",
-  "middlewareVersion": "8.0",
+  "componentVersion": "9.0",
+  "middlewareVersion": "9.0",
   "sourceLanguage": "c++",
   "batchLibrary": "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so",
   "streamLibrary": "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",

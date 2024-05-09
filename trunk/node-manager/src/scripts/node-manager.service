@@ -29,4 +29,4 @@
 [Service]
 ExecStart=/bin/bash -c '\
    source /etc/profile.d/mpf.sh; \
-   exec sudo --user "$$MPF_USER" --preserve-env java -jar "$${MPF_HOME}/jars/mpf-nodemanager-8.0.jar"'
+   exec sudo --user "$$MPF_USER" --preserve-env java -jar "$${MPF_HOME}/jars/mpf-nodemanager-9.0.jar"'

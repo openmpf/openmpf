@@ -169,7 +169,7 @@ public class MediaInspectionHelper {
                     ffprobeMetadata = _ffprobeMetadataExtactor.getAudioVideoMetadata(job, media);
                     if (ffprobeMetadata.video().isPresent()) {
                         length = inspectVideo(
-                                localPath, jobId, mediaId, mimeType, mediaMetadata,
+                                localPath, jobId, mediaId, mediaMetadata,
                                 ffprobeMetadata.video().get());
                         break;
                     }
@@ -228,7 +228,7 @@ public class MediaInspectionHelper {
         return -1;
     }
 
-    private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
+    private int inspectVideo(Path localPath, long jobId, long mediaId,
                              Map<String, String> mediaMetadata,
                              FfprobeMetadata.Video ffprobeMetadata) {
 
@@ -239,8 +239,7 @@ public class MediaInspectionHelper {
 
         FrameTimeInfo frameTimeInfo;
         try {
-            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(
-                localPath, ffprobeMetadata, mimeType);
+            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata);
         }
         catch (MediaInspectionException e) {
             if (ffprobeMetadata.frameCount().isPresent()) {

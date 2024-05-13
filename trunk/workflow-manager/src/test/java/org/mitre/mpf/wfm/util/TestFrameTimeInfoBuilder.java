@@ -50,25 +50,19 @@ public class TestFrameTimeInfoBuilder {
         var videoPath = TestUtil.findFilePath("/samples/five-second-marathon-clip.mkv");
         // Something is wrong with last frame in the video. All frames have the same pts delta
         // except the last frame has double the pts delta.
-        compareTimes(
-                videoPath, NTSC_FPS, new Fraction(1, 1000), false,
-                "video/x-matroska");
+        compareTimes(videoPath, NTSC_FPS, new Fraction(1, 1000), false);
     }
 
     @Test
     public void testVideo1() throws IOException {
         var videoPath = TestUtil.findFilePath("/samples/video_01.mp4");
-        compareTimes(
-                videoPath, NTSC_FPS, new Fraction(1, 30_000), true,
-                "video/mp4");
+        compareTimes(videoPath, NTSC_FPS, new Fraction(1, 30_000), true);
     }
 
     @Test
     public void testVideo2() throws IOException {
         var videoPath = TestUtil.findFilePath("/samples/video_02.mp4");
-        compareTimes(
-                videoPath, NTSC_FPS, new Fraction(1, 30_000), true,
-                "video/mp4");
+        compareTimes(videoPath, NTSC_FPS, new Fraction(1, 30_000), true);
     }
 
     @Test
@@ -76,16 +70,14 @@ public class TestFrameTimeInfoBuilder {
         var videoPath = TestUtil.findFilePath("/samples/bbb24p_00_short.ts");
         compareTimes(
                 videoPath, new Fraction(24, 1),
-                new Fraction(1, 90000), false,
-                "video/vnd.dlna.mpeg-tts");
+                new Fraction(1, 90000), false);
     }
 
     @Test
     public void testAvi() throws IOException {
         var videoPath = TestUtil.findFilePath("/samples/new_face_video.avi");
         compareTimes(
-                videoPath, NTSC_FPS, new Fraction(1_001, 30_000),
-                false, "video/x-msvideo");
+                videoPath, NTSC_FPS, new Fraction(1_001, 30_000), false);
     }
 
 
@@ -94,7 +86,7 @@ public class TestFrameTimeInfoBuilder {
         var videoPath = TestUtil.findFilePath("/samples/STRUCK_Test_720p.mp4");
         compareTimes(
                 videoPath, new Fraction(132000, 5221),
-                new Fraction(1, 12000), false, "video/mp4");
+                new Fraction(1, 12000), false);
     }
 
 
@@ -110,8 +102,7 @@ public class TestFrameTimeInfoBuilder {
         var videoPath = TestUtil.findFilePath("/samples/text-test-video-detection.avi");
         var ffprobeMetdata = new FfprobeMetadata.Video(
                 -1, -1, fps, OptionalLong.empty(), OptionalLong.empty(), 0, timeBase);
-        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(
-                videoPath, ffprobeMetdata, "video/x-msvideo");
+        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(videoPath, ffprobeMetdata);
 
         assertEquals(2206, timeInfo.getTimeMsFromFrame(0));
         assertEquals(0, timeInfo.getFrameFromTimeMs(2206));
@@ -133,11 +124,11 @@ public class TestFrameTimeInfoBuilder {
 
 
     private static void compareTimes(
-            Path video, Fraction fps, Fraction timeBase, boolean isCfr, String mimeType)
+            Path video, Fraction fps, Fraction timeBase, boolean isCfr)
             throws IOException {
         var ffprobeMetdata = new FfprobeMetadata.Video(
                 -1, -1, fps, OptionalLong.of(-1), OptionalLong.of(-1), 0, timeBase);
-        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(video, ffprobeMetdata, mimeType);
+        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(video, ffprobeMetdata);
         assertEquals(isCfr, timeInfo.hasConstantFrameRate());
         assertFalse(timeInfo.requiresTimeEstimation());
 

@@ -739,15 +739,6 @@
                         </goals>
                         <configuration>
                             <escapeString>\</escapeString>
-                            <outputDirectory>${basedir}/target/${project.build.finalName}/WEB-INF/classes</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>../install/lib</directory>
-                                    <includes>
-                                        <include>**/libmpfopencvjni.so</include>
-                                    </includes>
-                                </resource>
-                            </resources>
                             <outputDirectory>${basedir}/target/classes</outputDirectory>
                             <resources>
                                 <resource>
@@ -814,7 +805,7 @@
                         <resource>
                             <!-- this is relative to the pom.xml directory -->
                             <directory>../install/lib</directory>
-                            <targetPath>WEB-INF/classes</targetPath>
+                            <targetPath>WEB-INF/jni-libs</targetPath>
                             <includes>
                                 <!--  <include>**/libmpfopencvjni.so</include> -->
                             </includes>

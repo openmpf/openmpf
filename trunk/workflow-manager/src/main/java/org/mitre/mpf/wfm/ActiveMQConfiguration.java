@@ -26,9 +26,12 @@
 
 package org.mitre.mpf.wfm;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.broker.region.policy.PolicyEntry;
 import org.apache.activemq.broker.region.policy.PolicyMap;
+import org.apache.camel.ThreadPoolRejectedPolicy;
 import org.apache.camel.builder.ThreadPoolProfileBuilder;
 import org.apache.camel.spi.ThreadPoolProfile;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -85,10 +88,15 @@ public class ActiveMQConfiguration {
         // The default thread pool profile for splits with parallelProcessing only allows for 10
         // parallel threads.
         return new ThreadPoolProfileBuilder(SPLITTER_THREAD_POOL_REF)
-            .poolSize(propertiesUtil.getAmqConcurrentConsumers())
+            // Always have at least 1 thread in the pool.
+            .poolSize(1)
             .maxPoolSize(propertiesUtil.getAmqConcurrentConsumers())
-            .allowCoreThreadTimeOut(true)
+            .keepAliveTime(1L, TimeUnit.MINUTES)
+            // A queue is not needed because the of the ThreadPoolRejectedPolicy.CallerRuns policy.
+            .maxQueueSize(0)
+            // When the thread pool is at the maximum size and all threads in the pool are busy,
+            // the task will run on the calling thread rather than on a pool thread.
+            .rejectedPolicy(ThreadPoolRejectedPolicy.CallerRuns)
             .build();
     }
-
 }

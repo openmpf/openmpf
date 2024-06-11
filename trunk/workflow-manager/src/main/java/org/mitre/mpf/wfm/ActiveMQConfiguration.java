@@ -104,10 +104,14 @@ public class ActiveMQConfiguration {
             .poolSize(1)
             .maxPoolSize(propertiesUtil.getAmqConcurrentConsumers())
             .keepAliveTime(1L, TimeUnit.MINUTES)
-            // We never queue tasks. The task either runs on a thread from the pool, or when the 
-            // thread pool is too busy, it will force the caller to run the task on the caller's 
-            // thread.
+            // We do not use the default queue size because the thread pool prefers to queue jobs 
+            // rather than start new threads after poolSize threads have been started. There is no 
+            // way to both use a non-zero sized queue and only queue after maxPoolSize threads have 
+            // been started.
             .maxQueueSize(0)
+            // When the thread pool is at the maximum size and all threads in the pool are busy,
+            // the task will run on the calling thread rather than on a pool thread. This is useful 
+            // because it effectively rate limits task producers.
             .rejectedPolicy(ThreadPoolRejectedPolicy.CallerRuns)
             // When combined with the other settings here, enabling core thread time out would have 
             // the same effect as setting the pool size to 0. 

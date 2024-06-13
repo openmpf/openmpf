@@ -26,9 +26,12 @@
 
 package org.mitre.mpf.wfm;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.broker.region.policy.PolicyEntry;
 import org.apache.activemq.broker.region.policy.PolicyMap;
+import org.apache.camel.ThreadPoolRejectedPolicy;
 import org.apache.camel.builder.ThreadPoolProfileBuilder;
 import org.apache.camel.spi.ThreadPoolProfile;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -84,11 +87,35 @@ public class ActiveMQConfiguration {
     public ThreadPoolProfile splitterThreadPoolProfile(PropertiesUtil propertiesUtil) {
         // The default thread pool profile for splits with parallelProcessing only allows for 10
         // parallel threads.
+
+        // Configures the thread pool so that when a new task arrives it takes the first 
+        // appropriate action in the list below:
+        //  - If no threads are running, start one to run the task. The thread will remain in the 
+        //    pool until the pool is shutdown.
+        //  - If there is an idle thread, use it to run the task.
+        //  - If there are fewer than getAmqConcurrentConsumers threads in the pool, create a new 
+        //    thread to run the task.
+        //  - Run the task on the calling thread. This slows down task producers to prevent over 
+        //    loading the thread pool.
+        // All threads, except for the first, will remain idle for 1 minute after completing a task. 
+        // If no task arrives during that time, the thread will exit.
         return new ThreadPoolProfileBuilder(SPLITTER_THREAD_POOL_REF)
-            .poolSize(propertiesUtil.getAmqConcurrentConsumers())
+            // Always have at least 1 thread in the pool.
+            .poolSize(1)
             .maxPoolSize(propertiesUtil.getAmqConcurrentConsumers())
-            .allowCoreThreadTimeOut(true)
+            .keepAliveTime(1L, TimeUnit.MINUTES)
+            // We do not use the default queue size because the thread pool prefers to queue jobs 
+            // rather than start new threads after poolSize threads have been started. There is no 
+            // way to both use a non-zero sized queue and only queue after maxPoolSize threads have 
+            // been started.
+            .maxQueueSize(0)
+            // When the thread pool is at the maximum size and all threads in the pool are busy,
+            // the task will run on the calling thread rather than on a pool thread. This is useful 
+            // because it effectively rate limits task producers.
+            .rejectedPolicy(ThreadPoolRejectedPolicy.CallerRuns)
+            // When combined with the other settings here, enabling core thread time out would have 
+            // the same effect as setting the pool size to 0. 
+            .allowCoreThreadTimeOut(false)
             .build();
     }
-
 }

@@ -170,7 +170,7 @@ public class Track implements Comparable<Track> {
         _exemplar = ExemplarPolicyUtil.getExemplar(
                     _exemplarPolicy,
                     _qualitySelectionProperty,
-                    _startOffsetTimeInclusive,
+                    _startOffsetFrameInclusive,
                     _endOffsetFrameInclusive,
                     _detections);
     }

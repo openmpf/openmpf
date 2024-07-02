@@ -28,8 +28,10 @@
 
 #include <stdexcept>
 
+#include "Visibility.h"
+
 namespace MPF {
-    class ComponentLoadError : public std::runtime_error {
+    class MPF_EXPORT ComponentLoadError : public std::runtime_error {
         using std::runtime_error::runtime_error;
     };
 } // namespace MPF

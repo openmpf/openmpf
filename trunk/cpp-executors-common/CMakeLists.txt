@@ -41,6 +41,7 @@ set(cpp_executors_common_files
     QuitReceived.h
     Shutdown.cpp Shutdown.h
     ExitSignalBlocker.cpp ExitSignalBlocker.h
+    Visibility.h
 )
 
 find_library(amq_lib libactivemq-cpp.a)
@@ -51,6 +52,8 @@ pkg_search_module(ACTIVEMQ-CPP REQUIRED activemq-cpp)
 find_library(apr_lib apr-1)
 
 add_library(cpp_executors_common OBJECT ${cpp_executors_common_files})
+
+set_target_properties(cpp_executors_common PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 target_include_directories(cpp_executors_common PUBLIC
     ${ACTIVEMQ-CPP_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})

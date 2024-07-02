@@ -28,9 +28,11 @@
 
 #include <stdexcept>
 
+#include "Visibility.h"
+
 namespace MPF {
 
-class QuitReceived : public std::runtime_error {
+class MPF_EXPORT QuitReceived : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 

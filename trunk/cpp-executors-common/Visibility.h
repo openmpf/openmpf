@@ -26,31 +26,4 @@
 
 #pragma once
 
-#include <pybind11/pybind11.h>
-
-namespace MPF {
-
-namespace py = pybind11;
-
-class PythonScopedSignalHandler {
-public:
-    // Make Python handle SIGINT.
-    PythonScopedSignalHandler();
-
-    // Allow the calling program to handle SIGINT.
-    ~PythonScopedSignalHandler();
-
-    PythonScopedSignalHandler(const PythonScopedSignalHandler&) = delete;
-    PythonScopedSignalHandler& operator=(const PythonScopedSignalHandler&) = delete;
-    PythonScopedSignalHandler(PythonScopedSignalHandler&&) = delete;
-    PythonScopedSignalHandler& operator=(PythonScopedSignalHandler&&) = delete;
-
-private:
-    py::object signal_func_;
-    py::object sigint_;
-    py::object prev_handler_;
-
-    explicit PythonScopedSignalHandler(const py::module_& signal_module);
-};
-
-} // namespace MPF
+#define MPF_EXPORT __attribute__ ((visibility ("default")))

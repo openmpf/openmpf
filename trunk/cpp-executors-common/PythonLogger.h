@@ -34,7 +34,7 @@
 
 namespace MPF {
 
-class __attribute__ ((visibility("hidden"))) PythonLogger : private PythonBase, public ILogger {
+class PythonLogger : private PythonBase, public ILogger {
 public:
     PythonLogger(std::string_view log_level, std::string_view logger_name);
 

@@ -28,10 +28,12 @@
 
 #include <string>
 
+#include "Visibility.h"
+
 namespace MPF::SUBJECT {
 
 
-class InvalidConfigurationError : public std::runtime_error {
+class MPF_EXPORT InvalidConfigurationError : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 

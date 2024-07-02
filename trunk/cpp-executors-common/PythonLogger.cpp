@@ -37,7 +37,7 @@ namespace MPF {
     // The Python logging documentation recommends using a filter to add contextual information to
     // logs.
     // https://docs.python.org/3.8/howto/logging-cookbook.html#using-filters-to-impart-contextual-information
-    class __attribute__ ((visibility("hidden"))) AddLogContextFilter {
+    class AddLogContextFilter {
     public:
         bool Filter(py::handle log_record) const {
             log_record.attr("ctx") = ctx_;
@@ -70,7 +70,7 @@ PYBIND11_EMBEDDED_MODULE(log_ctx_filter, m) {
 namespace MPF {
 
 
-class __attribute__ ((visibility("hidden"))) PythonLogger::Impl {
+class PythonLogger::Impl {
 public:
     Impl(std::string_view logger_name, std::string_view log_level)
         : Impl(CreateFilter(log_level), GetLogger(logger_name)) {

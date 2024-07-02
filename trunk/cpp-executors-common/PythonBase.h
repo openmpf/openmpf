@@ -36,7 +36,7 @@ namespace py = pybind11;
 
 // Classes that use Python objects can extend this class to make sure Python is initialized
 // before the derived constructor is invoked.
-class __attribute__ ((visibility("hidden"))) PythonBase {
+class PythonBase {
 
 private:
     std::shared_ptr<py::scoped_interpreter> interpreter_{GetInterpreter()};

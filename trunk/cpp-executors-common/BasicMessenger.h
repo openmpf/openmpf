@@ -41,10 +41,11 @@
 
 #include "AmqMessageType.h"
 #include "LoggerWrapper.h"
+#include "Visibility.h"
 
 namespace MPF {
 
-class AmqConnectionInitializationException : public std::runtime_error {
+class MPF_EXPORT AmqConnectionInitializationException : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 

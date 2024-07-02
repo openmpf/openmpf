@@ -40,7 +40,7 @@ namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
 namespace py = pybind11;
 
 
-class __attribute__ ((visibility("hidden"))) PythonComponent : private PythonBase {
+class PythonComponent : private PythonBase {
 public:
     PythonComponent(LoggerWrapper logger, std::string_view distribution_name);
 

@@ -39,6 +39,9 @@ set(subject_tracking_files
 )
 
 add_executable(subject_tracking_executor ${subject_tracking_files})
+
+set_target_properties(subject_tracking_executor PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
 target_link_libraries(subject_tracking_executor cpp_executors_common mpfProtobufs pybind11::embed)
 
 install(TARGETS subject_tracking_executor RUNTIME DESTINATION bin)

@@ -31,10 +31,11 @@
 
 #include "BasicMessenger.h"
 #include "LoggerWrapper.h"
+#include "Visibility.h"
 
 namespace MPF::SUBJECT {
 
-class ComponentRegistrationError : public std::runtime_error {
+class MPF_EXPORT ComponentRegistrationError : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 

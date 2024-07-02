@@ -27,18 +27,14 @@
 
 package org.mitre.mpf;
 
-import javax.persistence.EntityManagerFactory;
-
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
-import org.hibernate.SessionFactory;
 import org.javasimon.console.SimonConsoleServlet;
 import org.mitre.mpf.mvc.security.OidcSecurityConfig;
-import org.mitre.mpf.wfm.data.access.JpaPackage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -50,10 +46,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.orm.hibernate5.support.OpenSessionInViewFilter;
-
-import com.querydsl.jpa.hibernate.HibernateQueryFactory;
 
 
 @SpringBootApplication
@@ -62,7 +54,6 @@ import com.querydsl.jpa.hibernate.HibernateQueryFactory;
     "classpath:/applicationContext-nm.xml"
 })
 @Configuration
-@EnableJpaRepositories(basePackageClasses = JpaPackage.class, considerNestedRepositories = true)
 public class Application extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
@@ -142,24 +133,5 @@ public class Application extends SpringBootServletInitializer {
         servlet.setLoadOnStartup(0);
         servlet.setAsyncSupported(true);
         return servlet;
-    }
-
-    @Bean
-    public OpenSessionInViewFilter openSessionInViewFilter() {
-        // Allows loading of lazy entity properties during serialization.
-        return new OpenSessionInViewFilter();
-    }
-
-    @Bean
-    public EntityManagerFactory entityManagerFactory(SessionFactory sessionFactory) {
-        // The Spring Data JPA Repositories need an EntityManagerFactory and Hibernate's
-        // SessionFactory implements the EntityManagerFactory interface.
-        return sessionFactory;
-    }
-
-    @Bean
-    public HibernateQueryFactory hibernateQueryFactory(SessionFactory sessionFactory) {
-        // Configure the Querydsl library to use Hibernate.
-        return new HibernateQueryFactory(sessionFactory::getCurrentSession);
     }
 }

@@ -235,9 +235,14 @@ namespace MPF::COMPONENT {
             return py::str(obj);
         }
 
-        py::object get_method(py::handle instance, const std::string &method_name) {
+        std::optional<py::function> get_method(
+                py::handle instance,
+                const std::string& method_name) {
             py::object method = py::getattr(instance, method_name.c_str(), py::none());
-            if (method.is_none() || is_callable(method)) {
+            if (method.is_none()) {
+                return {};
+            }
+            if (is_callable(method)) {
                 return method;
             }
             throw std::runtime_error("Expected " + method_name + " to be callable, but it was: "
@@ -440,10 +445,10 @@ namespace MPF::COMPONENT {
 
 
         struct ComponentAttrs {
-            py::function get_detections_from_image_method;
-            py::function get_detections_from_video_method;
-            py::function get_detections_from_audio_method;
-            py::function get_detections_from_generic_method;
+            std::optional<py::function> get_detections_from_image_method;
+            std::optional<py::function> get_detections_from_video_method;
+            std::optional<py::function> get_detections_from_audio_method;
+            std::optional<py::function> get_detections_from_generic_method;
 
             explicit ComponentAttrs(const std::string &module_path)
                 : ComponentAttrs(load_component(module_path))
@@ -457,10 +462,10 @@ namespace MPF::COMPONENT {
                 , get_detections_from_audio_method(get_method(component_instance, "get_detections_from_audio"))
                 , get_detections_from_generic_method(get_method(component_instance, "get_detections_from_generic"))
             {
-                if (get_detections_from_image_method.is_none()
-                        && get_detections_from_video_method.is_none()
-                        && get_detections_from_audio_method.is_none()
-                        && get_detections_from_generic_method.is_none()) {
+                if (!get_detections_from_image_method
+                        && !get_detections_from_video_method
+                        && !get_detections_from_audio_method
+                        && !get_detections_from_generic_method) {
                     throw ComponentLoadError(
                             "The component does contain any of the component API methods. "
                             "Components must implement one or more of the following methods: "
@@ -535,16 +540,16 @@ namespace MPF::COMPONENT {
         {
         }
 
-        bool Supports(MPFDetectionDataType data_type) {
+        bool Supports(MPFDetectionDataType data_type) const {
             switch (data_type) {
                 case UNKNOWN:
-                    return !component_.get_detections_from_generic_method.is_none();
+                    return component_.get_detections_from_generic_method.has_value();
                 case VIDEO:
-                    return !component_.get_detections_from_video_method.is_none();
+                    return component_.get_detections_from_video_method.has_value();
                 case IMAGE:
-                    return !component_.get_detections_from_image_method.is_none();
+                    return component_.get_detections_from_image_method.has_value();
                 case AUDIO:
-                    return !component_.get_detections_from_audio_method.is_none();
+                    return component_.get_detections_from_audio_method.has_value();
                 default:
                     return false;
             }
@@ -552,14 +557,15 @@ namespace MPF::COMPONENT {
 
         std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job) {
             try {
-                if (component_.get_detections_from_video_method.is_none()) {
+                if (!component_.get_detections_from_video_method.has_value()) {
                     throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
                                                 "Unsupported data type.");
                 }
 
                 py::object py_video_job = component_api_.to_python(job);
 
-                py::iterable py_results = component_.get_detections_from_video_method(py_video_job);
+                py::iterable py_results
+                        = (*component_.get_detections_from_video_method)(py_video_job);
 
                 std::vector<MPFVideoTrack> tracks;
                 for (const auto &py_track : py_results) {
@@ -587,14 +593,15 @@ namespace MPF::COMPONENT {
 
         std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job) {
             try {
-                if (component_.get_detections_from_image_method.is_none()) {
+                if (!component_.get_detections_from_image_method.has_value()) {
                     throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
                                                 "Unsupported data type.");
                 }
 
                 py::object py_image_job = component_api_.to_python(job);
 
-                py::iterable py_results = component_.get_detections_from_image_method(py_image_job);
+                py::iterable py_results
+                        = (*component_.get_detections_from_image_method)(py_image_job);
 
                 std::vector<MPFImageLocation> locations;
                 for (const auto &py_img_loc : py_results) {
@@ -611,14 +618,15 @@ namespace MPF::COMPONENT {
 
         std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job) {
             try {
-                if (component_.get_detections_from_audio_method.is_none()) {
+                if (!component_.get_detections_from_audio_method.has_value()) {
                     throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
                                                 "Unsupported data type.");
                 }
 
                 py::object py_audio_job = component_api_.to_python(job);
 
-                py::iterable py_results = component_.get_detections_from_audio_method(py_audio_job);
+                py::iterable py_results
+                        = (*component_.get_detections_from_audio_method)(py_audio_job);
                 std::vector<MPFAudioTrack> tracks;
                 for (const auto &py_track : py_results) {
                     tracks.emplace_back(
@@ -638,14 +646,15 @@ namespace MPF::COMPONENT {
 
         std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job) {
             try {
-                if (component_.get_detections_from_generic_method.is_none()) {
+                if (!component_.get_detections_from_generic_method.has_value()) {
                     throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
                                                 "Unsupported data type.");
                 }
 
                 py::object py_generic_job = component_api_.to_python(job);
 
-                py::iterable py_results = component_.get_detections_from_generic_method(py_generic_job);
+                py::iterable py_results
+                        = (*component_.get_detections_from_generic_method)(py_generic_job);
                 std::vector<MPFGenericTrack> tracks;
                 for (const auto &py_track : py_results) {
                     tracks.emplace_back(

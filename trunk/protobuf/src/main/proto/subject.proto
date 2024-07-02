@@ -1,0 +1,101 @@
+// NOTICE
+//
+// This software (or technical data) was produced for the U.S. Government
+// under contract, and is subject to the Rights in Data-General Clause
+// 52.227-14, Alt. IV (DEC 2007).
+//
+// Copyright 2024 The MITRE Corporation. All Rights Reserved.
+
+
+// Copyright 2024 The MITRE Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package org.mitre.mpf.wfm.buffers;
+
+import "detection.proto";
+
+option java_outer_classname = "SubjectProtobuf";
+
+message SubjectTrackingJob {
+    int64 job_id = 1;
+    string job_name = 2;
+    map<string, string> job_properties = 3;
+    repeated VideoDetectionJobResults video_job_results = 4;
+    repeated ImageDetectionJobResults image_job_results = 5;
+}
+
+message DetectionJob {
+    string data_uri = 1;
+    string media_id = 2;
+    string algorithm = 3;
+    string track_type = 4;
+    map<string, string> job_properties = 5;
+    map<string, string> media_properties = 6;
+}
+
+message VideoDetectionJobResults {
+    DetectionJob detection_job = 1;
+    // Key is the track id which is a sha256 hash.
+    map<string, VideoTrack> results = 2;
+}
+
+message ImageDetectionJobResults {
+    DetectionJob detection_job = 1;
+    map<string, ImageLocation> results = 2;
+}
+
+
+message SubjectTrackingResult {
+    // Example keys: subject, vehicle
+    map<string, EntityList> entity_groups = 1;
+    // # Example keys: proximity
+    map<string, RelationshipList> relationship_groups = 2;
+    map<string, string> properties = 3;
+    repeated string errors = 4;
+}
+
+message EntityList {
+    repeated Entity entities = 1;
+}
+
+message RelationshipList {
+    repeated Relationship relationships = 1;
+}
+
+
+message Entity {
+    // uuid
+    string id = 1;
+    double score = 2;
+    // Example keys: face, person, truck
+    map<string, TrackIdList> tracks = 3;
+    map<string, string> properties = 4;
+}
+
+message TrackIdList {
+    repeated string track_ids = 1;
+}
+
+
+message Relationship {
+    repeated string entities = 1;
+    map<string, FrameList> frames = 2;
+    map<string, string> properties = 3;
+}
+
+message FrameList {
+    repeated int64 frames = 1;
+}

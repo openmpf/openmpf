@@ -41,8 +41,7 @@ namespace MPF::COMPONENT {
 
     namespace {
         py::object get_builtin(const char *name) {
-            py::module builtin = py::module::import("builtins");
-            return builtin.attr(name);
+            return py::module_::import("builtins").attr(name);
         }
 
         namespace debug {
@@ -98,7 +97,7 @@ namespace MPF::COMPONENT {
 
         void add_module_dir_to_python_path(const std::string &module_path) {
             std::string module_dir = get_module_directory(module_path);
-            py::module::import("sys")
+            py::module_::import("sys")
                     .attr("path")
                     .attr("insert")(0, module_dir);
         }
@@ -117,9 +116,9 @@ namespace MPF::COMPONENT {
                     + std::string(export_component_var)
                     + "\", " "which gets assigned to either a class or some other callable.";
 
-            py::module component_module;
+            py::module_ component_module;
             try {
-                component_module = py::module::import(module_name.c_str());
+                component_module = py::module_::import(module_name.c_str());
             }
             catch (const std::exception &ex) {
                 throw ComponentLoadError(
@@ -159,7 +158,7 @@ namespace MPF::COMPONENT {
               component = my_module:MyComponentClass
          */
         py::object load_component_from_package(const std::string &distribution_name) {
-            auto import_meta = py::module::import("importlib.metadata");
+            auto import_meta = py::module_::import("importlib.metadata");
             try {
                 auto distribution = import_meta.attr("distribution")(distribution_name);
                 py::list entry_points = distribution.attr("entry_points");
@@ -306,11 +305,11 @@ namespace MPF::COMPONENT {
 
         public:
             explicit ComponentApi()
-                    : ComponentApi(py::module::import("mpf_component_api"))
+                    : ComponentApi(py::module_::import("mpf_component_api"))
             {
             }
 
-            explicit ComponentApi(py::module &&component_api_module)
+            explicit ComponentApi(py::module_ &&component_api_module)
                     : image_job_ctor_(component_api_module.attr("ImageJob"))
                     , video_job_ctor_(component_api_module.attr("VideoJob"))
                     , audio_job_ctor_(component_api_module.attr("AudioJob"))
@@ -509,7 +508,7 @@ namespace MPF::COMPONENT {
             }
 
         private:
-            py::object log_record_cls_ = py::module::import("logging").attr("LogRecord");
+            py::object log_record_cls_ = py::module_::import("logging").attr("LogRecord");
             py::str unknown_file_str_ = "(unknown file)";
             std::shared_ptr<std::string> job_name_log_prefix_ptr_;
         };
@@ -748,7 +747,7 @@ namespace MPF::COMPONENT {
     class PythonLogger::logger_impl {
     public:
         LoggerAttrs loggerAttrs {
-            py::module::import("logging").attr("getLogger")("org.mitre.mpf.detection") };
+            py::module_::import("logging").attr("getLogger")("org.mitre.mpf.detection") };
     };
 
 
@@ -794,7 +793,7 @@ namespace MPF::COMPONENT {
         }
         initialized = true;
 
-        py::module logging_module = py::module::import("logging");
+        auto logging_module = py::module_::import("logging");
         // Change default level names to match what WFM expects
         // Change default level name for logger.warn and logger.warning from 'WARNING' to 'WARN'
         logging_module.attr("addLevelName")(logging_module.attr("WARN"), "WARN");
@@ -803,14 +802,14 @@ namespace MPF::COMPONENT {
 
         py::list handlers;
 
-        py::object sys_stderr = py::module::import("sys").attr("stderr");
+        py::object sys_stderr = py::module_::import("sys").attr("stderr");
         py::object stream_handler = logging_module.attr("StreamHandler")(sys_stderr);
         handlers.append(stream_handler);
 
         std::string log_file_path = GetLogFilePath(component_name);
         if (!log_file_path.empty()) {
             py::object timed_rotating_file_handler_cls
-                    = py::module::import("logging.handlers").attr("TimedRotatingFileHandler");
+                    = py::module_::import("logging.handlers").attr("TimedRotatingFileHandler");
 
             py::object file_handler = timed_rotating_file_handler_cls(
                     log_file_path, py::arg("when")="midnight", py::arg("delay")=true);
@@ -856,7 +855,7 @@ namespace MPF::COMPONENT {
         }
 
         std::string log_dir = log_path + *this_node_env_val + "/log";
-        py::module::import("os").attr("makedirs")(log_dir, py::arg("exist_ok")=true);
+        py::module_::import("os").attr("makedirs")(log_dir, py::arg("exist_ok")=true);
 
         return log_dir + '/' + component_name + ".log";
     }

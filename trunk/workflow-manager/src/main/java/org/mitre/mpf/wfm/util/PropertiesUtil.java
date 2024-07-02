@@ -144,6 +144,8 @@ public class PropertiesUtil {
         artifactsDirectory = createOrFail(share, "artifacts", permissions);
         markupDirectory = createOrFail(share, "markup", permissions);
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
+        subjectTrackingResultsDir = createOrFail(
+                share, "subject-tracking-results", permissions).toPath();
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
         temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
         derivativeMediaDirectory = createOrFail(share, "derivative-media", permissions);
@@ -394,6 +396,12 @@ public class PropertiesUtil {
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path;
+    }
+
+    private Path subjectTrackingResultsDir;
+
+    public Path getSubjectTrackingResultsDir() {
+        return subjectTrackingResultsDir;
     }
 
     private File remoteMediaDirectory;

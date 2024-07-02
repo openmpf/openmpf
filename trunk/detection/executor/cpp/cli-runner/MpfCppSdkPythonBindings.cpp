@@ -215,7 +215,7 @@ PYBIND11_MODULE(mpf_cpp_sdk, m) {
             .value("COULD_NOT_READ_MEDIA", MPFDetectionError::MPF_COULD_NOT_READ_MEDIA);
 
 
-    py::object property = py::module::import("builtins").attr("property");
+    py::object property = py::module_::import("builtins").attr("property");
 
     static py::exception<MPFDetectionException> detection_exception(m, "DetectionException");
 

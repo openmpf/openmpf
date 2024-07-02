@@ -524,7 +524,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
 
         // this may update the job status
-        return storageService.store(jsonOutputObject, outputSha);
+        URI outputObjectUri = storageService.store(jsonOutputObject, outputSha);
+        inProgressBatchJobs.reportJobResultsAvailable(jobId, jsonOutputObject);
+        return outputObjectUri;
     }
 
 

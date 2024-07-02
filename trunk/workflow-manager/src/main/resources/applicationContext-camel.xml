@@ -35,7 +35,6 @@
 
     <camelContext id="camelContext" depends-on="activemqBroker" xmlns="http://camel.apache.org/schema/spring">
         <contextScan/>
-        <camel:template id="camelTemplate" />
     </camelContext>
 
     <!--<bean id="PROPAGATION_REQUIRED" class="org.apache.camel.spring.spi.SpringTransactionPolicy">-->

@@ -59,10 +59,8 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.service.S3StorageBackend;
-import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.service.PastJobResultsService;
 import org.mitre.mpf.wfm.service.TiesDbService;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.InvalidJobIdException;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -72,7 +70,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -119,16 +116,13 @@ public class JobController {
     private JsonUtils jsonUtils;
 
     @Autowired
-    private S3StorageBackend s3StorageBackend;
-
-    @Autowired
     private InProgressBatchJobsService inProgressJobs;
 
     @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private TiesDbService tiesDbService;
 
     @Autowired
-    private TiesDbService tiesDbService;
+    private PastJobResultsService pastJobResultsService;
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -313,7 +307,10 @@ public class JobController {
             @ApiResponse(code = 200, message = "Successful response"),
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
-    public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId) throws IOException {
+    public ResponseEntity<Object> getSerializedDetectionOutputRest(
+                @ApiParam(required = true, value = "Job id")
+                @PathVariable("id")
+                String jobId) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             //return 200 for successful GET and object; 404 for bad id
@@ -321,38 +318,12 @@ public class JobController {
             if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
                 return ResponseEntity.notFound().build();
             }
-            try {
-                URI outputObjectUri = URI.create(jobRequest.getOutputObjectPath());
-                if ("file".equalsIgnoreCase(outputObjectUri.getScheme())) {
-                    return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
-                }
-
-                var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
-                var combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(job);
-                InputStreamResource inputStreamResource;
-                if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
-                    var s3Stream = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
-                                                              combinedProperties);
-                    inputStreamResource = new InputStreamResource(s3Stream);
-                }
-                else {
-                    inputStreamResource = new InputStreamResource(IoUtils.openStream(
-                            jobRequest.getOutputObjectPath()));
-                }
-                return ResponseEntity.ok(inputStreamResource);
-            }
-            catch (NoSuchFileException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(String.format("The output object for job %s does not exist.", jobId));
-            }
-            catch (StorageException e) {
-                var msg = String.format(
-                        "An error occurred while trying to access the output object for job %s: %s",
-                        jobId, e);
-                log.error(msg, e);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(msg);
-            }
+            var resultsStream = pastJobResultsService.getJobResultsStream(internalJobId);
+            return ResponseEntity.ok(new InputStreamResource(resultsStream));
+        }
+        catch (WfmProcessingException e) {
+            return ResponseEntity.internalServerError()
+                .body(new MessageModel(e.getMessage()));
         }
     }
 

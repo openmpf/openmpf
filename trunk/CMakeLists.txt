@@ -34,16 +34,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 
 # Needed for VS Code Intellisense
-add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-MESSAGE("CURRENT CMAKE CXX vars")
-# if empty or "Debug", the "-g" flag will be added
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-	MESSAGE("Configuring as DEBUG build")
+	message("Configuring as DEBUG build")
+    # Needed to get clang-tidy work.
+    add_compile_definitions(BOOST_UUID_NO_SIMD)
+    # Needed to get clang-tidy work.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /usr/lib/gcc/x86_64-linux-gnu/9/include")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-    MESSAGE("Configuring as RELEASE build")
+    message("Configuring as RELEASE build")
 endif()
 
 
@@ -86,8 +86,16 @@ endif()
 set(MSG_UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/detection/executor/cpp/common)
 set(MSG_UTILS_FILE ${MSG_UTILS_DIR}/MPFMessageUtils.cpp)
 
+set(PYBIND11_CPP_STANDARD -std=c++17)
+set(PYBIND11_PYTHON_VERSION 3.8)
+add_subdirectory(pybind11)
+
+add_subdirectory(cpp-executors-common)
+
 # Build the component executors.
 add_subdirectory(detection/executor/cpp)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)
+
+add_subdirectory(subject-tracking/executor/cpp)

@@ -1,0 +1,164 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2024 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+package org.mitre.mpf.mvc.controller;
+
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+
+import org.mitre.mpf.mvc.util.CloseableMdc;
+import org.mitre.mpf.mvc.util.MdcUtil;
+import org.mitre.mpf.mvc.util.PostResponseUtil;
+import org.mitre.mpf.rest.api.MessageModel;
+import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
+import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
+import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.rest.api.subject.SubjectJobSummary;
+import org.mitre.mpf.wfm.businessrules.SubjectJobRequestService;
+import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
+import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.common.collect.ImmutableSortedSet;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
+@Api("SubjectTrackingJobs")
+@RestController
+@RequestMapping(path = "/subject/jobs", produces = "application/json")
+public class SubjectJobController {
+
+    private final SubjectJobRequestService _subjectJobRequestService;
+
+    private final SubjectJobRepo _subjectJobRepo;
+
+    @Inject
+    SubjectJobController(
+            SubjectJobRequestService subjectJobRequestService,
+            SubjectJobRepo subjectJobDao) {
+        _subjectJobRequestService = subjectJobRequestService;
+        _subjectJobRepo = subjectJobDao;
+    }
+
+
+    @GetMapping
+    @ApiOperation("Gets subject tracking jobs")
+    @ExposedMapping
+    public Stream<SubjectJobSummary> getJobs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "100") int pageLen) {
+        return _subjectJobRepo.getPage(page, pageLen)
+                .map(j -> new SubjectJobSummary(
+                        j.getId(), j.getComponentName(),
+                        j.getTimeReceived(), j.getTimeCompleted()));
+    }
+
+
+    @GetMapping("{jobId}")
+    @ApiOperation("Gets a subject tracking job")
+    @ExposedMapping
+    public ResponseEntity<SubjectJobDetails> getJob(@PathVariable long jobId) {
+        try (var ctx = CloseableMdc.job(jobId)) {
+            var optJob = _subjectJobRepo.findById(jobId);
+            if (optJob.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            var job = optJob.get();
+            var body = new SubjectJobDetails(
+                    jobId,
+                    new SubjectJobRequest(
+                            job.getComponentName(),
+                            job.getPriority(),
+                            job.getDetectionJobIds(),
+                            job.getJobProperties()),
+                    job.getTimeReceived(),
+                    job.getTimeCompleted(),
+                    job.getRetrievedDetectionJobs(),
+                    job.getCancellationState().convert(),
+                    ImmutableSortedSet.copyOf(job.getErrors()),
+                    ImmutableSortedSet.copyOf(job.getWarnings()));
+            return ResponseEntity.ok(body);
+        }
+    }
+
+
+    @PostMapping
+    @ApiOperation("Creates a new subject tracking job")
+    @ExposedMapping
+    public ResponseEntity<Void> createJob(
+            @RequestBody SubjectJobRequest jobRequest) {
+        var jobId = _subjectJobRequestService.runJob(jobRequest);
+        return MdcUtil.job(jobId, () -> PostResponseUtil.createdResponse(jobId));
+    }
+
+
+    @GetMapping("{jobId}/output")
+    @ApiOperation("Gets a subject tracking job's output.")
+    @ExposedMapping
+    public ResponseEntity<SubjectJobResult> getOutput(@PathVariable long jobId) {
+        return MdcUtil.job(jobId, () -> ResponseEntity.of(_subjectJobRepo.getOutput(jobId)));
+    }
+
+
+    @PostMapping("{jobId}/cancel")
+    @ApiOperation("Cancels a subject tracking job.")
+    @ExposedMapping
+    public ResponseEntity<MessageModel> cancel(@PathVariable long jobId) {
+        return MdcUtil.job(jobId, () -> cancelInternal(jobId));
+    }
+
+    private ResponseEntity<MessageModel> cancelInternal(long jobId) {
+        var optJob = _subjectJobRepo.findById(jobId);
+        if (optJob.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageModel("Could not find job with id " + jobId + '.'));
+        }
+
+        var job = optJob.get();
+        if (job.getTimeCompleted().isPresent()) {
+            if (job.getCancellationState() == DbCancellationState.CANCELLED_BY_USER) {
+                return ResponseEntity.noContent().build();
+            }
+            else {
+                return ResponseEntity
+                        .status(HttpStatus.CONFLICT)
+                        .body(new MessageModel("The job has already completed."));
+            }
+        }
+        _subjectJobRequestService.cancel(jobId);
+        return ResponseEntity.noContent().build();
+    }
+}

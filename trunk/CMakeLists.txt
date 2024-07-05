@@ -44,6 +44,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /usr/lib/gcc/x86_64-linux-gnu/9/include")
 else()
     message("Configuring as RELEASE build")
+    # Strip executables and shared libraries during the link phase.
+    add_link_options(-s)
 endif()
 
 

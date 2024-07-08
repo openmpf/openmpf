@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
 @Component
 public class SubjectComponentRegistrationRouteBuilder extends RouteBuilder {
 
@@ -64,7 +65,7 @@ public class SubjectComponentRegistrationRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        from(ENTRY_POINT)
+        from(ENTRY_POINT + "?concurrentConsumers=1&maxConcurrentConsumers=1")
             .routeId("Subject Tracking Component Registration")
             .setExchangePattern(ExchangePattern.InOut)
             .process(this::processRequest);

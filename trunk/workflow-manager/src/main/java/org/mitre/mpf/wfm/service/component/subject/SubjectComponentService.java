@@ -58,7 +58,7 @@ public class SubjectComponentService {
 
 
     @Transactional
-    public RegistrationResult registerComponent(SubjectComponentDescriptor descriptor) {
+    public synchronized RegistrationResult registerComponent(SubjectComponentDescriptor descriptor) {
         var result = registerComponentInternal(descriptor);
         LOG.info(
                 "Registration attempt for {} resulted in: {}",

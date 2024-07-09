@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        <h4> Current Components </h4>
+        <h4> Detection Components </h4>
 
         <table class="table table-bordered table-hover">
             <thead>
@@ -130,8 +130,27 @@
                         <span ng-if="!isReRegistering(component)"> Re-register </span>
                     </button>
                 </td>
-
             </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <h4>Subject Tracking Components</h4>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Version</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="component in subject_components | orderBy:'name'">
+                    <td>{{component.name}}</td>
+                    <td>{{component.version}}</td>
+                </tr>
             </tbody>
         </table>
     </div>

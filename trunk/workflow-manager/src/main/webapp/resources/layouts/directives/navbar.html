@@ -46,6 +46,11 @@
                         <li><a ui-sref="jobs" id="menu_jobs" title="View status of queued jobs">Status</a></li>
                         <li><a ui-sref="/server_media" id="menu_server_media" title="Create jobs and upload media to the server">Create</a></li>
                         <li><a ui-sref="/adminStatistics" id="menu_adminStatistics" title="Displays job statistics">Statistics</a></li>
+                        <li>
+                            <a ui-sref="/subject-jobs" title="View status of subject tracking jobs">
+                                Subject Tracking Jobs
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li ng-if="!dockerEnabled"><a ui-sref="/adminNodes" title="View and edit running nodes and process">Nodes</a></li>

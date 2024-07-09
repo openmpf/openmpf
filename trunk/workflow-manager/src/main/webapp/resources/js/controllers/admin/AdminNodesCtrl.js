@@ -542,6 +542,14 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
         }
     };
 
+    $scope.service_count_options = (() => {
+        const counts = []
+        for (let count = 1; count <= 99; count++) {
+            counts.push(count);
+        }
+        return Object.freeze(counts);
+    })();
+
     //// initialize the controller ////
     init();
 };

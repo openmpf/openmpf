@@ -38,8 +38,8 @@ angular.module('mpf.wfm.controller.AdminComponentRegistrationCtrl', [
     'ui.bootstrap'
 ])
 .controller('AdminComponentRegistrationCtrl',
-['$scope', 'Components', 'NotificationSvc', 'NodeService', 'roleInfo', 'metadata',
-function ($scope, Components, NotificationSvc, NodeService, roleInfo, metadata) {
+['$scope', 'Components', 'SubjectComponents', 'NotificationSvc', 'NodeService', 'roleInfo', 'metadata',
+function ($scope, Components, SubjectComponents, NotificationSvc, NodeService, roleInfo, metadata) {
 
     $scope.isAdmin = roleInfo.admin;
 
@@ -52,6 +52,7 @@ function ($scope, Components, NotificationSvc, NodeService, roleInfo, metadata) 
     }
 
     $scope.components = Components.query();
+    $scope.subject_components = SubjectComponents.query();
 
     var statesEnum = Components.statesEnum;
 

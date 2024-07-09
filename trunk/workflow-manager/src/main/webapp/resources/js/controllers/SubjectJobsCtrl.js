@@ -24,23 +24,36 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-'use strict';
+"use strict";
 
-/* Angular Filters */
-const AppFilters = angular.module('mpf.wfm.filters', []);
+angular.module('mpf.wfm.controller.SubjectJobsCtrl', [
+    'mpf.wfm.services',
+])
+.controller('SubjectJobsCtrl', [
+'$scope', '$http',
+($scope, $http) => {
 
+    const init = () => {
+        $http.get('/subject/jobs')
+            .then(({data}) => $scope.jobs = data)
+    }
 
-AppFilters.filter('objectKeys', function () {
-	return Object.keys;
-});
+    const showDetailsSym = Symbol('showDetails')
+    const detailsSym = Symbol('details')
 
-AppFilters.filter('formatDate', () => {
-	return date => {
-		if (date) {
-			return moment(date).format("YYYY-MM-DD HH:mm:ss") ;
-		}
-		else {
-			return '';
-		}
-	}
-});
+    Object.assign($scope, {
+        jobs: [],
+        toggleJobDetails: job => {
+            job[showDetailsSym] = !job[showDetailsSym]
+            if (job[showDetailsSym]) {
+                $http.get(`/subject/jobs/${job.jobId}`)
+                    .then(({data}) => job[detailsSym] = data)
+            }
+        },
+        isDetailsShown: job => job[showDetailsSym],
+        getDetails: job => job[detailsSym]
+    });
+
+    init();
+}
+])

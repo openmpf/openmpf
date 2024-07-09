@@ -39,9 +39,8 @@ import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJobOutput;
 import org.mitre.mpf.wfm.data.entities.persistent.QDbSubjectJob;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.querydsl.QPageRequest;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
@@ -83,10 +82,8 @@ public class SubjectJobRepo {
 
 
     public Stream<DbSubjectJob> getPage(int page, int pageLen) {
-        var sortOrder = Sort.sort(DbSubjectJob.class)
-                .by(DbSubjectJob::getId)
-                .descending();
-        var pageRequest = PageRequest.of(page - 1, pageLen, sortOrder);
+        var job = QDbSubjectJob.dbSubjectJob;
+        var pageRequest = QPageRequest.of(page - 1, pageLen, job.id.desc());
         return _jobRepo.findAll(pageRequest).stream();
     }
 
@@ -122,7 +119,6 @@ public class SubjectJobRepo {
                 .set(job.timeCompleted, Instant.now())
                 .execute();
     }
-
 
     @Repository
     private static interface JobRepository extends

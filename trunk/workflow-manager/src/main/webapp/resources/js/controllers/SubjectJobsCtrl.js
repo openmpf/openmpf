@@ -35,19 +35,19 @@ angular.module('mpf.wfm.controller.SubjectJobsCtrl', [
 
     const init = () => {
         $http.get('/subject/jobs')
-            .then(({data}) => $scope.jobs = data)
-    }
+            .then(({data}) => $scope.jobs = data);
+    };
 
-    const showDetailsSym = Symbol('showDetails')
-    const detailsSym = Symbol('details')
+    const showDetailsSym = Symbol('showDetails');
+    const detailsSym = Symbol('details');
 
     Object.assign($scope, {
         jobs: [],
         toggleJobDetails: job => {
-            job[showDetailsSym] = !job[showDetailsSym]
+            job[showDetailsSym] = !job[showDetailsSym];
             if (job[showDetailsSym]) {
                 $http.get(`/subject/jobs/${job.jobId}`)
-                    .then(({data}) => job[detailsSym] = data)
+                    .then(({data}) => job[detailsSym] = data);
             }
         },
         isDetailsShown: job => job[showDetailsSym],

@@ -113,7 +113,7 @@ std::unique_ptr<cms::Message> BasicMessenger::SendRequestReply(
     session_->commit();
 
     auto response = AsUniquePtr(response_consumer->receive());
-    response->acknowledge();
+    session_->commit();
     return response;
 }
 

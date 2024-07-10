@@ -46,11 +46,12 @@
             <tbody>
                 <tr ng-repeat-start="job in jobs">
                     <td>
+                        <i class="fa fa-refresh fa-spin fa-fw" ng-if="isLoading(job)"></i>
                         <a href="" ng-click="toggleJobDetails(job)">
-                            <span ng-if="!isDetailsShown(job)"
+                            <span ng-if="showChevronRight(job)"
                                   class="glyphicon glyphicon-chevron-right">
                             </span>
-                            <span ng-if="isDetailsShown(job)"
+                            <span ng-if="showChevronDown(job)"
                                   class="glyphicon glyphicon-chevron-down">
                             </span>
                             {{job.jobId}}
@@ -63,8 +64,8 @@
                         <a ng-href="subject/jobs/{{job.jobId}}/output">Results</a>
                     </td>
                 </tr>
-                <tr ng-repeat-end ng-if="isDetailsShown(job)">
-                    <td>
+                <tr ng-repeat-end ng-if="showDetailsRow(job)">
+                    <td colspan="5">
                         <pre>{{getDetails(job) | json}}</pre>
                     </td>
                 </tr>

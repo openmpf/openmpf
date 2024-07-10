@@ -38,22 +38,35 @@ angular.module('mpf.wfm.controller.SubjectJobsCtrl', [
             .then(({data}) => $scope.jobs = data);
     };
 
-    const showDetailsSym = Symbol('showDetails');
+    const detailsToggledOnSym = Symbol('detailsToggledOn')
     const detailsSym = Symbol('details');
+    const isLoadingSym = Symbol('isLoading');
 
     Object.assign($scope, {
         jobs: [],
+
         toggleJobDetails: job => {
-            job[showDetailsSym] = !job[showDetailsSym];
-            if (job[showDetailsSym]) {
+            job[detailsToggledOnSym] = !job[detailsToggledOnSym];
+            if (job[detailsToggledOnSym]) {
+                job[isLoadingSym] = true
                 $http.get(`/subject/jobs/${job.jobId}`)
-                    .then(({data}) => job[detailsSym] = data);
+                    .then(({data}) => {
+                        job[isLoadingSym] = false;
+                        job[detailsSym] = data;
+                    });
             }
         },
-        isDetailsShown: job => job[showDetailsSym],
-        getDetails: job => job[detailsSym]
+        getDetails: job => job[detailsSym],
+
+        isLoading: job => job[isLoadingSym],
+
+        showChevronRight: job => !$scope.isLoading(job) && !job[detailsToggledOnSym],
+
+        showChevronDown: job => !$scope.isLoading(job) && job[detailsToggledOnSym],
+
+        showDetailsRow: job => job[detailsToggledOnSym] && $scope.getDetails(job)
     });
 
     init();
 }
-])
+]);

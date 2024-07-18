@@ -46,6 +46,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import software.amazon.awssdk.http.HttpStatusCode;
 
 @Api("SubjectTrackingComponents")
 @RestController
@@ -75,6 +78,9 @@ public class SubjectComponentController {
     @GetMapping("{componentName}")
     @ExposedMapping
     @ApiOperation("Gets details of a subject tracking component")
+    @ApiResponses({
+        @ApiResponse(code = HttpStatusCode.NOT_FOUND, message = "Component does not exist."),
+    })
     public ResponseEntity<SubjectComponentDetails> getComponent(@PathVariable String componentName) {
         var optDbComponent = _subjectComponentRepo.findById(componentName);
         if (optDbComponent.isEmpty()) {
@@ -93,6 +99,7 @@ public class SubjectComponentController {
                 dbComponent.getComponentLibrary(),
                 props));
     }
+
 
     @DeleteMapping("{componentName}")
     @ExposedMapping

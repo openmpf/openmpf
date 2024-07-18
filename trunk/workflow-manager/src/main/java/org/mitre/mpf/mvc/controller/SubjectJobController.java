@@ -55,6 +55,10 @@ import com.google.common.collect.ImmutableSortedSet;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import software.amazon.awssdk.http.HttpStatusCode;
 
 @Api("SubjectTrackingJobs")
 @RestController
@@ -78,8 +82,18 @@ public class SubjectJobController {
     @ApiOperation("Gets subject tracking jobs")
     @ExposedMapping
     public Stream<SubjectJobSummary> getJobs(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "100") int pageLen) {
+            @RequestParam(defaultValue = "1")
+            @ApiParam(
+                    value = "Page number of results to get.",
+                    defaultValue = "1",
+                    allowableValues = "range[1, infinity]")
+            int page,
+            @RequestParam(defaultValue = "100")
+            @ApiParam(
+                    value = "Number of results to get.",
+                    defaultValue = "100",
+                    allowableValues = "range[1, infinity]")
+            int pageLen) {
         return _subjectJobRepo.getPage(page, pageLen)
                 .map(j -> new SubjectJobSummary(
                         j.getId(), j.getComponentName(),
@@ -88,8 +102,9 @@ public class SubjectJobController {
 
 
     @GetMapping("{jobId}")
-    @ApiOperation("Gets a subject tracking job")
     @ExposedMapping
+    @ApiOperation("Gets a subject tracking job")
+    @ApiResponses({@ApiResponse(code = 404, message = "Job does not exist.")})
     public ResponseEntity<SubjectJobDetails> getJob(@PathVariable long jobId) {
         try (var ctx = CloseableMdc.job(jobId)) {
             var optJob = _subjectJobRepo.findById(jobId);
@@ -116,8 +131,8 @@ public class SubjectJobController {
 
 
     @PostMapping
-    @ApiOperation("Creates a new subject tracking job")
     @ExposedMapping
+    @ApiOperation("Creates a new subject tracking job")
     public ResponseEntity<Void> createJob(
             @RequestBody SubjectJobRequest jobRequest) {
         var jobId = _subjectJobRequestService.runJob(jobRequest);
@@ -126,16 +141,26 @@ public class SubjectJobController {
 
 
     @GetMapping("{jobId}/output")
-    @ApiOperation("Gets a subject tracking job's output.")
     @ExposedMapping
+    @ApiOperation("Gets a subject tracking job's output.")
+    @ApiResponses({
+        @ApiResponse(code = HttpStatusCode.NOT_FOUND, message = "Job output does not exist."),
+    })
     public ResponseEntity<SubjectJobResult> getOutput(@PathVariable long jobId) {
         return MdcUtil.job(jobId, () -> ResponseEntity.of(_subjectJobRepo.getOutput(jobId)));
     }
 
 
+
     @PostMapping("{jobId}/cancel")
-    @ApiOperation("Cancels a subject tracking job.")
     @ExposedMapping
+    @ApiOperation("Cancels a subject tracking job.")
+    @ApiResponses({
+        @ApiResponse(code = HttpStatusCode.OK, message = "The job was successfully cancelled."),
+        @ApiResponse(code = HttpStatusCode.ACCEPTED, message = "Cancellation request started."),
+        @ApiResponse(code = HttpStatusCode.NOT_FOUND, message = "Job does not exist."),
+        @ApiResponse(code = 409, message = "The job has already completed.")
+    })
     public ResponseEntity<MessageModel> cancel(@PathVariable long jobId) {
         return MdcUtil.job(jobId, () -> cancelInternal(jobId));
     }
@@ -144,21 +169,23 @@ public class SubjectJobController {
         var optJob = _subjectJobRepo.findById(jobId);
         if (optJob.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new MessageModel("Could not find job with id " + jobId + '.'));
+                    .body(new MessageModel("Could not find job with id %s.".formatted(jobId)));
         }
 
         var job = optJob.get();
         if (job.getTimeCompleted().isPresent()) {
             if (job.getCancellationState() == DbCancellationState.CANCELLED_BY_USER) {
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.ok(
+                        new MessageModel("Job %s was cancelled.".formatted(jobId)));
             }
             else {
                 return ResponseEntity
                         .status(HttpStatus.CONFLICT)
-                        .body(new MessageModel("The job has already completed."));
+                        .body(new MessageModel("Job %s is already complete.".formatted(jobId)));
             }
         }
         _subjectJobRequestService.cancel(jobId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.accepted().body(
+                new MessageModel("Starting cancellation of job %s.".formatted(jobId)));
     }
 }

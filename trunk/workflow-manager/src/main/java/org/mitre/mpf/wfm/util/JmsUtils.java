@@ -115,12 +115,17 @@ public class JmsUtils {
     }
 
     public void cancelSubjectJob(long jobId, String componentName) {
+        var routeId = getSubjectCancellationRouteId(jobId, componentName);
+        if (_camelContext.getRoute(routeId) != null) {
+            return;
+        }
+
         try {
             _camelContext.addRoutes(new RouteBuilder() {
                 @Override
                 public void configure() throws Exception {
                     fromF("activemq:MPF.SUBJECT_%s_REQUEST?selector=JobId=%s", componentName, jobId)
-                        .routeId(getSubjectCancellationRouteId(jobId, componentName))
+                        .routeId(routeId)
                         .setHeader(MpfHeaders.CANCELLED, constant(true));
                 }
             });

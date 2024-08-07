@@ -39,6 +39,7 @@ var App = angular.module('mpf.wfm', [
 	'mpf.wfm.controller.ServerMediaCtrl',
 	'mpf.wfm.controller.AdminComponentRegistrationCtrl',
 	'mpf.wfm.controller.JobsCtrl',
+	'mpf.wfm.controller.SubjectJobsCtrl',
 	'mpf.wfm.controller.MarkupCtrl',
 	'mpf.wfm.pipeline2',
 	'mpf.wfm.filters',
@@ -130,6 +131,11 @@ App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $u
 		url: '/{page}/{pageLen}/{orderDirection}/{orderCol}/{search}'
 	  })
 
+	  $stateProvider.state('/subject-jobs', {
+		  url: '/subject-jobs',
+		  templateUrl: getTemplateUrl('subject-jobs'),
+		  controller: 'SubjectJobsCtrl'
+	  });
 
 	  $stateProvider.state('/adminNodes', {
 		  url: '/adminNodes',

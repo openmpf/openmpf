@@ -27,17 +27,19 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.MessageLite;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import javax.inject.Inject;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.DataFormat;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.function.Supplier;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.MessageLite;
+import com.google.protobuf.Parser;
 
 @Component
 public class ProtobufDataFormatFactory {
@@ -48,20 +50,20 @@ public class ProtobufDataFormatFactory {
         _propertiesUtil = propertiesUtil;
     }
 
-    public DataFormat create(Supplier<MessageLite.Builder> messageBuilderSupplier) {
-        return new ProtobufDataFormatWithCustomSizeLimit(_propertiesUtil, messageBuilderSupplier);
+    public DataFormat create(Parser<?> parser) {
+        return new ProtobufDataFormatWithCustomSizeLimit(_propertiesUtil, parser);
     }
 
 
     private static class ProtobufDataFormatWithCustomSizeLimit implements DataFormat {
         private final PropertiesUtil _propertiesUtil;
-        private final Supplier<MessageLite.Builder> _messageBuilderSupplier;
+        private final Parser<?> _parser;
 
         private ProtobufDataFormatWithCustomSizeLimit(
                 PropertiesUtil propertiesUtil,
-                Supplier<MessageLite.Builder> messageBuilderSupplier) {
+                Parser<?> parser) {
             _propertiesUtil = propertiesUtil;
-            _messageBuilderSupplier = messageBuilderSupplier;
+            _parser = parser;
         }
 
         @Override
@@ -71,10 +73,10 @@ public class ProtobufDataFormatFactory {
         }
 
         @Override
-        public MessageLite unmarshal(Exchange exchange, InputStream stream) throws IOException {
+        public Object unmarshal(Exchange exchange, InputStream stream) throws IOException {
             var codedInputStream = CodedInputStream.newInstance(stream);
             codedInputStream.setSizeLimit(_propertiesUtil.getProtobufSizeLimit());
-            return _messageBuilderSupplier.get().mergeFrom(codedInputStream).build();
+            return _parser.parseFrom(codedInputStream);
         }
     }
 }

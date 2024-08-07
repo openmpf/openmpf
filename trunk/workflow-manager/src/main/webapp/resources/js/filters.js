@@ -27,111 +27,14 @@
 'use strict';
 
 /* Angular Filters */
-var AppFilters = angular.module('mpf.wfm.filters', []);
-
-AppFilters.filter('interpolate', ['version', function (version) {
-	return function (text) {
-		return String(text).replace(/\%VERSION\%/mg, version);
-	}
-}]);
-
-//keep the endDate from displaying when not COMPLETE after a job re-submission
-//handy when the table is manually refreshed
-AppFilters.filter('jobEndDate', function () {
-	return function (endDate, job) {
-		if(endDate && job.jobStatus != 'COMPLETE') {
-			return null;
-		} else {
-			return endDate;
-		}
-	}
-});
-
-//keep the job progress val at 99% until it is complete or cancelled
-AppFilters.filter('jobProgress', function () {
-	return function (progressVal, job) {
-		if(progressVal > 99 && !(job.jobStatus == 'COMPLETE' || job.jobStatus == 'CANCELLED')) {
-			return 99;
-		} else if (job.jobStatus == 'COMPLETE' || job.jobStatus == 'CANCELLED'){
-			return 100;
-		} else {
-			//round to two decimal places
-			return progressVal.toFixed(2);
-		}
-	}
-});
-
-//convert map to array to be able to use orderBy, which is only available for arrays in angular!
-AppFilters.filter('object2Array', function () {
-	return function(input) {
-		var out = [];
-		for(var i in input){
-			out.push(input[i]);
-		}
-		return out;
-	}
-});
-
-//full file path to file name
-AppFilters.filter('fullPathToName', function () {
-	return function(input) {
-		return input.split('/').pop();
-	}
-});
+const AppFilters = angular.module('mpf.wfm.filters', []);
 
 
-/**
- * AngularJS default filter with the following expression:
- * "person in people | filter: {name: $select.search, age: $select.search}"
- * performs a AND between 'name: $select.search' and 'age: $select.search'.
- * We want to perform a OR.
- */
-App.filter('propsFilter', function() {
-  return function(items, props) {
-    var out = [];
-
-    if (angular.isArray(items)) {
-      items.forEach(function(item) {
-        var itemMatches = false;
-
-        var keys = Object.keys(props);
-        for (var i = 0; i < keys.length; i++) {
-          var prop = keys[i];
-          var text = props[prop].toLowerCase();
-          if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
-            itemMatches = true;
-            break;
-          }
-        }
-
-        if (itemMatches) {
-          out.push(item);
-        }
-      });
-    } else {
-      // Let the output be the input untouched
-      out = items;
-    }
-
-    return out;
-  }
-});
-
-App.filter('range', function() {
-	return function(input, min, max) {
-		min = parseInt(min); //Make string input int
-		max = parseInt(max);
-		for (var i=min; i<=max; i++)
-			input.push(i);
-		return input;
-	};
-});
-
-App.filter('objectKeys', function () {
+AppFilters.filter('objectKeys', function () {
 	return Object.keys;
 });
 
-App.filter('formatDate', () => {
+AppFilters.filter('formatDate', () => {
 	return date => {
 		if (date) {
 			return moment(date).format("YYYY-MM-DD HH:mm:ss") ;
@@ -140,5 +43,4 @@ App.filter('formatDate', () => {
 			return '';
 		}
 	}
-})
-
+});

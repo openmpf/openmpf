@@ -170,7 +170,7 @@
                         <configuration>
                             <executable>make</executable>
                             <arguments>
-                                <argument>install</argument>
+                                <argument>install/strip</argument>
                             </arguments>
                             <workingDirectory>build</workingDirectory>
                             <successCodes>

@@ -103,6 +103,10 @@ public class MasterStreamingJobManager {
     }
 
 
+	public int getActiveJobCount() {
+		return _jobToNodeMapper.getActiveJobCount();
+	}
+
 
     private static class JobToNodeMapper {
 		private final Map<Long, String> _jobToNodeMap = new HashMap<>();
@@ -140,6 +144,10 @@ public class MasterStreamingJobManager {
 
 		public void foreachJob(BiConsumer<Long, String> action) {
 			_jobToNodeMap.forEach(action);
+		}
+
+		public int getActiveJobCount() {
+			return _nodeJobCounts.size();
 		}
 	}
 }

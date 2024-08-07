@@ -296,11 +296,11 @@ div.dt-buttons .media-propertied-dt-button,div.dt-buttons .media-propertied-dt-b
     white-space: nowrap;
 }
 
-#jobTable tr:hover td {
+#jobTable tr:hover td, #subjectJobTable tr:hover td {
     background-color: #e9e9e9
 }
 
-#jobTable {
+#jobTable, #subjectJobTable  {
     margin-top: 10px;
     margin-bottom: 10px;
 }

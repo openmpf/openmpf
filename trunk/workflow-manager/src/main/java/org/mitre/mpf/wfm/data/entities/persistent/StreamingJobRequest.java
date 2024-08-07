@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
+import org.mitre.mpf.wfm.data.access.hibernate.AbstractHibernateDao;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import javax.persistence.*;
@@ -42,7 +43,10 @@ public class StreamingJobRequest {
      * 	Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
      * */
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(
+            strategy = GenerationType.SEQUENCE,
+            generator = AbstractHibernateDao.JOB_ID_SEQUENCE_NAME)
+    @SequenceGenerator(name = AbstractHibernateDao.JOB_ID_SEQUENCE_NAME, allocationSize = 1)
     private long id;
     public long getId() { return id; }
 

@@ -34,6 +34,8 @@ import org.mitre.mpf.rest.api.subject.SubjectComponentDetails;
 import org.mitre.mpf.rest.api.subject.SubjectComponentSummary;
 import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectComponentProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +56,8 @@ import software.amazon.awssdk.http.HttpStatusCode;
 @RestController
 @RequestMapping(path = "/subject/components", produces = "application/json")
 public class SubjectComponentController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SubjectComponentController.class);
 
     private final SubjectComponentRepo _subjectComponentRepo;
 
@@ -107,6 +111,7 @@ public class SubjectComponentController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteComponent(@PathVariable String componentName) {
         try {
+            LOG.info("Removing subject component: {}", componentName);
             _subjectComponentRepo.deleteById(componentName);
         }
         catch (EmptyResultDataAccessException ignored) {

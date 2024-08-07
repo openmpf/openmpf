@@ -144,12 +144,24 @@
                 <tr>
                     <th>Name</th>
                     <th>Version</th>
+                    <th class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="component in subject_components | orderBy:'name'">
+                <tr ng-repeat="component in subjectComponents | orderBy:'name'">
                     <td>{{component.name}}</td>
                     <td>{{component.version}}</td>
+                    <td>
+                        <button ng-click="removeSubjectComponent(component)"
+                                ng-disabled="deleteIsInProgress(component)"
+                                type="button" class="btn btn-danger btn-block btn-xs">
+
+                            <i ng-if="deleteIsInProgress(component)"
+                               class="fa fa-refresh fa-spin fa-fw"></i>
+
+                            <span ng-if="!deleteIsInProgress(component)">Remove</span>
+                        </button>
+                    </td>
                 </tr>
             </tbody>
         </table>

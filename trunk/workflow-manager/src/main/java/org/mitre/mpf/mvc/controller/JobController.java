@@ -413,7 +413,7 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public MpfResponse cancelJob(@PathVariable("id") String jobId) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        return MdcUtil.job(internalJobId, () -> cancelJobInternal(internalJobId));
+        return MdcUtil.job(internalJobId, this::cancelJobInternal);
     }
 
 

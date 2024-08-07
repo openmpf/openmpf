@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.service;
 import static java.util.stream.Collectors.toMap;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.HashMap;
@@ -42,6 +41,7 @@ import org.mitre.mpf.rest.api.subject.Entity;
 import org.mitre.mpf.rest.api.subject.Relationship;
 import org.mitre.mpf.rest.api.subject.Relationship.MediaReference;
 import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
@@ -81,64 +82,126 @@ public class SubjectJobResultsService {
         _jmsUtils = jmsUtils;
     }
 
-
     @Transactional
     public void completeJob(long jobId, SubjectProtobuf.SubjectTrackingResult pbResult) {
         var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        job.setTimeCompleted(Instant.now());
         try {
-            storeResults(job, pbResult);
+            pbResult.getErrorsList().forEach(job::addError);
+            var convertedResults = convertResults(job, pbResult);
+            storeResults(job, convertedResults);
         }
         finally {
-            cleanup(job);
+            cleanupAndSave(job);
         }
     }
 
     @Transactional
     public void cancel(long jobId) {
         var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        if (job.isComplete()) {
+            if (job.getCancellationState() == DbCancellationState.CANCELLED_BY_USER) {
+                LOG.info("The job was already cancelled.");
+                return;
+            }
+            throw new WfmProcessingException(
+                    "Can not cancel job %s because the job is already complete.".formatted(jobId));
+        }
+        job.setCancellationState(DbCancellationState.CANCELLED_BY_USER);
+        job.setTimeCompleted(Instant.now());
         try {
-            job.setCancellationState(DbCancellationState.CANCELLED_BY_USER);
-            job.setTimeCompleted(Instant.now());
-            _subjectJobRepo.save(job);
-            LOG.info("Successfully cancelled job.");
+            storeNoOutputResult(job);
         }
         finally {
-            cleanup(job);
+            cleanupAndSave(job);
+        }
+        LOG.info("Successfully cancelled job.");
+    }
+
+
+    @Transactional
+    public void completeWithError(long jobId, String errorContext, Throwable error) {
+        var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        if (job.isComplete()) {
+            throw new IllegalStateException(
+                "Can not complete job %s with an error because it was already complete."
+                .formatted(jobId));
+        }
+        var fullMessage = errorContext + error;
+        LOG.error("Completing job with error: " + fullMessage, error);
+        job.addError(fullMessage);
+        job.setTimeCompleted(Instant.now());
+        try {
+            storeNoOutputResult(job);
+        }
+        finally {
+            cleanupAndSave(job);
         }
     }
 
-    private void cleanup(DbSubjectJob job) {
-        _jmsUtils.deleteSubjectCancelRoute(job.getId(), job.getComponentName());
+    private void cleanupAndSave(DbSubjectJob job) {
+        try {
+            _jmsUtils.deleteSubjectCancelRoute(job.getId(), job.getComponentName());
+            if (job.getTimeCompleted().isEmpty()) {
+                job.setTimeCompleted(Instant.now());
+            }
+        }
+        finally {
+            _subjectJobRepo.save(job);
+        }
     }
 
-    private void storeResults(DbSubjectJob job, SubjectProtobuf.SubjectTrackingResult pbResult) {
-        pbResult.getErrorsList().forEach(job::addError);
 
-        var convertedResults = convertResults(pbResult);
-        long jobId = job.getId();
-        var resultsPath = _propertiesUtil.getSubjectTrackingResultsDir()
-                .resolve(jobId + ".json");
+    private void storeNoOutputResult(DbSubjectJob job) {
+        var result = new SubjectJobResult(
+                SubjectJobRepo.getJobDetails(job), null, null, null);
+        storeResults(job, result);
+    }
+
+
+    private void storeResults(DbSubjectJob job, SubjectJobResult results) {
         try {
-            var json = _objectMapper.writeValueAsString(convertedResults);
-            _subjectJobRepo.saveOutput(new DbSubjectJobOutput(job, json));
+            var json = _objectMapper.writeValueAsString(results);
+            var resultsPath = _propertiesUtil.getSubjectTrackingResultsDir()
+                    .resolve(job.getId() + ".json");
             Files.writeString(resultsPath, json);
             LOG.info("Wrote job results to {}", resultsPath);
+            _subjectJobRepo.saveOutput(new DbSubjectJobOutput(job, json));
         }
         catch (IOException e) {
-            job.addError("Failed to create output object due to: " + e);
-            throw new UncheckedIOException(e);
-        }
-        finally {
-            job.setTimeCompleted(Instant.now());
-            _subjectJobRepo.save(job);
+            var message = "Failed to write output object to disk due to: " + e;
+            job.addError(message);
+            var updatedResults = updateSubjectJobResult(job, results);
+            try {
+                var json = _objectMapper.writeValueAsString(updatedResults);
+                _subjectJobRepo.saveOutput(new DbSubjectJobOutput(job, json));
+            }
+            catch (JsonProcessingException suppressed) {
+                e.addSuppressed(suppressed);
+            }
+            throw new WfmProcessingException(e);
         }
     }
 
-    private static SubjectJobResult convertResults(
+    private SubjectJobResult updateSubjectJobResult(
+            DbSubjectJob job, SubjectJobResult originalResults) {
+        var details = SubjectJobRepo.getJobDetails(job);
+        return new SubjectJobResult(
+                details,
+                originalResults.properties(),
+                originalResults.entities(),
+                originalResults.relationships());
+    }
+
+
+    private SubjectJobResult convertResults(
+            DbSubjectJob job,
             SubjectProtobuf.SubjectTrackingResult pbResult) {
+        var jobDetails = SubjectJobRepo.getJobDetails(job);
         var entityGroups = convertEntityGroups(pbResult);
         var relationshipGroups = getRelationshipGroups(pbResult);
-        return new SubjectJobResult(entityGroups, relationshipGroups);
+        return new SubjectJobResult(
+                jobDetails, pbResult.getPropertiesMap(), entityGroups, relationshipGroups);
     }
 
     private static Map<String, List<Entity>> convertEntityGroups(

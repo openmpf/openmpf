@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 
 public record SubjectJobResult(
+        SubjectJobDetails job,
+        Map<String, String> properties,
         Map<String, List<Entity>> entities,
         Map<String, List<Relationship>> relationships) {
 }

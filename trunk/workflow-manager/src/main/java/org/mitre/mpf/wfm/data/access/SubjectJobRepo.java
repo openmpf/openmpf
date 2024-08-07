@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
+import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
+import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
 import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
@@ -47,6 +49,7 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSortedSet;
 import com.querydsl.jpa.JPQLQueryFactory;
 
 @Component
@@ -80,6 +83,25 @@ public class SubjectJobRepo {
         return _jobRepo.save(job);
     }
 
+    public Optional<SubjectJobDetails> getJobDetails(long jobId) {
+        return findById(jobId).map(SubjectJobRepo::getJobDetails);
+    }
+
+    public static SubjectJobDetails getJobDetails(DbSubjectJob job) {
+        return new SubjectJobDetails(
+                job.getId(),
+                new SubjectJobRequest(
+                        job.getComponentName(),
+                        job.getPriority(),
+                        job.getDetectionJobIds(),
+                        job.getJobProperties()),
+                job.getTimeReceived(),
+                job.getTimeCompleted(),
+                job.getRetrievedDetectionJobs(),
+                job.getCancellationState().convert(),
+                ImmutableSortedSet.copyOf(job.getErrors()),
+                ImmutableSortedSet.copyOf(job.getWarnings()));
+    }
 
     public Stream<DbSubjectJob> getPage(int page, int pageLen) {
         var job = QDbSubjectJob.dbSubjectJob;

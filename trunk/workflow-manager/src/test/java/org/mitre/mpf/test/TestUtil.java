@@ -26,16 +26,7 @@
 
 package org.mitre.mpf.test;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.DefaultMessage;
-import org.junit.Assume;
-import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mockito.ArgumentMatchers;
-import org.springframework.core.io.PathResource;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,11 +34,24 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.Predicate;
 
-import static org.mockito.Mockito.when;
+import org.apache.camel.Exchange;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.DefaultExchange;
+import org.apache.camel.impl.DefaultMessage;
+import org.junit.Assume;
+import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.mvc.WebMvcConfig;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
+import org.springframework.core.io.PathResource;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 public class TestUtil {
 
@@ -56,22 +60,32 @@ public class TestUtil {
     }
 
     public static String nonBlank() {
-        return ArgumentMatchers.argThat(s -> s != null && !s.trim().isEmpty());
+        return describedArgThat(s -> s != null && !s.isBlank(), "nonBlank()");
     }
-
 
     public static <T, C extends Collection<T>> C collectionContaining(Predicate<T> matchPredicate) {
-        return ArgumentMatchers.argThat(c -> c.stream().anyMatch(matchPredicate));
+        return describedArgThat(
+                c -> c.stream().anyMatch(matchPredicate),
+                "anyMatch(%s)", matchPredicate);
     }
 
-    public static <T, C extends Collection<T>> C nonEmptyCollection() {
-        return ArgumentMatchers.argThat(c -> !c.isEmpty());
+
+    public static <T, C extends Collection<? extends T>> C nonEmptyCollection() {
+        return describedArgThat(c -> c.isEmpty(), "nonEmptyCollection()");
     }
 
-    public static <K, V, M extends Map<K, V>> M nonEmptyMap() {
-        return ArgumentMatchers.argThat(m -> !m.isEmpty());
-    }
+    public static <T> T describedArgThat(Predicate<T> pred, String description, Object... args) {
+        return ArgumentMatchers.argThat(new ArgumentMatcher<>() {
 
+            public boolean matches(T argument) {
+                return pred.test(argument);
+            }
+
+            public String toString() {
+                return description.formatted(args);
+            }
+        });
+    }
 
 
     public static boolean almostEqual(double x, double y, double epsilon) {
@@ -165,6 +179,12 @@ public class TestUtil {
         Assume.assumeTrue("Skipping this test because it requires Node Manager but it is disabled.",
                            nodeManagerEnabled());
     }
+
+    public static MockMvc initMockMvc(Object controller) {
+        var setup = MockMvcBuilders.standaloneSetup(controller);
+        var converters = new ArrayList<HttpMessageConverter<?>>();
+        new WebMvcConfig().extendMessageConverters(converters);
+        setup.setMessageConverters(converters.toArray(HttpMessageConverter[]::new));
+        return setup.build();
+    }
 }
-
-

@@ -72,6 +72,7 @@ public class DbSubjectJob {
     public Optional<Instant> getTimeCompleted() { return Optional.ofNullable(timeCompleted); }
     public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
 
+    public boolean isComplete() { return timeCompleted != null; }
 
     private int priority;
     public int getPriority() { return priority; }

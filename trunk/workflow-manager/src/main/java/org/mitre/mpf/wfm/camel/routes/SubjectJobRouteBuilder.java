@@ -32,129 +32,66 @@ import javax.inject.Inject;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.Message;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.WfmProcessingException;
+import org.apache.camel.impl.DefaultExchange;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf.SubjectTrackingJob;
-import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
+import org.mitre.mpf.wfm.camel.operations.subject.SubjectJobProcessors;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.service.SubjectJobResultsService;
 import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SubjectJobRouteBuilder extends RouteBuilder {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SubjectJobRouteBuilder.class);
-
     private static final String ENTRY_POINT = "direct:BEGIN_SUBJECT_TRACKING";
 
-    private static final String ID_PROP = "mpfId";
+    private final ProtobufDataFormatFactory _pbFormatFactory;
 
-    private final ProtobufDataFormatFactory _protobufDataFormatFactory;
 
-    private final SubjectJobResultsService _subjectTrackingService;
-
-    private final SubjectJobRepo _subjectJobRepo;
+    private final SubjectJobProcessors _subjectJobProcessors;
 
     @Inject
-    SubjectJobRouteBuilder(
-            ProtobufDataFormatFactory protobufDataFormatFactory,
-            SubjectJobResultsService subjectTrackingService,
-            SubjectJobRepo subjectJobRepo) {
-        _protobufDataFormatFactory = protobufDataFormatFactory;
-        _subjectTrackingService = subjectTrackingService;
-        _subjectJobRepo = subjectJobRepo;
+    public SubjectJobRouteBuilder(
+            ProtobufDataFormatFactory pbFormatFactory,
+            SubjectJobProcessors subjectJobProcessors) {
+        _pbFormatFactory = pbFormatFactory;
+        _subjectJobProcessors = subjectJobProcessors;
     }
 
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
+
+        onException(Exception.class)
+            .process(_subjectJobProcessors.getErrorProcessor())
+            .handled(true);
+
         from(ENTRY_POINT)
-            .routeId("Subject Tracking Route")
+            .routeId("Subject Job Route")
             .setExchangePattern(ExchangePattern.InOut)
-            .process(this::processRequest)
+            .process(_subjectJobProcessors.getNewJobRequestProcessor())
             .marshal().protobuf()
             .to("activemq:queue:subject")
-            .filter(header(MpfHeaders.CANCELLED).isEqualTo(true))
-                .process(e -> _subjectTrackingService.cancel(getJobId(e)))
-                .stop()
-            .end()
-            .unmarshal(_protobufDataFormatFactory.create(
-                    SubjectProtobuf.SubjectTrackingResult.parser()))
-            .process(this::processResponse);
+            .choice()
+                .when(header(MpfHeaders.CANCELLED).isEqualTo(true))
+                    .process(_subjectJobProcessors.getCancellationProcessor())
+                .otherwise()
+                    .unmarshal(_pbFormatFactory.create(
+                            SubjectProtobuf.SubjectTrackingResult.parser()))
+                    .process(_subjectJobProcessors.getJobResponseProcessor());
     }
 
 
-    public static CompletableFuture<Object> submit(
+    public static CompletableFuture<Exchange> submit(
             SubjectTrackingJob job, ProducerTemplate producerTemplate) {
         // asyncSendBody needs to be used, otherwise the submitting thread will block until the
         // response from the subject tracking component is received. This behavior occurs because
         // of how the route was set up, so the submitter should not need to know that asyncSendBody
         // is required.
-        return producerTemplate.asyncSendBody(ENTRY_POINT, job);
-    }
-
-
-    private void processRequest(Exchange exchange) {
-        var message = exchange.getIn();
-        var pbRequest = message.getBody(SubjectProtobuf.SubjectTrackingJob.class);
-        setJobId(pbRequest.getJobId(), exchange);
-
-        var job = _subjectJobRepo.findById(pbRequest.getJobId()).orElseThrow();
-        var queueName = "MPF.SUBJECT_%s_REQUEST".formatted(job.getComponentName().toUpperCase());
-        message.setHeader(MpfHeaders.JMS_DESTINATION, queueName);
-        message.setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
-
-        int numTracks = getNumberOfTracks(message);
-        LOG.info(
-                "Sending job {} with {} tracks to {}.",
-                pbRequest.getJobId(), numTracks, queueName);
-    }
-
-    private void processResponse(Exchange exchange) {
-        long id = getJobId(exchange);
-        var body = exchange.getIn().getBody(SubjectProtobuf.SubjectTrackingResult.class);
-        _subjectTrackingService.completeJob(id, body);
-    }
-
-
-    private static int getNumberOfTracks(Message message) {
-        var body = message.getBody(SubjectProtobuf.SubjectTrackingJob.class);
-        int numVideoTracks = body.getVideoJobResultsList().stream()
-                .mapToInt(v -> v.getResultsCount())
-                .sum();
-        int numImageTracks = body.getImageJobResultsList().stream()
-                .mapToInt(i -> i.getResultsCount())
-                .sum();
-        return numVideoTracks + numImageTracks;
-    }
-
-
-    private static long getJobId(Exchange exchange) {
-        Long propJobId = exchange.getProperty(ID_PROP, Long.class);
-        if (propJobId != null) {
-            return propJobId;
-        }
-        if (exchange.hasOut()) {
-            Long outJobId = exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
-            if (outJobId != null) {
-                return outJobId;
-            }
-        }
-        Long inJobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-        if (inJobId != null) {
-            return inJobId;
-        }
-        throw new WfmProcessingException("The incoming message was missing a job id.");
-    }
-
-    private static void setJobId(long jobId, Exchange exchange) {
-        exchange.setProperty(ID_PROP, jobId);
-        exchange.getIn().setHeader(MpfHeaders.JOB_ID, jobId);
+        var exchange = new DefaultExchange(producerTemplate.getCamelContext());
+        SubjectJobProcessors.initExchange(job, exchange);
+        return producerTemplate.asyncSend(ENTRY_POINT, exchange);
     }
 }

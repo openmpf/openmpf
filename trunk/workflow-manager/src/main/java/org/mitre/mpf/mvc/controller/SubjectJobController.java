@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.mvc.util.PostResponseUtil;
 import org.mitre.mpf.rest.api.MessageModel;
@@ -50,8 +49,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.google.common.collect.ImmutableSortedSet;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -106,27 +103,7 @@ public class SubjectJobController {
     @ApiOperation("Gets a subject tracking job")
     @ApiResponses({@ApiResponse(code = 404, message = "Job does not exist.")})
     public ResponseEntity<SubjectJobDetails> getJob(@PathVariable long jobId) {
-        try (var ctx = CloseableMdc.job(jobId)) {
-            var optJob = _subjectJobRepo.findById(jobId);
-            if (optJob.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            var job = optJob.get();
-            var body = new SubjectJobDetails(
-                    jobId,
-                    new SubjectJobRequest(
-                            job.getComponentName(),
-                            job.getPriority(),
-                            job.getDetectionJobIds(),
-                            job.getJobProperties()),
-                    job.getTimeReceived(),
-                    job.getTimeCompleted(),
-                    job.getRetrievedDetectionJobs(),
-                    job.getCancellationState().convert(),
-                    ImmutableSortedSet.copyOf(job.getErrors()),
-                    ImmutableSortedSet.copyOf(job.getWarnings()));
-            return ResponseEntity.ok(body);
-        }
+        return MdcUtil.job(jobId, () -> ResponseEntity.of(_subjectJobRepo.getJobDetails(jobId)));
     }
 
 
@@ -136,7 +113,7 @@ public class SubjectJobController {
     public ResponseEntity<Void> createJob(
             @RequestBody SubjectJobRequest jobRequest) {
         var jobId = _subjectJobRequestService.runJob(jobRequest);
-        return MdcUtil.job(jobId, () -> PostResponseUtil.createdResponse(jobId));
+        return MdcUtil.job(jobId, PostResponseUtil::createdResponse);
     }
 
 
@@ -162,7 +139,7 @@ public class SubjectJobController {
         @ApiResponse(code = 409, message = "The job has already completed.")
     })
     public ResponseEntity<MessageModel> cancel(@PathVariable long jobId) {
-        return MdcUtil.job(jobId, () -> cancelInternal(jobId));
+        return MdcUtil.job(jobId, this::cancelInternal);
     }
 
     private ResponseEntity<MessageModel> cancelInternal(long jobId) {
@@ -173,7 +150,7 @@ public class SubjectJobController {
         }
 
         var job = optJob.get();
-        if (job.getTimeCompleted().isPresent()) {
+        if (job.isComplete()) {
             if (job.getCancellationState() == DbCancellationState.CANCELLED_BY_USER) {
                 return ResponseEntity.ok(
                         new MessageModel("Job %s was cancelled.".formatted(jobId)));

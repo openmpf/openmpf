@@ -155,7 +155,7 @@ AppServices.factory('Components',
 
 AppServices.factory('SubjectComponents', [
     '$resource', $resource => {
-        const componentsResource = $resource('/subject/components');
+        const componentsResource = $resource('/subject/components/:name', {name: '@name'});
         return {
             query: () => componentsResource.query()
         };

@@ -49,18 +49,18 @@ import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
+import org.mitre.mpf.wfm.service.SubjectJobResultsService;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.ThreadUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
 public class SubjectJobRequestService {
-    private static final Logger LOG = LoggerFactory.getLogger(SubjectJobRequestService.class);
 
     private final SubjectJobRepo _subjectJobRepo;
+
+    private final SubjectJobResultsService _subjectJobResultsService;
 
     private final InProgressBatchJobsService _inProgressDetectionJobsService;
 
@@ -76,12 +76,14 @@ public class SubjectJobRequestService {
     @Inject
     SubjectJobRequestService(
                 SubjectJobRepo subjectJobRepo,
+                SubjectJobResultsService subjectJobResultsService,
                 InProgressBatchJobsService inProgressDetectionJobsService,
                 PastJobResultsService pastJobResultsService,
                 ProducerTemplate producerTemplate,
                 TransactionTemplate transactionTemplate,
                 JmsUtils jmsUtils) {
         _subjectJobRepo = subjectJobRepo;
+        _subjectJobResultsService = subjectJobResultsService;
         _inProgressDetectionJobsService = inProgressDetectionJobsService;
         _pastJobResultsService = pastJobResultsService;
         _producerTemplate = producerTemplate;
@@ -122,11 +124,8 @@ public class SubjectJobRequestService {
 
     private Void addJobError(long jobId, Throwable error) {
         var cause = ThreadUtil.unwrap(error);
-        LOG.error("An error occurred: ", cause);
-        _transactionTemplate.executeWithoutResult(t -> {
-            var job = _subjectJobRepo.findById(jobId).orElseThrow();
-            job.addError("An error occurred while creating job: " + cause);
-        });
+        _subjectJobResultsService.completeWithError(
+                jobId, "An error occurred while creating job: ", cause);
         return null;
     }
 

@@ -54,6 +54,7 @@ public record SubjectComponentDescriptor(
         List<AlgorithmProperty> properties) {
 
     public SubjectComponentDescriptor {
+        componentName = componentName.toUpperCase();
         if (properties == null) {
             properties = List.of();
         }

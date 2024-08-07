@@ -52,7 +52,7 @@ function ($scope, Components, SubjectComponents, NotificationSvc, NodeService, r
     }
 
     $scope.components = Components.query();
-    $scope.subject_components = SubjectComponents.query();
+    $scope.subjectComponents = SubjectComponents.query();
 
     var statesEnum = Components.statesEnum;
 
@@ -64,6 +64,11 @@ function ($scope, Components, SubjectComponents, NotificationSvc, NodeService, r
             });
     };
 
+    const refreshSubjectComponents = () => {
+        SubjectComponents.query()
+            .$promise
+            .then(c => $scope.subjectComponents = c);
+    };
 
     var registerComponentPackage = function (packageName) {
         var component = _.findWhere($scope.components, {packageFileName: packageName});
@@ -97,6 +102,30 @@ function ($scope, Components, SubjectComponents, NotificationSvc, NodeService, r
                 handleRegistrationError(component, errorResponse);
             });
     };
+
+
+    const deleteInProgressSym = Symbol('deleteInProgress');
+
+    $scope.removeSubjectComponent = component => {
+        component[deleteInProgressSym] = true;
+        component.$delete()
+            .then(() => {
+                const idx = $scope.subjectComponents.indexOf(component);
+                if (idx >= 0) {
+                    $scope.subjectComponents.splice(idx, 1);
+                }
+                else {
+                    refreshSubjectComponents();
+                }
+            })
+            .catch(({data}) => {
+                NotificationSvc.error(`Could not remove "${component.name}" due to: ${data.message}`)
+                refreshSubjectComponents();
+            })
+            .finally(() => component[deleteInProgressSym] = false);
+    };
+
+    $scope.deleteIsInProgress = component => component[deleteInProgressSym];
 
 
     $scope.reRegister = function (component) {

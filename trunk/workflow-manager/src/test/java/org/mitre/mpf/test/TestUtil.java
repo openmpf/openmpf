@@ -41,7 +41,6 @@ import java.util.function.Predicate;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.DefaultMessage;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.mvc.WebMvcConfig;
@@ -134,11 +133,7 @@ public class TestUtil {
 
 
     public static Exchange createTestExchange() {
-        var context = new DefaultCamelContext();
-        var exchange = new DefaultExchange(context);
-        exchange.setIn(new DefaultMessage(context));
-        exchange.setOut(new DefaultMessage(context));
-        return exchange;
+        return new DefaultExchange(new DefaultCamelContext());
     }
 
     public static void initPipelineDataFiles(PropertiesUtil mockPropertiesUtil, TemporaryFolder temporaryFolder)

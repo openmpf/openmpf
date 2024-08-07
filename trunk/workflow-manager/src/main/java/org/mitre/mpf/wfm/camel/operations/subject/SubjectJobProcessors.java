@@ -38,7 +38,6 @@ import org.apache.camel.Processor;
 import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
-import org.mitre.mpf.wfm.buffers.SubjectProtobuf.SubjectTrackingJob;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.SubjectJobResultsService;
@@ -64,13 +63,11 @@ public class SubjectJobProcessors {
         _subjectJobResultsService = subjectJobResultsService;
     }
 
-    public static Exchange initExchange(SubjectTrackingJob job, Exchange exchange) {
+    public static void initExchange(SubjectProtobuf.SubjectTrackingJob job, Exchange exchange) {
         exchange.setProperty(ID_PROP, job.getJobId());
-
         var message = exchange.getIn();
         message.setHeader(MpfHeaders.JOB_ID, job.getJobId());
         message.setBody(job);
-        return exchange;
     }
 
 
@@ -98,7 +95,7 @@ public class SubjectJobProcessors {
 
 
     private void processNewJobRequest(Exchange exchange, long jobId) {
-        var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        var job = _subjectJobRepo.findById(jobId);
         var queueName = "MPF.SUBJECT_%s_REQUEST".formatted(
                 job.getComponentName().toUpperCase());
 
@@ -125,7 +122,7 @@ public class SubjectJobProcessors {
         if (optJobId.isEmpty()) {
             var message = "Unable to handle error because the job id was not set.";
             LOG.error(message, exception);
-            throw new IllegalStateException(message);
+            throw new WfmProcessingException(message, exception);
         }
 
         long id = optJobId.getAsLong();

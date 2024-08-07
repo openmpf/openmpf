@@ -214,7 +214,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         FieldUtils.setProtectedFieldValue("id", job, JOB_ID);
 
         when(_mockSubjectJobRepo.findById(JOB_ID))
-            .thenReturn(Optional.of(job));
+            .thenReturn(job);
         return job;
     }
 

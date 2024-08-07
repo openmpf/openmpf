@@ -84,7 +84,7 @@ public class SubjectJobResultsService {
 
     @Transactional
     public void completeJob(long jobId, SubjectProtobuf.SubjectTrackingResult pbResult) {
-        var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        var job = _subjectJobRepo.findById(jobId);
         job.setTimeCompleted(Instant.now());
         try {
             pbResult.getErrorsList().forEach(job::addError);
@@ -98,7 +98,7 @@ public class SubjectJobResultsService {
 
     @Transactional
     public void cancel(long jobId) {
-        var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        var job = _subjectJobRepo.findById(jobId);
         if (job.isComplete()) {
             if (job.getCancellationState() == DbCancellationState.CANCELLED_BY_USER) {
                 LOG.info("The job was already cancelled.");
@@ -121,7 +121,7 @@ public class SubjectJobResultsService {
 
     @Transactional
     public void completeWithError(long jobId, String errorContext, Throwable error) {
-        var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        var job = _subjectJobRepo.findById(jobId);
         if (job.isComplete()) {
             throw new IllegalStateException(
                 "Can not complete job %s with an error because it was already complete."

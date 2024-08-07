@@ -108,7 +108,7 @@ public class SubjectJobRequestService {
 
 
     public void cancel(long jobId) {
-        var job = _subjectJobRepo.findById(jobId).orElseThrow();
+        var job = _subjectJobRepo.findById(jobId);
         _jmsUtils.cancelSubjectJob(jobId, job.getComponentName());
     }
 
@@ -140,7 +140,7 @@ public class SubjectJobRequestService {
         // Need to use TransactionTemplate instead of @Transactional because this method will run
         // on a different thread.
         _transactionTemplate.executeWithoutResult(t -> {
-            var job = _subjectJobRepo.findById(subjectJobId).orElseThrow();
+            var job = _subjectJobRepo.findById(subjectJobId);
             job.setRetrievedDetectionJobs(true);
             jobBuilder.putAllJobProperties(job.getJobProperties());
         });

@@ -143,7 +143,7 @@ public class SubjectJobController {
     }
 
     private ResponseEntity<MessageModel> cancelInternal(long jobId) {
-        var optJob = _subjectJobRepo.findById(jobId);
+        var optJob = _subjectJobRepo.tryFindById(jobId);
         if (optJob.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new MessageModel("Could not find job with id %s.".formatted(jobId)));

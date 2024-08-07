@@ -75,7 +75,12 @@ public class SubjectJobRepo {
         _queryFactory = queryFactory;
     }
 
-    public Optional<DbSubjectJob> findById(long jobId) {
+    public DbSubjectJob findById(long jobId) {
+        return tryFindById(jobId).orElseThrow(() -> new WfmProcessingException(
+                "Could not find subject tracking job with id " + jobId));
+    }
+
+    public Optional<DbSubjectJob> tryFindById(long jobId) {
         return _jobRepo.findById(jobId);
     }
 
@@ -84,7 +89,7 @@ public class SubjectJobRepo {
     }
 
     public Optional<SubjectJobDetails> getJobDetails(long jobId) {
-        return findById(jobId).map(SubjectJobRepo::getJobDetails);
+        return tryFindById(jobId).map(SubjectJobRepo::getJobDetails);
     }
 
     public static SubjectJobDetails getJobDetails(DbSubjectJob job) {

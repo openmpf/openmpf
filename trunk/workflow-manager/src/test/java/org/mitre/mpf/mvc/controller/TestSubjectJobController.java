@@ -171,7 +171,7 @@ public class TestSubjectJobController extends MockitoTest.Strict {
                 "ExampleComponent", 8,
                 List.of(1L, 2L, 3L), Map.of("PROP", "VALUE"));
 
-        when(_mockSubjectJobRepo.findById(456))
+        when(_mockSubjectJobRepo.tryFindById(456))
             .thenReturn(Optional.of(dbJob));
 
         dbJob.setTimeCompleted(Instant.now());
@@ -192,7 +192,7 @@ public class TestSubjectJobController extends MockitoTest.Strict {
                 "ExampleComponent", 8,
                 List.of(1L, 2L, 3L), Map.of("PROP", "VALUE"));
 
-        when(_mockSubjectJobRepo.findById(789))
+        when(_mockSubjectJobRepo.tryFindById(789))
             .thenReturn(Optional.of(dbJob));
 
         _mockMvc.perform(post("/subject/jobs/789/cancel"))

@@ -70,7 +70,7 @@ public class TestUtil {
 
 
     public static <T, C extends Collection<? extends T>> C nonEmptyCollection() {
-        return describedArgThat(c -> c.isEmpty(), "nonEmptyCollection()");
+        return describedArgThat(c -> !c.isEmpty(), "nonEmptyCollection()");
     }
 
     public static <T> T describedArgThat(Predicate<T> pred, String description, Object... args) {

@@ -569,9 +569,9 @@ public class InProgressBatchJobsService {
 
     public synchronized CompletableFuture<Optional<JsonOutputObject>>
             getJobResultsAvailableFuture(long jobId) {
-        return Objects.requireNonNullElseGet(
-                _resultsAvailableFutures.get(jobId),
-                () -> ThreadUtil.completedFuture(Optional.empty()));
+        return Optional.ofNullable(_resultsAvailableFutures.get(jobId))
+                .map(CompletableFuture::copy)
+                .orElseGet(() -> ThreadUtil.completedFuture(Optional.empty()));
     }
 
     public synchronized void reportJobResultsAvailable(long jobId, JsonOutputObject outputObject) {
@@ -579,7 +579,7 @@ public class InProgressBatchJobsService {
         if (future == null) {
             throw new WfmProcessingException("Unable to locate batch job with id: " + jobId);
         }
-        future.complete(Optional.ofNullable(outputObject));
+        future.completeAsync(() -> Optional.ofNullable(outputObject));
     }
 
 

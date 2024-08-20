@@ -183,7 +183,7 @@ public class SubjectJobResultsService {
         }
     }
 
-    private SubjectJobResult updateSubjectJobResult(
+    private static SubjectJobResult updateSubjectJobResult(
             DbSubjectJob job, SubjectJobResult originalResults) {
         var details = SubjectJobRepo.getJobDetails(job);
         return new SubjectJobResult(
@@ -194,7 +194,7 @@ public class SubjectJobResultsService {
     }
 
 
-    private SubjectJobResult convertResults(
+    private static SubjectJobResult convertResults(
             DbSubjectJob job,
             SubjectProtobuf.SubjectTrackingResult pbResult) {
         var jobDetails = SubjectJobRepo.getJobDetails(job);

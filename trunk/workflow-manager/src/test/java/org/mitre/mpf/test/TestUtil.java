@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -34,13 +35,20 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
+import org.assertj.core.api.Condition;
+import org.assertj.core.api.FutureAssert;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.mvc.WebMvcConfig;
@@ -53,6 +61,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 public class TestUtil {
+
+    public static final Duration FUTURE_DURATION = Duration.ofMillis(10);
 
     private TestUtil() {
 
@@ -181,5 +191,42 @@ public class TestUtil {
         new WebMvcConfig().extendMessageConverters(converters);
         setup.setMessageConverters(converters.toArray(HttpMessageConverter[]::new));
         return setup.build();
+    }
+
+
+    private static Condition<Future<?>> doesNotCompleteWithin(Duration duration) {
+        return new Condition<>(
+            f -> {
+                try {
+                    f.get(duration.getNano(), TimeUnit.NANOSECONDS);
+                    return false;
+                }
+                catch (TimeoutException e) {
+                    return true;
+                }
+                catch (ExecutionException e) {
+                    return false;
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(e);
+                }
+            },
+            "does not complete within %s",
+            duration
+        );
+    }
+
+    private static <T> FutureAssert<T> assertDoesNotCompleteWithin(
+            Future<T> future, Duration duration) {
+        return assertThat(future).satisfies(doesNotCompleteWithin(duration));
+    }
+
+    public static Condition<Future<?>> isNotComplete() {
+        return doesNotCompleteWithin(FUTURE_DURATION);
+    }
+
+    public static <T> FutureAssert<T> assertNotDone(Future<T> future) {
+        return assertDoesNotCompleteWithin(future, FUTURE_DURATION);
     }
 }

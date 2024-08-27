@@ -26,67 +26,29 @@
 
 package org.mitre.mpf.rest.api;
 
-public class MpfResponse {
-	//0 = no error and message will be null, 1 = error and message will be populated, 2 = warning and message will be populated
+public record MpfResponse(int responseCode, String message) {
+
+	// No error and message will be null
 	public static final int RESPONSE_CODE_SUCCESS = 0;
+    // Error and message will be populated
 	public static final int RESPONSE_CODE_ERROR = 1;
+    // Warning and message will be populated
 	public static final int RESPONSE_CODE_WARNING = 2;
 
-	/*
-	 * Fields and getters
-	 */
-	private int responseCode = RESPONSE_CODE_SUCCESS;
-
-    /**
-     * Get the response code associated with this MpfResponse.
-     * @return response code, which should be one of the predefined response codes defined for a MpfResponse.
-     */
-	public int getResponseCode() {
-		return responseCode;
-	}
-
-    /**
-     * Set the mpf response code
-     * @param responseCode one of the pre-defined mpfResponse response codes
-     */
-	public void setResponseCode(int responseCode) {
-        this.responseCode = responseCode;
-        //force null message on response code of 0
-        if (this.responseCode == RESPONSE_CODE_SUCCESS) {
-            this.message = null;
-        }
+    private static MpfResponse _successSingleton = new MpfResponse(RESPONSE_CODE_SUCCESS, null);
+    public static MpfResponse success() {
+        return _successSingleton;
     }
 
-	private String message = null;
-
-    /**
-     * Get the message associated with this MpfResponse.
-     * @return message associated with this MpfResponse.
-     */
-	public String getMessage() {
-		return message;
-	}
-    /**
-     * Set the mpf response code and message for this MpfResponse. Cannot set the message without a responseCode.
-     * @param responseCode one of the pre-defined mpfResponse response codes
-     * @param message mpf response message
-     */
-	public void setMessage(int responseCode, String message) {
-        this.responseCode = responseCode;
-        this.message = message;
+    public static MpfResponse error(String message) {
+        return new MpfResponse(RESPONSE_CODE_ERROR, message);
     }
-	
-	/*
-	 * Constructors
-	 */
-	public MpfResponse() { }
 
-    /**
-     * Construct a mpf response with a response code and response message
-     * @param responseCode one of the pre-defined mpfResponse response codes
-     * @param message mpf response message
-     */
-	public MpfResponse(int responseCode, String message) {
-	    setMessage(responseCode, message);
-	}
+    public static MpfResponse warning(String message) {
+        return new MpfResponse(RESPONSE_CODE_WARNING, message);
+    }
+
+    public boolean isSuccessful() {
+        return responseCode == RESPONSE_CODE_SUCCESS;
+    }
 }

@@ -29,6 +29,7 @@ package org.mitre.mpf.rest.api;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.rest.api.util.Utils;
@@ -51,8 +52,9 @@ public record JobCreationRequest(
 		media = Utils.toImmutableList(media);
 		jobProperties = Utils.toImmutableMap(jobProperties);
 
-		algorithmProperties = algorithmProperties.entrySet()
+		algorithmProperties = Optional.ofNullable(algorithmProperties)
 				.stream()
+				.flatMap(m -> m.entrySet().stream())
 				.collect(ImmutableMap.toImmutableMap(
 						Map.Entry::getKey,
 						e -> Utils.toImmutableMap(e.getValue())));

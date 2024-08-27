@@ -498,8 +498,8 @@ public class JobController {
 
     private static String createErrorString(JobCreationRequest jobCreationRequest, String message) {
         StringBuilder errBuilder = new StringBuilder("Failure creating job");
-        if (jobCreationRequest.getExternalId() != null) {
-            errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.getExternalId()));
+        if (jobCreationRequest.externalId() != null) {
+            errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.externalId()));
         }
         if (message != null) {
             errBuilder.append(". ").append(message);

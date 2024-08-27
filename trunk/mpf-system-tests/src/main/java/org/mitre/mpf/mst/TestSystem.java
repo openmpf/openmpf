@@ -86,6 +86,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
@@ -223,11 +224,22 @@ public abstract class TestSystem {
     }
 
     protected List<JobCreationMediaData> toMediaObjectList(URI... uris) {
-        List<JobCreationMediaData> media = new ArrayList<>(uris.length);
-        for (URI uri : uris) {
-            media.add(new JobCreationMediaData(uri.toString()));
-        }
-        return media;
+        return Stream.of(uris)
+            .map(this::toMediaObject)
+            .toList();
+    }
+
+    protected JobCreationMediaData toMediaObject(URI uri, Map<String, String> properties) {
+        return new JobCreationMediaData(
+                uri.toString(),
+                properties,
+                Map.of(),
+                List.of(),
+                List.of());
+    }
+
+    protected JobCreationMediaData toMediaObject(URI uri) {
+        return toMediaObject(uri, Map.of());
     }
 
     protected long runPipelineOnMedia(String pipelineName,
@@ -257,14 +269,17 @@ public abstract class TestSystem {
             Map<String, Map<String, String>> algorithmProperties,
             Map<String, String> jobProperties,
             int priority) {
-
-        var jobRequest = new JobCreationRequest();
-        jobRequest.setExternalId(UUID.randomUUID().toString());
-        jobRequest.setPipelineName(pipelineName);
-        jobRequest.setMedia(media);
-        jobRequest.setAlgorithmProperties(algorithmProperties);
-        jobRequest.setJobProperties(jobProperties);
-        jobRequest.setPriority(priority);
+        var jobRequest = new JobCreationRequest(
+                media,
+                jobProperties,
+                algorithmProperties,
+                UUID.randomUUID().toString(),
+                pipelineName,
+                null,
+                true,
+                priority,
+                null,
+                null);
 
         long jobRequestId = jobRequestService.run(jobRequest).jobId();
         Assert.assertTrue(waitFor(jobRequestId));
@@ -277,12 +292,17 @@ public abstract class TestSystem {
             Map<String, String> jobProperties,
             int priority) {
 
-        var jobRequest = new JobCreationRequest();
-        jobRequest.setExternalId(UUID.randomUUID().toString());
-        jobRequest.setPipelineDefinition(pipelineDef);
-        jobRequest.setMedia(media);
-        jobRequest.setJobProperties(jobProperties);
-        jobRequest.setPriority(priority);
+        var jobRequest = new JobCreationRequest(
+                media,
+                jobProperties,
+                Map.of(),
+                UUID.randomUUID().toString(),
+                null,
+                pipelineDef,
+                true,
+                priority,
+                null,
+                null);
 
         long jobRequestId = jobRequestService.run(jobRequest).jobId();
         Assert.assertTrue(waitFor(jobRequestId));
@@ -345,7 +365,7 @@ public abstract class TestSystem {
                                  String... testMediaFiles) throws Exception {
         List<JobCreationMediaData> mediaPaths = new LinkedList<>();
         for (String filePath : testMediaFiles) {
-            mediaPaths.add(new JobCreationMediaData(ioUtils.findFile(filePath).toString()));
+            mediaPaths.add(toMediaObject(ioUtils.findFile(filePath)));
         }
 
         long jobId = runPipelineOnMedia(
@@ -476,5 +496,3 @@ public abstract class TestSystem {
         }
     }
 }
-
-

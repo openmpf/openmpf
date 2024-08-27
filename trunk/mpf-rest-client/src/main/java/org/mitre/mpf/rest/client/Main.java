@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -137,11 +138,6 @@ public class Main {
 
 
         // Get the first FACE pipeline
-
-        JobCreationRequest jobCreationRequest = new JobCreationRequest();
-        jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPath.toUri().toString()));
-        jobCreationRequest.setExternalId("external id");
-
         Optional<String> firstFacePipeline = pipelines.stream().map(Pipeline::name)
                 .filter(pipelineName -> pipelineName.contains("FACE"))
                 .findFirst();
@@ -153,9 +149,23 @@ public class Main {
 
         System.out.println("Using FACE pipeline: " + firstFacePipeline.get());
 
-        jobCreationRequest.setPipelineName(firstFacePipeline.get());
-        jobCreationRequest.setBuildOutput(true);
-        // jobCreationRequest.setPriority(priority); //will be set to 4 (default) if not set
+        var mediaData = new JobCreationMediaData(
+                        mediaPath.toUri().toString(),
+                        Map.of(),
+                        Map.of(),
+                        List.of(),
+                        List.of());
+        var jobCreationRequest = new JobCreationRequest(
+                List.of(mediaData),
+                Map.of(),
+                Map.of(),
+                "external id",
+                firstFacePipeline.get(),
+                null,
+                true,
+                null,
+                null,
+                null);
 
         HttpEntity<JobCreationRequest> jobCreationRequestEntity =
                 new HttpEntity<>(jobCreationRequest, headers);

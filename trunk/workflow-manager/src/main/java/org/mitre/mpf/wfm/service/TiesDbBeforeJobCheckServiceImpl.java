@@ -152,8 +152,8 @@ public class TiesDbBeforeJobCheckServiceImpl
             Collection<Media> media,
             JobPipelineElements jobPipelineElements) {
         return checkIfJobInTiesDb(
-                jobCreationRequest.getJobProperties(),
-                jobCreationRequest.getAlgorithmProperties(),
+                jobCreationRequest.jobProperties(),
+                jobCreationRequest.algorithmProperties(),
                 systemPropertiesSnapshot,
                 media,
                 jobPipelineElements);

@@ -132,7 +132,12 @@ public class TestWfmEndToEnd {
 	private static List<JobCreationMediaData> toMediaObjectList(URI... uris) {
 		List<JobCreationMediaData> media = new ArrayList<>(uris.length);
 		for (URI uri : uris) {
-			media.add(new JobCreationMediaData(uri.toString()));
+			media.add(new JobCreationMediaData(
+                    uri.toString(),
+                    Map.of(),
+                    Map.of(),
+                    List.of(),
+                    List.of()));
 		}
 		return media;
 	}
@@ -159,13 +164,17 @@ public class TestWfmEndToEnd {
 	private long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media,
 	                                Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
-		var jobRequest = new JobCreationRequest();
-		jobRequest.setExternalId(UUID.randomUUID().toString());
-		jobRequest.setPipelineName(pipelineName);
-		jobRequest.setMedia(media);
-		jobRequest.setJobProperties(jobProperties);
-		jobRequest.setBuildOutput(buildOutput);
-		jobRequest.setPriority(priority);
+		var jobRequest = new JobCreationRequest(
+                List.copyOf(media),
+                Map.copyOf(jobProperties),
+                Map.of(),
+                UUID.randomUUID().toString(),
+                pipelineName,
+                null,
+                buildOutput,
+                priority,
+                null,
+                null);
 
 		long jobRequestId = jobRequestService.run(jobRequest).jobId();
 		Assert.assertTrue(waitFor(jobRequestId));

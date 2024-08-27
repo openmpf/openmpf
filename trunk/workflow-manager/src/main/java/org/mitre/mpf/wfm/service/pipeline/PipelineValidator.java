@@ -101,10 +101,10 @@ public class PipelineValidator {
     }
 
     private static void checkForDuplicates(TransientPipelineDefinition transientPipeline) {
-        var duplicateTasks = getDuplicateNames(transientPipeline.getTasks(),
-                                               TransientTask::getName);
-        var duplicateActions = getDuplicateNames(transientPipeline.getActions(),
-                                                 TransientAction::getName);
+        var duplicateTasks = getDuplicateNames(transientPipeline.tasks(),
+                                               TransientTask::name);
+        var duplicateActions = getDuplicateNames(transientPipeline.actions(),
+                                                 TransientAction::name);
         if (duplicateTasks.isEmpty() && duplicateActions.isEmpty()) {
             return;
         }

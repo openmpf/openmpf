@@ -51,6 +51,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,10 +151,24 @@ public class ITWebREST {
 		//a video will be good to test being able to cancel before completion!
 		String mediaPathUrl = ioUtils.findFile("/samples/new_face_video.avi").toString();
 
-		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
-		jobCreationRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
-		//jobCreationRequest.setPriority(priority);
+        var media = new JobCreationMediaData(
+                mediaPathUrl,
+                Map.of(),
+                Map.of(),
+                List.of(),
+                List.of());
+
+		var jobCreationRequest = new JobCreationRequest(
+                List.of(media),
+                Map.of(),
+                Map.of(),
+                null,
+                "OCV FACE DETECTION PIPELINE",
+                null,
+                null,
+                null,
+                null,
+                null);
 
 		//convert params to json string
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
@@ -389,10 +404,24 @@ public class ITWebREST {
 		String resourcePath = "/samples/new_face_video.avi";
 		String mediaPathUrl = ioUtils.findFile(resourcePath).toString();
 
-		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
-		jobCreationRequest.setPipelineName(detPipeline);
-		jobCreationRequest.setPriority(7); //why not
+        var creationMedia = new JobCreationMediaData(
+                mediaPathUrl,
+                Map.of(),
+                Map.of(),
+                List.of(),
+                List.of());
+
+        var jobCreationRequest = new JobCreationRequest(
+                List.of(creationMedia),
+                Map.of(),
+                Map.of(),
+                null,
+                detPipeline,
+                null,
+                null,
+                7,
+                null,
+                null);
 
 		//convert params to json string
 		String params = objectMapper.writeValueAsString(jobCreationRequest);

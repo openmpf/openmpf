@@ -183,9 +183,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), any()))
             .thenReturn(mockProps);
 
-        var jobCreationRequest = new JobCreationRequest();
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                jobCreationRequest,
+                createJobRequest(),
                 null,
                 List.of(media),
                 elements);
@@ -219,7 +218,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media1, media2),
                 elements);
@@ -253,7 +252,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media1, media2),
                 elements);
@@ -282,7 +281,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media),
                 elements);
@@ -317,7 +316,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var ex = TestUtil.assertThrows(
                 WfmProcessingException.class,
                 () -> _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                        new JobCreationRequest(),
+                        createJobRequest(),
                         null,
                         List.of(media),
                         elements));
@@ -434,7 +433,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn("JOB_HASH");
 
         return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media),
                 elements);
@@ -734,7 +733,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media1, media2),
                 elements);
@@ -1303,6 +1302,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     }
 
     private static Action createAction() {
-        return new Action("ACTION", null, null, List.of());
+        return new Action("ACTION", null, null, ImmutableList.of());
+    }
+
+    private static JobCreationRequest createJobRequest() {
+        return new JobCreationRequest(null, null, Map.of(), null, null, null, null, null, null, null);
     }
 }

@@ -26,34 +26,23 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.ProducerTemplate;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.rest.api.JobCreationMediaData;
-import org.mitre.mpf.rest.api.JobCreationMediaRange;
-import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.rest.api.TiesDbCheckStatus;
-import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
-import org.mitre.mpf.wfm.camel.routes.JobRouterRouteBuilder;
-import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.access.JobRequestDao;
-import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
-import org.mitre.mpf.wfm.service.TiesDbCheckResult;
-import org.mitre.mpf.wfm.service.WorkflowPropertyService;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
-import org.mitre.mpf.wfm.util.*;
-import org.mockito.ArgumentCaptor;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,8 +58,51 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import org.apache.camel.ExchangePattern;
+import org.apache.camel.ProducerTemplate;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationMediaRange;
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.TiesDbCheckStatus;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
+import org.mitre.mpf.wfm.camel.routes.JobRouterRouteBuilder;
+import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
+import org.mitre.mpf.wfm.service.TiesDbCheckResult;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JmsUtils;
+import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.ArgumentCaptor;
 
 public class TestJobRequestService {
 
@@ -117,28 +149,36 @@ public class TestJobRequestService {
     }
 
 
-
     private static JobCreationRequest createTestJobCreationRequest() {
-        var jobCreationMedia1 = new JobCreationMediaData("http://my_media1.mp4");
-        jobCreationMedia1.getProperties().put("media_prop1", "media_val1");
-        jobCreationMedia1.setFrameRanges(List.of(
-                new JobCreationMediaRange(0, 50),
-                new JobCreationMediaRange(100, 300)));
+        return createTestJobCreationRequest(null);
+    }
 
-        var jobCreationMedia2 = new JobCreationMediaData("http://my_media2.mp4");
-        jobCreationMedia2.getProperties().put("media_prop2", "media_val2");
+    private static JobCreationRequest createTestJobCreationRequest(Integer priority) {
+        var jobCreationMedia1 = new JobCreationMediaData(
+                "http://my_media1.mp4",
+                Map.of("media_prop1", "media_val1"),
+                Map.of(),
+                List.of(new JobCreationMediaRange(0, 50), new JobCreationMediaRange(100, 300)),
+                List.of());
 
-        var jobCreationRequest = new JobCreationRequest();
-        jobCreationRequest.setMedia(List.of(jobCreationMedia1, jobCreationMedia2));
-        jobCreationRequest.getJobProperties().put("job_prop1", "job_val1");
-        jobCreationRequest.getAlgorithmProperties().put("TEST ALGO", Map.of("algo_prop1", "algo_val1"));
-        jobCreationRequest.setExternalId("external_id");
-        jobCreationRequest.setPipelineName("TEST PIPELINE");
-        jobCreationRequest.setBuildOutput(true);
-        jobCreationRequest.setCallbackMethod("GET");
-        jobCreationRequest.setCallbackURL("http://callback");
+        var jobCreationMedia2 = new JobCreationMediaData(
+                "http://my_media2.mp4",
+                Map.of("media_prop2", "media_val2"),
+                Map.of(),
+                List.of(),
+                List.of());
 
-        return jobCreationRequest;
+        return new JobCreationRequest(
+            List.of(jobCreationMedia1, jobCreationMedia2),
+            Map.of("job_prop1", "job_val1"),
+            Map.of("TEST ALGO", Map.of("algo_prop1", "algo_val1")),
+            "external_id",
+            "TEST PIPELINE",
+            null,
+            true,
+            priority,
+            "http://callback",
+            "GET");
     }
 
 
@@ -162,8 +202,8 @@ public class TestJobRequestService {
 
         var creationBoundariesIter = creationBoundaries
                 .stream()
-                .sorted(Comparator.comparingInt(JobCreationMediaRange::getStart)
-                                .thenComparingInt(JobCreationMediaRange::getStop))
+                .sorted(Comparator.comparingInt(JobCreationMediaRange::start)
+                                .thenComparingInt(JobCreationMediaRange::stop))
                 .iterator();
 
         var jobBoundariesIter = jobBoundaries
@@ -174,8 +214,8 @@ public class TestJobRequestService {
         while (jobBoundariesIter.hasNext()) {
             MediaRange jobBoundary = jobBoundariesIter.next();
             JobCreationMediaRange creationBoundary = creationBoundariesIter.next();
-            assertEquals(jobBoundary.getStartInclusive(), creationBoundary.getStart());
-            assertEquals(jobBoundary.getEndInclusive(), creationBoundary.getStop());
+            assertEquals(jobBoundary.getStartInclusive(), creationBoundary.start());
+            assertEquals(jobBoundary.getEndInclusive(), creationBoundary.stop());
         }
     }
 
@@ -231,13 +271,13 @@ public class TestJobRequestService {
                      _jsonUtils.deserialize(jobRequestEntity.getJob(), BatchJob.class).getId());
 
         assertEquals(123, job.getId());
-        assertEquals(jobCreationRequest.getExternalId(), job.getExternalId().get());
+        assertEquals(jobCreationRequest.externalId(), job.getExternalId().get());
         assertEquals(-1, job.getCurrentTaskIndex());
         assertSame(systemPropsSnapshot, job.getSystemPropertiesSnapshot());
         assertSame(pipelineElements, job.getPipelineElements());
         assertEquals(defaultPriority, job.getPriority());
-        assertEquals(jobCreationRequest.getCallbackURL(), job.getCallbackUrl().get());
-        assertEquals(jobCreationRequest.getCallbackMethod(), job.getCallbackMethod().get());
+        assertEquals(jobCreationRequest.callbackURL(), job.getCallbackUrl().get());
+        assertEquals(jobCreationRequest.callbackMethod(), job.getCallbackMethod().get());
 
         assertEquals(2, job.getMedia().size());
         Media media1 = job.getMedia()
@@ -254,8 +294,8 @@ public class TestJobRequestService {
                 .get();
         assertEquals("media_val2", media2.getMediaSpecificProperty("media_prop2"));
 
-        assertEquals(jobCreationRequest.getJobProperties(), job.getJobProperties());
-        assertEquals(jobCreationRequest.getAlgorithmProperties(), job.getOverriddenAlgorithmProperties());
+        assertEquals(jobCreationRequest.jobProperties(), job.getJobProperties());
+        assertEquals(jobCreationRequest.algorithmProperties(), job.getOverriddenAlgorithmProperties());
 
         assertFalse(media1.getFrameRanges().isEmpty());
         assertTrue(media1.getTimeRanges().isEmpty());
@@ -263,13 +303,13 @@ public class TestJobRequestService {
         assertTrue(media2.getFrameRanges().isEmpty());
         assertTrue(media2.getTimeRanges().isEmpty());
 
-        var jobCreationMedia1 = jobCreationRequest.getMedia()
+        var jobCreationMedia1 = jobCreationRequest.media()
                 .stream()
-                .filter(m -> m.getMediaUri().equals("http://my_media1.mp4"))
+                .filter(m -> m.mediaUri().equals("http://my_media1.mp4"))
                 .findAny()
                 .orElseThrow();
 
-        assertSegmentBoundariesEqual(jobCreationMedia1.getFrameRanges(),
+        assertSegmentBoundariesEqual(jobCreationMedia1.frameRanges(),
                                      media1.getFrameRanges());
     }
 
@@ -447,8 +487,7 @@ public class TestJobRequestService {
         when(_mockJobRequestDao.persist(jobRequestEntityCaptor.capture()))
                 .thenAnswer(i -> i.getArgument(0));
 
-        var jobCreationRequest = createTestJobCreationRequest();
-        jobCreationRequest.setPriority(5);
+        var jobCreationRequest = createTestJobCreationRequest(5);
 
         var tiesDbCheckResult = new TiesDbCheckResult(
                 TiesDbCheckStatus.FOUND_MATCH,

@@ -119,28 +119,28 @@ public class JobRequestServiceImpl implements JobRequestService {
 
     @Override
     public CreationResult run(JobCreationRequest jobCreationRequest) {
-        List<Media> media = jobCreationRequest.getMedia()
+        List<Media> media = jobCreationRequest.media()
                 .stream()
                 .map(m -> _inProgressJobs.initMedia(
-                        m.getMediaUri(),
-                        m.getProperties(),
-                        m.getMetadata(),
-                        convertRanges(m.getFrameRanges()),
-                        convertRanges(m.getTimeRanges())))
+                        m.mediaUri(),
+                        m.properties(),
+                        m.metadata(),
+                        convertRanges(m.frameRanges()),
+                        convertRanges(m.timeRanges())))
                 .collect(ImmutableList.toImmutableList());
 
-        int priority = Optional.ofNullable(jobCreationRequest.getPriority())
+        int priority = Optional.ofNullable(jobCreationRequest.priority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
         JobPipelineElements pipelineElements;
-        if (jobCreationRequest.getPipelineDefinition() == null) {
+        if (jobCreationRequest.pipelineDefinition() == null) {
             pipelineElements = _pipelineService.getBatchPipelineElements(
-                    jobCreationRequest.getPipelineName());
+                    jobCreationRequest.pipelineName());
         }
-        else if (jobCreationRequest.getPipelineName() == null
-                || jobCreationRequest.getPipelineName().isBlank()) {
+        else if (jobCreationRequest.pipelineName() == null
+                || jobCreationRequest.pipelineName().isBlank()) {
             pipelineElements = _pipelineService.getBatchPipelineElements(
-                    jobCreationRequest.getPipelineDefinition());
+                    jobCreationRequest.pipelineDefinition());
         }
         else {
             throw new WfmProcessingException("Job request must either contain \"pipelineName\" " +
@@ -161,12 +161,12 @@ public class JobRequestServiceImpl implements JobRequestService {
                 new JobRequest(),
                 pipelineElements,
                 media,
-                jobCreationRequest.getJobProperties(),
-                jobCreationRequest.getAlgorithmProperties(),
-                jobCreationRequest.getExternalId(),
+                jobCreationRequest.jobProperties(),
+                jobCreationRequest.algorithmProperties(),
+                jobCreationRequest.externalId(),
                 priority,
-                jobCreationRequest.getCallbackURL(),
-                jobCreationRequest.getCallbackMethod(),
+                jobCreationRequest.callbackURL(),
+                jobCreationRequest.callbackMethod(),
                 systemPropertiesSnapshot,
                 shouldCheckTiesDbAfterMediaInspection);
         _jobRequestDao.newJobCreated();
@@ -248,7 +248,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             Collection<JobCreationMediaRange> ranges) {
         return ranges
                 .stream()
-                .map(r -> new MediaRange(r.getStart(), r.getStop()))
+                .map(r -> new MediaRange(r.start(), r.stop()))
                 .collect(ImmutableSet.toImmutableSet());
     }
 

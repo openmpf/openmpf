@@ -222,10 +222,13 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionWithMediaProperty() {
-        List<JobCreationMediaData> media = toMediaObjectList(
-                ioUtils.findFile("/samples/face/ff-region-motion-face.avi"),
-                ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
-        media.get(0).getProperties().put("OUTPUT_LAST_TASK_ONLY", "true");
+        var media = ImmutableList.of(
+                toMediaObject(
+                        ioUtils.findFile("/samples/face/ff-region-motion-face.avi"),
+                        ImmutableMap.of("OUTPUT_LAST_TASK_ONLY", "true")),
+                toMediaObject(ioUtils.findFile("/samples/face/ff-region-motion-face.avi")));
+
+
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -501,11 +504,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runOcvFaceOnRotatedImage() {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
 
-        List<JobCreationMediaData> media = toMediaObjectList(
-                ioUtils.findFile("/samples/face/meds-af-S419-01_40deg.jpg"));
-        media.get(0).getProperties().put("ROTATION", "60");
+        var media = toMediaObject(
+                ioUtils.findFile("/samples/face/meds-af-S419-01_40deg.jpg"),
+                ImmutableMap.of("ROTATION", "60"));
 
-        long jobId = runPipelineOnMedia(pipelineName, media);
+        long jobId = runPipelineOnMedia(pipelineName, List.of(media));
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertDetectionExistAndAllMatch(outputObject, d -> d.getX() > 480);
     }
@@ -513,11 +516,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test
     public void runOcvFaceOnRotatedVideo() {
-        List<JobCreationMediaData> media
-                = toMediaObjectList(ioUtils.findFile("/samples/face/video_01_220deg.avi"));
-        media.get(0).getProperties().put("ROTATION", "220");
+        var media = toMediaObject(
+                ioUtils.findFile("/samples/face/video_01_220deg.avi"),
+                ImmutableMap.of("ROTATION", "220"));
 
-        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", List.of(media));
         JsonOutputObject outputObject = getJobOutputObject(jobId);
 
         assertDetectionExistAndAllMatch(outputObject, d -> d.getX() > 640);

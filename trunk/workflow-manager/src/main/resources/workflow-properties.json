@@ -100,7 +100,7 @@
     {
         "name": "FRAME_RATE_CAP",
         "description": "The threshold on the maximum number of frames to process in the video segment within one second of the native video time. If set to a value > 0, then an internal frame interval value is calculated as max(1, floor(mediaNativeFPS / FRAME_RATE_CAP)) and the FRAME_INTERVAL property is not used. To disable, set to a value <= 0. When disabled, the FRAME_INTERVAL property is used, if valid.",
-        "type": "INT",
+        "type": "DOUBLE",
         "propertiesKey": "detection.frame.rate.cap",
         "mediaTypes": ["VIDEO"]
     },

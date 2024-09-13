@@ -60,6 +60,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -340,6 +341,19 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                     detection.getMediaOffsetFrame(),
                     detection.getConfidence());
                 framesToExtract.add(detection.getMediaOffsetFrame());
+            }
+        }
+
+        String bestDetectionPropNames = _aggregateJobPropertiesUtil
+                .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_DETECTION_PROP_NAMES, job, media, action);
+        var propNameList = TextUtils.parseListFromString(bestDetectionPropNames);
+        propNameList = TextUtils.trimAndUpper(propNameList, Collectors.toList());
+        for (Detection detection : track.getDetections()) {
+            for (String p : propNameList) {
+                if (detection.getDetectionProperties().containsKey(p)) {
+                    LOG.info("Will extract detection with property {} : {}", p, detection.getMediaOffsetFrame());
+                    framesToExtract.add(detection.getMediaOffsetFrame());
+                }
             }
         }
 

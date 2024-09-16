@@ -137,6 +137,7 @@ public class TestWfmEndToEnd {
                     Map.of(),
                     Map.of(),
                     List.of(),
+                    List.of(),
                     List.of()));
 		}
 		return media;

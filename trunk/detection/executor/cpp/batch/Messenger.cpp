@@ -74,12 +74,20 @@ std::unique_ptr<cms::BytesMessage> Messenger::ReceiveMessage() {
 
 
 AmqMetadata Messenger::GetAmqMetadata(const cms::Message& message) {
+    std::optional<std::string> selector_id;
+    try {
+        selector_id = message.getStringProperty("MediaSelectorId");
+    }
+    catch (const cms::CMSException&) {
+        selector_id = std::nullopt;
+    }
     return {
         std::unique_ptr<cms::Destination>{message.getCMSReplyTo()->clone()},
         message.getCMSPriority(),
         message.getStringProperty("CorrelationId"),
         message.getStringProperty("breadcrumbId"),
-        message.getIntProperty("SplitSize")
+        message.getIntProperty("SplitSize"),
+        std::move(selector_id)
     };
 }
 
@@ -98,6 +106,13 @@ void Messenger::SendResponse(
     message->setStringProperty("breadcrumbId", amq_meta.bread_crumb_id);
     message->setIntProperty("SplitSize", amq_meta.split_size);
     message->setLongProperty("ProcessingTime", job_context.GetMillisSinceStart());
+    if (amq_meta.selector_id) {
+        message->setStringProperty("MediaSelectorId", *amq_meta.selector_id);
+    }
+    if (job_context.protobuf_metadata.selected_content) {
+        message->setStringProperty(
+                "SelectedContent", *job_context.protobuf_metadata.selected_content);
+    }
     message->writeBytes(response_bytes);
 
     response_producer_->send(

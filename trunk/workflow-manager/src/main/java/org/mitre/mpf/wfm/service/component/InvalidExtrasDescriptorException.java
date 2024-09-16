@@ -26,32 +26,8 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
-import javax.validation.ConstraintViolation;
-import java.util.List;
-import java.util.Set;
-
-import static java.util.stream.Collectors.joining;
-
 public class InvalidExtrasDescriptorException extends ComponentRegistrationException {
-
-    private final Set<ConstraintViolation<JsonExtrasDescriptor>> _validationErrors;
-
-    public InvalidExtrasDescriptorException(Set<ConstraintViolation<JsonExtrasDescriptor>> validationErrors) {
-        super(createMessage(validationErrors));
-        _validationErrors = ImmutableSet.copyOf(validationErrors);
-    }
-
-    private static String createMessage(Set<ConstraintViolation<JsonExtrasDescriptor>> validationErrors) {
-        return validationErrors.stream()
-                .map(cv -> cv.getPropertyPath() + " " + cv.getMessage())
-                .sorted()
-                .collect(joining("\n", "The following fields have errors:\n", ""));
-    }
-
-    public Set<ConstraintViolation<JsonExtrasDescriptor>> getValidationErrors() {
-        return _validationErrors;
+    public InvalidExtrasDescriptorException(String message) {
+        super(message);
     }
 }

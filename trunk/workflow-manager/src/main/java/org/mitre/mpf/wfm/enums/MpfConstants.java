@@ -106,7 +106,11 @@ public class MpfConstants {
             TRIGGER = "TRIGGER",
             CALLBACK_USE_OIDC = "CALLBACK_USE_OIDC",
             TIES_DB_USE_OIDC = "TIES_DB_USE_OIDC",
-            ROLL_UP_FILE = "ROLL_UP_FILE";
+            ROLL_UP_FILE = "ROLL_UP_FILE",
+            // TODO: add to workflow-properties.json
+            SELECTOR_DELIMETER = "SELECTOR_DELIMETER",
+            SELECTED_CONTENT = "SELECTED_CONTENT",
+            SELECTOR_DUPLICATE_POLICY = "SELECTOR_DUPLICATE_POLICY";
 
     private MpfConstants() {
     }

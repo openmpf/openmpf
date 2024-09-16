@@ -73,6 +73,7 @@ import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
 import org.mitre.mpf.wfm.camel.routes.JobRouterRouteBuilder;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
@@ -137,7 +138,8 @@ public class TestJobRequestService {
     private final JobRequestService _jobRequestService = new JobRequestServiceImpl(
                     _mockPropertiesUtil, _aggregateJobPropertiesUtil, _mockPipelineService,
                     _jsonUtils, _mockJmsUtils, _inProgressJobs, _mockJobRequestDao,
-                    _mockMarkupResultDao, _mockTiesDbBeforeJobCheckService, _mockProduceTemplate);
+                    _mockMarkupResultDao, _mockTiesDbBeforeJobCheckService, _mockProduceTemplate,
+                    TestUtil.createConstraintValidator());
 
     @Rule
     public TemporaryFolder _temporaryFolder = new TemporaryFolder();
@@ -159,12 +161,14 @@ public class TestJobRequestService {
                 Map.of("media_prop1", "media_val1"),
                 Map.of(),
                 List.of(new JobCreationMediaRange(0, 50), new JobCreationMediaRange(100, 300)),
+                List.of(),
                 List.of());
 
         var jobCreationMedia2 = new JobCreationMediaData(
                 "http://my_media2.mp4",
                 Map.of("media_prop2", "media_val2"),
                 Map.of(),
+                List.of(),
                 List.of(),
                 List.of());
 
@@ -327,7 +331,7 @@ public class TestJobRequestService {
                 "POST",
                 List.of(new MediaImpl(567, "http://media.mp4", UriScheme.HTTP, Paths.get("temp"),
                                       Map.of("media_prop1", "media_val1"), Map.of(),
-                                      List.of(), List.of(), "error")),
+                                      List.of(), List.of(), List.of(), "error")),
                 Map.of("job_prop1", "job_val1"),
                 Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")),
                 false);
@@ -440,7 +444,7 @@ public class TestJobRequestService {
                 jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineElements(),
                 3, null, null,
                 List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"),
-                                      Map.of(), Map.of(), List.of(), List.of(), null)),
+                                      Map.of(), Map.of(), List.of(), List.of(), List.of(), null)),
                 Map.of(), Map.of(), false);
 
         jobRequestEntity.setStatus(BatchJobStatusType.IN_PROGRESS);

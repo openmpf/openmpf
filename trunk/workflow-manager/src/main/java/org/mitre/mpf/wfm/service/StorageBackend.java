@@ -31,10 +31,12 @@ import com.google.common.collect.Table;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 
 import java.io.IOException;
 import java.net.URI;
@@ -53,4 +55,11 @@ public interface StorageBackend {
 
     public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException;
     public void storeDerivativeMedia(BatchJob job, Media media) throws IOException, StorageException;
+
+    public boolean canStoreMediaSelectorsOutput(BatchJob job, Media media) throws StorageException;
+    public URI storeMediaSelectorsOutput(
+            BatchJob job,
+            Media media,
+            MediaSelectorType selectorType,
+            OutputProcessor outputProcessor) throws IOException, StorageException;
 }

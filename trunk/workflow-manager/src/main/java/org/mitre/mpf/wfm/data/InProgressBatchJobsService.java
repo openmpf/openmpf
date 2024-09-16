@@ -61,6 +61,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.TiesDbInfo;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -73,6 +74,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JobPart;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -303,6 +305,12 @@ public class InProgressBatchJobsService {
         addError(jobId, mediaId, code, message, IssueSources.WORKFLOW_MANAGER);
     }
 
+    public synchronized void addError(JobPart jobPart, IssueCodes code, String message) {
+        addError(
+                jobPart.id(), jobPart.media().getId(), code, message,
+                IssueSources.WORKFLOW_MANAGER);
+    }
+
     public synchronized void addError(long jobId, long mediaId, IssueCodes code,
                                       String message, IssueSources source) {
         var codeString = IssueCodes.toString(code);
@@ -394,7 +402,8 @@ public class InProgressBatchJobsService {
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadataProperties,
             Collection<MediaRange> frameRanges,
-            Collection<MediaRange> timeRanges) {
+            Collection<MediaRange> timeRanges,
+            Collection<MediaSelector> mediaSelectors) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -430,6 +439,7 @@ public class InProgressBatchJobsService {
                     providedMetadataProperties,
                     frameRanges,
                     timeRanges,
+                    mediaSelectors,
                     errorMessage);
             var mimeType = providedMetadataProperties.get("MIME_TYPE");
             if (mimeType != null && !mimeType.isBlank()) {
@@ -449,6 +459,7 @@ public class InProgressBatchJobsService {
                     providedMetadataProperties,
                     frameRanges,
                     timeRanges,
+                    mediaSelectors,
                     e.getMessage());
         }
     }
@@ -481,6 +492,7 @@ public class InProgressBatchJobsService {
                 ImmutableMap.of(),
                 ImmutableSet.of(),
                 ImmutableSet.of(),
+                ImmutableList.of(),
                 errorMessage);
 
         derivativeMedia.addMetadata(metadata);
@@ -561,5 +573,10 @@ public class InProgressBatchJobsService {
 
     public void reportMissingProcessingTime(long jobId, Action action) {
         addProcessingTime(jobId, action, -1);
+    }
+
+
+    public synchronized void setMediaSelectorsOutput(long jobId, long mediaId, URI uri) {
+        getMediaImpl(jobId, mediaId).setMediaSelectorsOutput(uri);
     }
 }

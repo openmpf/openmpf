@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -493,7 +494,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getMimeType().orElse(null),
                     media.getLength().orElse(0),
                     media.getSha256().orElse(null),
-                    media.isFailed() ? "ERROR" : "COMPLETE");
+                    media.isFailed() ? "ERROR" : "COMPLETE",
+                    Objects.toString(media.getMediaSelectorsOutput()));
 
             for (var frameRange : media.getFrameRanges()) {
                 mediaOutputObject.getFrameRanges().add(new JsonMediaRange(

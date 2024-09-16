@@ -61,6 +61,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,12 +75,14 @@ import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -108,7 +111,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
     private ComponentStateService _mockStateService;
 
     @Mock
-    private ComponentDescriptorValidator _mockDescriptorValidator;
+    private ConstraintValidationService _mockDescriptorValidator;
 
     @Mock
     private RemoveComponentService _mockRemoveComponentService;
@@ -126,7 +129,7 @@ public class TestAddComponentService extends MockitoTest.Strict {
         _addComponentService = new AddComponentServiceImpl(
                 _mockPropertiesUtil, _mockPipelineService, Optional.of(_mockNodeManager),
                 Optional.of(_mockStreamingServiceManager), _mockDeploymentService, _mockStateService,
-                _mockDescriptorValidator, null, _mockRemoveComponentService, _mockObjectMapper);
+                _mockDescriptorValidator, _mockRemoveComponentService, _mockObjectMapper);
     }
 
 
@@ -541,8 +544,9 @@ public class TestAddComponentService extends MockitoTest.Strict {
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
 
         doThrow(InvalidComponentDescriptorException.class)
-                .when(_mockDescriptorValidator).validate(descriptor);
-
+                .when(_mockDescriptorValidator).validate(
+                        eq(descriptor),
+                        nonNullExceptionCreator());
 
         try {
             _addComponentService.registerUnmanagedComponent(descriptor);
@@ -588,7 +592,8 @@ public class TestAddComponentService extends MockitoTest.Strict {
 
         doThrow(InvalidComponentDescriptorException.class)
                 .when(_mockDescriptorValidator)
-                .validate(descriptor);
+                .validate(eq(descriptor), nonNullExceptionCreator());
+
         try {
             _addComponentService.registerComponent(_testPackageName);
             fail();
@@ -655,5 +660,9 @@ public class TestAddComponentService extends MockitoTest.Strict {
     private void assertNeverUndeployed() {
         verify(_mockDeploymentService, never())
                 .undeployComponent(any());
+    }
+
+    private static Function<String, InvalidComponentDescriptorException> nonNullExceptionCreator() {
+        return ArgumentMatchers.notNull();
     }
 }

@@ -31,12 +31,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.validation.Valid;
+
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.rest.api.util.Utils;
 
 import com.google.common.collect.ImmutableMap;
 
 public record JobCreationRequest(
+		@Valid
 		List<JobCreationMediaData> media,
 		Map<String, String> jobProperties,
 		Map<String, Map<String, String>> algorithmProperties,

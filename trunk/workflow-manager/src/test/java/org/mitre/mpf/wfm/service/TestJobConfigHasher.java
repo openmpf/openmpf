@@ -64,6 +64,7 @@ import org.mitre.mpf.test.MockitoTest;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
 
@@ -626,6 +627,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
             when(media.getTimeRanges())
                     .thenReturn(ImmutableSet.copyOf(timeRanges));
+
+            when(media.getMediaSelectors())
+                    .thenReturn(ImmutableList.of());
             _media.add(media);
             return this;
         }

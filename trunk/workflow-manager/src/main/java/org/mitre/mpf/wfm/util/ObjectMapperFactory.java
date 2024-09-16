@@ -27,9 +27,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.mitre.mpf.interop.util.TrimKeysModule;
 import org.mitre.mpf.interop.util.TrimValuesModule;
@@ -37,6 +34,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 @Configuration
 public class ObjectMapperFactory {
@@ -49,7 +51,10 @@ public class ObjectMapperFactory {
                          new Jdk8Module(),
                          new TrimKeysModule(),
                          new TrimValuesModule())
-                .featuresToEnable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+                .featuresToEnable(
+                        MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS,
+                        JsonParser.Feature.ALLOW_TRAILING_COMMA,
+                        JsonParser.Feature.ALLOW_COMMENTS)
                 .build();
     }
 }

@@ -28,8 +28,6 @@
 package org.mitre.mpf.wfm.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
@@ -43,7 +41,6 @@ import org.mitre.mpf.wfm.service.pipeline.PipelinePartLookup;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
 import org.mitre.mpf.wfm.service.pipeline.TransientPipelinePartLookup;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -59,8 +56,6 @@ import static org.mockito.Mockito.when;
 
 public class TestPipelineValidator {
 
-    private PipelineValidator _pipelineValidator;
-
     private final WorkflowPropertyService _mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
 
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
@@ -72,13 +67,9 @@ public class TestPipelineValidator {
 
     private final PipelinePartLookup _pipelinePartLookup = createPartLookup();
 
-    @Before
-    public void init() {
-        var springValidator = new LocalValidatorFactoryBean();
-        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
-        springValidator.afterPropertiesSet();
-        _pipelineValidator = new PipelineValidator(springValidator, _mockWorkflowPropertyService);
-    }
+    private PipelineValidator _pipelineValidator = new PipelineValidator(
+            TestUtil.createConstraintValidator(), _mockWorkflowPropertyService);
+
 
     private PipelinePartLookup createPartLookup() {
         return new PipelinePartLookup() {

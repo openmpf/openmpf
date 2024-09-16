@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -34,8 +35,8 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.MediaRange;
 
+import java.net.URI;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -110,6 +111,10 @@ public interface Media {
     public ImmutableSet<MediaRange> getFrameRanges();
 
     public ImmutableSet<MediaRange> getTimeRanges();
+
+    public ImmutableList<MediaSelector> getMediaSelectors();
+
+    public URI getMediaSelectorsOutput();
 
     public Optional<TiesDbInfo> getTiesDbInfo();
 

@@ -671,6 +671,8 @@ public class TiesDbBeforeJobCheckServiceImpl
                     oldMedia.getMediaMetadata(),
                     oldMedia.getMediaProperties(),
                     newMarkup,
+                    // TODO: update paths in output files
+                    oldMedia.getMediaSelectorsOutput(),
                     newTrackTypeMap,
                     oldMedia.getDetectionProcessingErrors());
             newMediaList.add(newMedia);

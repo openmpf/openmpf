@@ -936,6 +936,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ImmutableSortedMap.of("META1", "META1VALUE"),
                 ImmutableSortedMap.of("MEDIA_PROP1", "MEDIA_PROP1_VALUE"),
                 new JsonMarkupOutputObject(35, "http://localhost/bucket/markup", "complete", null),
+                null,
                 trackTypeMap,
                 ImmutableSortedMap.of("ALGO", ImmutableSortedSet.of(detectionError)));
 
@@ -946,6 +947,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ImmutableSortedSet.of(), "WRONG_SHA", null,
                 ImmutableSortedMap.of("META2", "META2VALUE"),
                 ImmutableSortedMap.of(MpfConstants.LINKED_MEDIA_HASH, "SHA2"),
+                null,
                 null,
                 ImmutableSortedMap.of(),
                 ImmutableSortedMap.of("ALGO2", ImmutableSortedSet.of()));
@@ -1120,7 +1122,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         action.getTracks().add(track);
 
         var media = new JsonMediaOutputObject(
-                39, -1, "path", null, "IMAGE", "image/png", 1, "SHA", "");
+                39, -1, "path", null, "IMAGE", "image/png", 1, "SHA", "", null);
         media.getTrackTypes().put("FACE", ImmutableSortedSet.of(action));
 
         var outputObject = new JsonOutputObject(

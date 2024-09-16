@@ -33,6 +33,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.rest.api.JobCreationMediaRange;
+import org.mitre.mpf.rest.api.JobCreationMediaSelector;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -49,6 +50,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
@@ -91,6 +93,8 @@ public class JobRequestServiceImpl implements JobRequestService {
 
     private final ProducerTemplate _jobRequestProducerTemplate;
 
+    private final ConstraintValidationService _validator;
+
     @Inject
     public JobRequestServiceImpl(
             PropertiesUtil propertiesUtil,
@@ -102,7 +106,8 @@ public class JobRequestServiceImpl implements JobRequestService {
             JobRequestDao jobRequestDao,
             MarkupResultDao markupResultDao,
             TiesDbBeforeJobCheckService tiesDbBeforeJobCheckService,
-            ProducerTemplate jobRequestProducerTemplate) {
+            ProducerTemplate jobRequestProducerTemplate,
+            ConstraintValidationService validator) {
         _pipelineService = pipelineService;
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
@@ -113,12 +118,16 @@ public class JobRequestServiceImpl implements JobRequestService {
         _markupResultDao = markupResultDao;
         _tiesDbBeforeJobCheckService = tiesDbBeforeJobCheckService;
         _jobRequestProducerTemplate = jobRequestProducerTemplate;
+        _validator = validator;
     }
 
 
 
     @Override
     public CreationResult run(JobCreationRequest jobCreationRequest) {
+        _validator.validate(jobCreationRequest, "JobCreationRequest");
+        checkSelectors(jobCreationRequest);
+
         List<Media> media = jobCreationRequest.media()
                 .stream()
                 .map(m -> _inProgressJobs.initMedia(
@@ -126,7 +135,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                         m.properties(),
                         m.metadata(),
                         convertRanges(m.frameRanges()),
-                        convertRanges(m.timeRanges())))
+                        convertRanges(m.timeRanges()),
+                        convertSelectors(m.mediaSelectors())))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.priority())
@@ -216,7 +226,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                         m.getMediaSpecificProperties(),
                         m.getProvidedMetadata(),
                         m.getFrameRanges(),
-                        m.getTimeRanges()))
+                        m.getTimeRanges(),
+                        m.getMediaSelectors()))
                 .collect(ImmutableList.toImmutableList());
 
 
@@ -252,6 +263,14 @@ public class JobRequestServiceImpl implements JobRequestService {
                 .collect(ImmutableSet.toImmutableSet());
     }
 
+    private static ImmutableList<MediaSelector> convertSelectors(
+                Collection<JobCreationMediaSelector> selectors) {
+        return selectors.stream()
+                .map(s -> new MediaSelector(
+                        s.expression(), s.type(),
+                        s.selectionProperties(), s.resultDetectionProperty()))
+                .collect(ImmutableList.toImmutableList());
+    }
 
     private JobRequest initialize(
             JobRequest jobRequestEntity,
@@ -456,6 +475,22 @@ public class JobRequestServiceImpl implements JobRequestService {
                 LOG.warn("The job is not in progress and cannot be cancelled at this time.");
             }
             return true;
+        }
+    }
+
+    private static void checkSelectors(JobCreationRequest jobCreationRequest) {
+        for (var media : jobCreationRequest.media()) {
+            var numSelectorTypes = media.mediaSelectors().stream()
+                    .map(JobCreationMediaSelector::type)
+                    .distinct()
+                    .limit(2)
+                    .count();
+            if (numSelectorTypes > 1) {
+                // All of the planned selectors types operate on different file types, so using
+                // multiple types for the same media does not make sense. If we do add selector
+                // types that can be mixed, then this restriction can be removed.
+                throw new WfmProcessingException("All media selectors must have the same type.");
+            }
         }
     }
 }

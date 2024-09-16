@@ -156,6 +156,7 @@ public class ITWebREST {
                 Map.of(),
                 Map.of(),
                 List.of(),
+                List.of(),
                 List.of());
 
 		var jobCreationRequest = new JobCreationRequest(
@@ -408,6 +409,7 @@ public class ITWebREST {
                 mediaPathUrl,
                 Map.of(),
                 Map.of(),
+                List.of(),
                 List.of(),
                 List.of());
 

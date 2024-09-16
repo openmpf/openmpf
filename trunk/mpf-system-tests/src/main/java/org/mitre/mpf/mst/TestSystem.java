@@ -235,6 +235,7 @@ public abstract class TestSystem {
                 properties,
                 Map.of(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 

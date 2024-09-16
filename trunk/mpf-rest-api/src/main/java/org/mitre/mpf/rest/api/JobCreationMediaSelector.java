@@ -33,16 +33,19 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
 
-public record JobCreationMediaSelectors(
+public record JobCreationMediaSelector(
         @NotBlank
         String expression,
 
         @NotNull
         MediaSelectorType type,
 
-        Map<String, String> selectorProperties) {
+        Map<String, String> selectionProperties,
 
-    public JobCreationMediaSelectors {
-        selectorProperties = Utils.toImmutableMap(selectorProperties);
+        @NotBlank
+        String resultDetectionProperty) {
+
+    public JobCreationMediaSelector {
+        selectionProperties = Utils.toImmutableMap(selectionProperties);
     }
 }

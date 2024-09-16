@@ -153,7 +153,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		URI mediaUri = URI.create("file:///example.foo");
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
-				Map.of(), List.of(), List.of(), null);
+				Map.of(), List.of(), List.of(), List.of(), null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;
@@ -165,13 +165,13 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		Track track1 = new Track(1, 1, 0, 0, 0,
 		                         -1, 0, 0, 0, 0,
 		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
-		                         "", "");
+		                         "", "", null, null);
 
 		Detection detection2 = createDetection(0.10f);
 		Track track2 = new Track(1, 1, 0, 0, 0,
 		                         -1, 0, 0, 0, 0.10f,
 		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
-		                         "", "");
+		                         "", "", null, null);
 
 		return ImmutableSet.of(track1, track2);
 	}

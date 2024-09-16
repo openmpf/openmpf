@@ -24,9 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
+package org.mitre.mpf.wfm.enums;
 
-public interface ComponentDescriptorValidator {
-
-    public void validate(JsonComponentDescriptor descriptor) throws InvalidComponentDescriptorException;
+public enum MediaSelectorsDuplicatePolicy {
+    LONGEST,
+    ERROR,
+    JOIN
 }

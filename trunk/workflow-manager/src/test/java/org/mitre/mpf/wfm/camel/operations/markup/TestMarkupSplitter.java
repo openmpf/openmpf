@@ -68,7 +68,9 @@ public class TestMarkupSplitter {
                          List.of(createDetection(detectionProperties)),
                          trackProperties,
                          "",
-                         "");
+                         "",
+                         null,
+                         null);
     }
 
     @Test

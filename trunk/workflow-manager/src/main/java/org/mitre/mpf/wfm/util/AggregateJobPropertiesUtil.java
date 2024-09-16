@@ -460,7 +460,7 @@ public class AggregateJobPropertiesUtil {
 
         if (frameRateCapPropInfo.getLevel() == PropertyLevel.NONE) {
             frameRateCapPropInfo = new PropertyInfo(MpfConstants.FRAME_RATE_CAP_PROPERTY,
-                                                    Integer.toString(systemFrameRateCap), PropertyLevel.SYSTEM);
+                                                    Double.toString(systemFrameRateCap), PropertyLevel.SYSTEM);
         }
 
         PropertyInfo propInfoToUse;

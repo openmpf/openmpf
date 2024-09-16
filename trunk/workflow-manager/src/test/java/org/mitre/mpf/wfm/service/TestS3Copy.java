@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -52,6 +52,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -178,7 +179,7 @@ public class TestS3Copy extends MockitoTest.Strict {
     public void testGetOutObjectIncompleteDownloadRecovery() throws IOException, StorageException {
         var originalOutputObject = new JsonOutputObject(
                 "job id", "obj id", null, 4, "site id", "X.Y", "ext job id",
-                Instant.now(), Instant.now(), "status");
+                Instant.now(), Instant.now(), "status", new JsonTiming(-1, List.of()));
         var bytes = _objectMapper.writeValueAsBytes(originalOutputObject);
         var numAttempts = new AtomicInteger();
         setSourceGetRoute((req, resp) -> {

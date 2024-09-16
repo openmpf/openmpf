@@ -5,11 +5,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2023 The MITRE Corporation. All Rights Reserved.
+    Copyright 2024 The MITRE Corporation. All Rights Reserved.
 -->
 
 <!--
-    Copyright 2023 The MITRE Corporation
+    Copyright 2024 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 
     <meta id="_csrf" name="_csrf" content="${_csrf.token}"/>
     <meta id="_csrf_header" name="_csrf_header" content="${_csrf.headerName}"/>
+    <meta id="_csrf_parameterName" name="_csrf_parameterName" content="${_csrf.parameterName}"/>
 
     <title>Workflow Manager Web App</title>
     <link rel="icon" href="resources/img/favicon.ico"/>

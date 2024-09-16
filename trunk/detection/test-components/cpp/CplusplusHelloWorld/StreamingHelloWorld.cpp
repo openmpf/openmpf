@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -36,7 +36,7 @@ StreamingHelloWorld::StreamingHelloWorld(const MPFStreamingVideoJob &job)
         : MPFStreamingDetectionComponent(job)
         , hw_logger_(log4cxx::Logger::getLogger("StreamingHelloWorldTest"))
         , job_name_(job.job_name)
-        , confidence_threshold_(DetectionComponentUtils::GetProperty(job.job_properties, "CONFIDENCE_THRESHOLD", -1.0))
+        , confidence_threshold_(DetectionComponentUtils::GetProperty(job.job_properties, "QUALITY_SELECTION_THRESHOLD", -1.0))
 {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Initialized StreamingHelloWorld component.")
 }
@@ -84,11 +84,6 @@ std::vector<MPFVideoTrack> StreamingHelloWorld::EndSegment() {
     // swap with stack variable so that result vector is moved instead of copied.
     results.swap(segment_detections_);
     return results;
-}
-
-
-std::string StreamingHelloWorld::GetDetectionType() {
-    return "HELLO";
 }
 
 

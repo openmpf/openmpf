@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "9.0",
   "jobId": 34,
   "errors": [],
   "warnings": [],
@@ -58,7 +58,7 @@
       "output": {
         "MOTION": [
           {
-            "source": "+#SUBSENSE MOTION DETECTION (WITH TRACKING) ACTION",
+            "action": "SUBSENSE MOTION DETECTION (WITH TRACKING) ACTION",
             "algorithm": "SUBSENSE",
             "tracks": [
               {
@@ -68,7 +68,6 @@
                 "startOffsetTime": 3101,
                 "stopOffsetTime": 8685,
                 "type": "MOTION",
-                "source": "+#SUBSENSE MOTION DETECTION (WITH TRACKING) ACTION",
                 "confidence": -1.0,
                 "trackProperties": {},
                 "exemplar": {

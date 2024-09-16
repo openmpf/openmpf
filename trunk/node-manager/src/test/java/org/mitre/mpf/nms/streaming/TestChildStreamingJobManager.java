@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,8 +26,17 @@
 
 package org.mitre.mpf.nms.streaming;
 
-import org.junit.After;
-import org.junit.Before;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.mitre.mpf.nms.ChannelNode;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
@@ -36,17 +45,14 @@ import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
+import org.mockito.quality.Strictness;
 
 public class TestChildStreamingJobManager {
 
-	private AutoCloseable _closeable;
+	@Rule
+	public MockitoRule _mockitoRule = MockitoJUnit.rule().strictness(Strictness.STRICT_STUBS);
 
 	@InjectMocks
 	private ChildStreamingJobManager _childStreamingJobManager;
@@ -56,18 +62,6 @@ public class TestChildStreamingJobManager {
 
 	@Mock
 	private StreamingJobFactory _mockJobFactory;
-
-
-	@Before
-	public void init() {
-		_closeable = MockitoAnnotations.openMocks(this);
-	}
-
-
-	@After
-	public void close() throws Exception {
-		_closeable.close();
-	}
 
 
 	@Test
@@ -203,7 +197,7 @@ public class TestChildStreamingJobManager {
 		when(job.startJob())
 				.thenReturn(future);
 
-		when(job.stopJob())
+		lenient().when(job.stopJob())
 				.thenReturn(future);
 
 		return new TestJobController() {
@@ -224,4 +218,3 @@ public class TestChildStreamingJobManager {
 		void causeException(Exception e);
 	}
 }
-

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,27 +26,14 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
-import org.mitre.mpf.wfm.util.*;
-import org.mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -56,12 +43,44 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 
-import static org.mockito.Mockito.*;
+import org.apache.camel.Exchange;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.DefaultExchange;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
 
 
-public class TestDetectionResponseProcessor {
-
-    private AutoCloseable _closeable;
+public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
     @Mock
     private PipelineService mockPipelineService;
@@ -74,6 +93,9 @@ public class TestDetectionResponseProcessor {
 
     @Mock
     private MediaInspectionHelper mockMediaInspectionHelper;
+
+    @Mock
+    private TaskMergingManager mockTaskMergingManager;
 
     private DetectionResponseProcessor detectionResponseProcessor;
 
@@ -96,34 +118,30 @@ public class TestDetectionResponseProcessor {
     private static final String DETECTION_RESPONSE_PIPELINE_NAME = "TEST_DETECTION_RESPONSE_PIPELINE";
     private static final String DETECTION_RESPONSE_TASK_NAME = "TEST_DETECTION_RESPONSE_TASK";
 
+    private Action action;
+
     @Before
     public void init() {
-
-        _closeable = MockitoAnnotations.openMocks(this);
-
         detectionResponseProcessor = new DetectionResponseProcessor(
                 mockAggregateJobPropertiesUtil,
                 mockInProgressJobs,
-                mockMediaInspectionHelper);
+                mockMediaInspectionHelper,
+                mockTaskMergingManager);
 
-        Algorithm algorithm = new Algorithm(
-                DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
+        var algorithm = new Algorithm(
+                DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION, "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
 
-        when(mockPipelineService.getAlgorithm(algorithm.getName()))
-                .thenReturn(algorithm);
 
-        Action action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.getName(),
+        action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.name(),
                                    Collections.emptyList());
-        when(mockPipelineService.getAction(action.getName()))
-                .thenReturn(action);
 
-        Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", Collections.singleton(action.getName()));
+        Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", List.of(action.name()));
         Pipeline pipeline = new Pipeline(DETECTION_RESPONSE_PIPELINE_NAME, "pipeline description",
-                                         Collections.singleton(task.getName()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
@@ -161,53 +179,52 @@ public class TestDetectionResponseProcessor {
         when(mockInProgressJobs.getJob(JOB_ID))
                 .thenReturn(job);
 
-        when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
+        when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.QUALITY_THRESHOLD_PROPERTY, job, media, action))
                 .thenReturn(String.valueOf(0.1));
+        when(mockAggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action))
+                .thenReturn("CONFIDENCE");
     }
 
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void testHappyPath() {
-
-        DetectionProtobuf.DetectionResponse detectionResponse =
-                DetectionProtobuf.DetectionResponse.newBuilder()
+        var detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setMediaId(MEDIA_ID)
-                .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                                   .setDetectionType("TEST")
-                                   .setStartFrame(START_FRAME)
-                                   .setStopFrame(STOP_FRAME)
-                                   .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
-                                                   .setStartFrame(5)
-                                                   .setStopFrame(5)
-                                                   .setConfidence(0.5f)
-                                                   .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
-                                                                           .setKey("TRACK_TEST_PROP_KEY")
-                                                                           .setValue("TRACK_TEST_PROP_VALUE"))
-                                                   .addFrameLocations(DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder()
-                                                                      .setFrame(5)
-                                                                      .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder()
-                                                                                        .setConfidence(0.5f)
-                                                                                        .setXLeftUpper(0)
-                                                                                        .setYLeftUpper(10)
-                                                                                        .setHeight(10)
-                                                                                        .setWidth(10)
-                                                                                        .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
-                                                                                                                .setKey("DETECTION_TEST_PROP_KEY")
-                                                                                                                .setValue("DETECTION_TEST_PROP_VALUE"))))))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setTaskIndex(0)
+                .setActionIndex(0)
+                .setVideoResponse(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                        .setStartFrame(START_FRAME)
+                        .setStopFrame(STOP_FRAME)
+                        .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
+                                .setStartFrame(5)
+                                .setStopFrame(5)
+                                .setConfidence(0.5f)
+                                .putDetectionProperties(
+                                        "TRACK_TEST_PROP_KEY", "TRACK_TEST_PROP_VALUE")
+                                .putFrameLocations(5, DetectionProtobuf.ImageLocation.newBuilder()
+                                        .setConfidence(0.5f)
+                                        .setXLeftUpper(0)
+                                        .setYLeftUpper(10)
+                                        .setHeight(10)
+                                        .setWidth(10)
+                                        .putDetectionProperties(
+                                                "DETECTION_TEST_PROP_KEY",
+                                                "DETECTION_TEST_PROP_VALUE")
+                                        .build())))
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().getHeaders().put(MpfHeaders.PROCESSING_TIME, 1234L);
         exchange.getIn().setBody(detectionResponse);
+
+        when(mockTaskMergingManager.getMergedTaskIndex(
+                argThat(j -> j.getId() == JOB_ID),
+                argThat(m -> m.getId() == MEDIA_ID),
+                eq(0),
+                eq(0),
+                eq(exchange.getIn().getHeaders())))
+                .thenReturn(0);
 
         detectionResponseProcessor.wfmProcess(exchange);
         Assert.assertEquals(JOB_ID, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
@@ -219,8 +236,16 @@ public class TestDetectionResponseProcessor {
                 .addDetectionProcessingError(any());
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
+        verify(mockInProgressJobs)
+                .addProcessingTime(JOB_ID, action, 1234);
+
+        var trackCaptor = ArgumentCaptor.forClass(Track.class);
         verify(mockInProgressJobs, times(1))
-                .addTrack(track(JOB_ID, 5));
+                .addTrack(trackCaptor.capture());
+        var track = trackCaptor.getValue();
+        assertEquals(JOB_ID, track.getJobId());
+        assertEquals(5, track.getStartOffsetFrameInclusive());
+        assertEquals(0, track.getMergedTaskIndex());
     }
 
     @Test
@@ -247,21 +272,19 @@ public class TestDetectionResponseProcessor {
                         START_TIME, STOP_TIME));
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
+        verify(mockInProgressJobs)
+                .reportMissingProcessingTime(JOB_ID, action);
     }
 
     private void processVideoJob(DetectionProtobuf.DetectionError error) {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                        .setDetectionType("TEST")
+                .setVideoResponse(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
                         .setStartFrame(START_FRAME)
                         .setStopFrame(STOP_FRAME))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -278,19 +301,16 @@ public class TestDetectionResponseProcessor {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
-                        .setDetectionType("TEST")
+                .setAudioResponse(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
                         .setStartTime(START_TIME)
                         .setStopTime(STOP_TIME))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().getHeaders().put(MpfHeaders.PROCESSING_TIME, "1234");
         exchange.getIn().setBody(detectionResponse);
 
         detectionResponseProcessor.wfmProcess(exchange);
@@ -299,6 +319,8 @@ public class TestDetectionResponseProcessor {
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, START_TIME, STOP_TIME));
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
+        verify(mockInProgressJobs)
+                .reportMissingProcessingTime(JOB_ID, action);
     }
 
     @Test
@@ -308,13 +330,9 @@ public class TestDetectionResponseProcessor {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
-                        .setDetectionType("TEST"))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setImageResponse(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder())
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -336,13 +354,9 @@ public class TestDetectionResponseProcessor {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
-                .addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
-                        .setDetectionType("TEST"))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
-                .setTaskIndex(1)
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
-                .setActionIndex(1)
-                .setRequestId(123456)
+                .setGenericResponse(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder())
+                .setTaskIndex(0)
+                .setActionIndex(0)
                 .build();
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,7 +31,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.JniTestUtils;
+import org.mitre.mpf.OverlayTestUtils;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 
 import javax.imageio.ImageIO;
@@ -50,10 +50,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
 public class TestFrameExtractor {
-    static {
-        Assert.assertTrue(JniTestUtils.jniLibsLoaded());
-    }
-
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -67,7 +63,7 @@ public class TestFrameExtractor {
         List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, trackIndices, 20, 30, 100, 150, 0.0, false, requestedExtractions));
-        URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
+        URI media = OverlayTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
         // test first with cropping, then without.
         extractFrames(media, Map.of(), true, requestedExtractions);
         extractFrames(media, Map.of(), false, requestedExtractions);
@@ -80,7 +76,7 @@ public class TestFrameExtractor {
         List<Integer> frameNumbers = Arrays.asList(2, 4, 8);
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, trackIndices, 100, 100, 150, 100, 0.0, false, requestedExtractions));
-        URI media = JniTestUtils.getFileResource("samples/face-morphing.gif");
+        URI media = OverlayTestUtils.getFileResource("samples/face-morphing.gif");
         extractFrames(media, Map.of(), true, requestedExtractions);
         extractFrames(media, Map.of(), false, requestedExtractions);
     }
@@ -89,7 +85,7 @@ public class TestFrameExtractor {
     public void testFrameExtractorOnImage() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(3),200, 200, 150, 100, 0.0, false, requestedExtractions);
-        URI media = JniTestUtils.getFileResource("samples/person_cropped_2.png");
+        URI media = OverlayTestUtils.getFileResource("samples/person_cropped_2.png");
         extractFrames(media, Map.of(), true, requestedExtractions);
         extractFrames(media, Map.of(), false, requestedExtractions);
     }
@@ -99,7 +95,7 @@ public class TestFrameExtractor {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(0), 652, 212, 277, 277, 0.0, false, requestedExtractions);
         putInExtractionMap(0, Arrays.asList(1), 970, 165, 329, 329, 0.0, false, requestedExtractions);
-        URI media = JniTestUtils.getFileResource("samples/girl-1741925_1920.jpg");
+        URI media = OverlayTestUtils.getFileResource("samples/girl-1741925_1920.jpg");
         extractFrames(media, Map.of(), true, requestedExtractions);
         extractFrames(media, Map.of(), false, requestedExtractions);
     }
@@ -116,7 +112,7 @@ public class TestFrameExtractor {
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, nextTrackIndices,0, 0, 90, 125, 0.0, false, requestedExtractions));
 
-        URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
+        URI media = OverlayTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
         extractFrames(media, Map.of(), true, requestedExtractions);
         extractFrames(media, Map.of(), false, requestedExtractions);
     }
@@ -128,7 +124,7 @@ public class TestFrameExtractor {
 
         // from exiftool: "Orientation: Mirror horizontal and rotate 270 CW"
         // from Tika: "tiff:Orientation=5"
-        URI media = JniTestUtils.getFileResource("samples/meds-aa-S001-01-exif-rotation.jpg");
+        URI media = OverlayTestUtils.getFileResource("samples/meds-aa-S001-01-exif-rotation.jpg");
         Map metaMetadata = Map.of("ROTATION", "90", // rotate cw this much to fix
                 "HORIZONTAL_FLIP", "true");
 
@@ -150,7 +146,7 @@ public class TestFrameExtractor {
 
         // from exiftool: "Rotation: 270"
         // from ffprobe: "rotate: 270"
-        URI media = JniTestUtils.getFileResource("samples/video_02_rotated.mp4");
+        URI media = OverlayTestUtils.getFileResource("samples/video_02_rotated.mp4");
         Map metaMetadata = Map.of("ROTATION", "270", // rotate cw this much to fix
                 "HORIZONTAL_FLIP", "false");
 
@@ -240,4 +236,3 @@ public class TestFrameExtractor {
         assertEquals(expectedHeight, actualHeight);
     }
 }
-

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -205,6 +205,18 @@ public class TestWorkflowPropertyService {
                              new SystemPropertiesSnapshot(Map.of("my.property", "sys prop val"))));
     }
 
+
+    @Test
+    public void canGetPropertiesSupportedByAllMediaTypes() throws IOException {
+        var propertyService = getServiceWithPropertyJson(
+            propertyJson("PROP1", "desc", "STRING", "A", null, "VIDEO"),
+            propertyJson("PROP2", "desc", "STRING", "B", null, "VIDEO", "IMAGE"),
+            propertyJson("PROP3", "desc", "STRING", "C", null, "VIDEO", "IMAGE", "AUDIO", "UNKNOWN")
+        );
+        var supportedByAll = propertyService.getPropertiesSupportedByAllMediaTypes();
+        assertEquals(1, supportedByAll.size());
+        assertEquals("C", supportedByAll.get(0).getDefaultValue());
+    }
 
 
     @Test

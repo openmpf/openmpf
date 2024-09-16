@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,44 +27,29 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
-public class TestCensorPropertiesService {
+import java.util.HashMap;
+import java.util.Map;
 
-    private AutoCloseable _closeable;
+import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
+public class TestCensorPropertiesService extends MockitoTest.Strict {
 
     @InjectMocks
     private CensorPropertiesService _censorPropertiesService;
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
-
-    @Before
-    public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
-    }
-
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
-
 
     @Test
     public void canCensorProperties() {

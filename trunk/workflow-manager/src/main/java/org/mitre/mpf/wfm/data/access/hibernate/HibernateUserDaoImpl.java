@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.UserDao;
 import org.mitre.mpf.wfm.data.entities.persistent.User;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ import java.util.Optional;
 
 import javax.inject.Inject;
 
+@Profile("!oidc")
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {

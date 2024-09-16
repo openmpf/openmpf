@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,12 +26,28 @@
 
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
-import com.google.common.collect.ImmutableMap;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -44,34 +60,28 @@ import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.core.io.FileSystemResource;
 
-import java.util.Map;
-import java.util.Set;
+import com.google.common.collect.ImmutableMap;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+public class TestMediaMetadataValidator extends MockitoTest.Strict {
 
-public class TestMediaMetadataValidator {
-
-    private AutoCloseable _closeable;
 
     @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
 
     @Mock
-    private MediaMetadataValidator _mediaMetadataValidator;
-
-    @Mock
     private AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil;
+
+
+    @InjectMocks
+    private MediaMetadataValidator _mediaMetadataValidator;
 
 
     @Before
     public void init() throws ConfigurationException {
-        _closeable = MockitoAnnotations.openMocks(this);
-
         var mediaTypePropertiesPath = TestUtil.findFilePath("/properties/mediaType.properties");
         var mockPropertiesUtil = mock(PropertiesUtil.class);
         when(mockPropertiesUtil.getMediaTypesFile())
@@ -80,11 +90,6 @@ public class TestMediaMetadataValidator {
 
         _mediaMetadataValidator = new MediaMetadataValidator(
                 _mockInProgressJobs, mediaTypeUtils, _mockAggregateJobPropertiesUtil);
-    }
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
     }
 
     @Test
@@ -292,9 +297,9 @@ public class TestMediaMetadataValidator {
     private static Media createMockMedia(long mediaId, String mediaPath,
                                          Map<String, String> providedMetadata) {
         var mockMedia = mock(Media.class);
-        when(mockMedia.getId())
+        lenient().when(mockMedia.getId())
                 .thenReturn(mediaId);
-        when(mockMedia.getProvidedMetadata())
+        lenient().when(mockMedia.getProvidedMetadata())
                 .thenReturn(ImmutableMap.copyOf(providedMetadata));
 
         if (mediaPath != null) {

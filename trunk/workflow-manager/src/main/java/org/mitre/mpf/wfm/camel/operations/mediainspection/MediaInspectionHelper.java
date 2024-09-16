@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -169,7 +169,7 @@ public class MediaInspectionHelper {
                     ffprobeMetadata = _ffprobeMetadataExtactor.getAudioVideoMetadata(job, media);
                     if (ffprobeMetadata.video().isPresent()) {
                         length = inspectVideo(
-                                localPath, jobId, mediaId, mimeType, mediaMetadata,
+                                localPath, jobId, mediaId, mediaMetadata,
                                 ffprobeMetadata.video().get());
                         break;
                     }
@@ -228,7 +228,7 @@ public class MediaInspectionHelper {
         return -1;
     }
 
-    private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
+    private int inspectVideo(Path localPath, long jobId, long mediaId,
                              Map<String, String> mediaMetadata,
                              FfprobeMetadata.Video ffprobeMetadata) {
 
@@ -239,8 +239,7 @@ public class MediaInspectionHelper {
 
         FrameTimeInfo frameTimeInfo;
         try {
-            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(
-                localPath, ffprobeMetadata, mimeType);
+            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata);
         }
         catch (MediaInspectionException e) {
             if (ffprobeMetadata.frameCount().isPresent()) {

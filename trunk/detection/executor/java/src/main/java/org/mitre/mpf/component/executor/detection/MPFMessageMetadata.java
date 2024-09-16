@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -36,24 +36,21 @@ public class MPFMessageMetadata {
 	// TODO: Consider moving dataType and algorithmProperties out of this structure so that it has parity with the
 	// message metadata structure on the C++ side.
 
-    private String dataUri;
+    private String mediaPath;
 	private final MPFDataType dataType;
 	private long mediaId;
-	private String taskName;
 	private int taskIndex;
-	private String actionName;
 	private int actionIndex;
 	private Map<String, String> algorithmProperties;
 	private Map<String, String> mediaProperties;
-	private long requestId;
 	private String correlationId;
 	private String breadcrumbId;
 	private int splitSize;
 	private long jobId;
 	private String jobName;
 
-	public String getDataUri() {
-		return dataUri;
+	public String getMediaPath() {
+		return mediaPath;
 	}
 
 	public MPFDataType getDataType() {
@@ -64,17 +61,11 @@ public class MPFMessageMetadata {
 		return mediaId;
 	}
 
-	public String getTaskName() {
-		return taskName;
-	}
 
 	public int getTaskIndex() {
 		return taskIndex;
 	}
 
-	public String getActionName() {
-		return actionName;
-	}
 
 	public int getActionIndex() {
 		return actionIndex;
@@ -86,10 +77,6 @@ public class MPFMessageMetadata {
 
 	public Map<String, String> getMediaProperties() {
 		return mediaProperties;
-	}
-
-	public long getRequestId() {
-		return requestId;
 	}
 
 	public String getCorrelationId() {
@@ -118,34 +105,24 @@ public class MPFMessageMetadata {
 
 
 	public MPFMessageMetadata(
-        String dataUri,
+        String mediaPath,
         MPFDataType dataType,
         long mediaId,
-        String taskName,
         int taskIndex,
-        String actionName,
         int actionIndex,
         Map<String, String> algorithmProperties,
         Map<String, String> mediaProperties,
-        long requestId,
         String correlationId,
         String breadcrumbId,
         int splitSize,
         long jobId,
         String jobName
     ) {
-        this.dataUri = dataUri;
+        this.mediaPath = mediaPath;
         this.dataType = dataType;
-        this.requestId = requestId;
-
         this.mediaId = mediaId;
-
-        this.taskName = taskName;
         this.taskIndex = taskIndex;
-
-        this.actionName = actionName;
         this.actionIndex = actionIndex;
-
         this.correlationId = correlationId;
         this.breadcrumbId = breadcrumbId;
         this.splitSize = splitSize;

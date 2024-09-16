@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "9.0",
   "jobId": 13,
   "errors": [],
   "warnings": [],
@@ -52,7 +52,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -62,7 +62,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 57.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -116,7 +115,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -126,7 +125,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 74.0,
                 "trackProperties": {},
                 "exemplar": {
@@ -180,7 +178,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION ACTION",
+            "action": "OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -190,7 +188,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 62.0,
                 "trackProperties": {},
                 "exemplar": {

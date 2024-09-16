@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -58,8 +58,8 @@ public @interface ValidAlgoPropValue {
 
         @Override
         public boolean isValid(AlgorithmProperty property, ConstraintValidatorContext ctx) {
-            boolean bothProvided = property.getDefaultValue() != null && property.getPropertiesKey() != null;
-            boolean neitherProvided = property.getDefaultValue() == null && property.getPropertiesKey() == null;
+            boolean bothProvided = property.defaultValue() != null && property.propertiesKey() != null;
+            boolean neitherProvided = property.defaultValue() == null && property.propertiesKey() == null;
             if (bothProvided || neitherProvided) {
                 ctx.disableDefaultConstraintViolation();
                 ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
@@ -72,7 +72,7 @@ public @interface ValidAlgoPropValue {
                 return false;
             }
 
-            if (property.getPropertiesKey() != null && property.getPropertiesKey().trim().isEmpty()) {
+            if (property.propertiesKey() != null && property.propertiesKey().trim().isEmpty()) {
                 ctx.disableDefaultConstraintViolation();
                 ctx.buildConstraintViolationWithTemplate("may not be empty")
                         .addPropertyNode("propertiesKey")

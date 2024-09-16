@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,6 +29,7 @@ package org.mitre.mpf.frameextractor;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.videooverlay.JniLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashBasedTable;
@@ -47,6 +48,10 @@ import java.util.TreeMap;
 
 public class FrameExtractor {
     private static final Logger log = LoggerFactory.getLogger(FrameExtractor.class);
+
+    static {
+        JniLoader.ensureLoaded();
+    }
 
     private final URI media;
     private final Map<String, String> mediaMetadata;

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,9 +27,11 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-
 import java.time.Instant;
+import java.util.SortedSet;
+
+import org.mitre.mpf.interop.JsonTiming;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
 
@@ -40,9 +42,9 @@ public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
             String system,
             DataObject dataObject) {
 
-        public Assertion(String assertionId, String trackType, DataObject dataObject) {
+        public Assertion(String assertionId, DataObject dataObject) {
             this(assertionId,
-                 "OpenMPF " + trackType,
+                 "OpenMPF Tracks",
                  "UNCLASSIFIED",
                  "OpenMPF",
                  dataObject);
@@ -51,8 +53,7 @@ public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
 
     public record DataObject(
             String pipeline,
-            String algorithm,
-            String outputType,
+            SortedSet<String> outputTypes,
             String jobId,
             String outputUri,
             String sha256OutputHash,
@@ -61,5 +62,6 @@ public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
             String systemVersion,
             String systemHostname,
             int trackCount,
-            String jobConfigHash) {}
+            String jobConfigHash,
+            JsonTiming timing) {}
 }

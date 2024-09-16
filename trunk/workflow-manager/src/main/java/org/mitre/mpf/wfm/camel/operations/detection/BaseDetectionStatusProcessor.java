@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -59,33 +59,25 @@ public abstract class BaseDetectionStatusProcessor implements Processor {
         DetectionProtobuf.DetectionResponse.Builder builder =
                 DetectionProtobuf.DetectionResponse.newBuilder()
                 .setActionIndex(detectionRequest.getActionIndex())
-                .setActionName(detectionRequest.getActionName())
-                .setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(detectionRequest.getDataType().name()))
-                .setError(error)
-                .setMediaId(detectionRequest.getMediaId())
-                .setRequestId(detectionRequest.getRequestId())
                 .setTaskIndex(detectionRequest.getTaskIndex())
-                .setTaskName(detectionRequest.getTaskName());
+                .setError(error)
+                .setMediaId(detectionRequest.getMediaId());
 
         if (detectionRequest.hasVideoRequest()) {
-            builder.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                    .setDetectionType(error.toString())
+            builder.getVideoResponseBuilder()
                     .setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
-                    .setStopFrame(detectionRequest.getVideoRequest().getStopFrame()));
-
-        } else if (detectionRequest.hasAudioRequest()) {
-            builder.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
-                    .setDetectionType(error.toString())
+                    .setStopFrame(detectionRequest.getVideoRequest().getStopFrame());
+        }
+        else if (detectionRequest.hasAudioRequest()) {
+            builder.getAudioResponseBuilder()
                     .setStartTime(detectionRequest.getAudioRequest().getStartTime())
-                    .setStopTime(detectionRequest.getAudioRequest().getStopTime()));
-
-        } else if (detectionRequest.hasImageRequest()) {
-            builder.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
-                    .setDetectionType(error.toString()));
-
-        } else if (detectionRequest.hasGenericRequest()) {
-            builder.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
-                    .setDetectionType(error.toString()));
+                    .setStopTime(detectionRequest.getAudioRequest().getStopTime());
+        }
+        else if (detectionRequest.hasImageRequest()) {
+            builder.getImageResponseBuilder();
+        }
+        else if (detectionRequest.hasGenericRequest()) {
+            builder.getGenericResponseBuilder();
         }
 
         exchange.getOut().setBody(builder.build().toByteArray());

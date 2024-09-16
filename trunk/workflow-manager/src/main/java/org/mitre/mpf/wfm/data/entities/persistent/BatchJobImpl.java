@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,8 +32,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+
+
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
 
@@ -173,6 +176,31 @@ public class BatchJobImpl implements BatchJob {
         return _shouldCheckTiesDbAfterMediaInspection;
     }
 
+
+    @JsonProperty("processingTimes")
+    private final Map<String, Long> _processingTimes;
+    public void addProcessingTime(Action action, long time) {
+        _processingTimes.merge(action.name(), time, BatchJobImpl::mergeTimes);
+    }
+    @Override
+    public long getProcessingTime(Action action) {
+        return _processingTimes.getOrDefault(action.name(), -1L);
+    }
+
+    @Override
+    @JsonIgnore
+    public long getTotalProcessingTime() {
+        // Use getAllActions() instead of _processingTimes.values() because an action will be
+        // missing from the _processingTimes map when that component does not report timing
+        // information.
+        return _pipelineElements.getAllActions()
+            .stream()
+            .mapToLong(this::getProcessingTime)
+            .reduce(BatchJobImpl::mergeTimes)
+            .orElse(-1L);
+    }
+
+
     public BatchJobImpl(
             long id,
             String externalId,
@@ -187,7 +215,7 @@ public class BatchJobImpl implements BatchJob {
             boolean shouldCheckTiesDbAfterMediaInspection) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
              callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
-             List.of(), Map.of(), Map.of(), shouldCheckTiesDbAfterMediaInspection);
+             List.of(), Map.of(), Map.of(), shouldCheckTiesDbAfterMediaInspection, Map.of());
     }
 
 
@@ -208,7 +236,8 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("errors") Map<Long, Set<JsonIssueDetails>> errors,
             @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings,
             @JsonProperty("shouldCheckTiesDbAfterMediaInspection")
-                    boolean shouldCheckTiesDbAfterMediaInspection) {
+                    boolean shouldCheckTiesDbAfterMediaInspection,
+            @JsonProperty("processingTimes") Map<String, Long> processingTimes) {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
@@ -241,5 +270,15 @@ public class BatchJobImpl implements BatchJob {
         warnings.forEach((k, v) -> _warnings.put(k, new HashSet<>(v)));
 
         _shouldCheckTiesDbAfterMediaInspection = shouldCheckTiesDbAfterMediaInspection;
+
+        _processingTimes = new HashMap<>(processingTimes);
+    }
+
+
+    private static long mergeTimes(long time1, long time2) {
+        // If any sub-job reports a time < 0 then the overall time will be -1. We do this to
+        // reflect that we have incomplete information rather than reporting that an action took
+        // less time than it actually did.
+        return time1 >= 0 && time2 >= 0 ? time1 + time2 : -1;
     }
 }

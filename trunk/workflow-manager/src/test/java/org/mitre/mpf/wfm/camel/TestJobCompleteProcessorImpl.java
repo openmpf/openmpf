@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.http.HttpResponse;
@@ -50,6 +51,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -57,7 +59,9 @@ import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -114,6 +118,9 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
     private HttpClientUtils _mockHttpClientUtils;
 
     @Mock
+    private OAuthClientTokenProvider _mockOAuthClientTokenProvider;
+
+    @Mock
     private JmsUtils _mockJmsUtils;
 
     @Mock
@@ -165,6 +172,10 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
         var job = mock(BatchJob.class);
         when(job.getId())
             .thenReturn(jobId);
+
+        var media = mock(Media.class);
+        when(job.getMedia())
+            .thenReturn(List.of(media));
         // When a job is skipped because it is in TiesDb, we should use the status from TiesDb.
         // Use IN_PROGRESS as the status in this test because when a job is not skipped
         // the status will change to COMPLETE.
@@ -187,6 +198,9 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
         when(_mockTiesDbBeforeJobCheckService.updateOutputObject(
                 job, new URI(outputUri), jobRequestEntity))
             .thenReturn(newOutputUri);
+
+        when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.CALLBACK_USE_OIDC, job, media))
+            .thenReturn("true");
 
         var callbackRequestCaptor = ArgumentCaptor.forClass(HttpGet.class);
         var httpResponseFuture = ThreadUtil.<HttpResponse>newFuture();
@@ -239,6 +253,9 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
         httpResponseFuture.complete(new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK"));
         assertEquals(jobId, (long) notificationFuture.join());
 
+        verify(_mockOAuthClientTokenProvider)
+            .addToken(callbackRequest);
+
         verify(_mockInProgressBatchJobs)
             .clearJob(jobId);
         verify(_mockJobProgressStore)
@@ -248,7 +265,6 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
                 _mockMarkupResultDao,
                 _mockStorageService,
                 _mockCensorPropertiesService,
-                _mockAggregateJobPropertiesUtil,
                 _mockTiesDbService);
     }
 }

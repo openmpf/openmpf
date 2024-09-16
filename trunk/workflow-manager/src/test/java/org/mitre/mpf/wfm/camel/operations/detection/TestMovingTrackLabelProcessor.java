@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
-import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.TrackCache;
@@ -183,8 +183,9 @@ public class TestMovingTrackLabelProcessor {
                 .thenReturn(mockJob);
         when(mockJob.getId())
                 .thenReturn(jobId);
-        when(mockJob.getPipelineElements().getTask(0).getActions().size())
-                .thenReturn(1);
+        var task = new Task(null, null, List.of("ACTION"));
+        when(mockJob.getPipelineElements().getTask(0))
+                .thenReturn(task);
 
         long mediaId = 3242;
         var mockMedia = mock(MediaImpl.class);
@@ -206,7 +207,7 @@ public class TestMovingTrackLabelProcessor {
                 MpfConstants.MOVING_TRACK_MIN_DETECTIONS, String.valueOf(minDetections));
 
         when(mockAggregateJobPropertiesUtil.getCombinedProperties(
-                same(mockJob), same(mockMedia), any(Action.class)))
+                same(mockJob), same(mockMedia), any()))
                 .thenReturn(props::get);
 
         when(mockInProgressJobs.getTracks(jobId, mediaId, 0, 0))
@@ -276,10 +277,11 @@ public class TestMovingTrackLabelProcessor {
                 endFrame,   //endOffsetFrameInclusive
                 0, //startOffsetTimeInclusive
                 1, //endOffsetTimeInclusive
-                "VIDEO", //type
+                0, //mergedTaskIndex
                 -1, //confidence
                 detections, //detections
                 Map.of(), //trackProperties
+                "",
                 "");
     }
 }

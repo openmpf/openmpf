@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 public class DetectionCancellationRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(DetectionCancellationRouteBuilder.class);
 
-	public static final String ENTRY_POINT = "jms:MPF.CANCELLED_DETECTIONS";
+	public static final String ENTRY_POINT = "activemq:MPF.CANCELLED_DETECTIONS";
 	public static final String EXIT_POINT = DetectionResponseRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Detection Cancellation Route";
 

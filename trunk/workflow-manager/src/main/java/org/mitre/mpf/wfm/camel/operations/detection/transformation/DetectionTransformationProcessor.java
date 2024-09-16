@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -83,8 +83,9 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         BatchJob job = _inProgressBatchJobs.getJob(trackCache.getJobId());
         Task task = job.getPipelineElements().getTask(trackCache.getTaskIndex());
 
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
             Action action = job.getPipelineElements().getAction(trackCache.getTaskIndex(), actionIndex);
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
 
             for (Media media : job.getMedia()) {
                 if (media.isFailed() || !media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
@@ -102,7 +103,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
                     Collection<Track> updatedTracks = removeIllFormedDetections(
-                        trackCache, media.getId(), actionIndex, frameWidth, frameHeight, tracks);
+                        trackCache, media.getId(), actionIndex, frameWidth, frameHeight,
+                        algo.trackType(), tracks);
 
                     try {
                         if (requiresPadding(combinedProperties)) {
@@ -177,12 +179,12 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
     public Collection<Track> removeIllFormedDetections(
             TrackCache trackCache, long mediaId, int actionIndex, int frameWidth, int frameHeight,
-            Collection<Track> tracks) {
+            String trackType, Collection<Track> tracks) {
         // Remove any detections with zero width/height, or that are entirely outside of the frame.
         // If the number of detections goes to 0, drop the track.
         // Do not remove ill-formed detections for those types that are exempted, because they normally do not generate
         // bounding boxes for detections.
-        if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(tracks.iterator().next().getType())) {
+        if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(trackType)) {
             return tracks;
         }
 
@@ -229,11 +231,12 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         goodDetections.last().getMediaOffsetFrame(),
                         goodDetections.first().getMediaOffsetTime(),
                         goodDetections.last().getMediaOffsetTime(),
-                        track.getType(),
+                        track.getMergedTaskIndex(),
                         track.getConfidence(),
                         goodDetections,
                         track.getTrackProperties(),
-                        track.getExemplarPolicy()));
+                        track.getExemplarPolicy(),
+                        track.getQualitySelectionProperty()));
             }
             else {
                 _log.warn(String.format("Empty track dropped after removing ill-formed detection(s): %s", track));
@@ -355,11 +358,12 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getEndOffsetFrameInclusive(),
                     track.getStartOffsetTimeInclusive(),
                     track.getEndOffsetTimeInclusive(),
-                    track.getType(),
+                    track.getMergedTaskIndex(),
                     track.getConfidence(),
                     newDetections,
                     track.getTrackProperties(),
-                    track.getExemplarPolicy()));
+                    track.getExemplarPolicy(),
+                    track.getQualitySelectionProperty()));
         }
 
         Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()

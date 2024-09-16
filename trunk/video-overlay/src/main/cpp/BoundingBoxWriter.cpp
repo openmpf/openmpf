@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -44,19 +44,17 @@
 #include "BoundingBoxImageHandle.h"
 #include "BoundingBoxVideoHandle.h"
 #include "ResolutionConfig.h"
-
+#include "markup.pb.h"
 
 using namespace cv;
 using namespace MPF;
 using namespace COMPONENT;
+namespace mpf_buffers = org::mitre::mpf::wfm::buffers;
 
-typedef cv::Ptr<cv::freetype::FreeType2> pFreeType2;
+using pFreeType2 = cv::Ptr<cv::freetype::FreeType2>;
 
-enum BoundingBoxSource {
-    DETECTION_ALGORITHM = 0,
-    TRACKING_FILLED_GAP,
-    ANIMATION
-};
+using pb_props_t = google::protobuf::Map<std::string, std::string>;
+
 
 // https://unicode.org/emoji/charts/full-emoji-list.html
 constexpr const char *notoEmojiRegularPath = "/usr/share/fonts/google-noto-emoji/NotoEmoji-Regular.ttf";
@@ -67,19 +65,42 @@ constexpr const char *paperClipEmoji   = "\U0001F4CE";
 constexpr const char *movieCameraEmoji = "\U0001F3A5";
 constexpr const char *starEmoji        = "\U00002B50";
 
+void markupVideo(const mpf_buffers::MarkupRequest& markupRequest);
+void markupImage(const mpf_buffers::MarkupRequest& markupRequest);
+
 template<typename TMediaHandle>
-void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
-            jobject requestProperties, const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle);
+void markup(
+        const mpf_buffers::MarkupRequest& markup_request,
+        pFreeType2 freeType2,
+        const ResolutionConfig& resCfg,
+        TMediaHandle& mediaHandle);
+
+std::size_t getMaxLabelLength(const mpf_buffers::MarkupRequest& markupRequest);
 
 ResolutionConfig getResolutionConfig(pFreeType2 freeType2, const cv::Size &frameSize,
-                                     int maxLabelLength);
+                                     std::size_t maxLabelLength);
 
-pFreeType2 initFreeType2(JniHelper &jni);
+pFreeType2 initFreeType2();
 
-bool jniGetBoolProperty(JniHelper &jni, const std::string &key, bool defaultValue, jobject map, jmethodID methodId);
+bool getBoolProperty(
+        const std::string& key,
+        bool defaultValue,
+        const pb_props_t& properties);
 
-double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defaultValue, jobject map,
-                            jmethodID methodId);
+double getDoubleProperty(
+        const std::string& key,
+        double defaultValue,
+        const pb_props_t& properties);
+
+int getIntProperty(
+        const std::string& key,
+        int defaultValue,
+        const pb_props_t& properties);
+
+std::string getStringProperty(
+        const std::string& key,
+        const std::string& defaultValue,
+        const pb_props_t& properties);
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
                      bool mediaFlip, int red, int green, int blue, double alpha, const std::string &emojiLabel,
@@ -93,52 +114,30 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
                           pFreeType2 freeType2, const ResolutionConfig &resCfg, Mat &image);
 
 
-extern "C" {
+mpf_buffers::MarkupRequest parseProtobuf(JniHelper& jniHelper, jbyteArray java_array);
 
-JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
-  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jobject mediaMetadata,
-   jstring destinationVideoPathJString, jobject requestProperties, jint maxLabelLength)
+std::string getEmojiLabel(
+        const mpf_buffers::BoundingBox& box,
+        bool markMovingEnabled,
+        bool markExemplarsEnabled,
+        bool markBoxSourceEnabled);
+
+
+extern "C" JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupNative
+  (JNIEnv* env, jclass cls, jbyteArray protobytes)
 {
     JniHelper jni(env);
     try {
-        std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
-        std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
-
-        // Get the Map class and method.
-        jclass clzMap = jni.FindClass("java/util/Map");
-        jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
-
-        auto jPropKey = jni.ToJString("MARKUP_VIDEO_ENCODER");
-        jstring jPropValue = (jstring) jni.CallObjectMethod(requestProperties, clzMap_fnGet, *jPropKey);
-        std::string encoder = "mjpeg";
-        if (jPropValue != nullptr) {
-            encoder = jni.ToStdString(jPropValue);
-            std::transform(encoder.begin(), encoder.end(), encoder.begin(), ::tolower);
+        auto markupRequest = parseProtobuf(jni, protobytes);
+        if (markupRequest.media_type() == mpf_buffers::MediaType::IMAGE) {
+            markupImage(markupRequest);
         }
-
-        jPropKey = jni.ToJString("MARKUP_VIDEO_VP9_CRF");
-        jPropValue = (jstring) jni.CallObjectMethod(requestProperties, clzMap_fnGet, *jPropKey);
-        int vp9Crf = 31;
-        if (jPropValue != nullptr) {
-            std::string crfPropValue = jni.ToStdString(jPropValue);
-            vp9Crf = std::stoi(crfPropValue);
+        else if (markupRequest.media_type() == mpf_buffers::MediaType::VIDEO) {
+            markupVideo(markupRequest);
         }
-
-        bool border = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", false, requestProperties, clzMap_fnGet);
-
-        pFreeType2 freeType2 = initFreeType2(jni);
-        MPF::COMPONENT::MPFVideoCapture videoCapture(sourceVideoPath);
-        ResolutionConfig resCfg = getResolutionConfig(
-                freeType2,
-                videoCapture.GetFrameSize(),
-                maxLabelLength);
-
-        BoundingBoxVideoHandle boundingBoxVideoHandle(destinationVideoPath, encoder, vp9Crf, std::move(videoCapture));
-
-        markup(env, freeType2, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg,
-               boundingBoxVideoHandle);
-
-        boundingBoxVideoHandle.Close();
+        else {
+            jni.ReportCppException("Received markup request that was not for video or image.");
+        }
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -148,263 +147,169 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
     }
 }
 
-JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupImageNative
-  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jobject mediaMetadata,
-   jstring destinationImagePathJString, jobject requestProperties, jint maxLabelLength)
-{
-    JniHelper jni(env);
-    try {
-        BoundingBoxImageHandle boundingBoxImageHandle(
-                jni.ToStdString(sourceImagePathJString),
-                jni.ToStdString(destinationImagePathJString));
 
-        pFreeType2 freeType2 = initFreeType2(jni);
-        ResolutionConfig resCfg = getResolutionConfig(
-                freeType2,
-                boundingBoxImageHandle.GetFrameSize(),
-                maxLabelLength);
+void markupVideo(const mpf_buffers::MarkupRequest& markupRequest) {
+    auto encoder = getStringProperty(
+        "MARKUP_VIDEO_ENCODER", "mjpeg", markupRequest.markup_properties());
+    std::transform(encoder.begin(), encoder.end(), encoder.begin(), ::tolower);
+    int vp9Crf = getIntProperty("MARKUP_VIDEO_VP9_CRF", 31, markupRequest.markup_properties());
 
-        markup(env, freeType2, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg,
-               boundingBoxImageHandle);
-    }
-    catch (const std::exception &e) {
-        jni.ReportCppException(e.what());
-    }
-    catch (...) {
-        jni.ReportCppException();
-    }
+    pFreeType2 freeType2 = initFreeType2();
+    MPF::COMPONENT::MPFVideoCapture videoCapture(markupRequest.source_path());
+    ResolutionConfig resCfg = getResolutionConfig(
+            freeType2,
+            videoCapture.GetFrameSize(),
+            getMaxLabelLength(markupRequest));
+
+    BoundingBoxVideoHandle boundingBoxVideoHandle(
+            markupRequest.destination_path(), encoder, vp9Crf, std::move(videoCapture));
+
+    markup(markupRequest, freeType2, resCfg, boundingBoxVideoHandle);
+
+    boundingBoxVideoHandle.Close();
 }
 
-} // extern "C"
 
+void markupImage(const mpf_buffers::MarkupRequest& markupRequest) {
+    BoundingBoxImageHandle boundingBoxImageHandle(
+            markupRequest.source_path(),
+            markupRequest.destination_path());
+
+    pFreeType2 freeType2 = initFreeType2();
+    ResolutionConfig resCfg = getResolutionConfig(
+            freeType2,
+            boundingBoxImageHandle.GetFrameSize(),
+            getMaxLabelLength(markupRequest));
+
+    markup(markupRequest, freeType2, resCfg, boundingBoxImageHandle);
+}
 
 template<typename TMediaHandle>
-void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
-            jobject requestProperties, const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle)
-{
-    JniHelper jni(env);
+void markup(
+        const mpf_buffers::MarkupRequest& markupRequest,
+        pFreeType2 freeType2,
+        const ResolutionConfig& resCfg,
+        TMediaHandle& mediaHandle) {
 
-    try {
-        // Get the bounding box map.
-        jclass clzBoundingBoxWriter = jni.GetObjectClass(boundingBoxWriterInstance);
-        jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap =
-            jni.GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap", "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
-        jobject boundingBoxMap =
-            jni.CallObjectMethod(boundingBoxWriterInstance, clzBoundingBoxWriter_fnGetBoundingBoxMap);
+    bool labelsEnabled = getBoolProperty(
+        "MARKUP_LABELS_ENABLED", true, markupRequest.markup_properties());
 
-        // Get BoundingBoxMap methods.
-        jclass clzBoundingBoxMap = jni.GetObjectClass(boundingBoxMap);
-        jmethodID clzBoundingBoxMap_fnGet =
-            jni.GetMethodID(clzBoundingBoxMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); // May be a list.
-        jmethodID clzBoundingBoxMap_fnContainsKey =
-            jni.GetMethodID(clzBoundingBoxMap, "containsKey", "(Ljava/lang/Object;)Z");
+    double labelsAlpha = getDoubleProperty(
+        "MARKUP_LABELS_ALPHA", 0.5, markupRequest.markup_properties());
 
-        // Get the Integer class and methods.
-        jclass clzInteger = jni.FindClass("java/lang/Integer");
-        jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
+    bool borderEnabled = getBoolProperty(
+        "MARKUP_BORDER_ENABLED", false, markupRequest.markup_properties());
 
-        // Get List class and methods.
-        jclass clzList = jni.FindClass("java/util/List");
-        jmethodID clzList_fnGet = jni.GetMethodID(clzList, "get", "(I)Ljava/lang/Object;");
-        jmethodID clzList_fnSize = jni.GetMethodID(clzList, "size", "()I");
+    bool labelsChooseSideEnabled = getBoolProperty(
+        "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", true, markupRequest.markup_properties());
 
-        // Get the Map class and methods.
-        jclass clzMap = jni.FindClass("java/util/Map");
-        jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    bool markMovingEnabled = getBoolProperty(
+        "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", false, markupRequest.markup_properties());
+    bool markExemplarsEnabled = getBoolProperty(
+        "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", true, markupRequest.markup_properties());
+    bool markBoxSourceEnabled = getBoolProperty(
+        "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", false, markupRequest.markup_properties());
 
-        // Get Optional class and methods.
-        jclass clzOptional = jni.FindClass("java/util/Optional");
-        jmethodID clzOptional_fnIsPresent = jni.GetMethodID(clzOptional, "isPresent", "()Z");
-        jmethodID clzOptional_fnGet = jni.GetMethodID(clzOptional, "get", "()Ljava/lang/Object;");
+    bool frameNumbersEnabled = getBoolProperty(
+        "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", true, markupRequest.markup_properties());
 
-        // Get Enum class and methods.
-        jclass clzEnum = jni.FindClass("java/lang/Enum");
-        jmethodID clzEnum_ordinal = jni.GetMethodID(clzEnum, "ordinal", "()I");
+    double mediaRotation = getDoubleProperty("ROTATION", 0, markupRequest.media_metadata());
+    bool mediaFlip = getBoolProperty("HORIZONTAL_FLIP", false, markupRequest.media_metadata());
 
-        // Get BoundingBox class and methods.
-        jclass clzBoundingBox = jni.FindClass("org/mitre/mpf/videooverlay/BoundingBox");
-        jmethodID clzBoundingBox_fnGetX = jni.GetMethodID(clzBoundingBox, "getX", "()I");
-        jmethodID clzBoundingBox_fnGetY = jni.GetMethodID(clzBoundingBox, "getY", "()I");
-        jmethodID clzBoundingBox_fnGetHeight = jni.GetMethodID(clzBoundingBox, "getHeight", "()I");
-        jmethodID clzBoundingBox_fnGetWidth = jni.GetMethodID(clzBoundingBox, "getWidth", "()I");
-        jmethodID clzBoundingBox_fnGetRed = jni.GetMethodID(clzBoundingBox, "getRed", "()I");
-        jmethodID clzBoundingBox_fnGetGreen = jni.GetMethodID(clzBoundingBox, "getGreen", "()I");
-        jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
-        jmethodID clzBoundingBox_fnGetSource =
-            jni.GetMethodID(clzBoundingBox, "getSource", "()Lorg/mitre/mpf/videooverlay/BoundingBoxSource;");
-        jmethodID clzBoundingBox_fnIsMoving = jni.GetMethodID(clzBoundingBox, "isMoving", "()Z");
-        jmethodID clzBoundingBox_fnIsExemplar = jni.GetMethodID(clzBoundingBox, "isExemplar", "()Z");
-        jmethodID clzBoundingBox_fnGetLabel = jni.GetMethodID(clzBoundingBox, "getLabel", "()Ljava/util/Optional;");
+    int currentFrameNum = -1;
+    while (true) {
+        currentFrameNum++;
+        cv::Mat frame;
+        if (!mediaHandle.Read(frame) || frame.empty()) {
+            break;
+        }
+        // Add a black border to allow boxes and labels to extend off the edges of the image.
+        cv::copyMakeBorder(
+            frame, frame, resCfg.framePadding, resCfg.framePadding, resCfg.framePadding,
+            resCfg.framePadding, cv::BORDER_CONSTANT, Scalar(0, 0, 0));
 
-        jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
-        jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
+        auto currentFrameEntryIter = markupRequest.bounding_boxes().find(currentFrameNum);
+        if (currentFrameEntryIter != markupRequest.bounding_boxes().end()) {
+            for (const auto& box : currentFrameEntryIter->second.bounding_boxes()) {
+                std::string emojiLabel;
+                std::string textLabel;
 
-        // Get the media metadata rotation property.
-        double mediaRotation = jniGetDoubleProperty(jni, "ROTATION", 0.0, mediaMetadata, clzMap_fnGet);
-
-        // Get the media metadata horizontal flip property.
-        bool mediaFlip = jniGetBoolProperty(jni, "HORIZONTAL_FLIP", false, mediaMetadata, clzMap_fnGet);
-
-        // Get request properties.
-        bool labelsEnabled =
-            jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", true, requestProperties, clzMap_fnGet);
-        double labelsAlpha =
-            jniGetDoubleProperty(jni, "MARKUP_LABELS_ALPHA", 0.5, requestProperties, clzMap_fnGet);
-        bool labelsChooseSideEnabled =
-            jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", true, requestProperties, clzMap_fnGet);
-        bool borderEnabled =
-            jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", false, requestProperties, clzMap_fnGet);
-        bool markExemplarsEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", true, requestProperties, clzMap_fnGet);
-        bool markBoxSourceEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", false, requestProperties, clzMap_fnGet);
-        bool markMovingEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", false, requestProperties, clzMap_fnGet);
-        bool frameNumbersEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", true, requestProperties, clzMap_fnGet);
-
-        Size origFrameSize = boundingBoxMediaHandle.GetFrameSize();
-        Mat frame;
-
-        jint currentFrameNum = -1;
-        while (true) {
-            LocalJniFrame perVideoFrameLocalFrame(env, 32);
-            currentFrameNum++;
-            jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrameNum);
-
-            if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
-                break;
-            }
-
-            // Add a black border to allow boxes and labels to extend off the edges of the image.
-            cv::copyMakeBorder(frame, frame, resCfg.framePadding, resCfg.framePadding, resCfg.framePadding,
-                               resCfg.framePadding, cv::BORDER_CONSTANT, Scalar(0, 0, 0));
-
-            jboolean foundEntryForCurrentFrame = jni.CallBooleanMethod(boundingBoxMap,
-                                                                       clzBoundingBoxMap_fnContainsKey,
-                                                                       currentFrameBoxed);
-
-            if (foundEntryForCurrentFrame) {
-                jobject currentFrameElements =
-                    jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, currentFrameBoxed);
-
-                // Iterate through this list, drawing each box on the frame.
-                jint numBoxesCurrentFrame = jni.CallIntMethod(currentFrameElements, clzList_fnSize);
-
-                for (jint i = 0; i < numBoxesCurrentFrame; i++) {
-                    LocalJniFrame perBoxLocalFrame(env, 32);
-                    jobject box = jni.CallObjectMethod(currentFrameElements, clzList_fnGet, i);
-                    jint x = jni.CallIntMethod(box, clzBoundingBox_fnGetX);
-                    jint y = jni.CallIntMethod(box, clzBoundingBox_fnGetY);
-
-                    jint height = jni.CallIntMethod(box, clzBoundingBox_fnGetHeight);
-                    if (height == 0) {
-                        height = origFrameSize.height;
+                if (labelsEnabled) {
+                    if (mediaHandle.useIcons) {
+                        emojiLabel = getEmojiLabel(
+                            box, markMovingEnabled, markExemplarsEnabled, markBoxSourceEnabled);
                     }
 
-                    jint width = jni.CallIntMethod(box, clzBoundingBox_fnGetWidth);
-                    if (width == 0) {
-                        width = origFrameSize.width;
-                    }
-
-                    jint red = jni.CallIntMethod(box, clzBoundingBox_fnGetRed);
-                    jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
-                    jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
-
-                    jobject boxSourceObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetSource);
-                    jint boxSourceOrdinal = jni.CallIntMethod(boxSourceObj, clzEnum_ordinal);
-                    BoundingBoxSource boxSource = static_cast<BoundingBoxSource>(boxSourceOrdinal);
-
-                    double boxRotation = (double)jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
-                    bool boxFlip = (bool)jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
-
-                    std::string emojiLabel = "";
-                    std::string textLabel = "";
-
-                    if (labelsEnabled) {
-                        jboolean exemplar = jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar);
-                        jboolean moving = jni.CallBooleanMethod(box, clzBoundingBox_fnIsMoving);
-
-                        if (boundingBoxMediaHandle.useIcons) {
-                            std::stringstream ssEmojiLabel;
-                            if (markMovingEnabled) {
-                                if (moving) {
-                                    ssEmojiLabel << fastForwardEmoji;
-                                } else {
-                                    ssEmojiLabel << anchorEmoji;
-                                }
-                            }
-                            bool markedExemplar = false;
-                            if (markExemplarsEnabled && exemplar) {
-                                ssEmojiLabel << starEmoji;
-                                markedExemplar = true;
-                            }
-                            if (markBoxSourceEnabled) {
-                                if (boxSource == DETECTION_ALGORITHM) {
-                                    if (!markedExemplar) { // marking the exemplar implies the detection algorithm was used
-                                        ssEmojiLabel << magGlassEmoji;
-                                    }
-                                } else if (boxSource == TRACKING_FILLED_GAP) {
-                                    ssEmojiLabel << paperClipEmoji;
-                                } else { // ANIMATION
-                                    ssEmojiLabel << movieCameraEmoji;
-                                }
-                            }
-                            emojiLabel = ssEmojiLabel.str();
+                    if (!box.label().empty()) {
+                        if (!emojiLabel.empty()) {
+                            textLabel += ' ';
                         }
-
-                        jobject labelObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetLabel);
-                        if (jni.CallBooleanMethod(labelObj, clzOptional_fnIsPresent)) {
-                            std::stringstream ssTextLabel;
-                            if (!emojiLabel.empty()) {
-                                ssTextLabel << ' ';
-                            }
-                            ssTextLabel << jni.ToStdString((jstring)jni.CallObjectMethod(labelObj, clzOptional_fnGet));
-                            textLabel = ssTextLabel.str();
-                        }
+                        textLabel += box.label();
                     }
-
-                    drawBoundingBox(x + resCfg.framePadding, y + resCfg.framePadding, width, height, boxRotation,
-                                    boxFlip, mediaRotation, mediaFlip, red, green, blue, labelsAlpha, emojiLabel,
-                                    textLabel, labelsChooseSideEnabled, freeType2, resCfg, frame);
                 }
+                drawBoundingBox(
+                    box.x() + resCfg.framePadding,
+                    box.y() + resCfg.framePadding,
+                    box.width() > 0 ? box.width() : mediaHandle.GetFrameSize().width,
+                    box.height() > 0 ? box.height() : mediaHandle.GetFrameSize().height,
+                    box.rotation_degrees(),
+                    box.flip(),
+                    mediaRotation,
+                    mediaFlip,
+                    box.red(),
+                    box.green(),
+                    box.blue(),
+                    labelsAlpha,
+                    emojiLabel,
+                    textLabel,
+                    labelsChooseSideEnabled,
+                    freeType2,
+                    resCfg,
+                    frame);
             }
+        }
 
-            // Crop the padding off.
-            if (!borderEnabled) {
-                frame = frame(cv::Rect(resCfg.framePadding, resCfg.framePadding, origFrameSize.width,
-                              origFrameSize.height));
-            } else {
-                // Reduce the border padding to minimize screen real estate.
-                frame = frame(cv::Rect(resCfg.framePadding * 0.5, resCfg.framePadding * 0.5,
-                              origFrameSize.width + resCfg.framePadding, origFrameSize.height + resCfg.framePadding));
-            }
+        // Crop the padding off.
+        if (!borderEnabled) {
+            frame = frame(cv::Rect(
+                cv::Point(resCfg.framePadding, resCfg.framePadding),
+                mediaHandle.GetFrameSize()));
+        }
+        else {
+            // Reduce the border padding to minimize screen real estate.
+            frame = frame(cv::Rect(
+                resCfg.framePadding / 2,
+                resCfg.framePadding / 2,
+                mediaHandle.GetFrameSize().width + resCfg.framePadding,
+                mediaHandle.GetFrameSize().height + resCfg.framePadding));
+        }
+        // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
+        AffineFrameTransformer(
+            mediaRotation, mediaFlip, cv::Scalar(0, 0, 0),
+            std::make_unique<NoOpFrameTransformer>(frame.size())
+        ).TransformFrame(frame, 0);
 
-            // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
-            AffineFrameTransformer frameTransformer(
-                    mediaRotation, mediaFlip, Scalar(0, 0, 0),
-                    IFrameTransformer::Ptr(new NoOpFrameTransformer(frame.size())));
+        if (frameNumbersEnabled && mediaHandle.showFrameNumbers) {
+            drawFrameNumber(currentFrameNum, labelsAlpha, resCfg, frame);
+        }
+        mediaHandle.HandleMarkedFrame(frame);
+    }
+}
 
-            frameTransformer.TransformFrame(frame, 0);
 
-            if (frameNumbersEnabled && boundingBoxMediaHandle.showFrameNumbers) {
-                drawFrameNumber(currentFrameNum, labelsAlpha, resCfg, frame);
-            }
-
-            boundingBoxMediaHandle.HandleMarkedFrame(frame);
+std::size_t getMaxLabelLength(const mpf_buffers::MarkupRequest& markupRequest) {
+    std::size_t maxLabelLength = 0;
+    for (const auto& [frame, boxesWrapper] : markupRequest.bounding_boxes()) {
+        for (const auto& box : boxesWrapper.bounding_boxes()) {
+            maxLabelLength = std::max(box.label().size(), maxLabelLength);
         }
     }
-    catch (const std::exception &e) {
-        jni.ReportCppException(e.what());
-    }
-    catch (...) {
-        jni.ReportCppException();
-    }
+    return maxLabelLength;
 }
 
 
 ResolutionConfig getResolutionConfig(pFreeType2 freeType2, const cv::Size &frameSize,
-                                     int maxLabelLength) {
+                                     std::size_t maxLabelLength) {
     int minDim = std::min(frameSize.height, frameSize.width);
 
     int textLabelFont = cv::FONT_HERSHEY_SIMPLEX;
@@ -437,7 +342,7 @@ ResolutionConfig getResolutionConfig(pFreeType2 freeType2, const cv::Size &frame
 
     // Calculate frame padding for worst-case scenario.
     int baseline = 0;
-    std::string maxSizeLabel(std::max(maxLabelLength, 1), 'm'); // "m" is the widest character
+    std::string maxSizeLabel(std::max(maxLabelLength, 1UL), 'm'); // "m" is the widest character
     Size textLabelSize = getTextSize(maxSizeLabel, textLabelFont, textLabelScale,
                                      textLabelThickness, &baseline);
 
@@ -451,7 +356,7 @@ ResolutionConfig getResolutionConfig(pFreeType2 freeType2, const cv::Size &frame
              framePadding };
 }
 
-pFreeType2 initFreeType2(JniHelper &jni) {
+pFreeType2 initFreeType2() {
     pFreeType2 freeType2 = cv::freetype::createFreeType2();
     try {
         freeType2->loadFontData(notoEmojiRegularPath, 0);
@@ -462,22 +367,60 @@ pFreeType2 initFreeType2(JniHelper &jni) {
     return freeType2;
 }
 
-bool jniGetBoolProperty(JniHelper &jni, const std::string &key, bool defaultValue, jobject map, jmethodID methodId) {
-    auto jPropKey = jni.ToJString(key);
-    auto jPropValue = (jstring) jni.CallObjectMethod(map, methodId, *jPropKey);
-    return (jPropValue == nullptr) ? defaultValue : jni.ToBool(jPropValue);
+
+bool getBoolProperty(
+        const std::string& key,
+        bool defaultValue,
+        const pb_props_t& properties) {
+    auto iter = properties.find(key);
+    if (iter == properties.end()) {
+        return defaultValue;
+    }
+    static const std::string trueString = "TRUE";
+    return std::equal(
+            trueString.begin(), trueString.end(),
+            iter->second.begin(), iter->second.end(),
+            [](char trueChar, char actualChar) { return trueChar == std::toupper(actualChar); });
 }
 
-double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defaultValue, jobject map,
-                            jmethodID methodId) {
-    auto jPropKey = jni.ToJString(key);
-    auto jPropValue = (jstring) jni.CallObjectMethod(map, methodId, *jPropKey);
-    double retval = defaultValue;
-    if (jPropValue != nullptr) {
-        std::string propValue = jni.ToStdString(jPropValue);
-        retval = std::stod(propValue);
+
+double getDoubleProperty(
+        const std::string& key,
+        double defaultValue,
+        const pb_props_t& properties) {
+    auto iter = properties.find(key);
+    if (iter == properties.end()) {
+        return defaultValue;
     }
-    return retval;
+    else {
+        return std::stod(iter->second);
+    }
+}
+
+int getIntProperty(
+        const std::string& key,
+        int defaultValue,
+        const pb_props_t& properties) {
+    auto iter = properties.find(key);
+    if (iter == properties.end()) {
+        return defaultValue;
+    }
+    else {
+        return std::stoi(iter->second);
+    }
+}
+
+std::string getStringProperty(
+        const std::string& key,
+        const std::string& defaultValue,
+        const pb_props_t& properties) {
+    auto iter = properties.find(key);
+    if (iter == properties.end()) {
+        return defaultValue;
+    }
+    else {
+        return iter->second;
+    }
 }
 
 
@@ -506,7 +449,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
         auto adjTopPtIter = std::min_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
             return std::tie(a.y, a.x) < std::tie(b.y, b.x); // left takes precedence over right
         });
-        int adjTopPtIndex = std::distance(adjCorners.begin(), adjTopPtIter);
+        auto adjTopPtIndex = std::distance(adjCorners.begin(), adjTopPtIter);
         Point2d adjTopPt = adjCorners[adjTopPtIndex];
 
         // Get point of box in raw frame that corresponds to the top point in the box in the final frame.
@@ -682,4 +625,44 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
             }
         });
     }
+}
+
+mpf_buffers::MarkupRequest parseProtobuf(JniHelper& jniHelper, jbyteArray java_array) {
+    auto byte_array = jniHelper.GetByteArray(java_array);
+    mpf_buffers::MarkupRequest markup_request;
+    markup_request.ParseFromArray(byte_array.GetBytes(), byte_array.GetLength());
+    return markup_request;
+}
+
+std::string getEmojiLabel(
+        const mpf_buffers::BoundingBox& box,
+        bool markMovingEnabled,
+        bool markExemplarsEnabled,
+        bool markBoxSourceEnabled) {
+    std::string emojiLabel;
+    if (markMovingEnabled) {
+        if (box.moving()) {
+            emojiLabel += fastForwardEmoji;
+        }
+        else {
+            emojiLabel += anchorEmoji;
+        }
+    }
+    if (markExemplarsEnabled && box.exemplar()) {
+        emojiLabel += starEmoji;
+        return emojiLabel;
+    }
+    if (markBoxSourceEnabled) {
+        if (box.source() == mpf_buffers::BoundingBoxSource::DETECTION_ALGORITHM) {
+            emojiLabel += magGlassEmoji;
+        }
+        else if (box.source() == mpf_buffers::BoundingBoxSource::TRACKING_FILLED_GAP) {
+            emojiLabel += paperClipEmoji;
+        }
+        else {
+            // ANIMATION
+            emojiLabel += movieCameraEmoji;
+        }
+    }
+    return emojiLabel;
 }

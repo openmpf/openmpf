@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,16 +28,13 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckServiceImpl;
-import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 /**
@@ -47,12 +44,11 @@ import org.springframework.stereotype.Component;
  * its failed flag should be set.
  */
 @Component
-@DependsOn(JniLoader.REF)
 public class MediaInspectionRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(MediaInspectionRouteBuilder.class);
 
 	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION";
+	public static final String ENTRY_POINT = "activemq:MPF.MEDIA_INSPECTION";
 
 	/** The default exit point for this route. */
 	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
@@ -85,6 +81,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.setExchangePattern(ExchangePattern.InOnly)
 			.split().method(MediaInspectionSplitter.REF, "split")
 				.parallelProcessing() // Perform this operation in parallel.
+                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 				.streaming() // The aggregation order of messages is not important.
                 .process(MediaInspectionProcessor.REF)
             .end()

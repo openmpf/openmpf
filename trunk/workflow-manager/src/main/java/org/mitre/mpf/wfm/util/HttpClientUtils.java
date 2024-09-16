@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -181,7 +181,7 @@ public class HttpClientUtils implements AutoCloseable {
                 return ThreadUtil.completedFuture(resp);
             }
 
-            log.warn("\"{}\" responded with a non-200 status code of {}. There are {}  " +
+            log.warn("\"{}\" responded with a non-200 status code of {}. There are {} " +
                              "attempts remaining and the next attempt will begin in {} ms.",
                      request.getURI(),statusCode, retries, nextDelay);
             return ThreadUtil.<HttpResponse>failedFuture(new IllegalStateException("non-200"));

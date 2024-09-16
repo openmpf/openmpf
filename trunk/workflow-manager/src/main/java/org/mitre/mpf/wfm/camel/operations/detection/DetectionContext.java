@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,11 +26,10 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class DetectionContext {
@@ -55,13 +54,16 @@ public class DetectionContext {
     private final boolean isFirstDetectionTask;
     public boolean isFirstDetectionTask() { return isFirstDetectionTask; }
 
-    private final List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties;
-    public List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgorithmProperties() {
+    private final Map<String, String> algorithmProperties;
+    public Map<String, String> getAlgorithmProperties() {
         return algorithmProperties;
     }
 
     private final Set<Track> previousTracks;
     public Set<Track> getPreviousTracks() { return previousTracks; }
+
+    private final String qualitySelectionProperty;
+    public String getQualitySelectionProperty() { return qualitySelectionProperty; }
 
     public DetectionContext(
             long jobId,
@@ -70,9 +72,10 @@ public class DetectionContext {
             int actionIndex,
             String actionName,
             boolean isFirstDetectionTask,
-            List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
+            Map<String, String> algorithmProperties,
             Set<Track> previousTracks,
-            SegmentingPlan segmentingPlan) {
+            SegmentingPlan segmentingPlan,
+            String qualitySelectionProperty) {
         this.jobId = jobId;
         this.taskIndex = taskIndex;
         this.taskName = taskName;
@@ -82,6 +85,7 @@ public class DetectionContext {
         this.algorithmProperties = algorithmProperties;
         this.previousTracks = previousTracks;
         this.segmentingPlan = segmentingPlan;
+        this.qualitySelectionProperty = qualitySelectionProperty;
     }
 
     @Override

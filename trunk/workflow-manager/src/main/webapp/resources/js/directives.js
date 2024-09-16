@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,13 +32,16 @@ var AppDirectives = angular.module('mpf.wfm.directives', []);
 
 
 AppDirectives.directive('mpfNavbar',
-['MetadataService', 'RoleService', 'ClientState',
-function (MetadataService, RoleService, ClientState) {
+['MetadataService', 'RoleService', 'ClientState', 'csrf',
+function (MetadataService, RoleService, ClientState, csrf) {
     return {
         restrict: 'E',
         templateUrl: 'resources/layouts/directives/navbar.html',
         scope: {},
         link: function ($scope) {
+            $scope.csrfFormParam = csrf.formParam;
+            $scope.csrfToken = csrf.token;
+
             MetadataService.getMetadata().then(function (data) {
                 $scope.version = data.version;
                 $scope.dockerEnabled = data.dockerEnabled;
@@ -46,6 +49,7 @@ function (MetadataService, RoleService, ClientState) {
 
             RoleService.getRoleInfo().then(function (roleInfo) {
                 $scope.userName = roleInfo.userPrincipalName;
+                $scope.isAdmin = roleInfo.admin;
             });
             $scope.logout = () => {
                 ClientState.setConnectionState(ClientState.ConnectionState.LOGGING_OUT);
@@ -214,8 +218,8 @@ function (RoleService) {
 
 
 AppDirectives.directive('mpfComponentDropzone',
-['csrfHeaders',
-function (csrfHeaders) {
+['csrf',
+function (csrf) {
     return {
         restrict: 'E',
         templateUrl: 'resources/layouts/directives/component_dropzone.html',
@@ -226,7 +230,7 @@ function (csrfHeaders) {
             var dropzoneDiv = $el.find('.dropzone').get(0);
             var dropzone = new Dropzone(dropzoneDiv, {
                 url: "components",
-                headers: csrfHeaders(),
+                headers: csrf.headers(),
                 autoProcessQueue: true,
                 maxFiles: 1,
                 addRemoveLinks:false,

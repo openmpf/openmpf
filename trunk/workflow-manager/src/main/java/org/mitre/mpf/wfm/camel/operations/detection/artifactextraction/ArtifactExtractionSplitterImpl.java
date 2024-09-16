@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -58,6 +57,8 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,13 +74,17 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
+    private final TaskMergingManager _taskMergingManager;
+
     @Inject
     ArtifactExtractionSplitterImpl(
             InProgressBatchJobsService inProgressBatchJobs,
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            TaskMergingManager taskMergingManager) {
         super(inProgressBatchJobs);
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _taskMergingManager = taskMergingManager;
     }
 
     @Override
@@ -101,7 +106,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         JobPipelineElements pipelineElements = job.getPipelineElements();
         int numPipelineTasks = pipelineElements.getTaskCount();
         int lastTaskIndex = numPipelineTasks - 1;
-        ActionType finalActionType = pipelineElements.getAlgorithm(lastTaskIndex, 0).getActionType();
+        ActionType finalActionType = pipelineElements.getAlgorithm(lastTaskIndex, 0).actionType();
         if (finalActionType == ActionType.MARKUP) {
             lastTaskIndex = lastTaskIndex - 1;
         }
@@ -124,22 +129,21 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             if (lastTaskOnly && notLastTask) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to {} property.",
-                        pipelineElements.getTask(taskIndex).getName(), media.getId(),
+                        pipelineElements.getTask(taskIndex).name(), media.getId(),
                         MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
                 continue;
             }
 
             // If the user has requested that this task be merged with one that follows, then skip artifact extraction.
             // Artifact extraction will be performed for the next task this one is merged with.
-            Map<Integer, Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
-            if (tasksToMerge.containsValue(taskIndex)) {
+            if (_taskMergingManager.isMergeTarget(job, media, taskIndex)) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to being merged with a following task.",
-                        pipelineElements.getTask(taskIndex).getName(), media.getId());
+                        pipelineElements.getTask(taskIndex).name(), media.getId());
                 continue;
             }
 
-            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).getActions().size();
+            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).actions().size();
                  actionIndex++) {
 
                 Action action = pipelineElements.getAction(taskIndex, actionIndex);
@@ -191,8 +195,14 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
     private SortedSet<Track> processTracks(
             ArtifactExtractionRequest request, SortedSet<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
+        if (policy == ArtifactExtractionPolicy.VISUAL_TYPES_ONLY) {
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
+            if (_aggregateJobPropertiesUtil.isNonVisualObjectType(algo.trackType())) {
+                return tracks;
+            }
+        }
 
-        Integer trackIndex = 0;
+        int trackIndex = 0;
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractableDetectionsMap = request.getExtractionsMap();
         for (Track track : tracks) {
 
@@ -207,10 +217,6 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                     break;
                 }
                 case VISUAL_TYPES_ONLY:
-                    if (_aggregateJobPropertiesUtil.isNonVisualObjectType(track.getType())) {
-                        break;
-                    }
-                    // fall through
                 case ALL_TYPES: {
                     SortedSet<JsonDetectionOutputObject> extractableDetections = processExtractionsInTrack(job, track, media, action,
                             actionIndex);
@@ -315,29 +321,28 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             framesToExtract.add(middleFrame);
         }
 
-        int topConfidenceCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyTopConfidenceCount();
-        String topConfidenceCountProp = _aggregateJobPropertiesUtil
-                .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT_PROPERTY, job, media, action);
+        int topQualityCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyTopQualityCount();
+        String topQualityCountProp = _aggregateJobPropertiesUtil
+                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, job, media, action);
         try {
-            topConfidenceCount = Integer.parseInt(topConfidenceCountProp);
+            topQualityCount = Integer.parseInt(topQualityCountProp);
         } catch (NumberFormatException e) {
             LOG.warn("Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                    MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT_PROPERTY, topConfidenceCountProp,
-                    topConfidenceCount);
+                MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, topQualityCountProp,
+                topQualityCount);
         }
-        if (topConfidenceCount > 0) {
-            // Sort the detections by confidence, then by frame number, if two detections have equal
-            // confidence. The sort by confidence is reversed so that the N highest confidence
-            // detections are at the start of the list.
-            sortedDetections.sort(
-                    Comparator.comparing(Detection::getConfidence).reversed().thenComparing(Comparator.naturalOrder()));
-            int extractCount = Math.min(topConfidenceCount, sortedDetections.size());
-            for (int i = 0; i < extractCount; i++) {
-                LOG.debug("Will extract frame #{} with confidence = {}", sortedDetections.get(i).getMediaOffsetFrame(),
-                        sortedDetections.get(i).getConfidence());
-                framesToExtract.add(sortedDetections.get(i).getMediaOffsetFrame());
+        if (topQualityCount > 0) {
+            String topQualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
+            var topQualityDetections = TopQualitySelectionUtil.getTopQualityDetections(
+                                                      sortedDetections, topQualityCount, topQualitySelectionProp);
+            for (var detection : topQualityDetections) {
+                LOG.debug("Will extract frame #{} with confidence = {}",
+                    detection.getMediaOffsetFrame(),
+                    detection.getConfidence());
+                framesToExtract.add(detection.getMediaOffsetFrame());
             }
         }
+
         // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a
         // JsonDetectionOutputObject
         SortedSet<JsonDetectionOutputObject> detections = track.getDetections().stream()

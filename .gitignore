@@ -22,6 +22,7 @@ trunk/markup/target/
 trunk/mpf-install/target
 trunk/node-manager/target/
 trunk/video-overlay/target/
+trunk/video-overlay/build
 trunk/mpf-rest-client/target/
 trunk/mpf-rest-api/target/
 

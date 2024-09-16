@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -53,7 +53,7 @@ public class StreamingJobTestUtil {
 //				10,
 //				40,
 //				-1,
-//				"failover://(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1",
+//				"failover:(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1",
 //				String.format("MPF.Job_%s__Segments_Stage_0", jobId),
 //				String.format("MPF.%s__Frames_Stage_0", jobId),
 //				String.format("MPF.%s__VideoWriter_Frame_Input", jobId),
@@ -137,7 +137,7 @@ public class StreamingJobTestUtil {
 				Collections.emptyMap(),
 				firstStageProps,
 				mediaProperties,
-				"failover://(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1",
+				"failover:(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1",
 				"MPF.WFM_STREAMING_JOB_STATUS",
 				"MPF.WFM_STREAMING_JOB_ACTIVITY",
 				"MPF.WFM_STREAMING_JOB_SUMMARY_REPORT");

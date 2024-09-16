@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,7 +29,9 @@
 
 #include <MPFDetectionException.h>
 
+#include "BatchExecutorUtil.h"
 #include "ComponentLoadError.h"
+
 #include "PythonComponentHandle.h"
 
 namespace py = pybind11;
@@ -213,8 +215,6 @@ namespace MPF::COMPONENT {
             size_t start = lib_path.size() - extension.size();
             return lib_path.find(".py", start) != std::string::npos;
         }
-
-
 
 
         py::object load_component(const std::string &component_lib) {
@@ -441,7 +441,6 @@ namespace MPF::COMPONENT {
 
 
         struct ComponentAttrs {
-            std::string detection_type;
             py::function get_detections_from_image_method;
             py::function get_detections_from_video_method;
             py::function get_detections_from_audio_method;
@@ -454,8 +453,7 @@ namespace MPF::COMPONENT {
             }
 
             explicit ComponentAttrs(py::object &&component_instance)
-                : detection_type(GetDetectionType(component_instance))
-                , get_detections_from_image_method(get_method(component_instance, "get_detections_from_image"))
+                : get_detections_from_image_method(get_method(component_instance, "get_detections_from_image"))
                 , get_detections_from_video_method(get_method(component_instance, "get_detections_from_video"))
                 , get_detections_from_audio_method(get_method(component_instance, "get_detections_from_audio"))
                 , get_detections_from_generic_method(get_method(component_instance, "get_detections_from_generic"))
@@ -470,14 +468,6 @@ namespace MPF::COMPONENT {
                             "get_detections_from_image, get_detections_from_video, get_detections_from_audio, "
                             "or get_detections_from_generic.");
                 }
-            }
-
-        private:
-            static std::string GetDetectionType(py::handle obj) {
-                if (!py::hasattr(obj, "detection_type")) {
-                    throw ComponentLoadError("The Python component does not contain a field named \"detection_type\".");
-                }
-                return to_std_string(obj.attr("detection_type"));
             }
         };
 
@@ -528,7 +518,7 @@ namespace MPF::COMPONENT {
 
     class PythonComponentHandle::impl {
     private:
-        LazyLoggerWrapper<PythonLogger> logger_;
+        LoggerWrapper logger_;
 
         // The pybind11 library declares everything with hidden visibility.
         // When this class has fields that are pybind11 types, the compiler warns:
@@ -540,9 +530,8 @@ namespace MPF::COMPONENT {
         ComponentAttrs component_;
 
     public:
-        impl(const LazyLoggerWrapper<PythonLogger> &logger, const std::string &lib_path)
-            : logger_(logger)
-            , component_api_()
+        impl(LoggerWrapper logger, const std::string &lib_path)
+            : logger_(std::move(logger))
             , component_(lib_path)
         {
         }
@@ -561,11 +550,6 @@ namespace MPF::COMPONENT {
                     return false;
             }
         }
-
-        std::string GetDetectionType() const {
-            return component_.detection_type;
-        }
-
 
         std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job) {
             try {
@@ -712,7 +696,7 @@ namespace MPF::COMPONENT {
         }
     }; //  class PythonComponentHandle::impl
 
-    PythonComponentHandle::PythonComponentHandle(const LazyLoggerWrapper<PythonLogger> &logger,
+    PythonComponentHandle::PythonComponentHandle(const LoggerWrapper &logger,
                                                  const std::string &lib_path) {
         initialize_python();
         impl_ = std::make_unique<impl>(logger, lib_path);
@@ -729,11 +713,6 @@ namespace MPF::COMPONENT {
 
     bool PythonComponentHandle::Init() {
         return true;
-    }
-
-
-    std::string PythonComponentHandle::GetDetectionType() {
-        return impl_->GetDetectionType();
     }
 
 
@@ -766,16 +745,6 @@ namespace MPF::COMPONENT {
     }
 
 
-    PythonLoggerJobContext::PythonLoggerJobContext(std::shared_ptr<std::string> job_name_log_prefix_ptr)
-        : job_name_log_prefix_ptr_(std::move(job_name_log_prefix_ptr)) {
-    }
-
-    PythonLoggerJobContext::~PythonLoggerJobContext() {
-        job_name_log_prefix_ptr_->clear();
-    }
-
-
-
     class PythonLogger::logger_impl {
     public:
         LoggerAttrs loggerAttrs {
@@ -789,39 +758,31 @@ namespace MPF::COMPONENT {
         impl_ = std::make_unique<logger_impl>();
     }
 
-    PythonLogger::PythonLogger(const PythonLogger& other)
-        : job_name_log_prefix_ptr_(other.job_name_log_prefix_ptr_)
-        , impl_(new logger_impl(*other.impl_)) {
-    }
-
     PythonLogger::~PythonLogger() = default;
 
 
-    void PythonLogger::Debug(const std::string &message) {
+    void PythonLogger::Debug(std::string_view message) {
         impl_->loggerAttrs.debug(message);
     }
 
-    void PythonLogger::Info(const std::string &message) {
+    void PythonLogger::Info(std::string_view message) {
         impl_->loggerAttrs.info(message);
     }
 
-    void PythonLogger::Warn(const std::string &message) {
+    void PythonLogger::Warn(std::string_view message) {
         impl_->loggerAttrs.warn(message);
     }
 
-    void PythonLogger::Error(const std::string &message) {
+    void PythonLogger::Error(std::string_view message) {
         impl_->loggerAttrs.error(message);
     }
 
-    void PythonLogger::Fatal(const std::string &message) {
+    void PythonLogger::Fatal(std::string_view message) {
         impl_->loggerAttrs.fatal(message);
     }
 
-    PythonLoggerJobContext PythonLogger::GetJobContext(const std::string& job_name) {
-        *job_name_log_prefix_ptr_ = '[';
-        job_name_log_prefix_ptr_->append(job_name);
-        job_name_log_prefix_ptr_->append("] ");
-        return PythonLoggerJobContext {job_name_log_prefix_ptr_};
+    void PythonLogger::SetJobName(std::string_view job_name) {
+        *job_name_log_prefix_ptr_ = job_name;
     }
 
     void PythonLogger::ConfigureLogging(const std::string &log_level_name,
@@ -879,22 +840,22 @@ namespace MPF::COMPONENT {
 
 
     std::string PythonLogger::GetLogFilePath(const std::string &component_name) {
-        const char * const log_path_env_val = std::getenv("MPF_LOG_PATH");
-        if (log_path_env_val == nullptr || log_path_env_val[0] == '\0') {
+        auto log_path_env_val = BatchExecutorUtil::GetEnv("MPF_LOG_PATH");
+        if (!log_path_env_val) {
             return "";
         }
 
-        const char * this_node_env_val = std::getenv("THIS_MPF_NODE");
-        if (this_node_env_val == nullptr || this_node_env_val[0] == '\0') {
+        auto this_node_env_val = BatchExecutorUtil::GetEnv("THIS_MPF_NODE");
+        if (!this_node_env_val) {
             return "";
         }
 
-        std::string log_path = log_path_env_val;
+        std::string log_path = *log_path_env_val;
         if (log_path.back() != '/') {
             log_path += '/';
         }
 
-        std::string log_dir = log_path + this_node_env_val + "/log";
+        std::string log_dir = log_path + *this_node_env_val + "/log";
         py::module::import("os").attr("makedirs")(log_dir, py::arg("exist_ok")=true);
 
         return log_dir + '/' + component_name + ".log";

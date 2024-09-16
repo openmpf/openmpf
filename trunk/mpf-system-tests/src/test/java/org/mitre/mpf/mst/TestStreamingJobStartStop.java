@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -168,7 +168,7 @@ public class TestStreamingJobStartStop {
         JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
         assertEquals(jobId, summaryReport.getJobId());
 
-        boolean hasNonEmptyDetection = summaryReport.getDetectionTypes()
+        boolean hasNonEmptyDetection = summaryReport.getTrackTypes()
                 .values()
                 .stream()
                 .flatMap(Collection::stream)
@@ -188,8 +188,8 @@ public class TestStreamingJobStartStop {
     private StreamingJob createJob(long jobId, String algorithm, String pipelineName,
                                             String mediaPath, int segmentSize, int stallTimeout) {
         Action action = new Action("Action1", "description", algorithm, Collections.emptyList());
-        Task task = new Task("Task1", "description", Collections.singleton(action.getName()));
-        Pipeline pipeline = new Pipeline(pipelineName, "desc", Collections.singleton(task.getName()));
+        Task task = new Task("Task1", "description", List.of(action.name()));
+        Pipeline pipeline = new Pipeline(pipelineName, "desc", List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(_pipelineService.getAlgorithm(algorithm)));

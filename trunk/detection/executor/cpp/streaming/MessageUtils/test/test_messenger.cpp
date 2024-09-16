@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -244,7 +244,6 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
     EXPECT_EQ(seg_num, dst_msg.segment_number_);
     EXPECT_EQ(start_frame, dst_msg.segment_start_frame_);
     EXPECT_EQ(stop_frame, dst_msg.segment_stop_frame_);
-    EXPECT_EQ(type, dst_msg.detection_type_);
     EXPECT_EQ(err, dst_msg.segment_error_);
 
     // Check the segment summary tracks

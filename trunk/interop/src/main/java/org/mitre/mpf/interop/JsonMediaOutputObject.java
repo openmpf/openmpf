@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -116,9 +116,9 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
 	@JsonProperty("output")
-	@JsonPropertyDescription("The mapping of detection types to a set of actions performed on the given medium.")
-	private SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes;
-	public SortedMap<String, SortedSet<JsonActionOutputObject>> getDetectionTypes() { return detectionTypes; }
+	@JsonPropertyDescription("The mapping of track types to a set of actions performed on the given medium.")
+	private SortedMap<String, SortedSet<JsonActionOutputObject>> trackTypes;
+	public SortedMap<String, SortedSet<JsonActionOutputObject>> getTrackTypes() { return trackTypes; }
 
 	@JsonProperty("detectionProcessingErrors")
 	@JsonPropertyDescription("The mapping of action state keys to detection errors produced in that action for the given medium.")
@@ -139,7 +139,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		this.status = status;
 		this.frameRanges = new TreeSet<>();
 		this.timeRanges = new TreeSet<>();
-		this.detectionTypes = new TreeMap<>(new DetectionTypeComparator());
+		this.trackTypes = new TreeMap<>(new TrackTypeComparator());
 		this.detectionProcessingErrors = new TreeMap<>();
 		this.mediaMetadata = new TreeMap<>();
 		this.mediaProperties = new TreeMap<>();
@@ -163,7 +163,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			@JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
 			@JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
 			@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
-			@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes,
+			@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> trackTypes,
 			@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
 		JsonMediaOutputObject jsonMediaOutputObject = new JsonMediaOutputObject(
 				mediaId, parentMediaId, path, tiesDbSourceMediaPath, mediaType, mimeType, length,
@@ -184,8 +184,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			jsonMediaOutputObject.mediaProperties.putAll(mediaProperties);
 		}
 
-		if(detectionTypes != null) {
-			jsonMediaOutputObject.detectionTypes.putAll(detectionTypes);
+		if(trackTypes != null) {
+			jsonMediaOutputObject.trackTypes.putAll(trackTypes);
 		}
 
 		if(detectionProcessingErrors != null) {
@@ -226,7 +226,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	}
 
 
-	private static class DetectionTypeComparator implements Comparator<String> {
+	private static class TrackTypeComparator implements Comparator<String> {
 		private static final Set<String> _special = new HashSet<>(Arrays.asList(
 				JsonActionOutputObject.NO_TRACKS_TYPE,
 				JsonActionOutputObject.TRACKS_MERGED_TYPE,

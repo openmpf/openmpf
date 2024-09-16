@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -139,14 +139,13 @@ public class SystemPropertiesSnapshot {
         return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.exemplar.frame.plus"));
     }
 
-    public int getArtifactExtractionPolicyTopConfidenceCount() {
-        return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.top.confidence.count"));
+    public int getArtifactExtractionPolicyTopQualityCount() {
+        return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.top.quality.count"));
     }
 
     public ArtifactExtractionPolicy getDefaultArtifactExtractionPolicy() {
         return ArtifactExtractionPolicy.parse(_properties.get("detection.artifact.extraction.policy"));
     }
-
 
     public String lookup(String propertyName) {
         return _properties.get(propertyName);

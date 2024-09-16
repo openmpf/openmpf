@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -143,14 +143,14 @@ public class TestJobRequestService {
 
 
     private static JobPipelineElements createJobPipelineElements() {
-        var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION,
+        var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION, "TEST",
                                       OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
-        var action = new Action("TEST ACTION", "descr", algorithm.getName(), List.of());
-        var task = new Task("Test Task", "desc", List.of(action.getName()));
-        var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.getName()));
+        var action = new Action("TEST ACTION", "descr", algorithm.name(), List.of());
+        var task = new Task("Test Task", "desc", List.of(action.name()));
+        var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.name()));
         return new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
     }
 

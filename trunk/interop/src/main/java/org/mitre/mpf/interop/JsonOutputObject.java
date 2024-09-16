@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,7 +32,7 @@ import java.time.Instant;
 import java.util.*;
 
 @JsonTypeName("OutputObject")
-@JsonPropertyOrder({"openmpfVersion", "jobId", "tiesDbSourceJobId", "errors", "warnings"})
+@JsonPropertyOrder({"openmpfVersion", "jobId", "tiesDbSourceJobId", "errors", "warnings", "timing"})
 public class JsonOutputObject {
 
     @JsonProperty("jobId")
@@ -124,10 +124,14 @@ public class JsonOutputObject {
     private SortedSet<JsonMediaIssue> warnings;
     public SortedSet<JsonMediaIssue> getWarnings() { return Collections.unmodifiableSortedSet(warnings); }
 
+    @JsonPropertyDescription("Information about how long components spent executing the job.")
+    private JsonTiming timing;
+    public JsonTiming getTiming() { return timing; }
 
 
     public JsonOutputObject(String jobId, String objectId, JsonPipeline pipeline, int priority, String siteId,
-                            String openmpfVersion, String externalJobId, Instant timeStart, Instant timeStop, String status) {
+                            String openmpfVersion, String externalJobId, Instant timeStart, Instant timeStop, String status,
+                            JsonTiming timing) {
         this.jobId = jobId;
         this.objectId = objectId;
         this.pipeline = pipeline;
@@ -144,6 +148,7 @@ public class JsonOutputObject {
         this.environmentVariableProperties = new HashMap<>();
         this.errors = new TreeSet<>();
         this.warnings = new TreeSet<>();
+        this.timing = timing;
     }
 
     @JsonCreator
@@ -164,10 +169,12 @@ public class JsonOutputObject {
             @JsonProperty("environmentVariableProperties") Map<String, String> environmentVariableProperties,
             @JsonProperty("media") Collection<JsonMediaOutputObject> media,
             @JsonProperty("errors") Collection<JsonMediaIssue> errors,
-            @JsonProperty("warnings") Collection<JsonMediaIssue> warnings) {
+            @JsonProperty("warnings") Collection<JsonMediaIssue> warnings,
+            @JsonProperty("timing") JsonTiming timing) {
 
         JsonOutputObject outputObject = new JsonOutputObject(jobId, objectId, pipeline, priority, siteId,
-                                                             openmpfVersion, externalJobId, timeStart, timeStop, status);
+                                                             openmpfVersion, externalJobId, timeStart, timeStop, status,
+                                                             timing);
         outputObject.tiesDbSourceJobId = tiesDbSourceJobId;
         if(media != null) {
             outputObject.media.addAll(media);

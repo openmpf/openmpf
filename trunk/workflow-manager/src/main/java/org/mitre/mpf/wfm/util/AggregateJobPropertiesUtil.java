@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableMap;
+
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
@@ -144,7 +146,7 @@ public class AggregateJobPropertiesUtil {
         }
 
         if (action != null) {
-            Map<String, String> algoProperties = overriddenAlgorithmProperties.get(action.getAlgorithm());
+            Map<String, String> algoProperties = overriddenAlgorithmProperties.get(action.algorithm());
             if (algoProperties != null) {
                 var propVal = algoProperties.get(propertyName);
                 if (propVal != null) {
@@ -159,27 +161,27 @@ public class AggregateJobPropertiesUtil {
         }
 
         if (action != null) {
-            var actionPropVal = action.getPropertyValue(propertyName);
+            var actionPropVal = action.propertyValue(propertyName);
             if (actionPropVal != null) {
                 return new PropertyInfo(propertyName, actionPropVal, PropertyLevel.ACTION);
             }
 
-            var algorithm = pipeline.getAlgorithm(action.getAlgorithm());
+            var algorithm = pipeline.getAlgorithm(action.algorithm());
 
-            var algoProperty = algorithm.getProperty(propertyName);
+            var algoProperty = algorithm.property(propertyName);
             if (algoProperty != null) {
-                if (algoProperty.getDefaultValue() != null) {
-                    return new PropertyInfo(propertyName, algoProperty.getDefaultValue(), PropertyLevel.ALGORITHM);
+                if (algoProperty.defaultValue() != null) {
+                    return new PropertyInfo(propertyName, algoProperty.defaultValue(), PropertyLevel.ALGORITHM);
                 }
 
                 if (systemPropertiesSnapshot != null) {
-                    var snapshotValue = systemPropertiesSnapshot.lookup(algoProperty.getPropertiesKey());
+                    var snapshotValue = systemPropertiesSnapshot.lookup(algoProperty.propertiesKey());
                     if (snapshotValue != null) {
                         return new PropertyInfo(propertyName, snapshotValue, PropertyLevel.ALGORITHM);
                     }
                 }
 
-                var propertiesUtilValue = _propertiesUtil.lookup(algoProperty.getPropertiesKey());
+                var propertiesUtilValue = _propertiesUtil.lookup(algoProperty.propertiesKey());
                 if (propertiesUtilValue != null) {
                     return new PropertyInfo(propertyName, propertiesUtilValue, PropertyLevel.ALGORITHM);
                 }
@@ -251,25 +253,26 @@ public class AggregateJobPropertiesUtil {
 
         var allKeys = new HashSet<>(mediaProperties.keySet());
 
-        Map<String, String> overriddenAlgoProps = allOverriddenAlgorithmProperties.get(action.getAlgorithm());
+        Map<String, String> overriddenAlgoProps = allOverriddenAlgorithmProperties.get(action.algorithm());
         if (overriddenAlgoProps != null) {
             allKeys.addAll(overriddenAlgoProps.keySet());
         }
 
         allKeys.addAll(jobProperties.keySet());
 
-        action.getProperties().forEach(p -> allKeys.add(p.getName()));
+        action.properties().forEach(p -> allKeys.add(p.name()));
 
-        pipelineElements.getAlgorithm(action.getAlgorithm())
-                .getProvidesCollection()
-                .getProperties()
+        pipelineElements.getAlgorithm(action.algorithm())
+                .providesCollection()
+                .properties()
                 .stream()
-                .map(AlgorithmProperty::getName)
+                .map(AlgorithmProperty::name)
                 .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
                 .forEach(allKeys::add);
 
-        mediaType.stream()
-                .flatMap(mt -> _workflowPropertyService.getProperties(mt).stream())
+        mediaType.map(_workflowPropertyService::getProperties)
+                .orElseGet(_workflowPropertyService::getPropertiesSupportedByAllMediaTypes)
+                .stream()
                 .map(WorkflowProperty::getName)
                 .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
                 .forEach(allKeys::add);
@@ -298,7 +301,7 @@ public class AggregateJobPropertiesUtil {
 
 
     public String getValue(String propertyName, JobPart jobPart) {
-        return getValue(propertyName, jobPart.getJob(), jobPart.getMedia(), jobPart.getAction());
+        return getValue(propertyName, jobPart.job(), jobPart.media(), jobPart.action());
     }
 
     public String getValue(String propertyName, BatchJob job, Media media) {
@@ -494,8 +497,8 @@ public class AggregateJobPropertiesUtil {
         var tasksToMerge = new HashMap<Integer, Integer>();
 
         for (var jobPart : JobPartsIter.of(job, media)) {
-            if (jobPart.getTaskIndex() == 0
-                    || jobPart.getAlgorithm().getActionType() != ActionType.DETECTION) {
+            if (jobPart.taskIndex() == 0
+                    || jobPart.algorithm().actionType() != ActionType.DETECTION) {
                 continue;
             }
 
@@ -505,11 +508,12 @@ public class AggregateJobPropertiesUtil {
                 continue;
             }
 
-            for (int prevTaskIndex = jobPart.getTaskIndex() - 1;
-                 prevTaskIndex >= 0;
+            for (int prevTaskIndex = jobPart.taskIndex() - 1;
+                 prevTaskIndex > media.getCreationTask();
                  prevTaskIndex--) {
-                if (media.wasActionProcessed(prevTaskIndex, 0)) {
-                    tasksToMerge.put(jobPart.getTaskIndex(), prevTaskIndex);
+                var prevAction = job.getPipelineElements().getAction(prevTaskIndex, 0);
+                if (actionAppliesToMedia(job, media, prevAction)) {
+                    tasksToMerge.put(jobPart.taskIndex(), prevTaskIndex);
                     break;
                 }
             }
@@ -517,6 +521,16 @@ public class AggregateJobPropertiesUtil {
         }
 
         return tasksToMerge;
+    }
+
+    public String getQualitySelectionProp(BatchJob job, Media media, Action action) {
+        String prop = getValue(MpfConstants.QUALITY_SELECTION_PROPERTY, job, media, action);
+        if (StringUtils.isEmpty(prop)) {
+            return "CONFIDENCE";
+        }
+        else {
+            return prop;
+        }
     }
 
     public boolean isOutputLastTaskOnly(Media media, BatchJob job) {

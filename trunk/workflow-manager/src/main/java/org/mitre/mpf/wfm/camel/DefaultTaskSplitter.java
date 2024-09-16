@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -96,7 +96,7 @@ public class DefaultTaskSplitter {
             Task task = job.getPipelineElements().getTask(job.getCurrentTaskIndex());
             ActionType actionType = job.getPipelineElements()
                     .getAlgorithm(job.getCurrentTaskIndex(), 0)
-                    .getActionType();
+                    .actionType();
             LOG.info("Task {}/{} - Operation: {} - ActionType: {}.",
                     job.getCurrentTaskIndex() + 1,
                     job.getPipelineElements().getTaskCount(),
@@ -117,7 +117,7 @@ public class DefaultTaskSplitter {
                 default -> {
                     LOG.warn("Task {} calls an unsupported operation '{}'. " +
                                     "No work will be performed in this task.",
-                            job.getCurrentTaskIndex(), task.getName());
+                            job.getCurrentTaskIndex(), task.name());
                     yield List.<Message>of();
                 }
             };

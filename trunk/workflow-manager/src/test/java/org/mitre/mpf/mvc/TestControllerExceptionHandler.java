@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,26 +26,24 @@
 
 package org.mitre.mpf.mvc;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mitre.mpf.rest.api.MessageModel;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.servlet.ModelAndView;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.Collections;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
-public class TestControllerExceptionHandler {
+import java.util.Collections;
 
-    private AutoCloseable _closeable;
+import javax.servlet.http.HttpServletRequest;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mitre.mpf.rest.api.MessageModel;
+import org.mitre.mpf.test.MockitoTest;
+import org.mockito.Mock;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.ModelAndView;
+
+public class TestControllerExceptionHandler extends MockitoTest.Strict {
 
     private ControllerUncaughtExceptionHandler _handler;
 
@@ -58,26 +56,23 @@ public class TestControllerExceptionHandler {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
         _handler = new ControllerUncaughtExceptionHandler();
-
-        when(_mockRequest.getHeaders("Accept"))
-                .thenReturn(Collections.emptyEnumeration());
-    }
-
-    @After
-    public void close() throws Exception {
-	_closeable.close();
     }
 
 
     @Test
     public void returnsHtmlWhenNoAcceptHeader() {
+        when(_mockRequest.getHeaders("Accept"))
+                .thenReturn(Collections.emptyEnumeration());
+
         assertReceivedHtml();
     }
 
     @Test
     public void returnsHtmlWhenWrongRequestedWithHeader() {
+        when(_mockRequest.getHeaders("Accept"))
+                .thenReturn(Collections.emptyEnumeration());
+
         setRequestedWithHeader("foo");
         assertReceivedHtml();
     }

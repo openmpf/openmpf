@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,22 +32,29 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
+import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.WebAttributes;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.servlet.ModelAndView;
+
 
 @Controller
 @Scope("request")
@@ -104,8 +111,8 @@ public class LoginController {
         return mv;
     }
 
-    @RequestMapping(value = "/logout", method = {RequestMethod.GET, RequestMethod.POST})
-    public String getLogout(
+    @PostMapping("/logout")
+    public String logout(
             @RequestParam(value = "reason", required = false) String reason,
             HttpSession session) {
         session.invalidate();
@@ -117,9 +124,10 @@ public class LoginController {
         return redirect;
     }
 
-    @RequestMapping(value = { "/login" }, method = RequestMethod.GET)
+    @GetMapping("/login")
     public Object getLogin(
-            @RequestParam(value = "reason", required = false) String reason,
+            @SessionAttribute(name = WebAttributes.AUTHENTICATION_EXCEPTION, required = false)
+            Exception authException,
             Authentication authentication) {
 
         if (authentication != null && authentication.isAuthenticated()) {
@@ -128,30 +136,41 @@ public class LoginController {
 
         ModelAndView model = new ModelAndView("login_view");
         model.addObject("version", propertiesUtil.getSemanticVersion());
-        if (reason == null) {
-            return model;
+
+        if (authException instanceof BadCredentialsException) {
+            model.addObject("error", "Invalid username and password!");
         }
-        switch (reason) {
-            case "error":
-                log.debug("Invalid username and password");
-                model.addObject("error", "Invalid username and password!");
-                break;
-            case "disabled":
-                log.debug("User account disabled");
-                model.addObject("error", "Account is disabled!");
-                break;
-            case "user":
-                log.debug("User logged out");
-                model.addObject("msg", "You've been logged out successfully.");
-                break;
-        }
+
         return model;
+
     }
 
 
-    @RequestMapping(value = "/user/role-info", method = RequestMethod.GET)
+    @GetMapping("/user/role-info")
     @ResponseBody
     public AuthenticationModel getSecurityCredentials(HttpServletRequest request /*needed for UserPrincipal*/) {
         return getAuthenticationModel(request);
+    }
+
+
+    @GetMapping("/oidc-access-denied")
+    public ModelAndView oidcAccessDenied(
+            @RequestAttribute(name = WebAttributes.ACCESS_DENIED_403, required = false)
+            AccessDeniedException accessDeniedException) {
+
+        if (accessDeniedException != null) {
+            log.error(
+                "A user successfully authenticated with an OIDC provider, but was not" +
+                            " authorized to access Workflow Manager.",
+                    accessDeniedException);
+        }
+        if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
+            return new ModelAndView(
+                    "access_denied", "reason",
+                    accessDeniedException.getMessage());
+        }
+        else {
+            return new ModelAndView("access_denied");
+        }
     }
 }

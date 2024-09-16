@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.LongConsumer;
 import java.util.stream.LongStream;
@@ -55,18 +54,7 @@ public class FrameTimeInfoBuilder {
 
 
     public static FrameTimeInfo getFrameTimeInfo(
-                Path mediaPath, FfprobeMetadata.Video ffprobeMetadata, String mimeType) {
-
-        if (ffprobeMetadata.frameCount().isPresent()
-                && mediaInfoReportsConstantFrameRate(mediaPath, mimeType)) {
-            LOG.info("Determined that {} has a constant frame rate.", mediaPath);
-            var optStartTimeMs = getStartTimeMs(mediaPath);
-            return FrameTimeInfo.forConstantFrameRate(
-                    ffprobeMetadata.fps(),
-                    optStartTimeMs,
-                    (int) ffprobeMetadata.frameCount().getAsLong());
-        }
-
+                Path mediaPath, FfprobeMetadata.Video ffprobeMetadata) {
         String[] command = {
                 "ffprobe", "-threads", FFPROBE_THREADS, "-hide_banner", "-select_streams", "v",
                 "-show_entries", "frame=best_effort_timestamp",
@@ -96,7 +84,7 @@ public class FrameTimeInfoBuilder {
             }
 
             var timeInfo = ptsValuesBuilder.build(
-                    mediaPath, ffprobeMetadata.fps(), ffprobeMetadata.timeBase());
+                    ffprobeMetadata.fps(), ffprobeMetadata.timeBase());
             if (timeInfo.hasConstantFrameRate()) {
                 LOG.info("Determined that {} has a constant frame rate.", mediaPath);
             }
@@ -114,53 +102,6 @@ public class FrameTimeInfoBuilder {
                     "An error occurred while trying to get timestamps for %s: %s"
                     .formatted(mediaPath, e.getMessage()),
                     e);
-        }
-    }
-
-    private static boolean mediaInfoReportsConstantFrameRate(
-                Path mediaPath, String mimeType) {
-
-        if (mimeType.contains("matroska") || mimeType.contains("webm")) {
-            // mediainfo says matroska and webm files have a constant frame rate even when they
-            // don't.
-            return false;
-        }
-
-        String[] command = {
-                "mediainfo", "--Output=Video;%FrameRate_Mode%", mediaPath.toString() };
-
-        LOG.info("Checking for constant frame rate using mediainfo with the following command: {}",
-                 Arrays.toString(command));
-
-        try {
-            var process = new ProcessBuilder(command)
-                    .redirectError(ProcessBuilder.Redirect.INHERIT)
-                    .start();
-
-            String line;
-            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                line = Optional.ofNullable(reader.readLine())
-                        .map(s -> s.strip().toUpperCase())
-                        .orElse("");
-            }
-
-            switch (line) {
-                case "CFR":
-                    return true;
-                case "VFR":
-                    return false;
-                default:
-                    LOG.warn(
-                            "mediainfo was unable to determine if \"{}\" has a constant frame rate.",
-                            mediaPath);
-                    return false;
-            }
-        }
-        catch (IOException e) {
-            LOG.error(String.format(
-                    "An error occurred while trying to determine if %s has a variable frame rate " +
-                            "using mediainfo: %s", mediaPath, e.getMessage()), e);
-            return false;
         }
     }
 
@@ -214,7 +155,7 @@ public class FrameTimeInfoBuilder {
         private void processRemaining(long pts) {
         }
 
-        public FrameTimeInfo build(Path mediaPath, Fraction fps, Fraction timeBase) {
+        public FrameTimeInfo build(Fraction fps, Fraction timeBase) {
             var timeBaseMs = timeBase.mul(1000);
 
             if (_isInitialized && !_foundVariableDelta) {
@@ -295,45 +236,5 @@ public class FrameTimeInfoBuilder {
     private static void estimateWithPrevDelta(int[] frameTimes, int idx) {
         int prevDelta = frameTimes[idx - 1] - frameTimes[idx - 2];
         frameTimes[idx] = frameTimes[idx - 1] + prevDelta;
-    }
-
-
-
-    private static OptionalInt getStartTimeMs(Path mediaPath) {
-        // Uses -read_intervals %30 to get timestamps for the first 30 seconds of the video.
-        // We really only need the very first timestamp, however %1 (1 second) doesn't work
-        // for some videos. We use 30 seconds to over estimate the actual amount of time required.
-        // It is unlikely that ffprobe will ever make it all the way to 30 seconds because we
-        // close ffprobe's standard out after reading the first line causing ffprobe to exit.
-        String[] command = {
-                "ffprobe", "-read_intervals", "%30" ,"-hide_banner", "-select_streams", "v",
-                "-show_entries", "frame=best_effort_timestamp_time",
-                "-print_format", "default=noprint_wrappers=1:nokey=1", mediaPath.toString()
-        };
-        LOG.info("Getting start time using ffprobe with the following command: {}",
-                 Arrays.toString(command));
-        try {
-            var process = new ProcessBuilder(command)
-                    .redirectError(ProcessBuilder.Redirect.INHERIT)
-                    .start();
-            process.getOutputStream().close();
-            String line;
-            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                line = reader.readLine();
-            }
-            if (line == null) {
-                LOG.error("ffprobe produced no output when checking the start time of {}. " +
-                                  "Assuming start time is 0.", mediaPath);
-                return OptionalInt.empty();
-            }
-            return OptionalInt.of((int) (Double.parseDouble(line) * 1000));
-        }
-        catch (IOException | NumberFormatException e) {
-            LOG.error(String.format(
-                    "Assuming start time of %s is 0 because the following error occurred " +
-                            "while checking the start time: %s",
-                    mediaPath, e.getMessage()), e);
-            return OptionalInt.empty();
-        }
     }
 }

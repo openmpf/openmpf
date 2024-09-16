@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,9 +27,7 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.camel.Message;
 import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -41,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @Monitored
 public interface MediaSegmenter {
@@ -49,85 +47,76 @@ public interface MediaSegmenter {
 
     public static final String FEED_FORWARD_TYPE = "FEED_FORWARD_TYPE";
 
-    public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
+    public static final String FEED_FORWARD_TOP_QUALITY_COUNT = "FEED_FORWARD_TOP_QUALITY_COUNT";
 
     static final Set<String> FEED_FORWARD_TYPES
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
 
-
-    List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext);
-
-
+    List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context);
 
 
     public static DetectionProtobuf.DetectionRequest.Builder initializeRequest(
             Media media, DetectionContext context) {
-
-        DetectionProtobuf.DetectionRequest.Builder requestBuilder = DetectionProtobuf.DetectionRequest.newBuilder()
-                .setRequestId(0)
+        return DetectionProtobuf.DetectionRequest.newBuilder()
                 .setMediaId(media.getId())
                 .setTaskIndex(context.getTaskIndex())
-                .setTaskName(context.getTaskName())
                 .setActionIndex(context.getActionIndex())
-                .setActionName(context.getActionName())
-                .setDataUri(media.getProcessingPath().toString())
-                .addAllAlgorithmProperty(getAlgoProps(context));
-
-        for (Map.Entry<String, String> entry : media.getMetadata().entrySet()) {
-            requestBuilder.addMediaMetadataBuilder()
-                    .setKey(entry.getKey())
-                    .setValue(entry.getValue());
-        }
-
-        return requestBuilder;
+                .setMediaPath(media.getProcessingPath().toString())
+                .putAllAlgorithmProperties(getAlgoProps(context))
+                .putAllMediaMetadata(media.getMetadata());
     }
 
 
-    static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
-        if (context.isFirstDetectionTask()) {
-            return context.getAlgorithmProperties().stream()
-                    .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
-                    .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
-                    .collect(toList());
+    static Map<String, String> getAlgoProps(DetectionContext context) {
+        var algoProps = context.getAlgorithmProperties();
+        if (!context.isFirstDetectionTask()) {
+            return algoProps;
         }
-        return context.getAlgorithmProperties();
+        else if (algoProps.containsKey(FEED_FORWARD_TYPE)
+                    || algoProps.containsKey(FEED_FORWARD_TOP_QUALITY_COUNT)) {
+            return algoProps.entrySet().stream()
+                // Since this is the DetectionContext for the first detection task, the feed
+                // forward properties should be ignored.
+                .filter(e -> !e.getKey().equals(FEED_FORWARD_TYPE))
+                .filter(e -> !e.getKey().equals(FEED_FORWARD_TOP_QUALITY_COUNT))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+        else {
+            return algoProps;
+        }
     }
-
 
 
     public static boolean feedForwardIsEnabled(DetectionContext context) {
-        String feedForwardType = context.getAlgorithmProperties()
-                .stream()
-                .filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
-                .findAny()
-                .map(ap -> ap.getPropertyValue().toUpperCase())
-                .orElse("NONE");
+        return feedForwardIsEnabled(context.getAlgorithmProperties().get(FEED_FORWARD_TYPE));
+    }
 
-        if (!FEED_FORWARD_TYPES.contains(feedForwardType.toUpperCase())) {
+    public static boolean feedForwardIsEnabled(String feedForwardType) {
+        if (feedForwardType == null
+                || feedForwardType.isBlank()
+                || "NONE".equalsIgnoreCase(feedForwardType)) {
+            return false;
+        }
+        if (FEED_FORWARD_TYPES.contains(feedForwardType.toUpperCase())) {
+            return true;
+        }
+        else {
             log.warn("Unknown feed forward type: {}. Disabling feed forward.", feedForwardType);
             return false;
         }
-
-        return !feedForwardType.equalsIgnoreCase("NONE");
     }
 
 
     public static DetectionProtobuf.ImageLocation createImageLocation(Detection detection) {
-        DetectionProtobuf.ImageLocation.Builder imageLocationBuilder = DetectionProtobuf.ImageLocation.newBuilder()
+        return DetectionProtobuf.ImageLocation.newBuilder()
                 .setXLeftUpper(detection.getX())
                 .setYLeftUpper(detection.getY())
                 .setWidth(detection.getWidth())
                 .setHeight(detection.getHeight())
-                .setConfidence(detection.getConfidence());
-
-        for (Map.Entry<String, String> entry : detection.getDetectionProperties().entrySet()) {
-            imageLocationBuilder.addDetectionPropertiesBuilder()
-                    .setKey(entry.getKey())
-                    .setValue(entry.getValue());
-        }
-
-        return imageLocationBuilder.build();
+                .setConfidence(detection.getConfidence())
+                .putAllDetectionProperties(detection.getDetectionProperties())
+                .build();
     }
 
 

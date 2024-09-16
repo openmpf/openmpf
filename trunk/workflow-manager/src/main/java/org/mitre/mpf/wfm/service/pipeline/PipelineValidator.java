@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -64,15 +64,15 @@ public class PipelineValidator {
         var violations = _validator.<PipelineElement>validate(newPipelineElement);
         if (!violations.isEmpty()) {
             throw new InvalidPipelineException(
-                    createFieldErrorMessages(newPipelineElement.getName(), violations));
+                    createFieldErrorMessages(newPipelineElement.name(), violations));
         }
 
-        T existing = existingItems.get(newPipelineElement.getName());
+        T existing = existingItems.get(newPipelineElement.name());
         if (existing != null && !existing.equals(newPipelineElement)) {
             String type = newPipelineElement.getClass().getSimpleName();
             throw new InvalidPipelineException(String.format(
                     "Failed to add %s with name \"%s\" because another %s with the same name already exists.",
-                    type, newPipelineElement.getName(), type));
+                    type, newPipelineElement.name(), type));
         }
     }
 
@@ -141,14 +141,14 @@ public class PipelineValidator {
 
     public void verifyBatchPipelineRunnable(String pipelineName, PipelinePartLookup partLookup) {
         verifyPipelineRunnable(pipelineName, partLookup,
-                               Algorithm::getSupportsBatchProcessing, "batch");
+                               Algorithm::supportsBatchProcessing, "batch");
     }
 
 
     public void verifyStreamingPipelineRunnable(String pipelineName,
                                                 PipelinePartLookup partLookup) {
         verifyPipelineRunnable(pipelineName, partLookup,
-                               Algorithm::getSupportsStreamProcessing, "stream");
+                               Algorithm::supportsStreamProcessing, "stream");
     }
 
     private void verifyPipelineRunnable(
@@ -165,7 +165,7 @@ public class PipelineValidator {
 
         verifyAlgorithmsSupportProcessingType(pipeline, partLookup, supportsPred, processingType);
 
-        var currentPipelineTasks = pipeline.getTasks()
+        var currentPipelineTasks = pipeline.tasks()
                 .stream()
                 .map(partLookup::getTask)
                 .collect(toList());
@@ -173,7 +173,7 @@ public class PipelineValidator {
 
         var currentPipelineActions = currentPipelineTasks
                 .stream()
-                .flatMap(t -> t.getActions().stream())
+                .flatMap(t -> t.actions().stream())
                 .map(partLookup::getAction)
                 .collect(toList());
         validateActionPropertyTypes(currentPipelineActions, partLookup);
@@ -193,23 +193,23 @@ public class PipelineValidator {
         var missingActions = new HashSet<String>();
         var missingAlgorithms = new HashSet<String>();
 
-        for (String taskName : pipeline.getTasks()) {
+        for (String taskName : pipeline.tasks()) {
             var task = partLookup.getTask(taskName);
             if (task == null) {
                 missingTasks.add(taskName);
                 continue;
             }
 
-            for (String actionName : task.getActions()) {
+            for (String actionName : task.actions()) {
                 Action action = partLookup.getAction(actionName);
                 if (action == null) {
                     missingActions.add(actionName);
                     continue;
                 }
 
-                var algorithm = partLookup.getAlgorithm(action.getAlgorithm());
+                var algorithm = partLookup.getAlgorithm(action.algorithm());
                 if (algorithm == null) {
-                    missingAlgorithms.add(action.getAlgorithm());
+                    missingAlgorithms.add(action.algorithm());
                 }
             }
         }
@@ -219,7 +219,7 @@ public class PipelineValidator {
         }
 
         var errorMsgBuilder = new StringBuilder("Cannot run pipeline ")
-                .append(pipeline.getName())
+                .append(pipeline.name())
                 .append(" due to the following issues: ");
 
         if (!missingTasks.isEmpty()) {
@@ -248,17 +248,17 @@ public class PipelineValidator {
             PipelinePartLookup partLookup,
             Predicate<Algorithm> supportsPred,
             String processingType) {
-        String invalidSupportOfBatchOrStreamingAlgorithms = pipeline.getTasks()
+        String invalidSupportOfBatchOrStreamingAlgorithms = pipeline.tasks()
                 .stream()
-                .flatMap(taskName -> partLookup.getTask(taskName).getActions().stream())
-                .map(actionName -> partLookup.getAction(actionName).getAlgorithm())
+                .flatMap(taskName -> partLookup.getTask(taskName).actions().stream())
+                .map(actionName -> partLookup.getAction(actionName).algorithm())
                 .filter(algoName -> !supportsPred.test(partLookup.getAlgorithm(algoName)))
                 .collect(joining(", "));
 
         if (!invalidSupportOfBatchOrStreamingAlgorithms.isEmpty()) {
             throw new InvalidPipelineException(String.format(
                     "Expected entire \"%s\" pipeline to support %s processing, but the following algorithms do not: %s",
-                    pipeline.getName(), processingType, invalidSupportOfBatchOrStreamingAlgorithms));
+                    pipeline.name(), processingType, invalidSupportOfBatchOrStreamingAlgorithms));
         }
     }
 
@@ -276,25 +276,25 @@ public class PipelineValidator {
         tasksIter2.next();
         while (tasksIter2.hasNext()) {
             var task1 = tasksIter1.next();
-            Set<String> providedStates = task1.getActions()
+            Set<String> providedStates = task1.actions()
                     .stream()
                     .map(partLookup::getAction)
-                    .map(action -> partLookup.getAlgorithm(action.getAlgorithm()))
-                    .flatMap(algo -> algo.getProvidesCollection().getStates().stream())
+                    .map(action -> partLookup.getAlgorithm(action.algorithm()))
+                    .flatMap(algo -> algo.providesCollection().states().stream())
                     .collect(toSet());
 
             var task2 = tasksIter2.next();
-            Set<String> requiredStates = task2.getActions()
+            Set<String> requiredStates = task2.actions()
                     .stream()
                     .map(partLookup::getAction)
-                    .map(action -> partLookup.getAlgorithm(action.getAlgorithm()))
-                    .flatMap(algo -> algo.getRequiresCollection().getStates().stream())
+                    .map(action -> partLookup.getAlgorithm(action.algorithm()))
+                    .flatMap(algo -> algo.requiresCollection().states().stream())
                     .collect(toSet());
 
             if (!providedStates.containsAll(requiredStates)) {
                 throw new InvalidPipelineException(String.format(
                         "%s: The states for \"%s\" are not satisfied. Provided: %s. Required: %s.",
-                        pipeline.getName(), task2.getName(), providedStates, requiredStates));
+                        pipeline.name(), task2.name(), providedStates, requiredStates));
             }
         }
     }
@@ -305,16 +305,16 @@ public class PipelineValidator {
             PipelinePartLookup partLookup) {
 
         for (var action : actions) {
-            var algorithm = partLookup.getAlgorithm(action.getAlgorithm());
+            var algorithm = partLookup.getAlgorithm(action.algorithm());
 
-            for (var actionProperty : action.getProperties()) {
-                var algoProperty = algorithm.getProperty(actionProperty.getName());
+            for (var actionProperty : action.properties()) {
+                var algoProperty = algorithm.property(actionProperty.name());
                 if (algoProperty != null) {
-                    validateValueType(action, actionProperty, algoProperty.getType());
+                    validateValueType(action, actionProperty, algoProperty.type());
                     continue;
                 }
 
-                var workflowProperty = _workflowPropertyService.getProperty(actionProperty.getName());
+                var workflowProperty = _workflowPropertyService.getProperty(actionProperty.name());
                 if (workflowProperty != null) {
                     validateValueType(action, actionProperty, workflowProperty.getType());
                     continue;
@@ -323,7 +323,7 @@ public class PipelineValidator {
                 throw new InvalidPipelineException(String.format(
                         "The \"%s\" property from the \"%s\" action does not exist in \"%s\" algorithm " +
                                 "and is not the name of a workflow property.",
-                        actionProperty.getName(), action.getName(), algorithm.getName()));
+                        actionProperty.name(), action.name(), algorithm.name()));
             }
         }
     }
@@ -331,7 +331,7 @@ public class PipelineValidator {
 
     private static void validateValueType(Action action, ActionProperty property, ValueType type) {
         try {
-            String value = property.getValue();
+            String value = property.value();
             switch (type) {
                 case BOOLEAN:
                     Boolean.parseBoolean(value);
@@ -356,7 +356,7 @@ public class PipelineValidator {
         catch (NumberFormatException ex) {
             throw new InvalidPipelineException(String.format(
                 "The \"%s\" property from the \"%s\" action has a value of \"%s\", which is not a valid \"%s\".",
-                property.getName(), action.getName(), property.getValue(), type), ex);
+                property.name(), action.name(), property.value(), type), ex);
         }
     }
 
@@ -366,11 +366,11 @@ public class PipelineValidator {
             PipelinePartLookup partLookup) {
 
         for (var task : currentPipelineTasks) {
-            Set<ActionType> actionTypes = task.getActions()
+            Set<ActionType> actionTypes = task.actions()
                     .stream()
                     .map(partLookup::getAction)
-                    .map(action -> partLookup.getAlgorithm(action.getAlgorithm()))
-                    .map(Algorithm::getActionType)
+                    .map(action -> partLookup.getAlgorithm(action.algorithm()))
+                    .map(Algorithm::actionType)
                     .collect(toSet());
 
             if (actionTypes.size() > 1) {
@@ -382,7 +382,7 @@ public class PipelineValidator {
                 throw new InvalidPipelineException(String.format(
                     "%s: tasks cannot contain actions which have different ActionTypes. " +
                             "It had the following ActionTypes, but only one type was expected: %s",
-                    task.getName(), actionTypeNames));
+                    task.name(), actionTypeNames));
             }
         }
     }
@@ -392,10 +392,10 @@ public class PipelineValidator {
         var taskIter = tasks.iterator();
         while (taskIter.hasNext()) {
             var task = taskIter.next();
-            if (task.getActions().size() > 1 && taskIter.hasNext()) {
+            if (task.actions().size() > 1 && taskIter.hasNext()) {
                 throw new InvalidPipelineException(String.format(
                         "%s: No tasks may follow the multi-detection task of %s.",
-                        pipeline.getName(), task.getName()));
+                        pipeline.name(), task.name()));
             }
         }
     }
@@ -408,11 +408,11 @@ public class PipelineValidator {
 
         for (int i = 0; i < currentPipelineTasks.size(); i++) {
             var task = currentPipelineTasks.get(i);
-            boolean taskHasMarkup = task.getActions()
+            boolean taskHasMarkup = task.actions()
                     .stream()
                     .map(pipelinePartLookup::getAction)
-                    .map(action -> pipelinePartLookup.getAlgorithm(action.getAlgorithm()))
-                    .map(Algorithm::getActionType)
+                    .map(action -> pipelinePartLookup.getAlgorithm(action.algorithm()))
+                    .map(Algorithm::actionType)
                     .anyMatch(ActionType.MARKUP::equals);
             if (!taskHasMarkup) {
                 continue;
@@ -420,17 +420,17 @@ public class PipelineValidator {
 
             if (i != currentPipelineTasks.size() - 1) {
                 throw new InvalidPipelineException(String.format(
-                        "%s: No tasks may follow a markup task of %s.", pipeline.getName(), task.getName()));
+                        "%s: No tasks may follow a markup task of %s.", pipeline.name(), task.name()));
             }
 
             if (i == 0) {
                 throw new InvalidPipelineException(String.format(
-                        "%s: A markup task may not be the first task in a pipeline.", pipeline.getName()));
+                        "%s: A markup task may not be the first task in a pipeline.", pipeline.name()));
             }
 
-            if (task.getActions().size() != 1) {
+            if (task.actions().size() != 1) {
                 throw new InvalidPipelineException(String.format(
-                        "%s: A markup task may only contain one action.", task.getName()));
+                        "%s: A markup task may only contain one action.", task.name()));
             }
         }
     }

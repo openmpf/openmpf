@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -145,7 +145,8 @@ public class FfprobeMetadataExtractor {
     private Optional<JsonNode> getStreamType(JsonNode ffprobeJson, String type) {
         var streams = ffprobeJson.get("streams");
         for (var stream : streams) {
-            if (type.equals(stream.get("codec_type").asText())) {
+            var codec_type = stream.get("codec_type");
+            if (codec_type != null && type.equals(codec_type.asText())) {
                 return Optional.of(stream);
             }
         }
@@ -163,12 +164,12 @@ public class FfprobeMetadataExtractor {
                     .orElse(null);
         }
         catch (NumberFormatException e) {
-            var streamType = optStream.map(s -> s.get("codec_type"))
+            var codecType = optStream.map(s -> s.get("codec_type"))
                     .map(t -> t.asText())
                     .orElse("");
             throw new MediaInspectionException(
                     "Could not time base for %s stream of \"%s\" due to: %s"
-                    .formatted(streamType, mediaPath, e), e);
+                    .formatted(codecType, mediaPath, e), e);
         }
     }
 

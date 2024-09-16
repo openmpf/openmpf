@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,8 +26,24 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.google.common.collect.ImmutableList;
-import org.junit.After;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,30 +55,16 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import com.google.common.collect.ImmutableList;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
-import static org.mockito.Mockito.*;
-
-public class TestRemoveComponentService {
-
-    private AutoCloseable _closeable;
+public class TestRemoveComponentService extends MockitoTest.Lenient {
 
     private RemoveComponentServiceImpl _removeComponentService;
 
@@ -89,25 +91,18 @@ public class TestRemoveComponentService {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
-
         _removeComponentService = new RemoveComponentServiceImpl(
                 Optional.of(_mockNodeManager), Optional.of(_mockStreamingServiceManager), _mockDeploymentService,
                 _mockStateService, _mockPipelineService, _mockPropertiesUtil);
     }
 
 
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
-
     @Test
     public void testRemoveComponentHappyPath() throws IOException, ManagedComponentsUnsupportedException {
         // Arrange
         JsonComponentDescriptor descriptor = TestDescriptorFactory.get();
-        String serviceName = descriptor.getAlgorithm().getName();
-        String algoName = descriptor.getAlgorithm().getName();
+        String serviceName = descriptor.algorithm().name();
+        String algoName = descriptor.algorithm().name();
 
         RegisterComponentModel rcm = new RegisterComponentModel();
         rcm.setComponentState(ComponentState.REGISTERED);
@@ -145,28 +140,28 @@ public class TestRemoveComponentService {
         when(_mockPipelineService.getActions())
                 .thenReturn(ImmutableList.of(componentAction, componentAction2, otherAction));
 
-        rcm.getActions().add(componentAction.getName());
-        rcm.getActions().add(componentAction2.getName());
+        rcm.getActions().add(componentAction.name());
+        rcm.getActions().add(componentAction2.name());
 
         Task componentTask = new Task("component task", "description",
-                                      Collections.singleton(otherAction.getName()));
+                                      List.of(otherAction.name()));
         Task otherTask = new Task("other task", "description",
-                                  Collections.singleton(componentAction.getName()));
+                                  List.of(componentAction.name()));
         when(_mockPipelineService.getTasks())
                 .thenReturn(ImmutableList.of(
                         componentTask, otherTask,
                         new Task("asdf", "description", Collections.emptyList())));
-        rcm.getTasks().add(componentTask.getName());
+        rcm.getTasks().add(componentTask.name());
 
         Pipeline componentPipeline = new Pipeline("component pipeline", "description",
-                                                  Collections.singleton(otherTask.getName()));
+                                                  List.of(otherTask.name()));
         Pipeline otherPipeline = new Pipeline("other pipeline", "description",
-                                              Collections.singleton(otherTask.getName()));
+                                              List.of(otherTask.name()));
         when(_mockPipelineService.getPipelines())
                 .thenReturn(ImmutableList.of(
                         componentPipeline, otherPipeline,
                         new Pipeline("sdaf", "description", Collections.emptyList())));
-        rcm.getPipelines().add(componentPipeline.getName());
+        rcm.getPipelines().add(componentPipeline.name());
 
         // Act
         _removeComponentService.removeComponent(COMPONENT_NAME);
@@ -191,16 +186,16 @@ public class TestRemoveComponentService {
                 .deleteAlgorithm(algoName);
 
         verify(_mockPipelineService)
-                .deleteAction(componentAction.getName());
+                .deleteAction(componentAction.name());
 
         verify(_mockPipelineService)
-                .deleteAction(componentAction2.getName());
+                .deleteAction(componentAction2.name());
 
         verify(_mockPipelineService)
-                .deleteTask(componentTask.getName());
+                .deleteTask(componentTask.name());
 
         verify(_mockPipelineService)
-                .deletePipeline(componentPipeline.getName());
+                .deletePipeline(componentPipeline.name());
 
         verifyNoMoreInteractions(_mockPipelineService);
 
@@ -250,4 +245,3 @@ public class TestRemoveComponentService {
         assertFalse(Files.exists(testComponentDir));
     }
 }
-

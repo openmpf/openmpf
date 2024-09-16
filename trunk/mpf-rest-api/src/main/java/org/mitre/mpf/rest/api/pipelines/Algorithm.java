@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,205 +27,71 @@
 
 package org.mitre.mpf.rest.api.pipelines;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.OptionalInt;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
 import org.mitre.mpf.rest.api.util.Utils;
+import org.mitre.mpf.rest.api.util.ValidName;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.OptionalInt;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+
 
 @MethodReturnsTrue(
         method = "supportsBatchOrStreaming",
         message = "must support batch processing, stream processing, or both")
-public class Algorithm implements PipelineElement {
+public record Algorithm(
+        @ValidName String name,
+        @NotBlank String description,
+        @NotNull ActionType actionType,
+        @NotBlank String trackType,
+        OptionalInt outputChangedCounter,
+        @NotNull @Valid Requires requiresCollection,
+        @NotNull @Valid Provides providesCollection,
+        boolean supportsBatchProcessing,
+        boolean supportsStreamProcessing
+        ) implements PipelineElement {
 
-    private final String _name;
-    @Override
-    @NotBlank
-    public String getName() {
-        return _name;
+    public Algorithm {
+        name = Utils.trimAndUpper(name);
+        description = Utils.trim(description);
+        trackType = Utils.trimAndUpper(trackType);
     }
 
-    private final String _description;
-    @NotBlank
-    public String getDescription() {
-        return _description;
-    }
-
-    private final ActionType _actionType;
-    @NotNull
-    public ActionType getActionType() {
-        return _actionType;
-    }
-
-    private final OptionalInt _outputChangedCounter;
-    public OptionalInt getOutputChangedCounter() {
-        return _outputChangedCounter;
-    }
-
-    private final Requires _requiresCollection;
-    @NotNull @Valid
-    public Requires getRequiresCollection() {
-        return _requiresCollection;
-    }
-
-    private final Provides _providesCollection;
-    @NotNull @Valid
-    public Provides getProvidesCollection() {
-        return _providesCollection;
-    }
-
-    private final boolean _supportsBatchProcessing;
-    public boolean getSupportsBatchProcessing() {
-        return _supportsBatchProcessing;
-    }
-
-    private final boolean _supportsStreamProcessing;
-    public boolean getSupportsStreamProcessing() {
-       return _supportsStreamProcessing;
-    }
-
-
-    public Algorithm(
-            @JsonProperty("name") String name,
-            @JsonProperty("description") String description,
-            @JsonProperty("actionType") ActionType actionType,
-            @JsonProperty("outputChangedCounter") OptionalInt outputChangedCounter,
-            @JsonProperty("requiresCollection") Requires requiresCollection,
-            @JsonProperty("providesCollection") Provides providesCollection,
-            @JsonProperty("supportsBatchProcessing") boolean supportsBatchProcessing,
-            @JsonProperty("supportsStreamProcessing") boolean supportsStreamProcessing) {
-        _name = Utils.trimAndUpper(name);
-        _description = Utils.trim(description);
-        _actionType = actionType;
-        _outputChangedCounter = outputChangedCounter;
-        _requiresCollection = requiresCollection;
-        _providesCollection = providesCollection;
-        _supportsBatchProcessing = supportsBatchProcessing;
-        _supportsStreamProcessing = supportsStreamProcessing;
-    }
-
-
-    public AlgorithmProperty getProperty(String name) {
-        return _providesCollection.getProperties()
+    public AlgorithmProperty property(String name) {
+        return providesCollection.properties()
                 .stream()
-                .filter(p -> p.getName().equalsIgnoreCase(name))
+                .filter(p -> p.name().equalsIgnoreCase(name))
                 .findAny()
                 .orElse(null);
     }
 
     @JsonIgnore
     public boolean supportsBatchOrStreaming() {
-        return getSupportsBatchProcessing() || getSupportsStreamProcessing();
+        return supportsBatchProcessing || supportsStreamProcessing;
     }
 
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof Algorithm)) {
-            return false;
-        }
-        var other = (Algorithm) obj;
-        return Objects.equals(_name, other._name)
-                && Objects.equals(_description, other._description)
-                && _actionType == other._actionType
-                && Objects.equals(_outputChangedCounter, other._outputChangedCounter)
-                && Objects.equals(_requiresCollection, other._requiresCollection)
-                && Objects.equals(_providesCollection, other._providesCollection)
-                && Objects.equals(_supportsBatchProcessing, other._supportsBatchProcessing)
-                && Objects.equals(_supportsStreamProcessing, other._supportsStreamProcessing);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(
-                _name, _description, _actionType, _outputChangedCounter, _requiresCollection,
-                _providesCollection, _supportsBatchProcessing, _supportsStreamProcessing);
-    }
-
-
-
-
-    public static class Requires {
-        private final ImmutableList<String> _states;
-        @NotNull @Valid
-        public ImmutableList<@AllNotBlank String> getStates() {
-            return _states;
-        }
-
-        public Requires(
-                @JsonProperty("states") Collection<String> states) {
-            _states = Utils.trimAndUpper(states, ImmutableList.toImmutableList());
-        }
-
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (!(obj instanceof Requires)) {
-                return false;
-            }
-            Requires other = (Requires) obj;
-            return Objects.equals(_states, other._states);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(_states);
+    public record Requires(@NotNull @Valid List<@AllNotBlank String> states) {
+        public Requires {
+            states = Utils.trimAndUpper(states, ImmutableList.toImmutableList());
         }
     }
 
 
-    public static class Provides {
-        private final ImmutableList<String> _states;
-        @NotNull @Valid
-        public ImmutableList<@AllNotBlank String> getStates() {
-            return _states;
-        }
-
-        private final ImmutableList<AlgorithmProperty> _properties;
-        @NotNull @Valid
-        public ImmutableList<AlgorithmProperty> getProperties() {
-            return _properties;
-        }
-
-
-        public Provides(
-                @JsonProperty("states") Collection<String> states,
-                @JsonProperty("properties") Collection<AlgorithmProperty> properties) {
-            _states = Utils.trimAndUpper(states, ImmutableList.toImmutableList());
-            _properties = ImmutableList.copyOf(properties);
-        }
-
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (!(obj instanceof Provides)) {
-                return false;
-            }
-            var other = (Provides) obj;
-            return Objects.equals(_states, other._states)
-                    && Objects.equals(_properties, other._properties);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(_states, _properties);
+    public record Provides(
+            @NotNull @Valid List<@AllNotBlank String> states,
+            @NotNull @Valid List<AlgorithmProperty> properties
+    ) {
+        public Provides {
+            states = Utils.trimAndUpper(states, ImmutableList.toImmutableList());
+            properties = ImmutableList.copyOf(properties);
         }
     }
 }

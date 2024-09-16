@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,16 +24,21 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_BATCHEXECUTORUTIL_H
-#define MPF_BATCHEXECUTORUTIL_H
+#pragma once
 
 #include <map>
+#include <optional>
 #include <string>
+#include <string_view>
 
 
 namespace BatchExecutorUtil {
-    std::map<std::string, std::string> get_environment_job_properties();
+    std::map<std::string, std::string> GetEnvironmentJobProperties();
+
+    bool EqualsIgnoreCase(std::string_view s1, std::string_view s2);
+
+    std::string ExpandFileName(std::string_view file_name);
+
+    /** Gets the specified environment variable if it exists and is not the empty string. */
+    std::optional<std::string> GetEnv(std::string_view name);
 };
-
-
-#endif //MPF_BATCHEXECUTORUTIL_H

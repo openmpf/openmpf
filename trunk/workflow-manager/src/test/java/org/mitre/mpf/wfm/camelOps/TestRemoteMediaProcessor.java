@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,15 +26,34 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
@@ -49,30 +68,18 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
+
 import spark.Spark;
 
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.test.TestUtil.nonBlank;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-public class TestRemoteMediaProcessor {
+public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
     private static final Logger LOG = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
     private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
     private static final String EXT_IMG = "http://localhost:4587/test-image.jpg";
-
-    private AutoCloseable _closeable;
 
     private RemoteMediaProcessor _remoteMediaProcessor;
 
@@ -125,7 +132,6 @@ public class TestRemoteMediaProcessor {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
         when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
                 .thenReturn(3);
 
@@ -135,12 +141,6 @@ public class TestRemoteMediaProcessor {
         _remoteMediaProcessor = new RemoteMediaProcessor(
                 _mockInProgressJobs, null, _mockPropertiesUtil,
                 new AggregateJobPropertiesUtil(_mockPropertiesUtil, mock(WorkflowPropertyService.class)));
-    }
-
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
     }
 
 

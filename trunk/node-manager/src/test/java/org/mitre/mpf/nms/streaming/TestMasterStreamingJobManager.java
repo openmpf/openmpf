@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,8 +26,24 @@
 
 package org.mitre.mpf.nms.streaming;
 
-import org.junit.After;
-import org.junit.Before;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mitre.mpf.nms.streaming.StreamingJobTestUtil.createLaunchMessage;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.mitre.mpf.nms.ChannelNode;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
@@ -36,20 +52,14 @@ import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.*;
-import static org.mitre.mpf.nms.streaming.StreamingJobTestUtil.createLaunchMessage;
-import static org.mockito.Mockito.*;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
+import org.mockito.quality.Strictness;
 
 public class TestMasterStreamingJobManager {
 
-	private AutoCloseable _closeable;
+	@Rule
+	public MockitoRule _mockitoRule = MockitoJUnit.rule().strictness(Strictness.STRICT_STUBS);
 
 	@InjectMocks
 	private MasterStreamingJobManager _streamingJobManager;
@@ -59,15 +69,6 @@ public class TestMasterStreamingJobManager {
 
 	private static final List<String> TEST_NODES = Arrays.asList("Node1", "Node2", "Node3");
 
-	@Before
-	public void init() {
-		_closeable = MockitoAnnotations.openMocks(this);
-	}
-
-	@After
-	public void close() throws Exception {
-		_closeable.close();
-	}
 
 	@Test
 	public void jobsStartOnNodeWithMinJobs() {
@@ -184,5 +185,3 @@ public class TestMasterStreamingJobManager {
 
 	}
 }
-
-

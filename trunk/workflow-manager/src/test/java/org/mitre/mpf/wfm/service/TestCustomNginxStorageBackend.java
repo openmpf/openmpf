@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -49,7 +49,6 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -277,7 +276,6 @@ public class TestCustomNginxStorageBackend {
 
     @Test
     public void canStoreVideoArtifactRemotely() throws IOException, StorageException, URISyntaxException {
-        assertTrue(JniLoader.isLoaded());
         Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
                 .put(1, 0, getExpectedUri("f97dd04f771f00ff8230964b41ee8bb9f0a494c95d8266eb3797233fa62b2a0c"))
                 .put(6, 5, getExpectedUri("6f40abbb266b4b75623901850be789f151f1a2b7c10468e952acc2758533d231"))

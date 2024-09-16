@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -70,12 +70,12 @@ public class JobPipelineElements {
 
     @JsonIgnore
     public String getName() {
-        return _pipeline.getName();
+        return _pipeline.name();
     }
 
     @JsonIgnore
     public int getTaskCount() {
-        return _pipeline.getTasks().size();
+        return _pipeline.tasks().size();
     }
 
     public Task getTask(String name) {
@@ -83,7 +83,7 @@ public class JobPipelineElements {
     }
 
     public Task getTask(int taskIndex) {
-        String taskName = _pipeline.getTasks().get(taskIndex);
+        String taskName = _pipeline.tasks().get(taskIndex);
         return _tasks.get(taskName);
     }
 
@@ -94,7 +94,7 @@ public class JobPipelineElements {
 
     public Action getAction(int taskIndex, int actionIndex) {
         Task task = getTask(taskIndex);
-        String actionName = task.getActions().get(actionIndex);
+        String actionName = task.actions().get(actionIndex);
         return _actions.get(actionName);
     }
 
@@ -104,9 +104,18 @@ public class JobPipelineElements {
 
     public Algorithm getAlgorithm(int taskIndex, int actionIndex) {
         Action action = getAction(taskIndex, actionIndex);
-        return _algorithms.get(action.getAlgorithm());
+        return _algorithms.get(action.algorithm());
     }
 
+    @JsonIgnore
+    public int getLastDetectionTaskIdx() {
+        int lastTaskIdx = getTaskCount() - 1;
+        var lastTaskAlgo = getAlgorithm(lastTaskIdx, 0);
+        return lastTaskAlgo.actionType() == ActionType.DETECTION
+                ? lastTaskIdx
+                // The last algorithm is markup and there can only be one markup task.
+                : lastTaskIdx - 1;
+    }
 
     @JsonIgnore
     public Iterable<Task> getTasksInOrder() {
@@ -115,7 +124,7 @@ public class JobPipelineElements {
 
     @JsonIgnore
     public Stream<Task> getTaskStreamInOrder() {
-        return _pipeline.getTasks()
+        return _pipeline.tasks()
                 .stream()
                 .map(this::getTask);
     }
@@ -125,7 +134,7 @@ public class JobPipelineElements {
     }
 
     public Stream<Action> getActionStreamInOrder(Task task) {
-        return task.getActions()
+        return task.actions()
                 .stream()
                 .map(this::getAction);
     }
@@ -142,21 +151,21 @@ public class JobPipelineElements {
         _actions = indexByName(actions);
         _algorithms = indexByName(algorithms);
 
-        for (String taskName : pipeline.getTasks()) {
+        for (String taskName : pipeline.tasks()) {
             Task task = _tasks.get(taskName);
             if (task == null) {
                 throw new IllegalArgumentException(
                         "Expected the \"tasks\" parameter to contain a task named \"" + taskName + "\".");
             }
 
-            for (String actionName : task.getActions()) {
+            for (String actionName : task.actions()) {
                 Action action = _actions.get(actionName);
                 if (action == null) {
                     throw new IllegalArgumentException(
                             "Expected the \"actions\" parameter to contain an action named \"" + actionName + "\".");
                 }
 
-                String algoName = action.getAlgorithm();
+                String algoName = action.algorithm();
                 Algorithm algorithm = _algorithms.get(algoName);
                 if (algorithm == null) {
                     throw new IllegalArgumentException(
@@ -171,7 +180,7 @@ public class JobPipelineElements {
         return items
                 .stream()
                 .collect(ImmutableMap.toImmutableMap(
-                        PipelineElement::getName, Function.identity(),
+                        PipelineElement::name, Function.identity(),
                         (e1, e2) -> e1));
     }
 }

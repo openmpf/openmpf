@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -91,8 +91,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
     public void onApplicationEvent(ApplicationEvent event) {
 
         if (event instanceof ContextRefreshedEvent) {
-            // this callback will be invoked at least twice: once for the root /workflow-manager, and
-            // once for /workflow-manager/appServlet
+            // this callback will be invoked at least twice: once for the root servlet, and
+            // once for /appServlet
 
             ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
             ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();

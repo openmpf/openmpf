@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,45 +27,10 @@
 #include "MPFMessageUtils.h"
 
 using org::mitre::mpf::wfm::buffers::DetectionError;
-using org::mitre::mpf::wfm::buffers::DetectionRequest_DataType;
-using org::mitre::mpf::wfm::buffers::DetectionResponse_DataType;
 using namespace MPF;
 using namespace COMPONENT;
 
 
-MPFDetectionDataType
-translateProtobufDataType( const DetectionRequest_DataType &dataType) {
-
-    switch (dataType) {
-        case DetectionRequest_DataType::DetectionRequest_DataType_UNKNOWN:
-            return MPFDetectionDataType::UNKNOWN;
-        case DetectionRequest_DataType::DetectionRequest_DataType_VIDEO:
-            return MPFDetectionDataType::VIDEO;
-        case DetectionRequest_DataType::DetectionRequest_DataType_IMAGE:
-            return MPFDetectionDataType::IMAGE;
-        case DetectionRequest_DataType::DetectionRequest_DataType_AUDIO:
-            return MPFDetectionDataType::AUDIO;
-        default:
-            return MPFDetectionDataType::UNKNOWN;
-    }
-}
-
-DetectionResponse_DataType
-translateMPFDetectionDataType(const MPFDetectionDataType &dataType) {
-
-    switch (dataType) {
-        case UNKNOWN:
-            return DetectionResponse_DataType::DetectionResponse_DataType_UNKNOWN;
-        case VIDEO:
-            return DetectionResponse_DataType::DetectionResponse_DataType_VIDEO;
-        case IMAGE:
-            return DetectionResponse_DataType::DetectionResponse_DataType_IMAGE;
-        case AUDIO:
-            return DetectionResponse_DataType::DetectionResponse_DataType_AUDIO;
-        default:
-            return DetectionResponse_DataType::DetectionResponse_DataType_UNKNOWN;
-    }
-}
 
 DetectionError translateMPFDetectionError(
     const MPF::COMPONENT::MPFDetectionError err) {
@@ -107,7 +72,6 @@ DetectionError translateMPFDetectionError(
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
     }
 }
-
 
 
 MPFDetectionError translateProtobufError(DetectionError err) {

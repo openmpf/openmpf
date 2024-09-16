@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,27 +27,24 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import org.mitre.mpf.wfm.util.JobPart;
-
 import java.util.HashMap;
 import java.util.Map;
 
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+
 public class TrackCounter {
 
-    private final Map<TrackCountKey, TrackCountEntry> _counts = new HashMap<>();
+    private final Map<Long, Integer> _counts = new HashMap<>();
 
-    public TrackCountEntry get(JobPart jobPart) {
-        return _counts.get(new TrackCountKey(jobPart.getMedia().getId(),
-                                             jobPart.getTaskIndex(),
-                                             jobPart.getActionIndex()));
+    public void add(Media media, int count) {
+        _counts.merge(getId(media), count, (v1, v2) -> v1 + v2);
     }
 
-    public TrackCountEntry get(long mediaId, int taskIdx, int actionIdx) {
-        return _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx));
+    public int get(Media media) {
+        return _counts.getOrDefault(getId(media), 0);
     }
 
-    public void set(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {
-        _counts.put(new TrackCountKey(mediaId, taskIdx, actionIdx),
-                    new TrackCountEntry(mediaId, taskIdx, actionIdx, trackType, count));
+    private static long getId(Media media) {
+        return media.isDerivative() ? media.getParentId() : media.getId();
     }
 }

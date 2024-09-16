@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,60 +34,25 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
-public class JobPart {
+public record JobPart(BatchJob job, Media media, int mediaIndex, int taskIndex, int actionIndex) {
 
-    private final BatchJob _job;
-
-    private final Media _media;
-
-    private final int _mediaIndex;
-
-    private final int _taskIndex;
-
-    private final int _actionIndex;
-
-
-    public JobPart(BatchJob job, Media media, int mediaIndex, int taskIndex, int actionIndex) {
-        _job = job;
-        _media = media;
-        _mediaIndex = mediaIndex;
-        _taskIndex = taskIndex;
-        _actionIndex = actionIndex;
+    public long id() {
+        return job.getId();
     }
 
-    public BatchJob getJob() {
-        return _job;
+    public Pipeline pipeline() {
+        return job.getPipelineElements().getPipeline();
     }
 
-    public Media getMedia() {
-        return _media;
+    public Task task() {
+        return job.getPipelineElements().getTask(taskIndex);
     }
 
-    public int getMediaIndex() {
-        return _mediaIndex;
+    public Action action() {
+        return job.getPipelineElements().getAction(taskIndex, actionIndex);
     }
 
-    public Pipeline getPipeline() {
-        return _job.getPipelineElements().getPipeline();
-    }
-
-    public Task getTask() {
-        return _job.getPipelineElements().getTask(_taskIndex);
-    }
-
-    public int getTaskIndex() {
-        return _taskIndex;
-    }
-
-    public Action getAction() {
-        return _job.getPipelineElements().getAction(_taskIndex, _actionIndex);
-    }
-
-    public int getActionIndex() {
-        return _actionIndex;
-    }
-
-    public Algorithm getAlgorithm() {
-        return _job.getPipelineElements().getAlgorithm(_taskIndex, _actionIndex);
+    public Algorithm algorithm() {
+        return job.getPipelineElements().getAlgorithm(taskIndex, actionIndex);
     }
 }

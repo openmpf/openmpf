@@ -1,0 +1,57 @@
+[
+    {
+        "propertyToProcess": "CLASSIFICATION",
+        "originalPropertyCopy": "CLASSIFICATION NO ROLL UP",
+        "groups": [
+            {
+                "rollUp": "vehicle",
+                "members": [
+                    "truck",
+                    "car",
+                    "motorbike",
+                    "bus"
+                ]
+            }
+        ]
+    },
+    {
+        "propertyToProcess": "CLASSIFICATION",
+        "groups": [
+            {
+                "rollUp": "vehicle",
+                "members": [
+                    "truck",
+                    "car",
+                    "motorbike",
+                    "bus",
+                    "bicycle"
+                ]
+            }
+        ]
+    },
+    {
+        "propertyToProcess": "NO COPY PROP",
+        "groups": [
+            {
+                "rollUp": "group1",
+                "members": [
+                    "g1member1",
+                    "g1member2",
+                    "g1member3"
+                ]
+            },
+            {
+                "rollUp": "group2",
+                "members": [
+                    "g2member1",
+                    "g2member2"
+                ]
+            }
+        ]
+    },
+    {
+        "propertyToProcess": "COPY ONLY",
+        "originalPropertyCopy": "COPY ONLY TARGET",
+        "groups": [ ]
+    }
+]

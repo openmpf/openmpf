@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -30,7 +30,8 @@ public class MpfConstants {
     public static final String
             FRAME_RATE_CAP_PROPERTY = "FRAME_RATE_CAP",
             MEDIA_SAMPLING_INTERVAL_PROPERTY = "FRAME_INTERVAL",
-            CONFIDENCE_THRESHOLD_PROPERTY = "CONFIDENCE_THRESHOLD",
+            QUALITY_SELECTION_PROPERTY = "QUALITY_SELECTION_PROPERTY",
+            QUALITY_THRESHOLD_PROPERTY = "QUALITY_SELECTION_THRESHOLD",
             MINIMUM_GAP_BETWEEN_SEGMENTS = "MIN_GAP_BETWEEN_SEGMENTS",
             TARGET_SEGMENT_LENGTH_PROPERTY = "TARGET_SEGMENT_LENGTH",
             VFR_TARGET_SEGMENT_LENGTH_PROPERTY = "VFR_TARGET_SEGMENT_LENGTH",
@@ -59,7 +60,7 @@ public class MpfConstants {
             ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME_PROPERTY = "ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME",
             ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME_PROPERTY = "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME",
             ARTIFACT_EXTRACTION_POLICY_LAST_FRAME_PROPERTY = "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME",
-            ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT_PROPERTY = "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
+            ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY = "ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT",
             REQUEST_CANCELLED = "REQUEST_CANCELLED",
             S3_ACCESS_KEY = "S3_ACCESS_KEY",
             S3_SECRET_KEY = "S3_SECRET_KEY",
@@ -101,7 +102,11 @@ public class MpfConstants {
             SKIP_MEDIA_INSPECTION = "SKIP_MEDIA_INSPECTION",
             LINKED_MEDIA_HASH = "LINKED_MEDIA_HASH",
             FFPROBE_IGNORE_STDERR = "FFPROBE_IGNORE_STDERR",
-            FFPROBE_STDERR_NUM_LINES = "FFPROBE_STDERR_NUM_LINES";
+            FFPROBE_STDERR_NUM_LINES = "FFPROBE_STDERR_NUM_LINES",
+            TRIGGER = "TRIGGER",
+            CALLBACK_USE_OIDC = "CALLBACK_USE_OIDC",
+            TIES_DB_USE_OIDC = "TIES_DB_USE_OIDC",
+            ROLL_UP_FILE = "ROLL_UP_FILE";
 
     private MpfConstants() {
     }

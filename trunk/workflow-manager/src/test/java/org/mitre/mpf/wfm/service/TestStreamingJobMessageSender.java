@@ -5,10 +5,10 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,16 +26,30 @@
 package org.mitre.mpf.wfm.service;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
-import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.ValueType;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaStreamInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobImpl;
@@ -46,21 +60,12 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 
-public class TestStreamingJobMessageSender {
-
-    private AutoCloseable _closeable;
+public class TestStreamingJobMessageSender extends MockitoTest.Lenient {
 
     private StreamingJobMessageSenderImpl _messageSender;
 
@@ -79,17 +84,10 @@ public class TestStreamingJobMessageSender {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
         AggregateJobPropertiesUtil aggregateJobPropertiesUtil
                 = new AggregateJobPropertiesUtil(_mockProperties, _mockWorkflowPropertyService);
         _messageSender = new StreamingJobMessageSenderImpl(_mockProperties, aggregateJobPropertiesUtil,
                                                            _mockMasterNode, _mockServiceManager);
-    }
-
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
     }
 
 
@@ -99,7 +97,7 @@ public class TestStreamingJobMessageSender {
         when(_mockProperties.getStreamingJobStallAlertThreshold())
                 .thenReturn(stallAlertThreshold);
 
-        var activeMqUri = "failover://(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1";
+        var activeMqUri = "failover:(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1";
         when(_mockProperties.getAmqUri())
                 .thenReturn(activeMqUri);
 
@@ -129,6 +127,7 @@ public class TestStreamingJobMessageSender {
                 "TEST ALGO",
                 "Algo Description",
                 ActionType.DETECTION,
+                "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), algoProperties),
@@ -140,14 +139,14 @@ public class TestStreamingJobMessageSender {
                 new ActionProperty("OVERRIDDEN ACTION PROPERTY", "ACTION VAL"),
                 new ActionProperty("OVERRIDDEN JOB PROPERTY", "Bad Value")
         );
-        var action = new Action("ActionName", "Action description", algorithm.getName(),
+        var action = new Action("ActionName", "Action description", algorithm.name(),
                                 actionProperties);
 
         var task = new Task("TaskName", "Task description",
-                             List.of(action.getName()));
+                             List.of(action.name()));
 
         var pipeline = new Pipeline("MyStreamingPipeline", "Pipeline description",
-                                    List.of(task.getName()));
+                                    List.of(task.name()));
         var pipelineElements = new JobPipelineElements(
                 pipeline,
                 List.of(task),
@@ -184,7 +183,7 @@ public class TestStreamingJobMessageSender {
                 new EnvironmentVariableModel("var2", "val2", null));
 
         var streamingServiceModel = new StreamingServiceModel(
-                "MyService", algorithm.getName(), ComponentLanguage.CPP,
+                "MyService", algorithm.name(), ComponentLanguage.CPP,
                 "my-component/lib/libComponent.so", envVars);
 
         when(_mockServiceManager.getServices())

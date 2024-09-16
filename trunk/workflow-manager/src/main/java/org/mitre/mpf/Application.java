@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,6 +34,7 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
+import org.mitre.mpf.mvc.security.OidcSecurityConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -55,7 +56,11 @@ import org.springframework.context.annotation.Profile;
 public class Application extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+        var app = new SpringApplication(Application.class);
+        if (OidcSecurityConfig.isEnabled()) {
+            app.setAdditionalProfiles("oidc");
+        }
+        app.run(args);
     }
 
     @Override
@@ -95,6 +100,7 @@ public class Application extends SpringBootServletInitializer {
 
         return tomcat;
     }
+
 
     @Bean
     public ServletRegistrationBean<SimonConsoleServlet> simonConsoleServlet() {

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -58,7 +58,7 @@ namespace MPF { namespace COMPONENT {
         void SendActivityAlert(int frame_number, long timestamp);
 
         void SendSummaryReport(
-                int frame_number, const std::string &detection_type,
+                int frame_number,
                 const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks,
                 const std::unordered_map<int, long> &frame_timestamps,
                 const std::string &error_message = {});

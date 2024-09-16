@@ -1,7 +1,7 @@
 {
   "componentName": "CplusplusHelloCustomPipelinesComponent",
-  "componentVersion": "7.2",
-  "middlewareVersion": "7.2",
+  "componentVersion": "9.0",
+  "middlewareVersion": "9.0",
   "sourceLanguage": "c++",
   "batchLibrary": "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
   "environmentVariables": [
@@ -15,6 +15,7 @@
     "name": "CplusplusCustomPipelinesHelloWorld",
     "description": "A dummy C++ detection component.",
     "actionType": "DETECTION",
+    "trackType": "HELLO",
     "requiresCollection": {
       "states": []
     },

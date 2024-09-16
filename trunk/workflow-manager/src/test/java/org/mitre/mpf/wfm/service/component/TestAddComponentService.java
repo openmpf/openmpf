@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,10 +26,42 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_NAMES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_VALUES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION_NAMES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.PIPELINE_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.REFERENCED_ALGO_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.TASK_NAMES;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-import org.junit.After;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +72,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
@@ -48,26 +81,13 @@ import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Optional;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
-import static org.mockito.Mockito.*;
-
-public class TestAddComponentService {
+public class TestAddComponentService extends MockitoTest.Strict {
 
     private AddComponentServiceImpl _addComponentService;
-
-    private AutoCloseable _closeable;
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
@@ -103,18 +123,12 @@ public class TestAddComponentService {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
-
         _addComponentService = new AddComponentServiceImpl(
                 _mockPropertiesUtil, _mockPipelineService, Optional.of(_mockNodeManager),
                 Optional.of(_mockStreamingServiceManager), _mockDeploymentService, _mockStateService,
                 _mockDescriptorValidator, null, _mockRemoveComponentService, _mockObjectMapper);
     }
 
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void throwsExceptionWhenNoRegisterModel() throws ComponentRegistrationException {
@@ -231,17 +245,17 @@ public class TestAddComponentService {
 
         // Verify mocked methods
 
-        String expectedAlgoName = descriptor.getAlgorithm().getName();
+        String expectedAlgoName = descriptor.algorithm().name();
 
         verifyDescriptorAlgoSaved(descriptor);
 
         verify(_mockPipelineService)
-                .save(argThat((Action a) -> a.getName().contains(expectedAlgoName)
-                        && a.getAlgorithm().equals(expectedAlgoName)
-                        && a.getProperties().isEmpty() ));
+                .save(argThat((Action a) -> a.name().contains(expectedAlgoName)
+                        && a.algorithm().equals(expectedAlgoName)
+                        && a.properties().isEmpty() ));
 
         verify(_mockPipelineService)
-                .save(argThat((Task t) -> t.getName().contains(expectedAlgoName)));
+                .save(argThat((Task t) -> t.name().contains(expectedAlgoName)));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);
@@ -252,17 +266,17 @@ public class TestAddComponentService {
         verify(_mockStreamingServiceManager)
                 .addService(argThat(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().getName())
-                                && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
+                                && s.getAlgorithmName().equals(descriptor.algorithm().name())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables().size()));
 
         assertNeverUndeployed();
     }
 
     private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
         verify(_mockPipelineService)
-                .save(argThat((Algorithm algo) -> algo.getName().equals(descriptor.getAlgorithm().getName())
-                        && algo.getSupportsBatchProcessing() == descriptor.supportsBatchProcessing()
-                        && algo.getSupportsStreamProcessing() == descriptor.supportsStreamProcessing()));
+                .save(argThat((Algorithm algo) -> algo.name().equals(descriptor.algorithm().name())
+                        && algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
+                        && algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
 
     }
 
@@ -334,8 +348,8 @@ public class TestAddComponentService {
         verify(_mockStreamingServiceManager)
                 .addService(argThat(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().getName())
-                                && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
+                                && s.getAlgorithmName().equals(descriptor.algorithm().name())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables().size()));
     }
 
 
@@ -351,31 +365,31 @@ public class TestAddComponentService {
         verifyDescriptorAlgoSaved(descriptor);
 
         verify(_mockPipelineService, times(3))
-                .save(argThat((Action a) -> a.getAlgorithm().equals(REFERENCED_ALGO_NAME)));
+                .save(argThat((Action a) -> a.algorithm().equals(REFERENCED_ALGO_NAME)));
 
         verify(_mockPipelineService)
-                .save(argThat((Action a) -> a.getName().equals(ACTION_NAMES.get(0))
-                        && a.getProperties().stream()
-                                .anyMatch(pd -> pd.getName().equals(ACTION1_PROP_NAMES.get(0))
-                                        && pd.getValue().equals(ACTION1_PROP_VALUES.get(0)))));
-
-        verify(_mockPipelineService)
-                .save(argThat((Task t) ->
-                        t.getName().equals(TASK_NAMES.get(0))
-                                && t.getDescription().equals(TASK_NAMES.get(0) + " description")
-                                && t.getActions().size() == 1));
+                .save(argThat((Action a) -> a.name().equals(ACTION_NAMES.get(0))
+                        && a.properties().stream()
+                                .anyMatch(pd -> pd.name().equals(ACTION1_PROP_NAMES.get(0))
+                                        && pd.value().equals(ACTION1_PROP_VALUES.get(0)))));
 
         verify(_mockPipelineService)
                 .save(argThat((Task t) ->
-                        t.getName().equals(TASK_NAMES.get(1))
-                                && t.getDescription().equals(TASK_NAMES.get(1) + " description")
-                                && t.getActions().size() == 2));
+                        t.name().equals(TASK_NAMES.get(0))
+                                && t.description().equals(TASK_NAMES.get(0) + " description")
+                                && t.actions().size() == 1));
+
+        verify(_mockPipelineService)
+                .save(argThat((Task t) ->
+                        t.name().equals(TASK_NAMES.get(1))
+                                && t.description().equals(TASK_NAMES.get(1) + " description")
+                                && t.actions().size() == 2));
 
         verify(_mockPipelineService)
                 .save(argThat((Pipeline p) ->
-                        p.getName().equals(PIPELINE_NAME)
-                                && p.getDescription().contains("description")
-                                && p.getTasks().size() == 2));
+                        p.name().equals(PIPELINE_NAME)
+                                && p.description().contains("description")
+                                && p.tasks().size() == 2));
     }
 
 
@@ -416,32 +430,33 @@ public class TestAddComponentService {
         when(_mockObjectMapper.readValue(new File(existingDescriptorPath), JsonComponentDescriptor.class))
                 .thenReturn(existingDescriptor);
 
-        Algorithm existingAlgo = existingDescriptor.getAlgorithm();
+        Algorithm existingAlgo = existingDescriptor.algorithm();
         Algorithm algoWithChange = new Algorithm(
-                existingAlgo.getName(),
-                existingAlgo.getDescription(),
-                existingAlgo.getActionType(),
-                existingAlgo.getOutputChangedCounter(),
+                existingAlgo.name(),
+                existingAlgo.description(),
+                existingAlgo.actionType(),
+                existingAlgo.trackType(),
+                existingAlgo.outputChangedCounter(),
                 // Just pick a random field to change
-                new Algorithm.Requires(Collections.singleton("asdf")),
-                existingAlgo.getProvidesCollection(),
-                existingAlgo.getSupportsBatchProcessing(),
-                existingAlgo.getSupportsStreamProcessing());
+                new Algorithm.Requires(List.of("asdf")),
+                existingAlgo.providesCollection(),
+                existingAlgo.supportsBatchProcessing(),
+                existingAlgo.supportsStreamProcessing());
 
         JsonComponentDescriptor newDescriptor = new JsonComponentDescriptor(
-                existingDescriptor.getComponentName(),
-                existingDescriptor.getComponentVersion(),
-                existingDescriptor.getMiddlewareVersion(),
-                existingDescriptor.getSetupFile(),
-                existingDescriptor.getInstructionsFile(),
-                existingDescriptor.getSourceLanguage(),
-                existingDescriptor.getBatchLibrary(),
-                existingDescriptor.getStreamLibrary(),
-                existingDescriptor.getEnvironmentVariables(),
+                existingDescriptor.componentName(),
+                existingDescriptor.componentVersion(),
+                existingDescriptor.middlewareVersion(),
+                existingDescriptor.setupFile(),
+                existingDescriptor.instructionsFile(),
+                existingDescriptor.sourceLanguage(),
+                existingDescriptor.batchLibrary(),
+                existingDescriptor.streamLibrary(),
+                existingDescriptor.environmentVariables(),
                 algoWithChange,
-                existingDescriptor.getActions(),
-                existingDescriptor.getTasks(),
-                existingDescriptor.getPipelines());
+                existingDescriptor.actions(),
+                existingDescriptor.tasks(),
+                existingDescriptor.pipelines());
 
 
         boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
@@ -596,7 +611,7 @@ public class TestAddComponentService {
 
         doThrow(InvalidPipelineException.class)
                 .when(_mockPipelineService)
-                .save(eq(descriptor.getAlgorithm()));
+                .save(eq(descriptor.algorithm()));
         try {
             _addComponentService.registerComponent(_testPackageName);
             fail();

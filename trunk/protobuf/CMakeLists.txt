@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -33,13 +33,8 @@ project(MPF_PROTOBUF)
 if (EXISTS /apps/install/include/google/protobuf)
     set(Protobuf_INCLUDE_DIR /apps/install/include)
 endif()
-if (EXISTS /apps/install/lib/libprotobuf.a)
-    set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.a)
-elseif(EXISTS /usr/lib64/libprotobuf.a)
-    set(Protobuf_LIBRARY /usr/lib64/libprotobuf.a)
-elseif(EXISTS /usr/lib/x86_64-linux-gnu/libprotobuf.a)
-    set(Protobuf_LIBRARY /usr/lib/x86_64-linux-gnu/libprotobuf.a)
-endif()
+find_file(Protobuf_LIBRARY libprotobuf.a
+            PATHS /apps/install/lib /usr/lib64 /usr/lib/x86_64-linux-gnu)
 find_package(Protobuf REQUIRED)
 
 file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")
@@ -57,3 +52,9 @@ target_link_libraries(mpfProtobufs ${Protobuf_LIBRARY})
 # include ourselves for building
 target_include_directories(mpfProtobufs PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
+# Video overlay is a shared library, so it needs to link with the shared version of libprotobuf.
+find_file(Protobuf_SHARED_LIBRARY libprotobuf.so
+            PATHS /apps/install/lib /usr/lib64 /usr/lib/x86_64-linux-gnu)
+add_library(mpfProtobufsShared SHARED ${MPF_PROTO_SRCS})
+target_link_libraries(mpfProtobufsShared ${Protobuf_SHARED_LIBRARY})
+target_include_directories(mpfProtobufsShared PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

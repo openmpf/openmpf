@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -106,9 +107,13 @@ public class TrackMergingProcessor extends WfmProcessor {
         BatchJob job = _inProgressBatchJobs.getJob(jobId);
 
         Task task = job.getPipelineElements().getTask(taskIndex);
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
             Action action = job.getPipelineElements()
                     .getAction(taskIndex, actionIndex);
+            var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
+            if (_aggregateJobPropertiesUtil.isExemptFromTrackMerging(algo.trackType())) {
+                continue;
+            }
 
             for (Media media : job.getMedia()) {
 
@@ -128,18 +133,18 @@ public class TrackMergingProcessor extends WfmProcessor {
 
                 SortedSet<Track> tracks = trackCache.getTracks(media.getId(), actionIndex);
 
-                if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
+                if (tracks.isEmpty()) {
                     continue;
                 }
 
                 if (mergeRequested) {
                     int initialSize = tracks.size();
-                    tracks = new TreeSet<>(combine(tracks, trackMergingPlan));
+                    tracks = new TreeSet<>(combine(job, tracks, trackMergingPlan));
 
                     log.debug("Merging {} tracks down to {} in Media {}.",
                               initialSize, tracks.size(), media.getId());
                 }
-
+                
                 if (pruneRequested) {
                     int initialSize = tracks.size();
                     int minTrackLength = trackMergingPlan.getMinTrackLength();
@@ -218,7 +223,8 @@ public class TrackMergingProcessor extends WfmProcessor {
         return new TrackMergingPlan(mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
     }
 
-    private static Set<Track> combine(SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
+    private static Set<Track> combine(
+            BatchJob job, SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
         // Do not attempt to merge an empty or null set.
         if (sourceTracks.isEmpty()) {
             return sourceTracks;
@@ -235,7 +241,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
             for (Track candidate : tracks) {
                 // Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
-                if (canMerge(merged, candidate, plan)) {
+                if (canMerge(job, merged, candidate, plan)) {
                     // If one is found, merge them and then push this track back to the beginning of the collection.
                     tracks.add(0, merge(merged, candidate));
                     performedMerge = true;
@@ -261,7 +267,6 @@ public class TrackMergingProcessor extends WfmProcessor {
         return new HashSet<>(mergedTracks);
     }
 
-    /** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
     public static Track merge(Track track1, Track track2){
 
         Collection<Detection> detections = Stream.of(track1, track2)
@@ -285,36 +290,34 @@ public class TrackMergingProcessor extends WfmProcessor {
                 track2.getEndOffsetFrameInclusive(),
                 track1.getStartOffsetTimeInclusive(),
                 track2.getEndOffsetTimeInclusive(),
-                track1.getType(),
+                track1.getMergedTaskIndex(),
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
                 properties,
-                track1.getExemplarPolicy());
+                track1.getExemplarPolicy(),
+                track1.getQualitySelectionProperty());
         return merged;
     }
 
-    private static boolean canMerge(Track track1, Track track2, TrackMergingPlan plan) {
-        return StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())
-                && isEligibleForMerge(track1, track2)
+    private static boolean canMerge(
+            BatchJob job, Track track1, Track track2, TrackMergingPlan plan) {
+        var pipelineElements = job.getPipelineElements();
+        var track1Algo = pipelineElements.getAlgorithm(
+                track1.getTaskIndex(), track1.getActionIndex());
+        var track2Algo = pipelineElements.getAlgorithm(
+                track2.getTaskIndex(), track2.getActionIndex());
+
+        return StringUtils.equalsIgnoreCase(track1Algo.trackType(), track2Algo.trackType())
+                && isEligibleForMerge(track1, track2, track1Algo.trackType())
                 && isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
                 && intersects(track1, track2, plan.getMinTrackOverlap());
     }
 
-    private boolean isEligibleForFixup(SortedSet<Track> tracks) {
-        // NOTE: All tracks should be the same type.
-        String type = tracks.first().getType();
-        return !_aggregateJobPropertiesUtil.isExemptFromTrackMerging(type);
-    }
 
-    // This method assumes that isEligibleForFixup() has been checked.
-    private static boolean isEligibleForMerge(Track track1, Track track2) {
+    // This method assumes that we've already checked that both tracks have the same track type.
+    private static boolean isEligibleForMerge(Track track1, Track track2, String trackType) {
         // NOTE: All tracks should be the same type.
-        switch (track1.getType().toUpperCase()) {
-            case "CLASS":
-                return isSameClassification(track1, track2);
-            default:
-                return true;
-        }
+        return !trackType.equals("CLASS") || isSameClassification(track1, track2);
     }
 
     private static boolean isSameClassification(Track track1, Track track2) {

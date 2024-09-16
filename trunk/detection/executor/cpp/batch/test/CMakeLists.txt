@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -40,5 +40,8 @@ if (${GTEST_FOUND})
 
     add_test(NAME BatchExecutorTest COMMAND BatchExecutorTest)
     file(COPY test_python_components/ DESTINATION test_python_components)
+    file(CREATE_LINK
+        ${CMAKE_CURRENT_SOURCE_DIR}/test-health-check.ini
+        ${CMAKE_CURRENT_BINARY_DIR}/test-health-check.ini SYMBOLIC)
 
 endif()

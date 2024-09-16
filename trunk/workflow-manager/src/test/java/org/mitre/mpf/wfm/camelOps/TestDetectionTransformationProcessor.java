@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -397,7 +397,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1,
+                 detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -425,7 +426,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1,
+                detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -452,7 +454,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -479,7 +481,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1,detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -506,7 +508,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -533,12 +535,13 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "SPEECH", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(
+                tracks, "SPEECH", 200, 400, false, false);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -556,7 +559,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection1);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 1,
-                1, 1, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 1, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -577,7 +580,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap(), "");
+                1, 3, 1, 1, detections, Collections.emptyMap(), "", "");
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -670,6 +673,16 @@ public class TestDetectionTransformationProcessor {
                                                                   int frameWidth, int frameHeight,
                                                                   boolean hasWidthHeightWarning,
                                                                   boolean hasOutsideFrameWarning) {
+        return runRemoveIllFormedDetections(
+                tracks, "FACE", frameWidth, frameHeight, hasWidthHeightWarning,
+                hasOutsideFrameWarning);
+    }
+
+    private static Collection<Track> runRemoveIllFormedDetections(SortedSet<Track> tracks,
+                                                                  String trackType,
+                                                                  int frameWidth, int frameHeight,
+                                                                  boolean hasWidthHeightWarning,
+                                                                  boolean hasOutsideFrameWarning) {
         JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
         InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
         AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
@@ -684,7 +697,7 @@ public class TestDetectionTransformationProcessor {
         var trackCache = new TrackCache(jobId, 0, _mockInProgressJobs);
 
         Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(
-                trackCache, mediaId, 0, frameWidth, frameHeight, tracks);
+                trackCache, mediaId, 0, frameWidth, frameHeight, trackType, tracks);
 
         if (!hasWidthHeightWarning && !hasOutsideFrameWarning) {
             verify(_mockInProgressJobs, times(0))
@@ -768,7 +781,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection);
 
         Track track = new Track(1, 2, 1, 1, 0, 0,
-                0, 0, "FACE", 1, detections, Collections.emptyMap(), "");
+                0, 0, 1, 1, detections, Collections.emptyMap(), "", "");
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track);
 

@@ -5,11 +5,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2023 The MITRE Corporation. All Rights Reserved.
+    Copyright 2024 The MITRE Corporation. All Rights Reserved.
 -->
 
 <!--
-    Copyright 2023 The MITRE Corporation
+    Copyright 2024 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -150,7 +150,8 @@
             </div>
             <div class="row">
                 <div>
-                    <task-sequence tasks="currentPipeline.vmTasks" op-obj="pipes2"></task-sequence>
+                    <mpf-task-sequence tasks="currentPipeline.vmTasks" op-obj="pipes2">
+                    </mpf-task-sequence>
                 </div>
             </div>
         </form>
@@ -226,7 +227,9 @@
                                         </span>
                                         <div class="pp-algorithm-panel">
                                             <div ng-repeat="prop in currentAction.viewProperties | orderBy: 'name'">
-                                                <action-property prop="prop" edit-mode="actions2.inEditMode()"></action-property>
+                                                <mpf-action-property prop="prop"
+                                                    edit-mode="actions2.inEditMode()">
+                                                </mpf-action-property>
                                             </div>
                                         </div>
                                     </div>
@@ -239,6 +242,3 @@
         </form>
     </div>
 </script>
-
-
-

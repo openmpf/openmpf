@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -32,6 +32,9 @@ cmake_policy(SET CMP0015 NEW)
 set(CMAKE_CXX_STANDARD 17)
 
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
+
+# Needed for VS Code Intellisense
+add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 
 MESSAGE("CURRENT CMAKE CXX vars")
 # if empty or "Debug", the "-g" flag will be added
@@ -88,5 +91,3 @@ add_subdirectory(detection/executor/cpp)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)
-
-

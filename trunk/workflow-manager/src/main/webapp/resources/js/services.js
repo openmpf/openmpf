@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -526,13 +526,10 @@ AppServices.factory('ServerSidePush', [
         }
         initialized = true;
 
-        let baseUrl = location.href;
-        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('workflow-manager/'));
-
         let unsubscribed = false;
 
         $.atmosphere.subscribe({
-            url: baseUrl + 'workflow-manager/websocket',
+            url: 'websocket',
             contentType: "application/json",
             logLevel: 'debug',
             transport: 'websocket',
@@ -661,7 +658,7 @@ function ($q, NotificationSvc, ClientState) {
             }
             if (ClientState.getConnectionState() != ClientState.ConnectionState.LOGGING_OUT
                     && response.status == 401) {
-                window.top.location.href = 'login';
+                window.top.location.reload()
             }
 
             var respData = response.data;

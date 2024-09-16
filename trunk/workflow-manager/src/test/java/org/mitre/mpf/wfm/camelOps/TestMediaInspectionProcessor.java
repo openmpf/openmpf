@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -78,7 +78,6 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -125,7 +124,6 @@ public class TestMediaInspectionProcessor {
 
     @BeforeClass
     public static void initClass() {
-        assertTrue(JniLoader.isLoaded());
         ThreadUtil.start();
     }
 
@@ -208,7 +206,7 @@ public class TestMediaInspectionProcessor {
                 "FRAME_COUNT", "29",
                 "DURATION", "3500");
 
-        assertVideoMetadataMatches(expectedMetadata, 53.0 / 6);
+        assertVideoMetadataMatches(expectedMetadata, 25.0 / 3);
     }
 
 
@@ -430,11 +428,11 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO),
-                        eq("audio/x-hx-aac-adts"), eq(-1), _metadataCaptor.capture());
+                        eq("audio/x-aac"), eq(-1), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
 
         var expectedMetadata = Map.of(
-            "MIME_TYPE", "audio/x-hx-aac-adts",
+            "MIME_TYPE", "audio/x-aac",
             "DURATION", "2304"
         );
         assertEquals(expectedMetadata, _metadataCaptor.getValue());

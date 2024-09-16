@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.2",
+  "openmpfVersion": "9.0",
   "jobId": 14,
   "errors": [],
   "warnings": [],
@@ -58,7 +58,7 @@
       "output": {
         "FACE": [
           {
-            "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
+            "action": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
             "algorithm": "FACECV",
             "tracks": [
               {
@@ -68,7 +68,6 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "FACE",
-                "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
                 "confidence": 60.0,
                 "trackProperties": {
                   "HORIZONTAL_FLIP": "true",

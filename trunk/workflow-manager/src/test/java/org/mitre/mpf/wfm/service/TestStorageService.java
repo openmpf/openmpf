@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,26 +27,23 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Table;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mitre.mpf.interop.JsonIssueDetails;
-import org.mitre.mpf.interop.JsonMediaIssue;
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mitre.mpf.test.TestUtil.nonEmptyCollection;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
@@ -55,14 +52,32 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static org.junit.Assert.*;
-import static org.mitre.mpf.test.TestUtil.nonBlank;
-import static org.mitre.mpf.test.TestUtil.nonEmptyCollection;
-import static org.mockito.Mockito.*;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.Before;
+import org.junit.Test;
+import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.interop.JsonMediaIssue;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.IssueSources;
+import org.mitre.mpf.wfm.enums.MarkupStatusType;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
-public class TestStorageService {
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Table;
 
-    private AutoCloseable _closeable;
+public class TestStorageService extends MockitoTest.Lenient {
 
     @InjectMocks
     private StorageService _storageService;
@@ -93,17 +108,12 @@ public class TestStorageService {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
         when(_mockPropertiesUtil.getJobIdFromExportedId(TEST_EXPORTED_JOB_ID))
                 .thenReturn(TEST_INTERNAL_JOB_ID);
         when(_mockOutputObject.getJobId())
                 .thenReturn(TEST_EXPORTED_JOB_ID);
     }
 
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void S3BackendHasHigherPriorityThanNginx() throws IOException, StorageException {

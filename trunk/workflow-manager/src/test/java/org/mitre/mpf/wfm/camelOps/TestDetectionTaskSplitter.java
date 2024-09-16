@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,7 +35,6 @@ import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionTaskSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
@@ -112,13 +111,14 @@ public class TestDetectionTaskSplitter {
                 "detectionAlgo",
                 "algo description",
                 ActionType.DETECTION,
+                "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true,
                 true);
         Action action = new Action(
-                "detectionAction", "detectionDescription", algorithm.getName(),
+                "detectionAction", "detectionDescription", algorithm.name(),
                 Arrays.asList(new ActionProperty(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1"),
                               new ActionProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1"),
                               new ActionProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10"),
@@ -126,10 +126,10 @@ public class TestDetectionTaskSplitter {
 
 
         Task task = new Task("taskName", "task description",
-                             Collections.singletonList(action.getName()));
+                             Collections.singletonList(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.getName()));
+                                         Collections.singletonList(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singletonList(task), Collections.singletonList(action),
                 Collections.singletonList(algorithm));
@@ -199,17 +199,10 @@ public class TestDetectionTaskSplitter {
 
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        boolean propertyExists = false;
-        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
-            if (propertyName.equals(prop.getPropertyName())) {
-                Assert.assertEquals(propertyValue, prop.getPropertyValue());
-                propertyExists = true;
-            }
-            else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
-                Assert.assertEquals("0", prop.getPropertyValue());
-            }
-        }
-        Assert.assertTrue(propertyExists);
+        Assert.assertEquals(propertyValue, request.getAlgorithmPropertiesOrThrow(propertyName));
+        Assert.assertEquals(
+                "0",
+                request.getAlgorithmPropertiesOrDefault(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0"));
     }
 
     @Test
@@ -235,17 +228,10 @@ public class TestDetectionTaskSplitter {
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        boolean propertyExists = false;
-        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
-            if (propertyName.equals(prop.getPropertyName())) {
-                Assert.assertEquals(propertyValue,prop.getPropertyValue());
-                propertyExists = true;
-            }
-            else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
-                Assert.assertEquals("0", prop.getPropertyValue());
-            }
-        }
-        Assert.assertTrue(propertyExists);
+        Assert.assertEquals(propertyValue, request.getAlgorithmPropertiesOrThrow(propertyName));
+        Assert.assertEquals(
+                "0",
+                request.getAlgorithmPropertiesOrDefault(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0"));
     }
 
     @Test
@@ -374,30 +360,22 @@ public class TestDetectionTaskSplitter {
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
 
-        AlgorithmPropertyProtocolBuffer.AlgorithmProperty matchingProtoProp = request.getAlgorithmPropertyList()
-                .stream()
-                .filter(p -> p.getPropertyName().equals(propertyName))
-                .findAny()
-                .orElse(null);
+        var matchingProtoPropValue = request.getAlgorithmPropertiesMap().get(propertyName);
         Assert.assertNotNull("Expected there to be a protobuf property named " + propertyName,
-                             matchingProtoProp);
+                             matchingProtoPropValue);
         Assert.assertEquals(String.format("Expected the protobuf property %s to be %s", propertyName, propertyValue),
-                            propertyValue, matchingProtoProp.getPropertyValue());
+                            propertyValue, matchingProtoPropValue);
 
         for (Map.Entry<String, String> actionPropEntry : expectedProperties.entrySet()) {
-            AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp = request.getAlgorithmPropertyList()
-                    .stream()
-                    .filter(p -> p.getPropertyName().equals(actionPropEntry.getKey()))
-                    .findAny()
-                    .orElse(null);
+            var protoPropValue = request.getAlgorithmPropertiesMap().get(actionPropEntry.getKey());
 
             Assert.assertNotNull(
                     "Expected there to be a protobuf property named " + actionPropEntry.getKey(),
-                    protoProp);
+                    protoPropValue);
 
             Assert.assertEquals(String.format("Expected the protobuf property %s to be %s",
                                               actionPropEntry.getKey(), actionPropEntry.getValue()),
-                                actionPropEntry.getValue(), protoProp.getPropertyValue());
+                                actionPropEntry.getValue(), protoPropValue);
         }
     }
 
@@ -416,6 +394,7 @@ public class TestDetectionTaskSplitter {
                 "detectionAlgo",
                 "algo description",
                 ActionType.DETECTION,
+                "TEST",
                 OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
@@ -427,12 +406,12 @@ public class TestDetectionTaskSplitter {
                 .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
         Action action = new Action("detectionAction", "detectionDescription",
-                                   algorithm.getName(), actionPropList);
+                                   algorithm.name(), actionPropList);
 
-        Task task = new Task("taskName", "taskDescr", Collections.singletonList(action.getName()));
+        Task task = new Task("taskName", "taskDescr", Collections.singletonList(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.getName()));
+                                         Collections.singletonList(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline,
                 Collections.singletonList(task),
@@ -470,7 +449,7 @@ public class TestDetectionTaskSplitter {
             testMedia.addMetadata("FPS", "30");
         }
 
-        BatchJob testJob = new BatchJobImpl(
+        var testJob = new BatchJobImpl(
                 testJobId,
                 testExternalId,
                 systemPropertiesSnapshot,
@@ -482,7 +461,7 @@ public class TestDetectionTaskSplitter {
                 jobProperties,
                 Collections.emptyMap(),
                 false);
-
+        testJob.setCurrentTaskIndex(0);
         return testJob;
     }
 
@@ -502,7 +481,7 @@ public class TestDetectionTaskSplitter {
         testMedia.setMimeType("video/dummy");
 
         Algorithm algorithm = new Algorithm(
-                "FACECV", "description", ActionType.DETECTION, OptionalInt.empty(),
+                "FACECV", "description", ActionType.DETECTION, "FACE", OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
@@ -512,13 +491,13 @@ public class TestDetectionTaskSplitter {
                 .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
 
-        Action action = new Action("FACECV", "dummyDescriptionFACECV", algorithm.getName(),
+        Action action = new Action("FACECV", "dummyDescriptionFACECV", algorithm.name(),
                                    actionPropertyList);
         Task task = new Task("Test task", "task description",
-                             Collections.singletonList(action.getName()));
+                             Collections.singletonList(action.name()));
         Pipeline pipeline = new Pipeline("OCV FACE DETECTION PIPELINE",
                                          "TestDetectionSplitter Pipeline",
-                                         Collections.singletonList(task.getName()));
+                                         Collections.singletonList(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singletonList(task), Collections.singletonList(action),
                 Collections.singletonList(algorithm));
@@ -899,33 +878,37 @@ public class TestDetectionTaskSplitter {
         parentMedia.setType(MediaType.UNKNOWN);
         parentMedia.setMimeType("application/pdf");
 
-        var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION, "MEDIA",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION, "PARENT",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION, "CHILD",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
+        var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION, "SHARED",
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
 
-        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
-        var action2 = new Action("PARENT_ACTION", null, algo2.getName(),
+        var action1 = new Action("EXTRACT_ACTION", null, algo1.name(), List.of());
+        var action2 = new Action("PARENT_ACTION", null, algo2.name(),
                 List.of(new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE")));
-        var action3 = new Action("CHILD_ACTION", null, algo3.getName(),
+        var action3 = new Action("CHILD_ACTION", null, algo3.name(),
                 List.of(new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE")));
-        var action4 = new Action("SHARED_ACTION", null, algo4.getName(), List.of());
+        var action4 = new Action("SHARED_ACTION", null, algo4.name(), List.of());
 
-        var task1 = new Task("TASK1", null, List.of(action1.getName()));
-        var task2 = new Task("TASK2", null, List.of(action2.getName()));
-        var task3 = new Task("TASK3", null, List.of(action3.getName()));
-        var task4 = new Task("TASK4", null, List.of(action4.getName()));
+        var task1 = new Task("TASK1", null, List.of(action1.name()));
+        var task2 = new Task("TASK2", null, List.of(action2.name()));
+        var task3 = new Task("TASK3", null, List.of(action3.name()));
+        var task4 = new Task("TASK4", null, List.of(action4.name()));
 
         var pipeline = new Pipeline("PIPELINE", null,
-                List.of(task1.getName(), task2.getName(), task3.getName(), task4.getName()));
+                List.of(task1.name(), task2.name(), task3.name(), task4.name()));
         var pipelineElements = new JobPipelineElements(
                 pipeline,
                 List.of(task1, task2, task3, task4),
@@ -937,19 +920,20 @@ public class TestDetectionTaskSplitter {
                 null, null, List.of(parentMedia),
                 Map.of(), Map.of(), false);
 
+        job.setCurrentTaskIndex(0);
         List<Message> responseList = detectionSplitter.performSplit(job, task1);
         Assert.assertEquals(1, responseList.size()); // parent only
 
         // Children will be added after the extraction task in a real job.
         var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", UriScheme.FILE, Paths.get("/local/path/child1"),
                 Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of());
+                List.of(), List.of(), null);
         childMedia1.setType(MediaType.IMAGE);
         childMedia1.setMimeType("image/png");
 
         var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", UriScheme.FILE, Paths.get("/local/path/child2"),
                 Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of());
+                List.of(), List.of(), null);
         childMedia2.setType(MediaType.IMAGE);
         childMedia2.setMimeType("image/jpeg");
 
@@ -964,5 +948,35 @@ public class TestDetectionTaskSplitter {
 
         responseList = detectionSplitter.performSplit(job, task4);
         Assert.assertEquals(3, responseList.size()); // parent and children
+
+        // nothing run yet
+        job.setCurrentTaskIndex(0);
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after parent only extraction
+        job.setCurrentTaskIndex(1);
+        Assert.assertEquals(0, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after parent only detection
+        job.setCurrentTaskIndex(2);
+        Assert.assertEquals(1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after child only detection
+        job.setCurrentTaskIndex(3);
+        Assert.assertEquals(1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(2, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(2, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // after parent and child detection
+        job.setCurrentTaskIndex(4);
+        Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
     }
 }

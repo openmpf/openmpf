@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -36,10 +36,12 @@ import org.mitre.mpf.interop.JsonStreamingTrackOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
+import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -59,6 +61,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
     private final ProtobufDataFormatFactory _protobufDataFormatFactory;
 
+    private final InProgressStreamingJobsService _inProgressJobs;
+
     // Used to determine of messages should be ignored if AMQ has not been purged yet
     private final WfmStartup _wfmStartup;
 
@@ -66,9 +70,11 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
     public StreamingJobRoutesBuilder(
             StreamingJobRequestService streamingJobRequestService,
             ProtobufDataFormatFactory protobufDataFormatFactory,
+            InProgressStreamingJobsService inProgressJobs,
             WfmStartup wfmStartup) {
         _streamingJobRequestService = streamingJobRequestService;
         _protobufDataFormatFactory = protobufDataFormatFactory;
+        _inProgressJobs = inProgressJobs;
         _wfmStartup = wfmStartup;
     }
 
@@ -124,13 +130,15 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 
 
-    private static JsonSegmentSummaryReport convertProtobufResponse(
+    private JsonSegmentSummaryReport convertProtobufResponse(
             long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
+        var job = _inProgressJobs.getJob(jobId);
+        var trackType = job.getPipelineElements().getAlgorithm(0, 0).trackType();
 
         List<JsonStreamingTrackOutputObject> tracks =
                 IntStream.range(0, protobuf.getVideoTracksList().size())
                 .mapToObj(i -> StreamingJobRoutesBuilder.convertProtobufTrack(i,
-                        protobuf.getDetectionType(), protobuf.getVideoTracksList().get(i)) )
+                        trackType, protobuf.getVideoTracksList().get(i)) )
                 .collect(toList());
 
         return new JsonSegmentSummaryReport(
@@ -139,22 +147,21 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getSegmentNumber(),
                 protobuf.getSegmentStartFrame(),
                 protobuf.getSegmentStopFrame(),
-                protobuf.getDetectionType(),
+                trackType,
                 tracks,
                 protobuf.getError());
     }
 
 
     private static JsonStreamingTrackOutputObject convertProtobufTrack(
-            int id, String detectionType, DetectionProtobuf.StreamingVideoTrack protobuf) {
+            int id, String trackType, DetectionProtobuf.StreamingVideoTrack protobuf) {
 
         SortedSet<JsonStreamingDetectionOutputObject> detections = protobuf.getDetectionsList().stream()
                 .map(StreamingJobRoutesBuilder::convertDetection)
                 .collect(toCollection(TreeSet::new));
 
-        JsonStreamingDetectionOutputObject exemplar = detections.stream()
-                .max(Comparator.comparingDouble(JsonStreamingDetectionOutputObject::getConfidence))
-                .orElse(null);
+        JsonStreamingDetectionOutputObject exemplar = TopQualitySelectionUtil.getTopConfidenceItem(
+                detections, JsonStreamingDetectionOutputObject::getConfidence);
 
         return new JsonStreamingTrackOutputObject(
                 Integer.toString(id),
@@ -162,10 +169,10 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getStopFrame(),
                 Instant.ofEpochMilli(protobuf.getStartTime()),
                 Instant.ofEpochMilli(protobuf.getStopTime()),
-                detectionType,
+                trackType,
                 /* source, */ // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
                 protobuf.getConfidence(),
-                convertProperties(protobuf.getDetectionPropertiesList()),
+                protobuf.getDetectionPropertiesMap(),
                 exemplar,
                 detections);
     }
@@ -179,17 +186,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getWidth(),
                 protobuf.getHeight(),
                 protobuf.getConfidence(),
-                convertProperties(protobuf.getDetectionPropertiesList()),
+                protobuf.getDetectionPropertiesMap(),
                 protobuf.getFrameNumber(),
                 Instant.ofEpochMilli(protobuf.getTime()));
-    }
-
-
-    private static SortedMap<String, String> convertProperties(List<DetectionProtobuf.PropertyMap> properties) {
-        return properties.stream().collect(toMap(
-                DetectionProtobuf.PropertyMap::getKey,
-                DetectionProtobuf.PropertyMap::getValue,
-                (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
-                TreeMap::new));
     }
 }

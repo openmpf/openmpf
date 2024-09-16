@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -63,10 +63,11 @@ public class TestMarkupSplitter {
                          10,      // endOffsetFrame
                          5000,    // startOffsetTime
                          10000,   // endOffsetTime
-                         "type",  // type
+                         0, // mergedTaskIndex
                          7.7777f, // confidence
                          List.of(createDetection(detectionProperties)),
                          trackProperties,
+                         "",
                          "");
     }
 
@@ -244,6 +245,7 @@ public class TestMarkupSplitter {
     @Test
     public void getLabelWithConfidence() {
         {
+            // Numeric prop returns track confidence.
             Track track = createTrack(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "some really really long class",
                                           NUMERIC_PROP_NAME, "9.999"),
@@ -255,6 +257,7 @@ public class TestMarkupSplitter {
                                             "CONFIDENCE").get());
         }
         {
+            // Numeric prop returns detection confidence.
             Detection detection = createDetection(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
                                           NUMERIC_PROP_NAME, "1.11111"));
@@ -264,22 +267,24 @@ public class TestMarkupSplitter {
                                             "CONFIDENCE").get());
         }
         {
+            // Numeric prop returns track confidence instead of track property named CONFIDENCE.
             Track track = createTrack(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "some really really long class",
                                           "CONFIDENCE", "9.999"),
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
                                           "CONFIDENCE", "1.11111"));
             Assert.assertEquals(
-                    "some reall 9.999",
+                    "some reall 7.778",
                     MarkupSplitter.getLabel(track, "", TEXT_PROP_NAME, 10,
                                             "CONFIDENCE").get());
         }
         {
+            // Numeric prop returns detection confidence instead of detection property named CONFIDENCE.
             Detection detection = createDetection(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
                                           "CONFIDENCE", "1.11111"));
             Assert.assertEquals(
-                    "abc 1.111",
+                    "abc 8.889",
                     MarkupSplitter.getLabel(detection, "", TEXT_PROP_NAME, 10,
                                             "CONFIDENCE").get());
         }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -88,11 +88,11 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
     private LaunchStreamingJobMessage createLaunchStreamingJobMessage(StreamingJob job) {
         Action action = getAction(job);
         StreamingServiceModel streamingService = _streamingServiceManager.getServices().stream()
-                .filter(sm -> sm.getAlgorithmName().equals(action.getAlgorithm()))
+                .filter(sm -> sm.getAlgorithmName().equals(action.algorithm()))
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException(String.format(
                         "Could not start streaming job because there is no streaming service for the %s algorithm.",
-                        action.getAlgorithm())));
+                        action.algorithm())));
 
         Map<String, String> environmentVariables = streamingService.getEnvironmentVariables().stream()
                 .collect(toMap(EnvironmentVariableModel::getName, EnvironmentVariableModel::getValue));
@@ -120,22 +120,22 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
     private static Action getAction(StreamingJob job) {
         Pipeline pipeline = job.getPipelineElements().getPipeline();
-        ImmutableList<String> tasks = pipeline.getTasks();
+        var tasks = pipeline.tasks();
         //TODO: Remove method when support for the multi-stage pipelines is added.
         if (tasks.size() > 1) {
             throw new IllegalStateException(String.format(
                     "Streaming job %s uses the %s pipeline which has multiple stages, but streaming pipelines only support one stage.",
-                    job.getId(), pipeline.getName()));
+                    job.getId(), pipeline.name()));
         }
         Task task = job.getPipelineElements().getTask(tasks.get(0));
-        if (task.getActions().size() > 1) {
+        if (task.actions().size() > 1) {
             throw new IllegalStateException(String.format(
                     "Streaming job %s uses the %s pipeline which contains a stage with multiple actions, but streaming pipelines only support a single action.",
-                    job.getId(), pipeline.getName()));
+                    job.getId(), pipeline.name()));
         }
 
         return job.getPipelineElements()
-                .getAction(task.getActions().get(0));
+                .getAction(task.actions().get(0));
     }
 
 

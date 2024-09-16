@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -46,7 +46,7 @@ public class MediaTypeUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(MediaTypeUtils.class);
 
-    private final PropertiesConfiguration _whiteListPropertiesConfig;
+    private final PropertiesConfiguration _mediaTypePropertiesConfig;
 
     @Inject
     public MediaTypeUtils(PropertiesUtil propertiesUtil) throws ConfigurationException {
@@ -57,33 +57,32 @@ public class MediaTypeUtils {
                 .setListDelimiterHandler(new DefaultListDelimiterHandler(','));
 
         var builder = new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class);
-        _whiteListPropertiesConfig = builder
+        _mediaTypePropertiesConfig = builder
                 .configure(configBuilderParameters)
                 .getConfiguration();
     }
 
     /**
-     * Uses the media mimeType and any whitelisted properties to determine how to process
-     * a piece of media.
+     * Uses the media mimeType and media type properties file to determine how to process a piece
+     * of media.
      *
      * @param mimeType  The mime-type of the media.
      * @return          The MediaType to treat the media as.
      */
     public MediaType parse(String mimeType) {
-        var whiteListKey = "whitelist." + mimeType;
-        var typeFromWhitelist = _whiteListPropertiesConfig.getString(whiteListKey);
-        if (typeFromWhitelist != null && !typeFromWhitelist.isBlank()) {
-            var trimmedUpper = typeFromWhitelist.strip().toUpperCase();
+        var mediaType = _mediaTypePropertiesConfig.getString(mimeType);
+        if (mediaType != null && !mediaType.isBlank()) {
+            var trimmedUpper = mediaType.strip().toUpperCase();
             try {
                 return MediaType.valueOf(trimmedUpper);
             }
             catch (IllegalArgumentException e) {
                 LOG.error(
-                        "The \"{}\" property from the media type white list file contained the invalid value of \"{}\".",
-                        whiteListKey, typeFromWhitelist);
+                        "The \"{}\" property from the media types file contained the invalid value of \"{}\".",
+                        mimeType, mediaType);
+
             }
         }
-
         return Stream.of(MediaType.values())
             .filter(mt -> StringUtils.startsWithIgnoreCase(mimeType, mt.toString()))
             .findAny()

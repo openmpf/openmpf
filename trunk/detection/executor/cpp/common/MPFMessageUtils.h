@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,16 +29,6 @@
 #include <MPFDetectionComponent.h>
 #include "detection.pb.h"
 
-// Translate a protobuf data type to the corresponding
-// MPFDetectionDataType. This is used for batch processing detection
-// requests.
-MPF::COMPONENT::MPFDetectionDataType
-translateProtobufDataType(const org::mitre::mpf::wfm::buffers::DetectionRequest_DataType &dataType);
-
-// Translate an MPFDetectionDataType to the corresponding protobuf
-// data type. This used for batch processing detection responses.
-org::mitre::mpf::wfm::buffers::DetectionResponse_DataType
-translateMPFDetectionDataType(const MPF::COMPONENT::MPFDetectionDataType &dataType);
 
 // Translate an MPFDetectionError to the corresponding detection
 // protobuf error. This is used in both batch and streaming processing jobs.

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.util;
 
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-import java.util.Comparator;
 import java.util.SortedSet;
 
 public class ExemplarPolicyUtil {
@@ -39,7 +38,7 @@ public class ExemplarPolicyUtil {
     private ExemplarPolicyUtil() {
     }
 
-    public static Detection getExemplar(String policy, int begin, int end,
+    public static Detection getExemplar(String policy, String quality_prop, int begin, int end,
                                         SortedSet<Detection> detections) {
         if (detections.isEmpty()) {
             return null;
@@ -54,9 +53,7 @@ public class ExemplarPolicyUtil {
             return findMiddle(begin, end, detections);
         }
         else {
-            return detections.stream()
-                    .max(Comparator.comparingDouble(Detection::getConfidence))
-                    .orElse(null);
+            return TopQualitySelectionUtil.getTopQualityItem(detections, quality_prop);
         }
     }
 

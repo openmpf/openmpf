@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -246,7 +246,6 @@ public class TestWfmEndToEnd {
 		Assert.assertNotNull("The unsolicited response was not properly detected.", exchange);
 		DetectionProtobuf.DetectionResponse receivedResponse = DetectionProtobuf.DetectionResponse.parseFrom(exchange.getIn().getBody(byte[].class));
 		Assert.assertEquals(targetResponse.getMediaId(), receivedResponse.getMediaId());
-		Assert.assertEquals(targetResponse.getRequestId(), receivedResponse.getRequestId());
 		log.info("Finished testUnsolicitedResponse()");
 	}
 
@@ -254,14 +253,11 @@ public class TestWfmEndToEnd {
 		return DetectionProtobuf.DetectionResponse.newBuilder()
 				.setTaskIndex(0)
 				.setActionIndex(0)
-				.setDataType(DetectionProtobuf.DetectionResponse.DataType.IMAGE)
 				.setError(DetectionProtobuf.DetectionError.BAD_FRAME_SIZE)
-				.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-						.setDetectionType("UNSOLICITED")
+				.setVideoResponse(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
 						.setStartFrame(0)
 						.setStopFrame(100))
 				.setMediaId(id)
-				.setRequestId(60)
 				.build();
 	}
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -97,7 +97,6 @@ namespace MPF { namespace COMPONENT {
 
 
     void BasicAmqMessageSender::SendSummaryReport(int frame_number,
-                                                  const std::string &detection_type,
                                                   const std::vector<MPFVideoTrack> &tracks,
                                                   const std::unordered_map<int, long> &frame_timestamps,
                                                   const std::string &error_message) {
@@ -107,7 +106,6 @@ namespace MPF { namespace COMPONENT {
         protobuf_response.set_segment_number(segment_number);
         protobuf_response.set_segment_start_frame(segment_size_ * segment_number);
         protobuf_response.set_segment_stop_frame(frame_number);
-        protobuf_response.set_detection_type(detection_type);
         if (!error_message.empty())  {
             protobuf_response.set_error(error_message);
         }
@@ -122,28 +120,23 @@ namespace MPF { namespace COMPONENT {
 
             protobuf_track->set_confidence(track.confidence);
 
-            for (const auto &property : track.detection_properties) {
-                auto protobuf_property = protobuf_track->add_detection_properties();
-                protobuf_property->set_key(property.first);
-                protobuf_property->set_value(property.second);
-            }
+            protobuf_track->mutable_detection_properties()->insert(
+                    track.detection_properties.begin(),
+                    track.detection_properties.end());
 
-            for (const auto &frame_location_pair : track.frame_locations) {
+            for (const auto& [detection_frame_number, frame_location] : track.frame_locations) {
                 auto protobuf_detection = protobuf_track->add_detections();
-                protobuf_detection->set_frame_number(frame_location_pair.first);
-                protobuf_detection->set_time(frame_timestamps.at(frame_location_pair.first));
+                protobuf_detection->set_frame_number(detection_frame_number);
+                protobuf_detection->set_time(frame_timestamps.at(detection_frame_number));
 
-                const auto &frame_location = frame_location_pair.second;
                 protobuf_detection->set_x_left_upper(frame_location.x_left_upper);
                 protobuf_detection->set_y_left_upper(frame_location.y_left_upper);
                 protobuf_detection->set_width(frame_location.width);
                 protobuf_detection->set_height(frame_location.height);
                 protobuf_detection->set_confidence(frame_location.confidence);
-                for (const auto &property : frame_location.detection_properties) {
-                    auto protobuf_property = protobuf_detection->add_detection_properties();
-                    protobuf_property->set_key(property.first);
-                    protobuf_property->set_value(property.second);
-                }
+                protobuf_detection->mutable_detection_properties()->insert(
+                        frame_location.detection_properties.begin(),
+                        frame_location.detection_properties.end());
             }
         }
 

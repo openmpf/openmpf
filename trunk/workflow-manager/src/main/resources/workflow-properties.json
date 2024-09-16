@@ -7,8 +7,8 @@
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
-        "name": "FEED_FORWARD_TOP_CONFIDENCE_COUNT",
-        "description": "Only applies if FEED_FORWARD_TYPE is set to a value other than “NONE”. If set to a value <= 0, then for each track generated in the previous pipeline stage, this algorithm will process the frame associated with each detection in that track, ignoring frames that don’t have detections. If FEED_FORWARD_TYPE is set to “FRAME”, then the entire frame is processed. If FEED_FORWARD_TYPE is set to “SUPERSET_REGION”, then only the superset region for those frames is processed. If this property is set to “1” then only the exemplar frame for each of the previous tracks is processed. If this property is set to a value > 1, say 5, then each of the detections in the previous track are sorted by confidence and this algorithm will only process the frames associated with the top 5 detections with the highest confidence. For detections with the same confidence values, it will select those with a lower frame index. If the track contains less than 5 detections, then all of the available detections are used. In practice, setting this property to a value > 1 has no effect on image and audio jobs because each track only contains one detection.",
+        "name": "FEED_FORWARD_TOP_QUALITY_COUNT",
+        "description": "Only applies if FEED_FORWARD_TYPE is set to a value other than “NONE”. If set to a value <= 0, then for each track generated in the previous pipeline stage, this algorithm will process the frame associated with each detection in that track, ignoring frames that don’t have detections. If FEED_FORWARD_TYPE is set to “FRAME”, then the entire frame is processed. If FEED_FORWARD_TYPE is set to “SUPERSET_REGION”, then only the superset region for those frames is processed. If this property is set to “1” then only the exemplar frame for each of the previous tracks is processed. If this property is set to a value > 1, say 5, then each of the detections in the previous track are sorted according to the value of the QUALITY_SELECTION_PROPERTY job property. and this algorithm will only process the frames associated with the top 5 detections with the highest quality. For detections with the same quality values, it will select those with a lower frame index. If the track contains less than 5 detections, then all of the available detections are used. In practice, setting this property to a value > 1 has no effect on image and audio jobs because each track only contains one detection.",
         "type": "INT",
         "defaultValue": "0",
         "mediaTypes": ["VIDEO"]
@@ -36,7 +36,7 @@
     },
     {
         "name": "OUTPUT_MERGE_WITH_PREVIOUS_TASK",
-        "description": "Tasks with this property set to true will replace the preceding task's tracks in the JSON output object. Those tracks will inherit the detection type and algorithm from the preceding task's tracks.",
+        "description": "Tasks with this property set to true will replace the preceding task's tracks in the JSON output object. Those tracks will inherit the track type and algorithm from the preceding task's tracks.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
@@ -84,10 +84,10 @@
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
-        "name": "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
-        "description": "The detections in a track will be sorted by confidence and then the N detections with the highest confidence will be extracted, up to the number of available detections, where N is an integer greater than 0. If N is less than or equal to 0, then this policy is disabled.",
+        "name": "ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT",
+        "description": "The detections in a track will be sorted by the detection property given by the QUALITY_SELECTION_PROPERTY job property, and then the N detections with the highest quality will be extracted, up to the number of available detections, where N is an integer greater than 0. If N is less than or equal to 0, then this policy is disabled.",
         "type": "INT",
-        "propertiesKey": "detection.artifact.extraction.policy.top.confidence.count",
+        "propertiesKey": "detection.artifact.extraction.policy.top.quality.count",
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
@@ -105,10 +105,17 @@
         "mediaTypes": ["VIDEO"]
     },
     {
-        "name": "CONFIDENCE_THRESHOLD",
-        "description": "The minimum confidence score which must be met or exceeded. Detections below this threshold are silently discarded.",
+        "name": "QUALITY_SELECTION_PROPERTY",
+        "description": "The detection property to be used to rank the quality of a track and the quality of the detections in a track. This property would be used, for example, to select the exemplar detection for a track.",
+        "type": "STRING",
+        "propertiesKey": "detection.quality.selection.prop",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "QUALITY_SELECTION_THRESHOLD",
+        "description": "This is the minimum value of the quality selection property which must be met or exceeded. Detections below this threshold are silently discarded.",
         "type": "DOUBLE",
-        "propertiesKey": "detection.confidence.threshold",
+        "propertiesKey": "detection.quality.selection.threshold",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
@@ -463,9 +470,9 @@
     },
     {
         "name": "EXEMPLAR_POLICY",
-        "description": "Sets the policy for determining a track's exemplar. When set to \"CONFIDENCE\" or anything other than a named policy, the detection with the maximum confidence is selected. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track).",
+        "description": "Sets the policy for determining a track's exemplar. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track). When set to \"QUALITY\" or anything other than these named policies, the detection with the maximum quality, according to the QUALITY_SELECTION_PROPERTY job property, is selected.",
         "type": "STRING",
-        "defaultValue": "CONFIDENCE",
+        "defaultValue": "QUALITY",
         "mediaTypes": ["VIDEO"]
     },
     {
@@ -487,6 +494,34 @@
         "description": "If \"FFPROBE_IGNORE_STDERR\" is false and ffprobe produces error logging, this value is the maximum number of lines of ffprobe's error logging that will be added to the media error.",
         "type": "INT",
         "propertiesKey": "ffprobe.stderr.num.lines",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "TRIGGER",
+        "description": "Trigger condition for an action when feed forward is used. An action with a trigger of `TRACK_PROPERTY=VALUE` will only process feed forward tracks that have a track property named \"TRACK_PROPERTY\" set to \"VALUE\".",
+        "type": "STRING",
+        "defaultValue": "",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "CALLBACK_USE_OIDC",
+        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included in the job completion callback.",
+        "type": "BOOLEAN",
+        "propertiesKey": "http.callback.use.oidc",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "TIES_DB_USE_OIDC",
+        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included when communicating with TiesDb.",
+        "type": "BOOLEAN",
+        "propertiesKey": "ties.db.use.oidc",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "ROLL_UP_FILE",
+        "description": "When provided, Workflow Manager will load the roll up JSON file from the specified path and apply the roll up to track and detection properties.",
+        "type": "STRING",
+        "defaultValue": "",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

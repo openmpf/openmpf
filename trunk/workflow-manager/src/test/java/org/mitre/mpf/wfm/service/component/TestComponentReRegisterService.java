@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,21 +26,14 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mitre.mpf.rest.api.component.ComponentState;
-import org.mitre.mpf.rest.api.component.RegisterComponentModel;
-import org.mitre.mpf.rest.api.node.NodeManagerModel;
-import org.mitre.mpf.rest.api.node.ServiceModel;
-import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import static org.mitre.mpf.test.TestUtil.collectionContaining;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -50,12 +43,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.mitre.mpf.test.TestUtil.collectionContaining;
-import static org.mockito.Mockito.*;
+import org.junit.Before;
+import org.junit.Test;
+import org.mitre.mpf.rest.api.component.ComponentState;
+import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.rest.api.node.NodeManagerModel;
+import org.mitre.mpf.rest.api.node.ServiceModel;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
-public class TestComponentReRegisterService {
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
-    private AutoCloseable _closeable;
+public class TestComponentReRegisterService extends MockitoTest.Lenient {
 
     @InjectMocks
     private ComponentReRegisterServiceImpl _reRegisterService;
@@ -93,7 +97,6 @@ public class TestComponentReRegisterService {
         when(_mockPropertiesUtil.getUploadedComponentsDirectory())
                 .thenReturn(_componentUploadDir.toFile());
 
-        _closeable = MockitoAnnotations.openMocks(this);
 
         _componentToReRegister = new RegisterComponentModel();
         _componentToReRegister.setFullUploadedFilePath(_packageToReRegisterPath.toString());
@@ -108,11 +111,6 @@ public class TestComponentReRegisterService {
                 .thenReturn(_componentToReRegister);
     }
 
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
 
     private List<RegisterComponentModel> addDefaultOrderTestComponents() {

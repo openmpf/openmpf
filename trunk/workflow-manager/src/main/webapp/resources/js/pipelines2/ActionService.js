@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -56,7 +56,7 @@
         ['$resource', 'AlgorithmService', 'orderByFilter',
             function ( $resource, AlgorithmService, orderByFilter ) {
 
-                var actionResource = $resource('actions');
+                var actionResource = $resource('actions/:name');
 
                 var setActionsAlgo = function (actionDetails) {
                     return AlgorithmService.get(actionDetails.algorithm)

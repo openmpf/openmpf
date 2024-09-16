@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,13 +26,15 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -41,9 +43,11 @@ import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaRange;
 
-import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Stream;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class MediaImpl implements Media {
 
@@ -60,23 +64,6 @@ public class MediaImpl implements Media {
     @Override
     @JsonIgnore
     public int getCreationTask() { return _creationTaskIndex; }
-
-
-    private final Multimap<Integer, Integer> _actionsIndexedByTask = HashMultimap.create();
-    @Override
-    public boolean wasActionProcessed(int taskIndex, int actionIndex) {
-        return _actionsIndexedByTask.containsEntry(taskIndex, actionIndex);
-    }
-    public void setProcessedAction(int taskIndex, int actionIndex) {
-        _actionsIndexedByTask.put(taskIndex, actionIndex);
-    }
-    @Override
-    @JsonIgnore
-    public int getLastProcessedTaskIndex() {
-        var tasks = _actionsIndexedByTask.keySet();
-        return tasks.isEmpty() ? -1 : Collections.max(tasks);
-    }
-
 
 
     @Override
@@ -229,13 +216,13 @@ public class MediaImpl implements Media {
     @Override
     public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
 
-    private final List<TiesDbInfo> _tiesDbInfo = new ArrayList<>();
+    private TiesDbInfo _tiesDbInfo;
     @Override
-    public List<TiesDbInfo> getTiesDbInfo() {
-        return Collections.unmodifiableList(_tiesDbInfo);
+    public Optional<TiesDbInfo> getTiesDbInfo() {
+        return Optional.ofNullable(_tiesDbInfo);
     }
-    public void addTiesDbInfo(TiesDbInfo info) {
-        _tiesDbInfo.add(info);
+    public void setTiesDbInfo(TiesDbInfo info) {
+        _tiesDbInfo = info;
     }
 
     @Override
@@ -312,7 +299,7 @@ public class MediaImpl implements Media {
             @JsonProperty("metadata") Map<String, String> metadata,
             @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
             @JsonProperty("timeRanges") Collection<MediaRange> timeRanges,
-            @JsonProperty("tiesDbInfo") Collection<TiesDbInfo> tiesDbInfo) {
+            @JsonProperty("tiesDbInfo") TiesDbInfo tiesDbInfo) {
         this(id,
              parentId,
              creationTaskIndex,
@@ -327,9 +314,7 @@ public class MediaImpl implements Media {
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
-        if (tiesDbInfo != null) {
-            _tiesDbInfo.addAll(tiesDbInfo);
-        }
+        _tiesDbInfo = tiesDbInfo;
     }
 
 

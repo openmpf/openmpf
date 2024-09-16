@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -114,9 +114,9 @@ public class JobConfigHasher {
 
             for (var task : pipelineElements.getTasksInOrder()) {
                 for (var action : pipelineElements.getActionsInOrder(task)) {
-                    var algorithm = pipelineElements.getAlgorithm(action.getAlgorithm());
-                    hasher.add(algorithm.getName());
-                    algorithm.getOutputChangedCounter()
+                    var algorithm = pipelineElements.getAlgorithm(action.algorithm());
+                    hasher.add(algorithm.name());
+                    algorithm.outputChangedCounter()
                             .ifPresentOrElse(
                                     ov -> hasher.add(String.valueOf(ov)),
                                     () -> hasher.add("none"));
@@ -141,10 +141,10 @@ public class JobConfigHasher {
 
     private Predicate<Map.Entry<String, String>> createIsRequiredFilter(
             Algorithm algorithm, MediaType mediaType) {
-        var algoPropertySet = algorithm.getProvidesCollection()
-            .getProperties()
+        var algoPropertySet = algorithm.providesCollection()
+            .properties()
             .stream()
-            .map(ap -> ap.getName())
+            .map(ap -> ap.name())
             .collect(toSet());
 
         return entry -> {

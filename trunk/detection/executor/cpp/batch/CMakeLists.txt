@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -57,13 +57,17 @@ include_directories(${MSG_UTILS_DIR})
 
 set(batch_executor_lib_files
 	ComponentLoadError.h
+	JobReceiver.h JobReceiver.cpp
+	Messenger.h Messenger.cpp
+	ProtobufRequestUtil.h ProtobufRequestUtil.cpp
+	ProtobufResponseUtil.h ProtobufResponseUtil.cpp
+	JobContext.h
 	CppComponentHandle.cpp CppComponentHandle.h
-	MPFDetectionBuffer.cpp MPFDetectionBuffer.h
-	MPFMessenger.cpp MPFMessenger.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
 	BatchExecutorUtil.cpp BatchExecutorUtil.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
-	LazyLoggerWrapper.h)
+	LoggerWrapper.h LoggerWrapper.cpp
+	HealthCheck.h HealthCheck.cpp)
 
 add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})
 target_include_directories(batch_executor_lib PUBLIC
@@ -75,8 +79,6 @@ target_link_libraries(batch_executor_lib PUBLIC mpfProtobufs
 
 add_executable(amq_detection_component main.cpp)
 target_link_libraries(amq_detection_component PUBLIC batch_executor_lib)
-
-
 
 install(TARGETS amq_detection_component
                 RUNTIME DESTINATION bin

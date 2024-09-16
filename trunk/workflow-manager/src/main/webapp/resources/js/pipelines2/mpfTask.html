@@ -5,11 +5,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2023 The MITRE Corporation. All Rights Reserved.
+    Copyright 2024 The MITRE Corporation. All Rights Reserved.
 -->
 
 <!--
-    Copyright 2023 The MITRE Corporation
+    Copyright 2024 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@
             <ul class="mpf-task-parallel-outer">
                 <ul class="mpf-task-parallel-actions-container">
                     <div ng-repeat="action in task._actions">
-                        <li action arrow-in arrow-out action-obj="action" task-obj="task"
+                        <li mpf-action arrow-in arrow-out action-obj="action" task-obj="task"
                             op-obj="opObj" index-in-sequence="{{$index}}"></li>
                     </div>
                 </ul>
@@ -45,12 +45,12 @@
         </div>
 
         <div ng-if="!containsParallelActions()" ng-repeat="action in task._actions">
-            <li action arrow-in action-obj="action"
+            <li mpf-action arrow-in action-obj="action"
                 op-obj="opObj" index-in-sequence="{{indexInSequence}}"></li>
         </div>
 
         <div ng-if="task.missing">
-            <li action arrow-in task-obj="task" no-popover
+            <li mpf-action arrow-in task-obj="task" no-popover
                 op-obj="opObj" index-in-sequence="{{indexInSequence}}"></li>
         </div>
 

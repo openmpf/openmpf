@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,14 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_COMPONENTLOADERROR_H
-#define MPF_COMPONENTLOADERROR_H
+#pragma once
 
 #include <stdexcept>
-
 
 class ComponentLoadError : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
-
-#endif //MPF_COMPONENTLOADERROR_H

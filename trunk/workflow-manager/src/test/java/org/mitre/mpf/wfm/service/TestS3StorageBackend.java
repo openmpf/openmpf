@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -416,17 +416,17 @@ public class TestS3StorageBackend {
         var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
         var media = mock(Media.class);
 
-        var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
+        var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION, "TEST",
                                       OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
         var action = new Action(
-                "TEST_ACTION", "description", algorithm.getName(),
+                "TEST_ACTION", "description", algorithm.name(),
                 List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY, ACCESS_KEY)));
-        var task = new Task("TEST_TASK", "description", List.of(action.getName()));
+        var task = new Task("TEST_TASK", "description", List.of(action.name()));
         var pipeline = new Pipeline("TEST_PIPELINE", "description",
-                                    List.of(task.getName()));
+                                    List.of(task.name()));
         var pipelineElements = new JobPipelineElements(
                 pipeline, List.of(task), List.of(action),
                 List.of(algorithm));

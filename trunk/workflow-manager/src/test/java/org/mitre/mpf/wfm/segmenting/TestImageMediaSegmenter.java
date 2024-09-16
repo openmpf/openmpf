@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,15 +27,15 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Message;
 import org.junit.Test;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -47,9 +47,16 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class TestImageMediaSegmenter {
+public class TestImageMediaSegmenter extends MockitoTest.Strict {
+
+    @Mock
+    private TriggerProcessor _mockTriggerProcessor;
+
+
+    @InjectMocks
+    private ImageMediaSegmenter _imageMediaSegmenter;
 
 	@Test
 	public void canCreateFirstStageMessages() {
@@ -57,16 +64,17 @@ public class TestImageMediaSegmenter {
 		DetectionContext context = createTestDetectionContext(
 				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
-		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+		var detectionRequests = _imageMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
 
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		// Verify FEED_FORWARD_TYPE has been removed
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -78,15 +86,16 @@ public class TestImageMediaSegmenter {
 
 		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), tracks);
 
-		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+		var detectionRequests = _imageMediaSegmenter.createDetectionRequests(media, context);
 		assertEquals(1, detectionRequests.size());
 
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 2));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 2));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertNoneHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -97,26 +106,31 @@ public class TestImageMediaSegmenter {
 		Set<Track> tracks = createTestTracks();
 
 		DetectionContext context = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
-		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+                .thenReturn(tracks.stream());
+
+		var detectionRequests = _imageMediaSegmenter.createDetectionRequests(media, context);
 
 		assertEquals(2, detectionRequests.size());
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.getAlgorithmPropertyList().size() == 3));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 3));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
+        detectionRequests.stream().forEach(dr -> System.out.println(dr.protobuf().getImageRequest().getFeedForwardLocation().getConfidence()));
 		assertTrue(detectionRequests.stream()
 				           .anyMatch(dr -> confidenceIsEqualToDimensions(
-						           5, dr.getImageRequest().getFeedForwardLocation())));
+						           5, dr.protobuf().getImageRequest().getFeedForwardLocation())));
 
 		assertTrue(detectionRequests.stream()
 				           .anyMatch(dr -> confidenceIsEqualToDimensions(
-						           10, dr.getImageRequest().getFeedForwardLocation())));
+						           10, dr.protobuf().getImageRequest().getFeedForwardLocation())));
+        assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -126,18 +140,10 @@ public class TestImageMediaSegmenter {
 
 		DetectionContext feedForwardContext = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
-		assertTrue(runSegmenter(media, feedForwardContext).isEmpty());
+		assertTrue(_imageMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
 
 		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet());
-		assertTrue(runSegmenter(media, context).isEmpty());
-	}
-
-
-
-	private static List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
-		MediaSegmenter segmenter = new ImageMediaSegmenter(mock(CamelContext.class));
-		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
-		return unwrapMessages(messages);
+		assertTrue(_imageMediaSegmenter.createDetectionRequests(media, context).isEmpty());
 	}
 
 
@@ -154,8 +160,8 @@ public class TestImageMediaSegmenter {
 
 	private static Set<Track> createTestTracks() {
 		return ImmutableSet.of(
-				createTrack(createDetection(0, 5)),
-				createTrack(createDetection(0, 10)));
+				createTrack(createDetection(0, 5, "CONFIDENCE", 0.1f)),
+				createTrack(createDetection(0, 10, "CONFIDENCE", 0.5f)));
 
 	}
 

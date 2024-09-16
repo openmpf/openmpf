@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -48,17 +48,22 @@ var App = angular.module('mpf.wfm', [
 ]);
 
 
-(function() {
+(() => {
 	// Get the CSRF configuration added to the page index.jsp.
-	var csrfHeader = $('#_csrf_header').attr('content');
-	var csrfToken = $('#_csrf').attr('content');
+	const header = $('#_csrf_header').attr('content');
+	const formParam = $('#_csrf_parameterName').attr('content')
+	const token = $('#_csrf').attr('content');
 
-	App.constant('csrfHeaders', function (obj) {
-		var result = obj || {};
-		result[csrfHeader] = csrfToken;
-		return result;
+	App.constant('csrf', {
+		headers: existing => {
+			const result = existing || {};
+			result[header] = token;
+			return result;
+		},
+		formParam,
+		token
 	});
-}());
+})();
 
 
 // Declare app level module which depends on filters, and services
@@ -178,11 +183,9 @@ App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $u
 }]);
 
 
-App.config(['$httpProvider', 'csrfHeaders', function($httpProvider, csrfHeaders) {
+App.config(['$httpProvider', function($httpProvider) {
 	//need to add explicitly but can cause problems with CORS
 	$httpProvider.defaults.headers.common["X-Requested-With"] = 'XMLHttpRequest';
-	csrfHeaders($httpProvider.defaults.headers.common);
-
 	$httpProvider.interceptors.push('httpInterceptor');//services.js
 }]);
 

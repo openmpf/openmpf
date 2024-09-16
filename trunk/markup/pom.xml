@@ -6,11 +6,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2023 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2024 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2023 The MITRE Corporation                                      ~
+  ~ Copyright 2024 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>7.2</version>
+        <version>9.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -50,78 +50,6 @@
             <artifactId>mpf-logging-dependencies</artifactId>
             <version>${project.parent.version}</version>
             <type>pom</type>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-            <version>${javax.annotation.api.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>${spring.framework.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${spring.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context-support</artifactId>
-            <version>${spring.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jms</artifactId>
-            <version>${spring.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.jms</groupId>
-            <artifactId>javax.jms-api</artifactId>
-            <version>${javax.jms-api.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <version>${spring.framework.version}</version>
         </dependency>
 
         <dependency>

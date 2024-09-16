@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,22 +26,17 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableSortedMap;
-import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.ImageLocation;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.PropertyMap;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.util.*;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -343,30 +338,33 @@ public class TestMediaSegmenter {
 
 
 
-	protected static void assertContainsAlgoProperty(String key, String value, Collection<DetectionRequest> requests) {
-		for (DetectionRequest request : requests) {
-			assertTrue(
-					String.format("Expected request to contain algorithm property: %s: %s", key, value),
-					request.getAlgorithmPropertyList().stream()
-							.anyMatch(ap -> ap.getPropertyName().equals(key) && ap.getPropertyValue().equals(value)));
+	protected static void assertContainsAlgoProperty(
+            String key, String value, Collection<DetectionRequest> requests) {
+		for (var request : requests) {
+            assertEquals(
+                    "Expected request to contain algorithm property: %s: %s".formatted(key, value),
+                    value,
+                    request.protobuf().getAlgorithmPropertiesMap().get(key));
 		}
 	}
 
 
-
-	protected static void assertContainsExpectedMediaMetadata(Collection<DetectionRequest> requests) {
-		assertTrue("Expected each request to contain 1 media metadata field", requests.stream()
-				.allMatch(dr -> dr.getMediaMetadataList().size() == 1));
+	protected static void assertContainsExpectedMediaMetadata(
+            Collection<DetectionRequest> requests) {
+		assertTrue("Expected each request to contain 1 media metadata field",
+                requests.stream()
+                        .allMatch(dr -> dr.protobuf().getMediaMetadataCount() == 1));
 		assertContainsMediaMetadata("mediaKey1", "mediaValue1", requests);
-
 	}
 
-	protected static void assertContainsMediaMetadata(String key, String value, Collection<DetectionRequest> requests) {
-		for (DetectionRequest request : requests) {
-			assertTrue(
-					String.format("Expected request to contain media metadata: %s: %s", key, value),
-					request.getMediaMetadataList().stream()
-							.anyMatch(mp -> mp.getKey().equals(key) && mp.getValue().equals(value)));
+
+	protected static void assertContainsMediaMetadata(
+            String key, String value, Collection<DetectionRequest> requests) {
+		for (var request : requests) {
+            assertEquals(
+                    "Expected request to contain media metadata: %s: %s".formatted(key, value),
+                    value,
+                    request.protobuf().getMediaMetadataMap().get(key));
 		}
 	}
 
@@ -378,32 +376,32 @@ public class TestMediaSegmenter {
 				&& dimensions == imageLocation.getYLeftUpper()
 				&& dimensions == imageLocation.getWidth()
 				&& dimensions == imageLocation.getHeight()
-				&& containsExpectedDetectionProperties(dimensions, imageLocation.getDetectionPropertiesList());
+				&& containsExpectedDetectionProperties(dimensions, imageLocation.getDetectionPropertiesMap());
 	}
 
-	protected static DetectionContext createTestDetectionContext(int stage, Map<String, String> additionalAlgoProps,
-																 Set<Track> tracks) {
+
+    protected static DetectionContext createTestDetectionContext(
+            int stage, Map<String, String> additionalAlgoProps, Set<Track> tracks) {
+        return createTestDetectionContext(stage, additionalAlgoProps, tracks, null);
+    }
+
+	protected static DetectionContext createTestDetectionContext(
+            int stage, Map<String, String> additionalAlgoProps, Set<Track> tracks,
+            String qualitySelectionProperty) {
 		return new DetectionContext(
 				1, stage, "STAGE_NAME", 0, "ACTION_NAME", stage == 0,
 				createTestAlgorithmProperties(additionalAlgoProps), tracks,
-				createTestSegmentingPlan());
+				createTestSegmentingPlan(), qualitySelectionProperty);
 	}
 
 
-	private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> createTestAlgorithmProperties(
+	private static Map<String, String> createTestAlgorithmProperties(
 			Map<String, String> additionalAlgoProps) {
 		Map<String, String> algoProps = new HashMap<>();
 		algoProps.put("algoKey1", "algoValue1");
 		algoProps.put("algoKey2", "algoValue2");
 		algoProps.putAll(additionalAlgoProps);
-
-
-		return algoProps.entrySet().stream()
-				.map(e -> AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
-						.setPropertyName(e.getKey())
-						.setPropertyValue(e.getValue())
-						.build())
-				.collect(toList());
+        return algoProps;
 	}
 
 
@@ -414,32 +412,41 @@ public class TestMediaSegmenter {
 
 
 	protected static SortedMap<String, String> createDetectionProperties(int detectionNumber) {
-		return ImmutableSortedMap.of("detectionKey" + detectionNumber, "detectionValue" + detectionNumber);
+		return createDetectionProperties(detectionNumber, null, -1);
 	}
+
+    protected static SortedMap<String, String> createDetectionProperties(
+            int detectionNumber, String qualitySelectionProperty, float qualitySelectionValue) {
+        var props = new TreeMap<String, String>();
+        props.put("detectionKey" + detectionNumber, "detectionValue" + detectionNumber);
+        if (qualitySelectionProperty != null) {
+            props.put(qualitySelectionProperty, String.valueOf(qualitySelectionValue));
+        }
+        return props;
+    }
 
 
 	protected static boolean containsExpectedDetectionProperties(
-			int detectionNumber, Collection<PropertyMap> properties) {
-
-		SortedMap<String, String> expectedProperties = createDetectionProperties(detectionNumber);
-		if (expectedProperties.size() != properties.size()) {
-			return false;
-		}
-
-		for (PropertyMap property : properties) {
-			String expectedValue = expectedProperties.get(property.getKey());
-			if (!expectedValue.equals(property.getValue())) {
-				return false;
-			}
-		}
-		return true;
+			int detectionNumber, Map<String, String> actualProps) {
+        var expectedProps = createDetectionProperties(detectionNumber);
+        return expectedProps.entrySet().stream()
+                .allMatch(ep -> Objects.equals(actualProps.get(ep.getKey()), ep.getValue()));
 	}
 
 
-	protected static Detection createDetection(int frame, float confidence) {
+    protected static Detection createDetection(int frame, float confidence) {
+        return createDetection(frame, confidence, null, -1);
+    }
+
+	protected static Detection createDetection(
+            int frame, float confidence,
+            String qualitySelectionProperty, float qualitySelectionValue) {
 		int dimensions = (int) confidence;
-		return new Detection(dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
-				createDetectionProperties(dimensions));
+        var properties = createDetectionProperties(
+                dimensions, qualitySelectionProperty, qualitySelectionValue);
+		return new Detection(
+                dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
+				properties);
 	}
 
 
@@ -454,21 +461,20 @@ public class TestMediaSegmenter {
 				.max()
 				.getAsInt();
 
-		Detection exemplar = detectionList.stream()
-				.max(Comparator.comparing(Detection::getConfidence))
-				.get();
+        Detection exemplar = TopQualitySelectionUtil.getTopQualityItem(
+                detectionList, "CONFIDENCE");
 
-		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, "type",
-				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "");
+		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, 1,
+				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "", "CONFIDENCE");
 		return track;
 	}
 
 
+    protected static void assertAllHaveFeedForwardTrack(Collection<DetectionRequest> requests) {
+        assertTrue(requests.stream().allMatch(r -> r.feedForwardTrack().isPresent()));
+    }
 
-	protected static List<DetectionRequest> unwrapMessages(Collection<Message> messages) {
-		return messages
-				.stream()
-				.map(m -> m.getBody(DetectionRequest.class))
-				.collect(toList());
-	}
+    protected static void assertNoneHaveFeedForwardTrack(Collection<DetectionRequest> requests) {
+        assertTrue(requests.stream().allMatch(r -> r.feedForwardTrack().isEmpty()));
+    }
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -76,7 +76,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
         var job = _inProgressJobs.getJob(trackCache.getJobId());
         var task = job.getPipelineElements().getTask(trackCache.getTaskIndex());
 
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
            var action = job.getPipelineElements().getAction(
                     trackCache.getTaskIndex(), actionIndex);
 
@@ -94,13 +94,12 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                    continue;
                }
 
-               var movingTracksOnly = Boolean.parseBoolean(
+                var movingTracksOnly = Boolean.parseBoolean(
                        combinedProperties.apply(MpfConstants.MOVING_TRACKS_ONLY));
-               var maxIou = Double.parseDouble(
+                var maxIou = Double.parseDouble(
                        combinedProperties.apply(MpfConstants.MOVING_TRACK_MAX_IOU));
-               int minMovingDetections = Integer.parseInt(
+                int minMovingDetections = Integer.parseInt(
                        combinedProperties.apply(MpfConstants.MOVING_TRACK_MIN_DETECTIONS));
-
 
                 var originalTracks = trackCache.getTracks(media.getId(), actionIndex);
 
@@ -179,11 +178,12 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 track.getEndOffsetFrameInclusive(),
                 track.getStartOffsetTimeInclusive(),
                 track.getEndOffsetTimeInclusive(),
-                track.getType(),
+                track.getMergedTaskIndex(),
                 track.getConfidence(),
                 newDetectionsBuilder.build(),
                 newTrackProperties,
-                track.getExemplarPolicy());
+                track.getExemplarPolicy(),
+                track.getQualitySelectionProperty());
     }
 
 

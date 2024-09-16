@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,14 +27,15 @@
 #ifndef MPF_PYTHONCOMPONENTHANDLE_H
 #define MPF_PYTHONCOMPONENTHANDLE_H
 
-#include <string>
-#include <vector>
 #include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include <MPFDetectionObjects.h>
 #include <MPFDetectionComponent.h>
 
-#include "LazyLoggerWrapper.h"
+#include "LoggerWrapper.h"
 
 
 namespace MPF::COMPONENT {
@@ -43,7 +44,7 @@ namespace MPF::COMPONENT {
 
     class PythonComponentHandle {
     public:
-        PythonComponentHandle(const LazyLoggerWrapper<PythonLogger> &logger,
+        PythonComponentHandle(const LoggerWrapper &logger,
                               const std::string &lib_path);
 
         ~PythonComponentHandle();
@@ -51,8 +52,6 @@ namespace MPF::COMPONENT {
         void SetRunDirectory(const std::string &run_dir);
 
         bool Init();
-
-        std::string GetDetectionType();
 
         bool Supports(MPFDetectionDataType data_type);
 
@@ -76,36 +75,23 @@ namespace MPF::COMPONENT {
     };
 
 
-    class PythonLoggerJobContext {
+    class PythonLogger : public ILogger {
     public:
-        explicit PythonLoggerJobContext(std::shared_ptr<std::string> job_name_log_prefix_ptr);
+        PythonLogger(const std::string &log_level, const std::string &component_name);
 
-        ~PythonLoggerJobContext();
+        ~PythonLogger() override;
 
-    private:
-        std::shared_ptr<std::string> job_name_log_prefix_ptr_;
-    };
+        void Debug(std::string_view message) override;
 
+        void Info(std::string_view message) override;
 
-    class PythonLogger {
-    public:
-        PythonLogger(const std::string &log_level,  const std::string &component_name);
+        void Warn(std::string_view message) override;
 
-        PythonLogger(const PythonLogger& other);
+        void Error(std::string_view message) override;
 
-        ~PythonLogger();
+        void Fatal(std::string_view message) override;
 
-        void Debug(const std::string &message);
-
-        void Info(const std::string &message);
-
-        void Warn(const std::string &message);
-
-        void Error(const std::string &message);
-
-        void Fatal(const std::string &message);
-
-        PythonLoggerJobContext GetJobContext(const std::string& job_name);
+        void SetJobName(std::string_view job_name) override;
 
     private:
         std::shared_ptr<std::string> job_name_log_prefix_ptr_ = std::make_shared<std::string>();

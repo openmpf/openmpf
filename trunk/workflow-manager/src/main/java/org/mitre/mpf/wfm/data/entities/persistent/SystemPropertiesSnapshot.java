@@ -67,8 +67,8 @@ public class SystemPropertiesSnapshot {
         return Integer.parseInt(_properties.get("detection.sampling.interval"));
     }
 
-    public int getFrameRateCap() {
-        return Integer.parseInt(_properties.get("detection.frame.rate.cap"));
+    public double getFrameRateCap() {
+        return Double.parseDouble(_properties.get("detection.frame.rate.cap"));
     }
 
     public double getConfidenceThreshold() {

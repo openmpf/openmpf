@@ -431,7 +431,7 @@ public class AggregateJobPropertiesUtil {
 
 
     public String calculateFrameInterval(Action action, BatchJob job, Media media, int systemFrameInterval,
-                                         int systemFrameRateCap, double mediaFPS) {
+                                         double systemFrameRateCap, double mediaFPS) {
 
         PropertyInfo frameIntervalPropInfo = getPropertyInfo(
                 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,

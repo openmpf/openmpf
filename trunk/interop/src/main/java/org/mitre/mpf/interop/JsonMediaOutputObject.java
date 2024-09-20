@@ -118,7 +118,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	@JsonProperty("mediaSelectorsOutput")
 	private String mediaSelectorsOutput;
 	public String getMediaSelectorsOutput() { return mediaSelectorsOutput; }
-	public void setMediaSelectorsOutput(String path) { mediaSelectorsOutput = path; }
+	public void setMediaSelectorsOutput(String uri) { mediaSelectorsOutput = uri; }
 
 	@JsonProperty("output")
 	@JsonPropertyDescription("The mapping of track types to a set of actions performed on the given medium.")

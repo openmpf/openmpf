@@ -228,7 +228,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                         ImmutableMap.of("OUTPUT_LAST_TASK_ONLY", "true")),
                 toMediaObject(ioUtils.findFile("/samples/face/ff-region-motion-face.avi")));
 
-
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);

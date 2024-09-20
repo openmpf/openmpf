@@ -99,6 +99,5 @@ public class TestLocalStorageBackendImpl extends MockitoTest.Strict {
         assertThat(outputPath)
                 .content(StandardCharsets.UTF_8)
                 .isEqualTo("<TEST CONTENT>");
-
     }
 }

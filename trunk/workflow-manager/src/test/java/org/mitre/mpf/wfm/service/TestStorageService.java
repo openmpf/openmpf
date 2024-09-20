@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -59,17 +60,20 @@ import org.junit.Test;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonMediaIssue;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.IssueSources;
 import org.mitre.mpf.wfm.enums.MarkupStatusType;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -604,6 +608,87 @@ public class TestStorageService extends MockitoTest.Lenient {
         verify(_mockNginxBackend, never())
                 .store(any(JsonOutputObject.class), any());
     }
+
+
+    @Test
+    public void canStoreMediaSelectorsOutputRemotely() throws IOException, StorageException {
+        var job = mock(BatchJob.class);
+        var media = mock(Media.class);
+        var processor = mock(OutputProcessor.class);
+
+        when(_mockS3Backend.canStoreMediaSelectorsOutput(job, media))
+                .thenReturn(true);
+
+        when(_mockS3Backend.storeMediaSelectorsOutput(
+                        job, media, MediaSelectorType.JSON_PATH, processor))
+                .thenReturn(TEST_REMOTE_URI);
+
+        var actualUri = _storageService.storeMediaSelectorsOutput(
+                job, media, MediaSelectorType.JSON_PATH, processor);
+        assertThat(actualUri).isEqualTo(TEST_REMOTE_URI);
+        verifyNoInProgressJobWarnings();
+    }
+
+
+    @Test
+    public void canStoreMediaSelectorsOutputLocally() throws StorageException, IOException {
+        var job = mock(BatchJob.class);
+        var media = mock(Media.class);
+        var processor = mock(OutputProcessor.class);
+
+        when(_mockS3Backend.canStoreMediaSelectorsOutput(job, media))
+                .thenReturn(false);
+        when(_mockNginxBackend.canStoreMediaSelectorsOutput(job, media))
+                .thenReturn(false);
+
+
+        when(_mockLocalBackend.storeMediaSelectorsOutput(
+                job, media, MediaSelectorType.JSON_PATH, processor))
+                .thenReturn(TEST_LOCAL_URI);
+
+        var actualUri = _storageService.storeMediaSelectorsOutput(
+                job, media, MediaSelectorType.JSON_PATH, processor);
+
+        assertThat(actualUri).isEqualTo(TEST_LOCAL_URI);
+
+        verifyNoInProgressJobWarnings();
+        verify(_mockS3Backend)
+            .canStoreMediaSelectorsOutput(job, media);
+        verify(_mockNginxBackend)
+            .canStoreMediaSelectorsOutput(job, media);
+    }
+
+
+    @Test
+    public void mediaSelectorsOutputGetsStoredLocallyWhenException() throws IOException, StorageException {
+        var job = mock(BatchJob.class);
+        var media = mock(Media.class);
+        var processor = mock(OutputProcessor.class);
+
+        when(job.getId())
+                .thenReturn(TEST_INTERNAL_JOB_ID);
+        long mediaId = 389;
+        when(media.getId())
+                .thenReturn(mediaId);
+
+        when(_mockS3Backend.canStoreMediaSelectorsOutput(job, media))
+                .thenReturn(true);
+
+        doThrow(StorageException.class)
+                .when(_mockS3Backend)
+                .storeMediaSelectorsOutput(job, media, MediaSelectorType.JSON_PATH, processor);
+
+        when(_mockLocalBackend.storeMediaSelectorsOutput(
+                        job, media, MediaSelectorType.JSON_PATH, processor))
+                .thenReturn(TEST_LOCAL_URI);
+
+        var actualUri = _storageService.storeMediaSelectorsOutput(
+                job, media, MediaSelectorType.JSON_PATH, processor);
+
+        assertThat(actualUri).isEqualTo(TEST_LOCAL_URI);
+        verifyWarning(TEST_INTERNAL_JOB_ID, mediaId);
+    }
+
 
 
     private static SortedSet<JsonMediaIssue> setupWarnings(JsonOutputObject outputObject) {

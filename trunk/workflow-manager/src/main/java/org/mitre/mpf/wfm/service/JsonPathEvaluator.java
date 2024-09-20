@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.PathNotFoundException;
 
 public class JsonPathEvaluator {
 
@@ -54,8 +55,13 @@ public class JsonPathEvaluator {
     }
 
     public Stream<String> evalAndExtractStrings(String jsonPathExpression) {
-        var evalResult = _parsedJson.read(jsonPathExpression);
-        return extractStrings(evalResult);
+        try {
+            var evalResult = _parsedJson.read(jsonPathExpression);
+            return extractStrings(evalResult);
+        }
+        catch (PathNotFoundException e) {
+            return Stream.of();
+        }
     }
 
 
@@ -106,7 +112,6 @@ public class JsonPathEvaluator {
         }
     }
 
-
     @SuppressWarnings("unchecked")
     private static List<Object> asObjList(List<?> wildcardList) {
         return (List<Object>) wildcardList;
@@ -116,7 +121,6 @@ public class JsonPathEvaluator {
     private static Map<Object, Object> asObjMap(Map<?, ?> wildcardMap) {
         return (Map<Object, Object>) wildcardMap;
     }
-
 
     public void writeTo(OutputStream out) throws IOException {
         _objectMapper.writeValue(out, _parsedJson.json());

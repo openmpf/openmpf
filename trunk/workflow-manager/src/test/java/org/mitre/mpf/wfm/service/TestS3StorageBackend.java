@@ -36,6 +36,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -58,7 +59,11 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
 
 public class TestS3StorageBackend {
@@ -798,6 +803,38 @@ public class TestS3StorageBackend {
                 .addStorageUri(jobId, derivativeMediaId, _expectedUri.toString());
 
         assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+    }
+
+
+    @Test
+    public void canStoreMediaSelectorOutput() throws StorageException, IOException {
+        var job = mock(BatchJob.class);
+        when(job.getJobProperties())
+                .thenReturn(ImmutableMap.copyOf(getS3Properties()));
+
+        var media = mock(Media.class);
+        when(media.getMediaSpecificProperties())
+                .thenReturn(ImmutableMap.of());
+
+        assertThat(_s3StorageBackend.canStoreMediaSelectorsOutput(job, media)).isTrue();
+
+        var outputProcessor = mock(StorageService.OutputProcessor.class);
+        Path filePath = getTestFileCopy();
+        when(_mockLocalStorageBackend.storeMediaSelectorsOutput(
+                    job, media, MediaSelectorType.JSON_PATH, outputProcessor))
+                .thenReturn(filePath.toUri());
+
+        var remoteUri = _s3StorageBackend.storeMediaSelectorsOutput(
+                job,
+                media,
+                MediaSelectorType.JSON_PATH,
+                outputProcessor);
+
+        assertThat(remoteUri).isEqualTo(_expectedUri);
+        assertThat(filePath).doesNotExist();
+        assertThat(OBJECTS_POSTED)
+                .singleElement()
+                .isEqualTo(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);
     }
 
 

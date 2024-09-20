@@ -91,14 +91,20 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
     }
 
     @Override
-    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
+    public void wfmProcess(Exchange exchange) {
         exchange.getOut().setBody(exchange.getIn().getBody());
-
         var trackCache = exchange.getIn().getBody(TrackCache.class);
-        var job = _inProgressJobs.getJob(trackCache.getJobId());
-        JobPartsIter.taskStream(job, trackCache.getTaskIndex())
-            .filter(jp -> !jp.media().getMediaSelectors().isEmpty())
-            .forEach(jp -> createOutputDocument(jp, trackCache.getTracks(jp)));
+        try {
+            var job = _inProgressJobs.getJob(trackCache.getJobId());
+            JobPartsIter.taskStream(job, trackCache.getTaskIndex())
+                .filter(jp -> !jp.media().getMediaSelectors().isEmpty())
+                .forEach(jp -> createOutputDocument(jp, trackCache.getTracks(jp)));
+        }
+        catch (Exception e) {
+            var msg = "Failed to create document with updated selections due to: " + e;
+            LOG.error(msg, e);
+            _inProgressJobs.addJobError(trackCache.getJobId(), IssueCodes.OTHER, msg);
+        }
     }
 
 

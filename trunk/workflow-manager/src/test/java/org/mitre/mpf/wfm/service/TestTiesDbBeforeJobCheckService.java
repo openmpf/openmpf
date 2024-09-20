@@ -876,6 +876,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(Optional.of("SHA1"));
         when(jobMedia1.getUri())
             .thenReturn("http://localhost/dest-bucket/media1");
+        when(jobMedia1.getMediaSelectorsOutput())
+            .thenReturn(URI.create("http://localhost/dest-bucket/media-selectors-out.json"));
 
         var jobMedia2 = mock(Media.class);
         when(jobMedia2.getLinkedHash())
@@ -936,7 +938,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ImmutableSortedMap.of("META1", "META1VALUE"),
                 ImmutableSortedMap.of("MEDIA_PROP1", "MEDIA_PROP1_VALUE"),
                 new JsonMarkupOutputObject(35, "http://localhost/bucket/markup", "complete", null),
-                null,
+                "http://localhost/bucket/media-selectors-out.json",
                 trackTypeMap,
                 ImmutableSortedMap.of("ALGO", ImmutableSortedSet.of(detectionError)));
 
@@ -993,7 +995,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 URI.create("http://localhost/dest-bucket/artifact2"),
 
                 URI.create("http://localhost/bucket/markup"),
-                URI.create("http://localhost/dest-bucket/markup"));
+                URI.create("http://localhost/dest-bucket/markup"),
+
+                URI.create("http://localhost/bucket/media-selectors-out.json"),
+                URI.create("http://localhost/dest-bucket/media-selectors-out.json"));
 
         when(_mockS3StorageBackend.copyResults(eq(uriMappings.keySet()), isNotNull()))
                 .thenReturn(uriMappings);
@@ -1043,9 +1048,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         outputObjectChecker.eq(j -> j.getMedia().size());
         var newMedia1 = newOutputObject.getMedia().first();
         compareMedia(media1, newMedia1, "http://localhost/dest-bucket/media1");
+        assertEquals(
+                "http://localhost/dest-bucket/media-selectors-out.json",
+                newMedia1.getMediaSelectorsOutput());
 
         var newMedia2 = newOutputObject.getMedia().last();
         compareMedia(media2, newMedia2, "http://localhost/dest-bucket/media2");
+        assertNull(newMedia2.getMediaSelectorsOutput());
 
         var newMarkup = newMedia1.getMarkupResult();
         var markupChecker = new FieldChecker<>(media1.getMarkupResult(), newMarkup);
@@ -1191,6 +1200,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             mediaChecker.neq(m -> m.getMarkupResult());
         }
 
+        if (oldMedia.getMediaSelectorsOutput() == null) {
+            mediaChecker.eq(m -> m.getMediaSelectorsOutput());
+        }
+        else {
+            mediaChecker.neq(m -> m.getMediaSelectorsOutput());
+        }
+
         mediaChecker.eq(m -> m.getTrackTypes().keySet());
         for (var key : oldMedia.getTrackTypes().keySet()) {
             mediaChecker.eq(m -> m.getTrackTypes().get(key).size());
@@ -1308,6 +1324,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     }
 
     private static JobCreationRequest createJobRequest() {
-        return new JobCreationRequest(null, null, Map.of(), null, null, null, null, null, null, null);
+        return new JobCreationRequest(
+                null, null, Map.of(), null, null, null, null, null, null, null);
     }
 }

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.segmenting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -36,7 +37,9 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
@@ -44,15 +47,20 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
     @Mock
     private TriggerProcessor _mockTriggerProcessor;
+
+    @Mock
+    private MediaSelectorsSegmenter _mockSelectorSegmenter;
 
     @InjectMocks
     private DefaultMediaSegmenter _defaultMediaSegmenter;
@@ -138,6 +146,41 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 	}
 
 
+    @Test
+    public void testJsonPathSegmenting() {
+        var media = createMediaWithJsonSelector();
+        var context = createTestDetectionContext(0, Map.of(), Set.of());
+
+        var selectorSegmentResult = new ArrayList<DetectionRequest>();
+        when(_mockSelectorSegmenter.segmentMedia(media, context))
+                .thenReturn(selectorSegmentResult);
+
+        var results = _defaultMediaSegmenter.createDetectionRequests(media, context);
+        // createDetectionRequests just returns the list that the MediaSelectorsSegmenter
+        // returns, so the actual content of the list does not matter for this test.
+        assertThat(results).isSameAs(selectorSegmentResult);
+    }
+
+
+    @Test
+    public void mediaSelectorsOnlyApplyToFirstStage() {
+        var media = createMediaWithJsonSelector();
+        var context = createTestDetectionContext(1, Map.of(), Set.of());
+        _defaultMediaSegmenter.createDetectionRequests(media, context);
+        verifyNoInteractions(_mockSelectorSegmenter);
+    }
+
+
+    private static Media createMediaWithJsonSelector() {
+        var selector = new MediaSelector(
+                "$.*",
+                MediaSelectorType.JSON_PATH,
+                Map.of("key1", "value2"),
+                "OUT_PROP");
+        return createTestMedia(List.of(selector));
+    }
+
+
 	private static void assertContainsExpectedTrack(float confidence, Collection<DetectionRequest> requests) {
 		DetectionProtobuf.GenericTrack genericTrack = requests.stream()
 				.map(dr -> dr.protobuf().getGenericRequest().getFeedForwardTrack())
@@ -149,16 +192,19 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 	}
 
 
-	private static Media createTestMedia() {
+	private static Media createTestMedia(Collection<MediaSelector> mediaSelectors) {
 		URI mediaUri = URI.create("file:///example.foo");
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
-				Map.of(), List.of(), List.of(), List.of(), null);
+				Map.of(), List.of(), List.of(), mediaSelectors, null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;
 	}
 
+	private static Media createTestMedia() {
+        return createTestMedia(List.of());
+    }
 
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(0.00f);

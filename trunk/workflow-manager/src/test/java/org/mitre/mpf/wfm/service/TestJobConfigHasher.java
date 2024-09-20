@@ -26,14 +26,17 @@
 
 package org.mitre.mpf.wfm.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +48,7 @@ import java.util.function.BiFunction;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
@@ -53,6 +57,7 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.rest.api.pipelines.ValueType;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.MediaRange;
@@ -524,6 +529,123 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     }
 
 
+    @Test
+    public void hashesAreDifferentWhenOnlyOneMediaHasSelectors() {
+        var hash1 = builder().addMedia(MediaType.UNKNOWN)
+                .addAction("ALGO")
+                .getHash();
+
+        var selector = new MediaSelector(
+                "expr",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "out");
+
+        var hash2 = builder()
+                .addMedia(List.of(selector))
+                .addAction("ALGO")
+                .getHash();
+
+        assertThat(hash1).isNotEqualTo(hash2);
+    }
+
+
+    @Test
+    public void selectorIdIsNotPartOfHash() {
+        var selector1 = new MediaSelector(
+                "expr",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "out");
+        var hash1 = builder()
+                .addMedia(List.of(selector1))
+                .addAction("ALGO")
+                .getHash();
+
+        var selector2 = new MediaSelector(
+                "expr",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "out");
+        var hash2 = builder()
+                .addMedia(List.of(selector2))
+                .addAction("ALGO")
+                .getHash();
+
+        assertThat(selector1.id()).isNotEqualTo(selector2.id());
+        assertThat(hash1).isEqualTo(hash2);
+    }
+
+
+    @Test
+    public void selectionPropertiesIsPartOfHash() {
+        when(_mockWfPropSvc.getProperty("a", MediaType.UNKNOWN))
+                .thenReturn(new WorkflowProperty(
+                        null, null, null, null, null,
+                        Set.of()));
+
+        when(_mockWfPropSvc.getProperty("c", MediaType.UNKNOWN))
+                .thenReturn(new WorkflowProperty(
+                        null, null, null, null, null,
+                        Set.of()));
+
+        var selector1 = new MediaSelector(
+                "expr",
+                MediaSelectorType.JSON_PATH,
+                Map.of("a", "b"),
+                "out");
+        var hash1 = builder()
+                .addMedia(List.of(selector1))
+                .addAction("ALGO")
+                .getHash();
+
+        var selector2 = new MediaSelector(
+                "expr",
+                MediaSelectorType.JSON_PATH,
+                Map.of("c", "d"),
+                "out");
+        var hash2 = builder()
+                .addMedia(List.of(selector2))
+                .addAction("ALGO")
+                .getHash();
+
+        assertThat(hash1).isNotEqualTo(hash2);
+    }
+
+
+    @Test
+    public void checksAllSelectors() {
+        var sharedSelector = new MediaSelector(
+                "expr",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "out");
+
+        var diffSelector1 = new MediaSelector(
+                "expr2",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "out");
+
+        var hash1 = builder()
+            .addMedia(List.of(sharedSelector, diffSelector1))
+            .addAction("ALGO")
+            .getHash();
+
+        var diffSelector2 = new MediaSelector(
+                "expr3",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "out");
+
+        var hash2 = builder()
+            .addMedia(List.of(sharedSelector, diffSelector2))
+            .addAction("ALGO")
+            .getHash();
+
+        assertThat(hash1).isNotEqualTo(hash2);
+    }
+
     private JobBuilder builder() {
         return new JobBuilder();
     }
@@ -549,6 +671,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             var tasks = new ArrayList<Task>();
             int actionIdx = -1;
             var algoToPropNames = HashMultimap.<String, String>create();
+            String firstAlgoName = null;
             for (var actionList : _taskContents) {
                 var actionNames = actionList.stream()
                         .map(Action::name)
@@ -560,6 +683,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
                 for (var action : actionList) {
                     actionIdx++;
+                    if (actionIdx == 0) {
+                        firstAlgoName = action.algorithm();
+                    }
                     for (var mediaIdx = 0; mediaIdx < _media.size(); mediaIdx++) {
                         var map = _properties.get(mediaIdx, actionIdx);
                         if (map == null) {
@@ -587,6 +713,11 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                         null, new Algorithm.Provides(List.of(), algoProps), true, true);
                 when(pipelineElements.getAlgorithm(entry.getKey()))
                     .thenReturn(algo);
+                if (algo.name().equals(firstAlgoName)) {
+                    firstAlgoName = null;
+                    lenient().when(pipelineElements.getAlgorithm(0, 0))
+                        .thenReturn(algo);
+                }
             }
 
             return _jobConfigHasher.getJobConfigHash(
@@ -598,12 +729,19 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         }
 
         public JobBuilder addMedia(MediaType mediaType, String hash) {
-            return addMediaInternal(mediaType, hash, Set.of(), Set.of());
+            return addMediaInternal(mediaType, hash, Set.of(), Set.of(), List.of());
         }
 
         public JobBuilder addMedia(Set<MediaRange> frameRanges, Set<MediaRange> timeRanges) {
             return addMediaInternal(
-                    MediaType.VIDEO, "VIDEO_HASH_" + _media.size(), frameRanges, timeRanges);
+                    MediaType.VIDEO, "VIDEO_HASH_" + _media.size(), frameRanges, timeRanges,
+                    List.of());
+        }
+
+        public JobBuilder addMedia(Collection<MediaSelector> mediaSelectors) {
+            addMediaInternal(
+                    MediaType.UNKNOWN, "HASH_" + _media.size(), Set.of(), Set.of(), mediaSelectors);
+            return this;
         }
 
         private long _mediaIds = 0;
@@ -612,7 +750,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                 MediaType mediaType,
                 String hash,
                 Set<MediaRange> frameRanges,
-                Set<MediaRange> timeRanges) {
+                Set<MediaRange> timeRanges,
+                Collection<MediaSelector> mediaSelectors) {
             var media = mock(Media.class);
             when(media.getId())
                     .thenReturn(++_mediaIds);
@@ -629,7 +768,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                     .thenReturn(ImmutableSet.copyOf(timeRanges));
 
             when(media.getMediaSelectors())
-                    .thenReturn(ImmutableList.of());
+                    .thenReturn(ImmutableList.copyOf(mediaSelectors));
             _media.add(media);
             return this;
         }

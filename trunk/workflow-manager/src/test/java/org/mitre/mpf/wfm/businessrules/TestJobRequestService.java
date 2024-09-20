@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -66,7 +67,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationMediaRange;
+import org.mitre.mpf.rest.api.JobCreationMediaSelector;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
@@ -74,6 +77,7 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
 import org.mitre.mpf.wfm.camel.routes.JobRouterRouteBuilder;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
@@ -531,5 +535,19 @@ public class TestJobRequestService {
         assertEquals(BatchJobStatusType.IN_PROGRESS, jobRequestEntity.getStatus());
         assertTrue(Instant.now().compareTo(jobRequestEntity.getTimeReceived()) >= 0);
         assertNull(jobRequestEntity.getTimeCompleted());
+    }
+
+
+    @Test
+    public void testValidator() {
+        var selector = new JobCreationMediaSelector(
+                "", MediaSelectorType.JSON_PATH, Map.of(), "out");
+        var media = new JobCreationMediaData(null, null, null, null, null, List.of(selector));
+        var job = new JobCreationRequest(
+                List.of(media), null, null, null, null, null, null, null, null, null);
+
+        assertThatExceptionOfType(WfmProcessingException.class)
+            .isThrownBy(() -> _jobRequestService.run(job))
+            .withMessageContaining("media[0].mediaSelectors[0].expression=\"\": may not be empty");
     }
 }

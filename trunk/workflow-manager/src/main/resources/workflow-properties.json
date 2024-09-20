@@ -523,5 +523,19 @@
         "type": "STRING",
         "defaultValue": "",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "SELECTOR_DELIMETER",
+        "description": "When not provided and a job uses media selectors, the selected parts of the document will be replaced with the action output. When provided, the selected parts of the document will contain the original content, followed by the value of this property, and finally the action output.",
+        "type": "STRING",
+        "defaultValue": "",
+        "mediaTypes": ["UNKNOWN"]
+    },
+    {
+        "name": "SELECTOR_DUPLICATE_POLICY",
+        "description": "Specifies how to handle the case where a job uses media selectors and there are multiple outputs for a single selection. When set to \"LONGEST\", the longer of the two outputs is chosen and the shorter one is discarded. When set to \"ERROR\", duplicates are considered an error. When set to \"JOIN\", the duplicates are combined using \" | \" as a delimiter.",
+        "type": "STRING",
+        "defaultValue": "LONGEST",
+        "mediaTypes": ["UNKNOWN"]
     }
 ]

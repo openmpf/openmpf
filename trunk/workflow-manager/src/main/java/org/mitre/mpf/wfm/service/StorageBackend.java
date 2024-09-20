@@ -57,6 +57,7 @@ public interface StorageBackend {
     public void storeDerivativeMedia(BatchJob job, Media media) throws IOException, StorageException;
 
     public boolean canStoreMediaSelectorsOutput(BatchJob job, Media media) throws StorageException;
+
     public URI storeMediaSelectorsOutput(
             BatchJob job,
             Media media,

@@ -215,6 +215,7 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
 
     private static String appendFieldContent(
             String input, String delimeter, Map<String, String> inputToOutput) {
-        return input + delimeter + inputToOutput.getOrDefault(input, "<no content>");
+        var output = inputToOutput.getOrDefault(input, "<no content>");
+        return String.join(" ", input, delimeter, output);
     }
 }

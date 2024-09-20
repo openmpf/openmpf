@@ -234,7 +234,7 @@ public class TestMediaSelectorsOutputFileProcessor extends MockitoTest.Strict {
     @Test
     public void testDelimeter() throws IOException, StorageException {
         when(_mockAggJobProps.getValue(eq(MpfConstants.SELECTOR_DELIMETER), notNull()))
-            .thenReturn(" | Updated: ");
+            .thenReturn("| Updated:");
 
         when(_mockAggJobProps.getValue(eq(MpfConstants.SELECTOR_DUPLICATE_POLICY), notNull()))
             .thenReturn("ERROR");

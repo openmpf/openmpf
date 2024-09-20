@@ -50,10 +50,6 @@ public class JsonPathEvaluator {
         _objectMapper = objectMapper;
     }
 
-    public Object json() {
-        return _parsedJson.json();
-    }
-
     public Stream<String> evalAndExtractStrings(String jsonPathExpression) {
         try {
             var evalResult = _parsedJson.read(jsonPathExpression);

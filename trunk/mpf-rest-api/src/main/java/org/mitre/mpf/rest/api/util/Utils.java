@@ -28,8 +28,13 @@
 package org.mitre.mpf.rest.api.util;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collector;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class Utils {
 
@@ -55,5 +60,21 @@ public class Utils {
                 .flatMap(Collection::stream)
                 .map(Utils::trimAndUpper)
                 .collect(collector);
+    }
+
+    public static ImmutableList<String> trimAndUpper(List<String> strings) {
+        return trimAndUpper(strings, ImmutableList.toImmutableList());
+    }
+
+    public static <T> ImmutableList<T> toImmutableList(Collection<T> collection) {
+        return Optional.ofNullable(collection)
+            .map(ImmutableList::copyOf)
+            .orElseGet(ImmutableList::of);
+    }
+
+    public static <K, V> ImmutableMap<K, V> toImmutableMap(Map<K, V> map) {
+        return Optional.ofNullable(map)
+            .map(ImmutableMap::copyOf)
+            .orElseGet(ImmutableMap::of);
     }
 }

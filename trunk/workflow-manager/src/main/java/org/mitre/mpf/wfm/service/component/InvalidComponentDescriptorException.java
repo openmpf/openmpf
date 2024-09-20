@@ -26,42 +26,8 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.google.common.collect.ImmutableSet;
-
-import javax.validation.ConstraintViolation;
-import java.util.Set;
-
-import static java.util.stream.Collectors.joining;
-
 public class InvalidComponentDescriptorException extends ComponentRegistrationException {
-
-    private final Set<ConstraintViolation<JsonComponentDescriptor>> _validationErrors;
-
-
-    public InvalidComponentDescriptorException(Set<ConstraintViolation<JsonComponentDescriptor>> validationErrors) {
-        super(createMessage(validationErrors));
-        _validationErrors = ImmutableSet.copyOf(validationErrors);
-    }
-
-
-    private static String createMessage(Set<ConstraintViolation<JsonComponentDescriptor>> validationErrors) {
-        return validationErrors.stream()
-                .map(InvalidComponentDescriptorException::createViolationMessage)
-                .sorted()
-                .collect(joining("\n", "The following fields have errors:\n", ""));
-    }
-
-    private static String createViolationMessage(ConstraintViolation<JsonComponentDescriptor> violation) {
-        String violationPath = violation.getPropertyPath().toString();
-
-        String errorMsgPath = violationPath.isEmpty()
-                ? "<root>"
-                : violationPath;
-        return errorMsgPath + ": " + violation.getMessage();
-    }
-
-
-    public Set<ConstraintViolation<JsonComponentDescriptor>> getValidationErrors() {
-        return _validationErrors;
+    public InvalidComponentDescriptorException(String message) {
+        super(message);
     }
 }

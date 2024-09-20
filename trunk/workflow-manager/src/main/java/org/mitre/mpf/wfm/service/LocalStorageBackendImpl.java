@@ -35,11 +35,13 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Component;
 
@@ -138,5 +140,36 @@ public class LocalStorageBackendImpl implements LocalStorageBackend {
         var storagePath = _propertiesUtil.createDerivativeMediaPath(job.getId(), media);
         Files.move(media.getLocalPath(), storagePath);
         _inProgressJobs.addStorageUri(job.getId(), media.getId(), storagePath.toUri().toString());
+    }
+
+
+    @Override
+    public boolean canStoreMediaSelectorsOutput(BatchJob job, Media media) {
+        return true;
+    }
+
+
+    @Override
+    public URI storeMediaSelectorsOutput(
+            BatchJob job,
+            Media media,
+            MediaSelectorType selectorType,
+            OutputProcessor outputProcessor) throws IOException {
+        var dir = _propertiesUtil.getMediaSelectorsOutputDir()
+                .resolve(String.valueOf(job.getId()))
+                .resolve(String.valueOf(media.getId()));
+        Files.createDirectories(dir);
+        var path = dir.resolve("media-selectors-output" + getExtension(selectorType));
+        try (var out = Files.newOutputStream(path)) {
+            outputProcessor.process(out);
+        }
+        return path.toUri();
+    }
+
+
+    private static String getExtension(MediaSelectorType selectorType) {
+        return switch (selectorType) {
+            case JSON_PATH -> ".json";
+        };
     }
 }

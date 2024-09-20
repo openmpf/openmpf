@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,6 +47,7 @@ import org.mitre.mpf.wfm.util.MediaRange;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -216,6 +218,16 @@ public class MediaImpl implements Media {
     @Override
     public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
 
+    private final ImmutableList<MediaSelector> _mediaSelectors;
+    @Override
+    public ImmutableList<MediaSelector> getMediaSelectors() { return _mediaSelectors; }
+
+    private URI _mediaSelectorsOutput;
+    @Override
+    public URI getMediaSelectorsOutput() { return _mediaSelectorsOutput; }
+    public void setMediaSelectorsOutput(URI uri) { _mediaSelectorsOutput = uri; }
+
+
     private TiesDbInfo _tiesDbInfo;
     @Override
     public Optional<TiesDbInfo> getTiesDbInfo() {
@@ -252,6 +264,7 @@ public class MediaImpl implements Media {
             Map<String, String> providedMetadata,
             Collection<MediaRange> frameRanges,
             Collection<MediaRange> timeRanges,
+            Collection<MediaSelector> mediaSelectors,
             String errorMessage) {
         _id = id;
         _parentId = parentId;
@@ -263,6 +276,7 @@ public class MediaImpl implements Media {
         _providedMetadata = ImmutableMap.copyOf(providedMetadata);
         _frameRanges = ImmutableSet.copyOf(frameRanges);
         _timeRanges = ImmutableSet.copyOf(timeRanges);
+        _mediaSelectors = ImmutableList.copyOf(mediaSelectors);
 
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
@@ -279,9 +293,21 @@ public class MediaImpl implements Media {
             Map<String, String> providedMetadata,
             Collection<MediaRange> frameRanges,
             Collection<MediaRange> timeRanges,
+            Collection<MediaSelector> mediaSelectors,
             String errorMessage) {
-        this(id, -1, -1, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, frameRanges, timeRanges,
-                errorMessage);
+        this(
+            id,
+            -1,
+            -1,
+            uri,
+            uriScheme,
+            localPath,
+            mediaSpecificProperties,
+            providedMetadata,
+            frameRanges,
+            timeRanges,
+            mediaSelectors,
+            errorMessage);
     }
 
 
@@ -299,6 +325,8 @@ public class MediaImpl implements Media {
             @JsonProperty("metadata") Map<String, String> metadata,
             @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
             @JsonProperty("timeRanges") Collection<MediaRange> timeRanges,
+            @JsonProperty("mediaSelectors") Collection<MediaSelector> mediaSelectors,
+            @JsonProperty("mediaSelectorsOutput") URI mediaSelectorsOutput,
             @JsonProperty("tiesDbInfo") TiesDbInfo tiesDbInfo) {
         this(id,
              parentId,
@@ -310,10 +338,12 @@ public class MediaImpl implements Media {
              providedMetadata,
              frameRanges,
              timeRanges,
+             mediaSelectors,
              errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
+        _mediaSelectorsOutput = mediaSelectorsOutput;
         _tiesDbInfo = tiesDbInfo;
     }
 
@@ -334,6 +364,7 @@ public class MediaImpl implements Media {
                 originalMedia.getProvidedMetadata(),
                 originalMedia.getFrameRanges(),
                 originalMedia.getTimeRanges(),
+                originalMedia.getMediaSelectors(),
                 originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());

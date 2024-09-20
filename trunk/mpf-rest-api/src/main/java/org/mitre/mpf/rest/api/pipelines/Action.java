@@ -36,8 +36,6 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
 import org.mitre.mpf.rest.api.util.ValidName;
 
-import com.google.common.collect.ImmutableList;
-
 
 public record Action(
         @ValidName String name,
@@ -50,7 +48,7 @@ public record Action(
         name = Utils.trimAndUpper(name);
         description = Utils.trim(description);
         algorithm = Utils.trimAndUpper(algorithm);
-        properties = ImmutableList.copyOf(properties);
+        properties = Utils.toImmutableList(properties);
     }
 
 

@@ -24,9 +24,51 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
+package org.mitre.mpf.wfm.service;
 
-public interface ComponentDescriptorValidator {
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
-    public void validate(JsonComponentDescriptor descriptor) throws InvalidComponentDescriptorException;
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.ParseContext;
+import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+
+@Component
+public class JsonPathService {
+
+    private final Configuration _configuration;
+
+    private final ObjectMapper _objectMapper;
+
+    @Inject
+    public JsonPathService(ObjectMapper objectMapper) {
+        _configuration = Configuration.builder()
+                .jsonProvider(new JacksonJsonProvider(objectMapper))
+                .mappingProvider(new JacksonMappingProvider(objectMapper))
+                .build();
+        _objectMapper = objectMapper;
+    }
+
+    public JsonPathEvaluator load(Path path) {
+        try {
+            return new JsonPathEvaluator(
+                    newParseContext().parse(path.toFile()),
+                    _objectMapper);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private ParseContext newParseContext() {
+        return JsonPath.using(_configuration);
+    }
 }

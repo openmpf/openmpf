@@ -263,7 +263,9 @@ public class RollUpProcessor extends WfmProcessor {
                     rolledUpDetections,
                     rolledUpTrackProperties,
                     track.getExemplarPolicy(),
-                    track.getQualitySelectionProperty());
+                    track.getQualitySelectionProperty(),
+                    track.getSelectorId().orElse(null),
+                    track.getSelectedInput().orElse(null));
         }
 
         private SortedSet<Detection> applyRollUpToDetections(

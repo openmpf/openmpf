@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -143,7 +144,8 @@ public class DetectionResponseProcessor
                     detectionResponse.getGenericResponse(),
                     qualityFilter,
                     trackType,
-                    mergedTaskIdx);
+                    mergedTaskIdx,
+                    headers);
         }
         else {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
@@ -226,7 +228,9 @@ public class DetectionResponseProcessor
                             detections,
                             trackProperties,
                             exemplarPolicy,
-                            qualitySelectionProp);
+                            qualitySelectionProp,
+                            null,
+                            null);
                     _inProgressJobs.addTrack(track);
                 }
             }
@@ -294,7 +298,9 @@ public class DetectionResponseProcessor
                         ImmutableSortedSet.of(detection),
                         trackProperties,
                         "",
-                        "");
+                        "",
+                        null,
+                        null);
 
                 _inProgressJobs.addTrack(track);
             }
@@ -340,7 +346,9 @@ public class DetectionResponseProcessor
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
                         "",
-                        "");
+                        "",
+                        null,
+                        null);
                 _inProgressJobs.addTrack(track);
             }
         }
@@ -352,7 +360,8 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
             QualityFilter qualityFilter,
             String trackType,
-            int mergedTaskIdx) {
+            int mergedTaskIdx,
+            Map<String, Object> headers) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
         log.debug("Response received for {}.", mediaLabel);
 
@@ -379,7 +388,7 @@ public class DetectionResponseProcessor
 
             if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties))
                 processGenericTrack(jobId, detectionResponse, objectTrack,
-                                    trackProperties, mergedTaskIdx);
+                                    trackProperties, mergedTaskIdx, headers);
         }
     }
 
@@ -389,7 +398,8 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse detectionResponse,
             DetectionProtobuf.GenericTrack objectTrack,
             Map<String, String> trackProperties,
-            int mergedTaskIdx) {
+            int mergedTaskIdx,
+            Map<String, Object> headers) {
         Detection detection = new Detection(
                 0,
                 0,
@@ -414,10 +424,36 @@ public class DetectionResponseProcessor
                 ImmutableSortedSet.of(detection),
                 trackProperties,
                 "",
-                "");
+                "",
+                getSelectorId(headers),
+                getSelectedInput(headers));
 
         _inProgressJobs.addTrack(track);
     }
+
+
+    private static UUID getSelectorId(Map<String, Object> headers) {
+        var selectorId = headers.get(MpfHeaders.MEDIA_SELECTOR_ID);
+        if (selectorId == null) {
+            return null;
+        }
+        if (selectorId instanceof String string) {
+            return UUID.fromString(string);
+        }
+        else if (selectorId instanceof UUID uuid) {
+            return uuid;
+        }
+        throw new WfmProcessingException(
+                "The %s header did not contain a string. It was a %s"
+                .formatted(MpfHeaders.MEDIA_SELECTOR_ID, selectorId.getClass()));
+    }
+
+    private static String getSelectedInput(Map<String, Object> headers) {
+        return Optional.ofNullable(headers.get(MpfHeaders.SELECTED_CONTENT))
+            .map(Object::toString)
+            .orElse(null);
+    }
+
 
     private void checkErrors(long jobId, String mediaLabel, DetectionProtobuf.DetectionResponse detectionResponse,
                              int startFrame, int stopFrame, int startTime, int stopTime) {

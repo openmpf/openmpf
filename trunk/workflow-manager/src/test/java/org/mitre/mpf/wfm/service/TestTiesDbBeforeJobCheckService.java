@@ -183,9 +183,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), any()))
             .thenReturn(mockProps);
 
-        var jobCreationRequest = new JobCreationRequest();
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                jobCreationRequest,
+                createJobRequest(),
                 null,
                 List.of(media),
                 elements);
@@ -219,7 +218,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media1, media2),
                 elements);
@@ -253,7 +252,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media1, media2),
                 elements);
@@ -282,7 +281,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media),
                 elements);
@@ -317,7 +316,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var ex = TestUtil.assertThrows(
                 WfmProcessingException.class,
                 () -> _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                        new JobCreationRequest(),
+                        createJobRequest(),
                         null,
                         List.of(media),
                         elements));
@@ -434,7 +433,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn("JOB_HASH");
 
         return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media),
                 elements);
@@ -734,7 +733,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                new JobCreationRequest(),
+                createJobRequest(),
                 null,
                 List.of(media1, media2),
                 elements);
@@ -877,6 +876,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(Optional.of("SHA1"));
         when(jobMedia1.getUri())
             .thenReturn("http://localhost/dest-bucket/media1");
+        when(jobMedia1.getMediaSelectorsOutput())
+            .thenReturn(URI.create("http://localhost/dest-bucket/media-selectors-out.json"));
 
         var jobMedia2 = mock(Media.class);
         when(jobMedia2.getLinkedHash())
@@ -937,6 +938,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ImmutableSortedMap.of("META1", "META1VALUE"),
                 ImmutableSortedMap.of("MEDIA_PROP1", "MEDIA_PROP1_VALUE"),
                 new JsonMarkupOutputObject(35, "http://localhost/bucket/markup", "complete", null),
+                "http://localhost/bucket/media-selectors-out.json",
                 trackTypeMap,
                 ImmutableSortedMap.of("ALGO", ImmutableSortedSet.of(detectionError)));
 
@@ -947,6 +949,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 ImmutableSortedSet.of(), "WRONG_SHA", null,
                 ImmutableSortedMap.of("META2", "META2VALUE"),
                 ImmutableSortedMap.of(MpfConstants.LINKED_MEDIA_HASH, "SHA2"),
+                null,
                 null,
                 ImmutableSortedMap.of(),
                 ImmutableSortedMap.of("ALGO2", ImmutableSortedSet.of()));
@@ -992,7 +995,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 URI.create("http://localhost/dest-bucket/artifact2"),
 
                 URI.create("http://localhost/bucket/markup"),
-                URI.create("http://localhost/dest-bucket/markup"));
+                URI.create("http://localhost/dest-bucket/markup"),
+
+                URI.create("http://localhost/bucket/media-selectors-out.json"),
+                URI.create("http://localhost/dest-bucket/media-selectors-out.json"));
 
         when(_mockS3StorageBackend.copyResults(eq(uriMappings.keySet()), isNotNull()))
                 .thenReturn(uriMappings);
@@ -1042,9 +1048,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         outputObjectChecker.eq(j -> j.getMedia().size());
         var newMedia1 = newOutputObject.getMedia().first();
         compareMedia(media1, newMedia1, "http://localhost/dest-bucket/media1");
+        assertEquals(
+                "http://localhost/dest-bucket/media-selectors-out.json",
+                newMedia1.getMediaSelectorsOutput());
 
         var newMedia2 = newOutputObject.getMedia().last();
         compareMedia(media2, newMedia2, "http://localhost/dest-bucket/media2");
+        assertNull(newMedia2.getMediaSelectorsOutput());
 
         var newMarkup = newMedia1.getMarkupResult();
         var markupChecker = new FieldChecker<>(media1.getMarkupResult(), newMarkup);
@@ -1121,7 +1131,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         action.getTracks().add(track);
 
         var media = new JsonMediaOutputObject(
-                39, -1, "path", null, "IMAGE", "image/png", 1, "SHA", "");
+                39, -1, "path", null, "IMAGE", "image/png", 1, "SHA", "", null);
         media.getTrackTypes().put("FACE", ImmutableSortedSet.of(action));
 
         var outputObject = new JsonOutputObject(
@@ -1188,6 +1198,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         }
         else {
             mediaChecker.neq(m -> m.getMarkupResult());
+        }
+
+        if (oldMedia.getMediaSelectorsOutput() == null) {
+            mediaChecker.eq(m -> m.getMediaSelectorsOutput());
+        }
+        else {
+            mediaChecker.neq(m -> m.getMediaSelectorsOutput());
         }
 
         mediaChecker.eq(m -> m.getTrackTypes().keySet());
@@ -1303,6 +1320,11 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     }
 
     private static Action createAction() {
-        return new Action("ACTION", null, null, List.of());
+        return new Action("ACTION", null, null, ImmutableList.of());
+    }
+
+    private static JobCreationRequest createJobRequest() {
+        return new JobCreationRequest(
+                null, null, Map.of(), null, null, null, null, null, null, null);
     }
 }

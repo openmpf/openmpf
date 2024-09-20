@@ -28,7 +28,6 @@ package org.mitre.mpf.mvc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,7 +49,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.io.IOException;
 import java.util.List;
@@ -91,10 +89,9 @@ public class TestPipelineController {
         when(mockWorkflowPropertyService.getPropertyValue("TEST_WF_PROPERTY"))
                 .thenReturn("5");
 
-        var springValidator = new LocalValidatorFactoryBean();
-        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
-        springValidator.afterPropertiesSet();
-        var pipelineValidator = new PipelineValidator(springValidator, mockWorkflowPropertyService);
+        var pipelineValidator = new PipelineValidator(
+                TestUtil.createConstraintValidator(),
+                mockWorkflowPropertyService);
 
         var pipelineService = new PipelineServiceImpl(mockPropertiesUtil, _objectMapper, pipelineValidator);
 

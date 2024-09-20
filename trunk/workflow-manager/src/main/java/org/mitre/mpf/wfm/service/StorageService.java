@@ -32,6 +32,7 @@ import com.google.common.collect.Table;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -46,6 +47,7 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -142,6 +144,47 @@ public class StorageService {
             return _localBackend.storeArtifacts(request);
         }
         catch (IOException localException) {
+            if (remoteException != null) {
+                localException.addSuppressed(remoteException);
+            }
+            throw localException;
+        }
+    }
+
+    @FunctionalInterface
+    public interface OutputProcessor {
+        void process(OutputStream out) throws IOException;
+    }
+
+
+    public URI storeMediaSelectorsOutput(
+                BatchJob job,
+                Media media,
+                MediaSelectorType selectorType,
+                OutputProcessor outputProcessor) throws IOException, StorageException {
+        Exception remoteException = null;
+        try {
+            for (var remoteBackend : _remoteBackends) {
+                if (remoteBackend.canStoreMediaSelectorsOutput(job, media)) {
+                    return remoteBackend.storeMediaSelectorsOutput(
+                            job, media, selectorType, outputProcessor);
+                }
+            }
+        }
+        catch (IOException | StorageException e) {
+            remoteException = e;
+            var msg = "The media selector output file will be stored locally because storing "
+                    + "it remotely failed due to: " + e;
+            LOG.warn(msg, e);
+            _inProgressJobs.addWarning(
+                job.getId(), media.getId(), IssueCodes.REMOTE_STORAGE_UPLOAD, msg);
+        }
+
+        try {
+            return _localBackend.storeMediaSelectorsOutput(
+                    job, media, selectorType, outputProcessor);
+        }
+        catch (Exception localException) {
             if (remoteException != null) {
                 localException.addSuppressed(remoteException);
             }

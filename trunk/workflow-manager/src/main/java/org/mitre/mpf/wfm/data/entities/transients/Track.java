@@ -116,6 +116,16 @@ public class Track implements Comparable<Track> {
     private final String _qualitySelectionProperty;
     public String getQualitySelectionProperty() { return _qualitySelectionProperty; }
 
+    private final UUID _selectorId;
+    public Optional<UUID> getSelectorId() {
+        return Optional.ofNullable(_selectorId);
+    }
+
+    private final String _selectedInput;
+    public Optional<String> getSelectedInput() {
+        return Optional.ofNullable(_selectedInput);
+    }
+
     /**
      * Creates a new track instance with the given immutable parameters.
      *
@@ -152,7 +162,9 @@ public class Track implements Comparable<Track> {
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
             @JsonProperty("exemplarPolicy") String exemplarPolicy,
-            @JsonProperty("qualitySelectionProperty") String qualitySelectionProperty) {
+            @JsonProperty("qualitySelectionProperty") String qualitySelectionProperty,
+            @JsonProperty("selectorId") UUID selectorId,
+            @JsonProperty("selectedInput") String selectedInput) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
@@ -167,6 +179,8 @@ public class Track implements Comparable<Track> {
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
         _exemplarPolicy = exemplarPolicy;
         _qualitySelectionProperty = qualitySelectionProperty;
+        _selectorId = selectorId;
+        _selectedInput = selectedInput;
         _exemplar = ExemplarPolicyUtil.getExemplar(
                     _exemplarPolicy,
                     _qualitySelectionProperty,

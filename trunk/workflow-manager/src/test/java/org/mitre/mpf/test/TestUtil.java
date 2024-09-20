@@ -26,16 +26,18 @@
 
 package org.mitre.mpf.test;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatchers;
 import org.springframework.core.io.PathResource;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.io.IOException;
 import java.net.URI;
@@ -165,6 +167,11 @@ public class TestUtil {
         Assume.assumeTrue("Skipping this test because it requires Node Manager but it is disabled.",
                            nodeManagerEnabled());
     }
+
+    public static ConstraintValidationService createConstraintValidator() {
+        var springValidator = new LocalValidatorFactoryBean();
+        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
+        springValidator.afterPropertiesSet();
+        return new ConstraintValidationService(springValidator);
+    }
 }
-
-

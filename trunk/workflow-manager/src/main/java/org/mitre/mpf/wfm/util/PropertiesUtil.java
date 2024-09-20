@@ -147,6 +147,8 @@ public class PropertiesUtil {
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
         temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
         derivativeMediaDirectory = createOrFail(share, "derivative-media", permissions);
+        mediaSelectorsOutputDir = createOrFail(
+                share, "media-selectors-output", permissions).toPath();
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
         createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
@@ -394,6 +396,11 @@ public class PropertiesUtil {
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path;
+    }
+
+    private Path mediaSelectorsOutputDir;
+    public Path getMediaSelectorsOutputDir() {
+        return mediaSelectorsOutputDir;
     }
 
     private File remoteMediaDirectory;

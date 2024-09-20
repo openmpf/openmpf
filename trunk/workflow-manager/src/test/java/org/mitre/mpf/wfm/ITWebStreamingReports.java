@@ -177,7 +177,7 @@ public class ITWebStreamingReports {
             log.info("Finished POST test, cancelled streaming job #1:\n     " + jobCancelResponseJson1);
 
             Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS,
-                    jobCancelResponse1.getMpfResponse().getResponseCode());
+                    jobCancelResponse1.getMpfResponse().responseCode());
             Assert.assertTrue(jobCancelResponse1.getDoCleanup());
 
             String cancelUrl2 = WebRESTUtils.REST_URL + "streaming/jobs/" + Long.toString(postJobId2) + "/cancel";
@@ -190,7 +190,7 @@ public class ITWebStreamingReports {
             log.info("Finished POST test, cancelled streaming job #2:\n     " + jobCancelResponseJson2);
 
             Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS,
-                    jobCancelResponse2.getMpfResponse().getResponseCode());
+                    jobCancelResponse2.getMpfResponse().responseCode());
             Assert.assertTrue(jobCancelResponse2.getDoCleanup());
         } finally {
             Spark.stop();

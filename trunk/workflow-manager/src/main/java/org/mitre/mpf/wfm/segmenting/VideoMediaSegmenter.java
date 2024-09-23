@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -43,6 +44,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.TextUtils;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
@@ -143,7 +145,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private DetectionRequest createFeedForwardRequest(
             Track track, int topQualityCount, String topQualitySelectionProp, Media media, DetectionContext context) {
-        Collection<Detection> includedDetections;
+        Set<Detection> includedDetections;
         int startFrame;
         int stopFrame;
         if (topQualityCount <= 0) {
@@ -152,11 +154,27 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             stopFrame = track.getEndOffsetFrameInclusive();
         }
         else {
-            includedDetections = TopQualitySelectionUtil.getTopQualityDetections(
+            includedDetections = (Set<Detection>) TopQualitySelectionUtil.getTopQualityDetections(
                               track.getDetections(), topQualityCount, topQualitySelectionProp);
+
+            String bestDetectionPropertyNamesList = getBestDetectionPropertyList(context);
+            if (!bestDetectionPropertyNamesList.isEmpty()) {
+                var propNameList = TextUtils.parseListFromString(bestDetectionPropertyNamesList);
+                propNameList = TextUtils.trimAndUpper(propNameList, Collectors.toList());
+
+                for (Detection detection : track.getDetections()) {
+                    for (String p : propNameList) {
+                        if (detection.getDetectionProperties().containsKey(p)) {
+                            log.info("Will feed forward detection in frame {} with property {}", detection.getMediaOffsetFrame(), p);
+                            includedDetections.add(detection);
+                            break;
+                        }
+                    }
+                }
+            }
             var frameSummaryStats = includedDetections.stream()
-                    .mapToInt(Detection::getMediaOffsetFrame)
-                    .summaryStatistics();
+                .mapToInt(Detection::getMediaOffsetFrame)
+                .summaryStatistics();
             startFrame = frameSummaryStats.getMin();
             stopFrame = frameSummaryStats.getMax();
         }
@@ -187,5 +205,10 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     context.getAlgorithmProperties().get(FEED_FORWARD_TOP_QUALITY_COUNT))
                 .map(Integer::parseInt)
                 .orElse(0);
+    }
+    private static String getBestDetectionPropertyList(DetectionContext context) {
+        return Optional.ofNullable(
+                    context.getAlgorithmProperties().get(MARK_BEST_DETECTION_PROPERTY_LIST))
+                .orElse("");
     }
 }

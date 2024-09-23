@@ -351,8 +351,9 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         for (Detection detection : track.getDetections()) {
             for (String p : propNameList) {
                 if (detection.getDetectionProperties().containsKey(p)) {
-                    LOG.info("Will extract detection with property {} : {}", p, detection.getMediaOffsetFrame());
+                    LOG.info("Will extract detection in frame {} with property {}", detection.getMediaOffsetFrame(), p);
                     framesToExtract.add(detection.getMediaOffsetFrame());
+                    break;
                 }
             }
         }

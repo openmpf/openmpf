@@ -92,14 +92,14 @@
     },
     {
         "name": "ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES",
-        "description": "A semi-colon delimited list of strings that define the detection property names to be used for artifact extraction. If a detection in a track has property that corresponds to any of the names in this list, an artifact will be created for it.",
+        "description": "A semi-colon delimited list of strings that define the detection property names to be used for artifact extraction. If a detection in a track has a property that corresponds to any of the names in this list, an artifact will be created for it.",
         "type": "STRING",
         "defaultValue": "",
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
         "name": "FEED_FORWARD_BEST_DETECTION_PROP_NAMES",
-        "description": "A semi-colon delimited list of strings that define the detection property names to be used for feed-forward processing. If a detection in a track has property that corresponds to any of the names in this list, that detection will be included in a feed-forward track, along with detections chosen based on the value of QUALITY_SELECTION_PROPERTY.",
+        "description": "A semi-colon delimited list of strings that define the detection property names to be used for feed-forward processing. If a detection in a track has a property that corresponds to any of the names in this list, that detection will be included in a feed-forward track, along with detections chosen based on the value of QUALITY_SELECTION_PROPERTY.",
         "type": "STRING",
         "defaultValue": "",
         "mediaTypes": ["VIDEO","IMAGE"]

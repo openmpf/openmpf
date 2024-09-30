@@ -229,9 +229,7 @@ public class TestUtil {
     }
 
     public static LocalValidatorFactoryBean createValidator() {
-        var validatorConfig = new ValidatorConfig();
-        var messageInterpolator = validatorConfig.parameterMessageInterpolator();
-        var validator = validatorConfig.localValidatorFactoryBean(messageInterpolator);
+        var validator = new ValidatorConfig().localValidatorFactoryBean();
         validator.afterPropertiesSet();
         return validator;
     }

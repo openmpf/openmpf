@@ -31,6 +31,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
+import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.HibernateValidatorConfiguration;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.hibernate.validator.spi.valuehandling.ValidatedValueUnwrapper;
@@ -49,10 +50,10 @@ public class ValidatorConfig {
 
     @Bean
     @Primary
-    public LocalValidatorFactoryBean localValidatorFactoryBean(
-            ParameterMessageInterpolator messageInterpolator) {
+    public LocalValidatorFactoryBean localValidatorFactoryBean() {
         var validator = new LocalValidatorFactoryBean();
-        validator.setMessageInterpolator(messageInterpolator);
+        validator.setMessageInterpolator(parameterMessageInterpolator());
+        validator.setProviderClass(HibernateValidator.class);
         validator.setConfigurationInitializer(
                 c -> configureValidator((HibernateValidatorConfiguration) c));
         return validator;

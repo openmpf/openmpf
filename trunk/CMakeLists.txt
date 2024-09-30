@@ -38,9 +38,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
 	message("Configuring as DEBUG build")
-    # Needed to get clang-tidy work.
+    # Needed to get clang-tidy to work.
     add_compile_definitions(BOOST_UUID_NO_SIMD)
-    # Needed to get clang-tidy work.
+    # Needed to get clang-tidy to work.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /usr/lib/gcc/x86_64-linux-gnu/9/include")
 else()
     message("Configuring as RELEASE build")

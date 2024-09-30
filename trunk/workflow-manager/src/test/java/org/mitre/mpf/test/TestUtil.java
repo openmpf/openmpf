@@ -51,8 +51,8 @@ import org.assertj.core.api.Condition;
 import org.assertj.core.api.FutureAssert;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.Application;
 import org.mitre.mpf.mvc.WebMvcConfig;
+import org.mitre.mpf.wfm.ValidatorConfig;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
@@ -229,8 +229,9 @@ public class TestUtil {
     }
 
     public static LocalValidatorFactoryBean createValidator() {
-        var app = new Application();
-        var validator = app.localValidatorFactoryBean(app.parameterMessageInterpolator());
+        var validatorConfig = new ValidatorConfig();
+        var messageInterpolator = validatorConfig.parameterMessageInterpolator();
+        var validator = validatorConfig.localValidatorFactoryBean(messageInterpolator);
         validator.afterPropertiesSet();
         return validator;
     }

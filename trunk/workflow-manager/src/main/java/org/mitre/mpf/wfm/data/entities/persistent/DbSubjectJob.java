@@ -26,11 +26,13 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -44,7 +46,9 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 
+import org.mitre.mpf.rest.api.subject.CallbackMethod;
 import org.mitre.mpf.wfm.data.access.hibernate.AbstractHibernateDao;
+import org.mitre.mpf.wfm.util.CallbackStatus;
 
 @Entity
 public class DbSubjectJob {
@@ -90,6 +94,20 @@ public class DbSubjectJob {
     public Map<String, String> getJobProperties() { return jobProperties; }
 
 
+    private URI callbackUri;
+    public Optional<URI> getCallbackUri() { return Optional.ofNullable(callbackUri); }
+
+
+    @Enumerated(EnumType.STRING)
+    private CallbackMethod callbackMethod;
+    public Optional<CallbackMethod> getCallbackMethod() {
+        return Optional.ofNullable(callbackMethod);
+    }
+
+
+    private String externalId;
+    public Optional<String> getExternalId() { return Optional.ofNullable(externalId); }
+
     private boolean retrievedDetectionJobs;
     public boolean getRetrievedDetectionJobs() { return retrievedDetectionJobs; }
     public void setRetrievedDetectionJobs(boolean retrievedDetectionJobs) {
@@ -126,6 +144,16 @@ public class DbSubjectJob {
     }
 
 
+    private URI outputUri;
+    public Optional<URI> getOutputUri() { return Optional.ofNullable(outputUri); }
+    public void setOutputUri(URI uri) { outputUri = uri; }
+
+
+    @Column(nullable = false)
+    private String callbackStatus;
+    public String getCallbackStatus() { return callbackStatus; }
+    public void setCallbackStatus(String status) { callbackStatus = status; }
+
     // Hibernate requires a no-arg constructor.
     public DbSubjectJob() {
     }
@@ -134,16 +162,26 @@ public class DbSubjectJob {
             String componentName,
             int priority,
             Collection<Long> jobIds,
-            Map<String, String> jobProperties) {
+            Map<String, String> jobProperties,
+            URI callbackUri,
+            CallbackMethod callbackMethod,
+            String externalId) {
         this.componentName = componentName;
-        this.priority = priority == 0 ? 4 : priority;
+        this.priority = priority;
         this.detectionJobIds = new HashSet<>(jobIds);
         this.jobProperties = new HashMap<>(jobProperties);
+        this.callbackUri = callbackUri;
+        if (callbackUri != null) {
+            this.callbackMethod = Objects.requireNonNullElseGet(
+                    callbackMethod, CallbackMethod::getDefault);
+        }
+        this.externalId = externalId;
 
         this.timeReceived = Instant.now();
 
         this.errors = new HashSet<>();
         this.warnings = new HashSet<>();
         this.cancellationState = DbCancellationState.NOT_CANCELLED;
+        this.callbackStatus = CallbackStatus.jobRunning();
     }
 }

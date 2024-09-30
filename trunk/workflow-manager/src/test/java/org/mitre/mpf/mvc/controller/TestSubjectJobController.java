@@ -40,10 +40,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Stream;
 
 import org.hamcrest.BaseMatcher;
@@ -52,6 +54,7 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.util.TimeUtils;
+import org.mitre.mpf.rest.api.subject.CallbackMethod;
 import org.mitre.mpf.rest.api.subject.CancellationState;
 import org.mitre.mpf.rest.api.subject.Entity;
 import org.mitre.mpf.rest.api.subject.Relationship;
@@ -65,6 +68,7 @@ import org.mitre.mpf.wfm.businessrules.SubjectJobRequestService;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
+import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.http.MediaType;
@@ -101,9 +105,9 @@ public class TestSubjectJobController extends MockitoTest.Strict {
             .andExpect(jsonPath("$").isEmpty());
 
         var jobs = Stream.of(
-            new DbSubjectJob("name1", 1, List.of(), Map.of()),
-            new DbSubjectJob("name2", 1, List.of(), Map.of()),
-            new DbSubjectJob("name3", 1, List.of(), Map.of()));
+            new DbSubjectJob("name1", 1, List.of(), Map.of(), null, null, null),
+            new DbSubjectJob("name2", 1, List.of(), Map.of(), null, null, null),
+            new DbSubjectJob("name3", 1, List.of(), Map.of(), null, null, null));
 
         when(_mockSubjectJobRepo.getPage(1, 100))
             .thenReturn(jobs);
@@ -143,7 +147,10 @@ public class TestSubjectJobController extends MockitoTest.Strict {
             "componentName": "ExampleComponent",
             "priority": 7,
             "detectionJobIds": [1, 2, 3],
-            "jobProperties": { "PROP": "VALUE" }
+            "jobProperties": { "PROP": "VALUE" },
+            "callbackURL": "http://localhost:4321",
+            "callbackMethod": "POST",
+            "externalId": "EXTERNAL_ID"
         }""";
 
         var captor = ArgumentCaptor.forClass(SubjectJobRequest.class);
@@ -154,11 +161,17 @@ public class TestSubjectJobController extends MockitoTest.Strict {
             .andExpect(status().isCreated())
             .andExpect(header().string("Location", endsWith("/subject/jobs/987")));
 
-        var request = captor.getValue();
-        assertThat(request.componentName()).isEqualTo("ExampleComponent");
-        assertThat(request.priority()).isEqualTo(7);
-        assertThat(request.detectionJobIds()).containsExactlyInAnyOrder(1L, 2L, 3L);
-        assertThat(request.jobProperties()).containsOnly(Map.entry("PROP", "VALUE"));
+        var actualRequest = captor.getValue();
+        var expectedRequest = new SubjectJobRequest(
+                "ExampleComponent",
+                OptionalInt.of(7),
+                List.of(1L, 2L, 3L),
+                Map.of("PROP", "VALUE"),
+                Optional.of(URI.create("http://localhost:4321")),
+                Optional.of(CallbackMethod.POST),
+                Optional.of("EXTERNAL_ID"));
+
+        assertThat(actualRequest).isEqualTo(expectedRequest);
     }
 
 
@@ -169,7 +182,8 @@ public class TestSubjectJobController extends MockitoTest.Strict {
 
         var dbJob = new DbSubjectJob(
                 "ExampleComponent", 8,
-                List.of(1L, 2L, 3L), Map.of("PROP", "VALUE"));
+                List.of(1L, 2L, 3L), Map.of("PROP", "VALUE"),
+                null, null, null);
 
         when(_mockSubjectJobRepo.tryFindById(456))
             .thenReturn(Optional.of(dbJob));
@@ -190,7 +204,10 @@ public class TestSubjectJobController extends MockitoTest.Strict {
     public void testCancelJob() throws Exception {
         var dbJob = new DbSubjectJob(
                 "ExampleComponent", 8,
-                List.of(1L, 2L, 3L), Map.of("PROP", "VALUE"));
+                List.of(1L, 2L, 3L), Map.of("PROP", "VALUE"),
+                null,
+                null,
+                null);
 
         when(_mockSubjectJobRepo.tryFindById(789))
             .thenReturn(Optional.of(dbJob));
@@ -263,15 +280,20 @@ public class TestSubjectJobController extends MockitoTest.Strict {
                 123L,
                 new SubjectJobRequest(
                         "ExampleComponent",
-                        8,
+                        OptionalInt.of(8),
                         List.of(1L, 2L, 3L),
-                        Map.of("PROP", "VALUE")),
+                        Map.of("PROP", "VALUE"),
+                        Optional.of(URI.create("http://localhost:1234")),
+                        Optional.of(CallbackMethod.POST),
+                        Optional.of("EXTERNAL_ID")),
                 Instant.now(),
                 Optional.empty(),
                 false,
                 CancellationState.NOT_CANCELLED,
                 ImmutableSortedSet.of(),
-                ImmutableSortedSet.of("TEST_WARNING"));
+                ImmutableSortedSet.of("TEST_WARNING"),
+                Optional.empty(),
+                CallbackStatus.jobRunning());
     }
 
 
@@ -288,13 +310,17 @@ public class TestSubjectJobController extends MockitoTest.Strict {
             .andExpect(jsonPath("%s.errors", root).isEmpty())
             .andExpect(jsonPath("%s.warnings.length()", root).value(1))
             .andExpect(jsonPath("%s.warnings[0]", root).value("TEST_WARNING"))
+            .andExpect(jsonPath("%s.callbackStatus", root).value("JOB RUNNING"))
 
             .andExpect(jsonPath("%s.request.componentName", root).value("ExampleComponent"))
             .andExpect(jsonPath("%s.request.priority", root).value(8))
             .andExpect(
                     jsonPath("%s.request.detectionJobIds", root)
                     .value(containsInAnyOrder(1, 2, 3)))
-            .andExpect(jsonPath("%s.request.jobProperties.PROP", root).value("VALUE"));
+            .andExpect(jsonPath("%s.request.jobProperties.PROP", root).value("VALUE"))
+            .andExpect(jsonPath("%s.request.externalId", root).value("EXTERNAL_ID"))
+            .andExpect(jsonPath("%s.request.callbackURL", root).value("http://localhost:1234"))
+            .andExpect(jsonPath("%s.request.callbackMethod", root).value("POST"));
     }
 
     private static MockHttpServletRequestBuilder postJson(String uri, String jsonContent) {

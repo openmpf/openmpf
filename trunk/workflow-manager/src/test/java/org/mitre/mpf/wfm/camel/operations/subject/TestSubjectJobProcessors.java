@@ -107,7 +107,8 @@ public class TestSubjectJobProcessors extends MockitoTest.Strict {
         SubjectJobProcessors.initExchange(pbJob, exchange);
 
         var dbJob = new DbSubjectJob(
-                "TEST_COMPONENT", 3, List.of(7L, 8L), Map.of());
+                "TEST_COMPONENT", 3, List.of(7L, 8L), Map.of(),
+                null, null, null);
 
         when(_mockSubjectJobRepo.findById(123))
             .thenReturn(dbJob);

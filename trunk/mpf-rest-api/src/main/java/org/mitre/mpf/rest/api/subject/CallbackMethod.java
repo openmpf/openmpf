@@ -26,37 +26,10 @@
 
 package org.mitre.mpf.rest.api.subject;
 
-import java.net.URI;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.SortedSet;
+public enum CallbackMethod {
+    POST, GET;
 
-import com.fasterxml.jackson.annotation.JsonView;
-
-public record SubjectJobDetails(
-        long id,
-        SubjectJobRequest request,
-        Instant timeReceived,
-        Optional<Instant> timeCompleted,
-        boolean retrievedDetectionJobs,
-        CancellationState cancellationState,
-        SortedSet<String> errors,
-        SortedSet<String> warnings,
-        Optional<URI> outputUri,
-
-        // @JsonView is being used to prevent the "callbackStatus" field from appearing in the JSON
-        // output object. The callback occurs after the output object is written, so the callback
-        // status is not known at the time the output object is created.
-        @JsonView(RestView.class)
-        String callbackStatus) {
-
-
-    // When this view is used, callbackStatus will not be included when writing out the JSON.
-    public interface OutputObjectView {
-    }
-
-    // When this view is used, or no view is specified, all fields will be included when writing
-    // out the JSON.
-    public interface RestView {
+    public static CallbackMethod getDefault() {
+        return POST;
     }
 }

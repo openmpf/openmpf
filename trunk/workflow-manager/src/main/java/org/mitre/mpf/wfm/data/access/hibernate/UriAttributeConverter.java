@@ -24,39 +24,24 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.subject;
+package org.mitre.mpf.wfm.data.access.hibernate;
 
 import java.net.URI;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.SortedSet;
 
-import com.fasterxml.jackson.annotation.JsonView;
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
 
-public record SubjectJobDetails(
-        long id,
-        SubjectJobRequest request,
-        Instant timeReceived,
-        Optional<Instant> timeCompleted,
-        boolean retrievedDetectionJobs,
-        CancellationState cancellationState,
-        SortedSet<String> errors,
-        SortedSet<String> warnings,
-        Optional<URI> outputUri,
+// Allows Hibernate entities to have URI fields that get stored as strings in the database.
+@Converter(autoApply = true)
+public class UriAttributeConverter implements AttributeConverter<URI, String> {
 
-        // @JsonView is being used to prevent the "callbackStatus" field from appearing in the JSON
-        // output object. The callback occurs after the output object is written, so the callback
-        // status is not known at the time the output object is created.
-        @JsonView(RestView.class)
-        String callbackStatus) {
-
-
-    // When this view is used, callbackStatus will not be included when writing out the JSON.
-    public interface OutputObjectView {
+    @Override
+    public String convertToDatabaseColumn(URI uri) {
+        return uri == null ? null : uri.toString();
     }
 
-    // When this view is used, or no view is specified, all fields will be included when writing
-    // out the JSON.
-    public interface RestView {
+    @Override
+    public URI convertToEntityAttribute(String uriString) {
+        return uriString == null ? null : URI.create(uriString);
     }
 }

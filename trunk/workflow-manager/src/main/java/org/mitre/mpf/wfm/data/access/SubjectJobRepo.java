@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.data.access;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -97,15 +98,20 @@ public class SubjectJobRepo {
                 job.getId(),
                 new SubjectJobRequest(
                         job.getComponentName(),
-                        job.getPriority(),
+                        OptionalInt.of(job.getPriority()),
                         job.getDetectionJobIds(),
-                        job.getJobProperties()),
+                        job.getJobProperties(),
+                        job.getCallbackUri(),
+                        job.getCallbackMethod(),
+                        job.getExternalId()),
                 job.getTimeReceived(),
                 job.getTimeCompleted(),
                 job.getRetrievedDetectionJobs(),
                 job.getCancellationState().convert(),
                 ImmutableSortedSet.copyOf(job.getErrors()),
-                ImmutableSortedSet.copyOf(job.getWarnings()));
+                ImmutableSortedSet.copyOf(job.getWarnings()),
+                job.getOutputUri(),
+                job.getCallbackStatus());
     }
 
     public Stream<DbSubjectJob> getPage(int page, int pageLen) {

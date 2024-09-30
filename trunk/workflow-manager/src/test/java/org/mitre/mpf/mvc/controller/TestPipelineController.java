@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.OptionalInt;
 
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,7 +64,6 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -95,10 +93,8 @@ public class TestPipelineController extends MockitoTest.Strict {
         lenient().when(mockWorkflowPropertyService.getPropertyValue("TEST_WF_PROPERTY"))
                 .thenReturn("5");
 
-        var springValidator = new LocalValidatorFactoryBean();
-        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
-        springValidator.afterPropertiesSet();
-        var pipelineValidator = new PipelineValidator(springValidator, mockWorkflowPropertyService);
+        var pipelineValidator = new PipelineValidator(
+                TestUtil.createValidator(), mockWorkflowPropertyService);
 
         var pipelineService = new PipelineServiceImpl(mockPropertiesUtil, _objectMapper, pipelineValidator);
 

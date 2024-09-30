@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service;
 import static java.util.stream.Collectors.toMap;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.HashMap;
@@ -37,9 +38,11 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.rest.api.subject.CallbackMethod;
 import org.mitre.mpf.rest.api.subject.Entity;
 import org.mitre.mpf.rest.api.subject.Relationship;
 import org.mitre.mpf.rest.api.subject.Relationship.MediaReference;
+import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
 import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
@@ -47,15 +50,19 @@ import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJobOutput;
+import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 @Component
 public class SubjectJobResultsService {
@@ -64,22 +71,33 @@ public class SubjectJobResultsService {
 
     private final PropertiesUtil _propertiesUtil;
 
-    private final ObjectMapper _objectMapper;
+    private final ObjectWriter _objectWriter;
 
     private final SubjectJobRepo _subjectJobRepo;
 
     private final JmsUtils _jmsUtils;
+
+    private final JobCompleteCallbackService _jobCompleteCallbackService;
+
+    private final TransactionTemplate _transactionTemplate;
 
     @Inject
     SubjectJobResultsService(
             PropertiesUtil propertiesUtil,
             ObjectMapper objectMapper,
             SubjectJobRepo subjectJobRepo,
-            JmsUtils jmsUtils) {
+            JmsUtils jmsUtils,
+            JobCompleteCallbackService jobCompleteCallbackService,
+            TransactionTemplate transactionTemplate) {
         _propertiesUtil = propertiesUtil;
-        _objectMapper = objectMapper;
+        _objectWriter = objectMapper
+                .copy()
+                .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+                .writerWithView(SubjectJobDetails.OutputObjectView.class);
         _subjectJobRepo = subjectJobRepo;
         _jmsUtils = jmsUtils;
+        _jobCompleteCallbackService = jobCompleteCallbackService;
+        _transactionTemplate = transactionTemplate;
     }
 
     @Transactional
@@ -147,7 +165,24 @@ public class SubjectJobResultsService {
             }
         }
         finally {
-            _subjectJobRepo.save(job);
+            boolean callbackEnabled = job.getCallbackUri().isPresent();
+            try {
+                job.setCallbackStatus(callbackEnabled
+                        ? CallbackStatus.inProgress()
+                        : CallbackStatus.notRequested());
+
+                _subjectJobRepo.save(job);
+            }
+            finally {
+                if (callbackEnabled) {
+                    _jobCompleteCallbackService.sendCallback(job)
+                            .whenCompleteAsync((r, err) -> handleCallbackResult(
+                                    job.getId(),
+                                    job.getCallbackUri().get(),
+                                    job.getCallbackMethod().orElseGet(CallbackMethod::getDefault),
+                                    err));
+                }
+            }
         }
     }
 
@@ -161,11 +196,12 @@ public class SubjectJobResultsService {
 
     private void storeResults(DbSubjectJob job, SubjectJobResult results) {
         try {
-            var json = _objectMapper.writeValueAsString(results);
+            var json = _objectWriter.writeValueAsString(results);
             var resultsPath = _propertiesUtil.getSubjectTrackingResultsDir()
                     .resolve(job.getId() + ".json");
             Files.writeString(resultsPath, json);
             LOG.info("Wrote job results to {}", resultsPath);
+            job.setOutputUri(resultsPath.toUri());
             _subjectJobRepo.saveOutput(new DbSubjectJobOutput(job, json));
         }
         catch (IOException e) {
@@ -173,7 +209,7 @@ public class SubjectJobResultsService {
             job.addError(message);
             var updatedResults = updateSubjectJobResult(job, results);
             try {
-                var json = _objectMapper.writeValueAsString(updatedResults);
+                var json = _objectWriter.writeValueAsString(updatedResults);
                 _subjectJobRepo.saveOutput(new DbSubjectJobOutput(job, json));
             }
             catch (JsonProcessingException suppressed) {
@@ -256,5 +292,29 @@ public class SubjectJobResultsService {
                 .map(e -> new MediaReference(
                         e.getKey(), List.copyOf(e.getValue().getFramesList())))
                 .toList();
+    }
+
+
+    private void handleCallbackResult(
+            long jobId,
+            URI callbackUri,
+            CallbackMethod callbackMethod,
+            Throwable error) {
+        String newStatus;
+        if (error == null) {
+            newStatus = CallbackStatus.complete();
+        }
+        else {
+            var errorMsg = "Sending HTTP %s callback to \"%s\" failed due to: %s".formatted(
+                    callbackMethod, callbackUri, error);
+            LOG.error(errorMsg, error);
+            newStatus = CallbackStatus.error(errorMsg);
+        }
+
+        // We don't know what thread this method will be called from because it is called as a
+        // result of a future completing. Since we don't know what thread the method is running on,
+        // we must manually activate a transaction.
+        _transactionTemplate.executeWithoutResult(
+                t -> _subjectJobRepo.findById(jobId).setCallbackStatus(newStatus));
     }
 }

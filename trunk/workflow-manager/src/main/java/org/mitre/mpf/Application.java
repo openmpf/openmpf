@@ -27,12 +27,20 @@
 
 package org.mitre.mpf;
 
+import java.lang.reflect.Type;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
+import org.hibernate.validator.HibernateValidatorConfiguration;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+import org.hibernate.validator.spi.valuehandling.ValidatedValueUnwrapper;
 import org.javasimon.console.SimonConsoleServlet;
 import org.mitre.mpf.mvc.security.OidcSecurityConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +53,9 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 
 @SpringBootApplication
@@ -133,5 +143,53 @@ public class Application extends SpringBootServletInitializer {
         servlet.setLoadOnStartup(0);
         servlet.setAsyncSupported(true);
         return servlet;
+    }
+
+    @Bean
+    public ParameterMessageInterpolator parameterMessageInterpolator() {
+        return new ParameterMessageInterpolator();
+    }
+
+    @Bean
+    @Primary
+    public LocalValidatorFactoryBean localValidatorFactoryBean(
+            ParameterMessageInterpolator messageInterpolator) {
+        var validator = new LocalValidatorFactoryBean();
+        validator.setMessageInterpolator(messageInterpolator);
+        validator.setConfigurationInitializer(
+                c -> configureValidator((HibernateValidatorConfiguration) c));
+        return validator;
+    }
+
+    private static void configureValidator(HibernateValidatorConfiguration config) {
+        config.addValidatedValueHandler(new ValidatedValueUnwrapper<OptionalInt>() {
+            public Object handleValidatedValue(OptionalInt value) {
+                return value.isPresent() ? value.getAsInt() : null;
+            }
+
+            public Type getValidatedValueType(Type valueType) {
+                return Integer.class;
+            }
+        });
+
+        config.addValidatedValueHandler(new ValidatedValueUnwrapper<OptionalLong>() {
+            public Object handleValidatedValue(OptionalLong value) {
+                return value.isPresent() ? value.getAsLong() : null;
+            }
+
+            public Type getValidatedValueType(Type valueType) {
+                return Long.class;
+            }
+        });
+
+        config.addValidatedValueHandler(new ValidatedValueUnwrapper<OptionalDouble>() {
+            public Object handleValidatedValue(OptionalDouble value) {
+                return value.isPresent() ? value.getAsDouble() : null;
+            }
+
+            public Type getValidatedValueType(Type valueType) {
+                return Double.class;
+            }
+        });
     }
 }

@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -577,5 +578,17 @@ public class AggregateJobPropertiesUtil {
             return false;
         }
         return true;
+    }
+
+
+    public Optional<String> getValue(String propertyName, DbSubjectJob job) {
+        return Stream.<UnaryOperator<String>>of(
+                    p -> System.getenv("MPF_PROP_" + p),
+                    job.getJobProperties()::get,
+                    // TODO: handle systemPropertiesSnapshot
+                    _workflowPropertyService::getPropertyValue)
+                .map(op -> op.apply(propertyName))
+                .filter(s -> s != null && !s.isEmpty())
+                .findFirst();
     }
 }

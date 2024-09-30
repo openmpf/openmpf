@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
 import org.mitre.mpf.wfm.service.SubjectJobResultsService;
 import org.mitre.mpf.wfm.util.JmsUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -62,6 +63,8 @@ public class SubjectJobRequestService {
 
     private final JmsUtils _jmsUtils;
 
+    private final PropertiesUtil _propertiesUtil;
+
     private final ProducerTemplate _producerTemplate;
 
     private final TransactionTemplate _transactionTemplate;
@@ -75,6 +78,7 @@ public class SubjectJobRequestService {
                 PastJobResultsService pastJobResultsService,
                 SubjectJobToProtobufConverter subjectJobToProtobufConverter,
                 JmsUtils jmsUtils,
+                PropertiesUtil propertiesUtil,
                 ProducerTemplate producerTemplate,
                 TransactionTemplate transactionTemplate) {
         _subjectJobRepo = subjectJobRepo;
@@ -83,6 +87,7 @@ public class SubjectJobRequestService {
         _pastJobResultsService = pastJobResultsService;
         _subjectJobToProtobufConverter = subjectJobToProtobufConverter;
         _jmsUtils = jmsUtils;
+        _propertiesUtil = propertiesUtil;
         _producerTemplate = producerTemplate;
         _transactionTemplate = transactionTemplate;
     }
@@ -112,9 +117,12 @@ public class SubjectJobRequestService {
     private DbSubjectJob addJobToDb(SubjectJobRequest request) {
         var job = new DbSubjectJob(
                 request.componentName(),
-                request.priority(),
+                request.priority().orElseGet(_propertiesUtil::getJmsPriority),
                 request.detectionJobIds(),
-                request.jobProperties());
+                request.jobProperties(),
+                request.callbackUri().orElse(null),
+                request.callbackMethod().orElse(null),
+                request.externalId().orElse(null));
         return _subjectJobRepo.save(job);
     }
 

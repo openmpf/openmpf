@@ -40,11 +40,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -53,6 +55,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.subject.CallbackMethod;
 import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
@@ -63,6 +66,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
 import org.mitre.mpf.wfm.service.SubjectJobResultsService;
 import org.mitre.mpf.wfm.util.JmsUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -94,6 +98,9 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
     private JmsUtils _mockJmsUtils;
 
     @Mock
+    private PropertiesUtil _mockPropertiesUtil;
+
+    @Mock
     private ProducerTemplate _mockProducerTemplate;
 
     @Mock
@@ -113,9 +120,12 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
 
     private SubjectJobRequest _jobRequest = new SubjectJobRequest(
             "TEST_COMPONENT",
-            2,
+            OptionalInt.of(2),
             List.of(101L, 102L),
-            Map.of("JOB_PROP", "JOB_VALUE"));
+            Map.of("JOB_PROP", "JOB_VALUE"),
+            Optional.of(URI.create("http://localhost:1234")),
+            Optional.of(CallbackMethod.POST),
+            Optional.of("EXTERNAL_ID"));
 
 
     private CompletableFuture<Optional<JsonOutputObject>> _detectionFuture1
@@ -175,7 +185,10 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
                 "TEST_COMPONENT",
                 2,
                 List.of(101L, 102L),
-                Map.of("JOB_PROP", "JOB_VALUE"));
+                Map.of("JOB_PROP", "JOB_VALUE"),
+                URI.create("http://localhost:1234"),
+                CallbackMethod.POST,
+                "EXTERNAL_ID");
 
         var actualDbJob = _dbJobSaveCaptor.getValue();
         assertDbJobsEqual(actualDbJob, expectedDbJob);

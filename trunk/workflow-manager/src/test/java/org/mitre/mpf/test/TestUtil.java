@@ -51,6 +51,7 @@ import org.assertj.core.api.Condition;
 import org.assertj.core.api.FutureAssert;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.Application;
 import org.mitre.mpf.mvc.WebMvcConfig;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatcher;
@@ -59,6 +60,7 @@ import org.springframework.core.io.PathResource;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 public class TestUtil {
 
@@ -198,7 +200,7 @@ public class TestUtil {
         return new Condition<>(
             f -> {
                 try {
-                    f.get(duration.getNano(), TimeUnit.NANOSECONDS);
+                    f.get(duration.toNanos(), TimeUnit.NANOSECONDS);
                     return false;
                 }
                 catch (TimeoutException e) {
@@ -222,11 +224,14 @@ public class TestUtil {
         return assertThat(future).satisfies(doesNotCompleteWithin(duration));
     }
 
-    public static Condition<Future<?>> isNotComplete() {
-        return doesNotCompleteWithin(FUTURE_DURATION);
-    }
-
     public static <T> FutureAssert<T> assertNotDone(Future<T> future) {
         return assertDoesNotCompleteWithin(future, FUTURE_DURATION);
+    }
+
+    public static LocalValidatorFactoryBean createValidator() {
+        var app = new Application();
+        var validator = app.localValidatorFactoryBean(app.parameterMessageInterpolator());
+        validator.afterPropertiesSet();
+        return validator;
     }
 }

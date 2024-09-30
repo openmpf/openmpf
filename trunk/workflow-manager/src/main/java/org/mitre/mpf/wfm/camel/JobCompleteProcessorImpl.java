@@ -95,13 +95,13 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.CensorPropertiesService;
+import org.mitre.mpf.wfm.service.JobCompleteCallbackService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.CallbackStatus;
-import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -154,11 +154,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
-    @Autowired
-    private HttpClientUtils httpClientUtils;
-
-    @Autowired
-    private OAuthClientTokenProvider oAuthClientTokenProvider;
 
     @Autowired
     private JmsUtils jmsUtils;
@@ -171,6 +166,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private TrackOutputHelper trackOutputHelper;
+
+    @Autowired
+    private JobCompleteCallbackService jobCompleteCallbackService;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -332,99 +330,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
     private CompletableFuture<Void> sendCallbackAsync(BatchJob job, URI outputObjectUri) {
-        String callbackMethod = job.getCallbackMethod().orElse("POST");
-
-        String callbackUrl = job.getCallbackUrl()
-                // This will never throw because we already checked that the URL is present.
-                .orElseThrow();
-
-        log.info("Starting {} callback to {} for job id {}.", callbackMethod, callbackUrl, job.getId());
-        try {
-            HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
-                                                           job, outputObjectUri);
-            if (shouldUseOidc(job)) {
-                oAuthClientTokenProvider.addToken(request);
-            }
-            return httpClientUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
-                    .thenAccept(resp -> checkResponse(job.getId(), resp))
-                    .exceptionally(err -> handleFailedCallback(job, err));
-        }
-        catch (Exception e) {
-            handleFailedCallback(job, e);
-            return ThreadUtil.completedFuture(null);
-        }
-    }
-
-    private boolean shouldUseOidc(BatchJob job) {
-        for (var media : job.getMedia()) {
-            boolean useOidc = Boolean.parseBoolean(
-                    aggregateJobPropertiesUtil.getValue(
-                            MpfConstants.CALLBACK_USE_OIDC, job, media));
-            if (useOidc) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    private void checkResponse(long jobId, HttpResponse response) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode < 200 || statusCode > 299) {
-            throw new IllegalStateException(
-                    "The remote server responded with a non-200 status code of: " + statusCode);
-        }
-        jobRequestDao.setCallbackSuccessful(jobId);
-    }
-
-
-    private HttpUriRequest createCallbackRequest(
-            String jsonCallbackMethod, String jsonCallbackURL, BatchJob job, URI outputObjectUri)
-                throws URISyntaxException {
-
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setSocketTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
-                .setConnectTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
-                .build();
-
-        String exportedJobId = propertiesUtil.getExportedJobId(job.getId());
-
-        if ("GET".equals(jsonCallbackMethod)) {
-            URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)
-                    .setParameter("jobid", exportedJobId);
-
-            job.getExternalId()
-                    .ifPresent(id -> callbackUriWithParamsBuilder.setParameter("externalid", id));
-
-            if (outputObjectUri != null) {
-                callbackUriWithParamsBuilder.setParameter("outputobjecturi", outputObjectUri.toString());
-            }
-            var getRequest = new HttpGet(callbackUriWithParamsBuilder.build());
-            getRequest.setConfig(requestConfig);
-            return getRequest;
-        }
-
-        var postRequest = new HttpPost(jsonCallbackURL);
-        postRequest.addHeader("Content-Type", "application/json");
-        postRequest.setConfig(requestConfig);
-
-        String outputObjectUriString = outputObjectUri == null
-                ? null
-                : outputObjectUri.toString();
-
-        JsonCallbackBody jsonBody = new JsonCallbackBody(
-                exportedJobId, job.getExternalId().orElse(null), outputObjectUriString);
-
-        postRequest.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody),
-                                               ContentType.APPLICATION_JSON));
-        return postRequest;
+        return jobCompleteCallbackService.sendCallback(job, outputObjectUri)
+                .thenAccept(r -> jobRequestDao.setCallbackSuccessful(job.getId()))
+                .exceptionally(err -> handleFailedCallback(job, err));
     }
 
 
     private Void handleFailedCallback(BatchJob job, Throwable callbackError) {
-        if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
-            callbackError = callbackError.getCause();
-        }
+        callbackError = ThreadUtil.unwrap(callbackError);
 
         String callbackMethod = job.getCallbackMethod().orElse("POST");
         String callbackUrl = job.getCallbackUrl()

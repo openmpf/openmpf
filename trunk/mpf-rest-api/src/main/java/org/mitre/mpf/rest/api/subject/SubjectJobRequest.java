@@ -26,12 +26,39 @@
 
 package org.mitre.mpf.rest.api.subject;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+
+import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.Range;
+import org.mitre.mpf.rest.api.util.ValidName;
+
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record SubjectJobRequest(
+        @ValidName
         String componentName,
-        int priority,
+
+        @Range(min = 1, max = 9)
+        OptionalInt priority,
+
+        @NotEmpty
         Collection<Long> detectionJobIds,
-        Map<String, String> jobProperties) {
+
+        Map<String, String> jobProperties,
+
+        // The annotation is being used to change the field name so that it is consistent with
+        // JobCreationRequest.
+        @JsonProperty("callbackURL")
+        // When parsing a request, also accept callbackUri for the field name.
+        @JsonAlias("callbackUri")
+        Optional<URI> callbackUri,
+
+        Optional<CallbackMethod> callbackMethod,
+
+        Optional<String> externalId) {
 }

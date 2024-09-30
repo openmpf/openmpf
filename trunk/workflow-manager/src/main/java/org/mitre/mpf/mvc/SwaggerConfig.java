@@ -29,6 +29,9 @@ package org.mitre.mpf.mvc;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.stream.Stream;
 
 import javax.servlet.ServletContext;
@@ -38,6 +41,7 @@ import org.mitre.mpf.rest.api.MessageModel;
 import org.springframework.boot.actuate.endpoint.web.servlet.WebMvcEndpointHandlerMapping;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -62,10 +66,12 @@ import springfox.documentation.spring.web.plugins.WebMvcRequestHandlerProvider;
 import springfox.documentation.spring.web.readers.operation.HandlerMethodResolver;
 import springfox.documentation.swagger.web.UiConfiguration;
 import springfox.documentation.swagger.web.UiConfigurationBuilder;
+import springfox.bean.validators.configuration.BeanValidatorPluginsConfiguration;
 
 //reference - http://springfox.github.io/springfox/docs/snapshot/
 @Configuration
 @EnableOpenApi
+@Import(BeanValidatorPluginsConfiguration.class)
 // This class causes issues when running Maven tests, so we disable it when the jenkins profile is active.
 @Profile("!jenkins")
 public class SwaggerConfig {
@@ -88,6 +94,9 @@ public class SwaggerConfig {
             .alternateTypeRules(createAlternateTypeRules())
             .genericModelSubstitutes(Optional.class)
             .directModelSubstitute(Instant.class, String.class)
+            .directModelSubstitute(OptionalInt.class, Integer.class)
+            .directModelSubstitute(OptionalLong.class, Long.class)
+            .directModelSubstitute(OptionalDouble.class, Double.class)
             .globalResponseMessage(RequestMethod.GET, globalResponses)
             .globalResponseMessage(RequestMethod.DELETE, globalResponses)
             .globalResponseMessage(RequestMethod.POST, globalResponses)

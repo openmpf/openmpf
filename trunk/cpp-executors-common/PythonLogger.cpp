@@ -66,42 +66,10 @@ PYBIND11_EMBEDDED_MODULE(log_ctx_filter, m) {
         .def("filter", &MPF::AddLogContextFilter::Filter);
 }
 
-
 namespace MPF {
 
-
-class PythonLogger::Impl {
-public:
-    Impl(std::string_view logger_name, std::string_view log_level)
-        : Impl(CreateFilter(log_level), GetLogger(logger_name)) {
-    }
-
-    std::shared_ptr<AddLogContextFilter> ctx_filter;
-    py::function debug;
-    py::function info;
-    py::function warn;
-    py::function error;
-    py::function fatal;
-
-private:
-    Impl(std::shared_ptr<AddLogContextFilter> filter, py::handle logger)
-        : ctx_filter{std::move(filter)}
-        , debug{logger.attr("debug")}
-        , info{logger.attr("info")}
-        , warn{logger.attr("warn")}
-        , error{logger.attr("error")}
-        , fatal{logger.attr("fatal")}
-    {
-    }
-
-    static std::shared_ptr<AddLogContextFilter> CreateFilter(std::string_view log_level) {
-        py::object filter = py::module_::import("log_ctx_filter").attr("AddLogContextFilter")();
-        ConfigureLogging(log_level, filter);
-        return filter.cast<std::shared_ptr<MPF::AddLogContextFilter>>();
-    }
-
-
-    static void ConfigureLogging(std::string_view log_level_name, py::handle log_ctx_filter) {
+namespace {
+    void ConfigureLogging(std::string_view log_level_name, py::handle log_ctx_filter) {
         static bool logging_initialized = false;
         if (logging_initialized) {
             return;
@@ -128,41 +96,57 @@ private:
             py::arg("handlers")=py::make_tuple(stream_handler));
     }
 
-    static py::object GetLogger(std::string_view logger_name) {
+    std::shared_ptr<AddLogContextFilter> CreateFilter(std::string_view log_level) {
+        py::object filter = py::module_::import("log_ctx_filter").attr("AddLogContextFilter")();
+        ConfigureLogging(log_level, filter);
+        return filter.cast<std::shared_ptr<MPF::AddLogContextFilter>>();
+    }
+
+
+    py::object GetLogger(std::string_view logger_name) {
         return py::module_::import("logging").attr("getLogger")(logger_name);
     }
-};
+} // end anonymous namespace
 
 
 
 PythonLogger::PythonLogger(std::string_view log_level, std::string_view logger_name)
-    : impl_{std::make_unique<PythonLogger::Impl>(logger_name, log_level)} {
+    : PythonLogger{CreateFilter(log_level), GetLogger(logger_name)}
+{
 }
 
-PythonLogger::~PythonLogger() = default;
+PythonLogger::PythonLogger(std::shared_ptr<AddLogContextFilter> filter, py::handle logger)
+    : ctx_filter_{std::move(filter)}
+    , debug_{logger.attr("debug")}
+    , info_{logger.attr("info")}
+    , warn_{logger.attr("warn")}
+    , error_{logger.attr("error")}
+    , fatal_{logger.attr("fatal")}
+{
+}
 
 void PythonLogger::Debug(std::string_view message) {
-    impl_->debug(message);
+    debug_(message);
 }
 
 void PythonLogger::Info(std::string_view message) {
-    impl_->info(message);
+    info_(message);
 }
 
 void PythonLogger::Warn(std::string_view message) {
-    impl_->warn(message);
+    warn_(message);
 }
 
 void PythonLogger::Error(std::string_view message) {
-    impl_->error(message);
+    error_(message);
 }
 
 void PythonLogger::Fatal(std::string_view message) {
-    impl_->fatal(message);
+    fatal_(message);
 }
 
 void PythonLogger::SetContextMessage(std::string_view context_msg)  {
-    impl_->ctx_filter->SetContext(context_msg);
+    ctx_filter_->SetContext(context_msg);
 }
 
 } // namespace MPF

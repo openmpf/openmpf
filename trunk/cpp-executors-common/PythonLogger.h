@@ -24,21 +24,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-# pragma once
+#pragma once
 
 #include <memory>
 #include <string_view>
+
+#include <pybind11/pybind11.h>
 
 #include "ILogger.h"
 #include "PythonBase.h"
 
 namespace MPF {
 
+namespace py = pybind11;
+
+class AddLogContextFilter;
+
 class PythonLogger : private PythonBase, public ILogger {
 public:
     PythonLogger(std::string_view log_level, std::string_view logger_name);
-
-    ~PythonLogger() override;
 
     void Debug(std::string_view message) override;
 
@@ -53,8 +57,14 @@ public:
     void SetContextMessage(std::string_view context_msg) override;
 
 private:
-    class Impl;
-    std::unique_ptr<Impl> impl_;
+    PythonLogger(std::shared_ptr<AddLogContextFilter> filter, py::handle logger);
+
+    std::shared_ptr<AddLogContextFilter> ctx_filter_;
+    py::function debug_;
+    py::function info_;
+    py::function warn_;
+    py::function error_;
+    py::function fatal_;
 };
 
 } // namespace MPF

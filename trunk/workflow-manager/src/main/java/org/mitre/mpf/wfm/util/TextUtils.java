@@ -125,7 +125,7 @@ public class TextUtils {
 	}
 
     public static List<String> parseListFromString(String listOfStrings) {
-        if (listOfStrings.isEmpty()) {
+        if (listOfStrings == null || listOfStrings.isEmpty()) {
             return List.of();
         }
         if (!listOfStrings.contains(";") && !listOfStrings.contains("\\")) {

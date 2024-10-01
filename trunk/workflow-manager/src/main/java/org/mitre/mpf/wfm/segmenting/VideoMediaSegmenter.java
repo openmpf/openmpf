@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -154,8 +155,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             stopFrame = track.getEndOffsetFrameInclusive();
         }
         else {
-            includedDetections = (Set<Detection>) TopQualitySelectionUtil.getTopQualityDetections(
-                              track.getDetections(), topQualityCount, topQualitySelectionProp);
+            includedDetections = new TreeSet<>(TopQualitySelectionUtil.getTopQualityDetections(
+                              track.getDetections(), topQualityCount, topQualitySelectionProp));
 
             String bestDetectionPropertyNamesList = getBestDetectionPropertyList(context);
             if (!bestDetectionPropertyNamesList.isEmpty()) {

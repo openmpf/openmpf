@@ -241,7 +241,8 @@ public class TestSubjectJobController extends MockitoTest.Strict {
                 createJobDetails(),
                 Map.of("JOB_OUT_PROP", "JOB_OUT_VALUE"),
                 Map.of("ENTITY_TYPE", List.of(entity)),
-                Map.of("PROXIMITY", List.of(relationship)));
+                Map.of("PROXIMITY", List.of(relationship)),
+                "X.Y.Z");
 
         when(_mockSubjectJobRepo.getOutput(654))
             .thenReturn(Optional.of(jobResult));
@@ -270,7 +271,8 @@ public class TestSubjectJobController extends MockitoTest.Strict {
                     .value("MEDIA_1"))
             .andExpect(jsonPath(
                     "relationships.PROXIMITY[0].frames[0].frames",
-                    containsInAnyOrder(10, 11, 12)));
+                    containsInAnyOrder(10, 11, 12)))
+            .andExpect(jsonPath("openmpfVersion").value("X.Y.Z"));
         matchJobDetails(resultActions, "job");
     }
 

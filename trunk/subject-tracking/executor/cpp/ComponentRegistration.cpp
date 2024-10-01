@@ -51,7 +51,7 @@ namespace MPF::SUBJECT::ComponentRegistration {
         registration_request->setCMSCorrelationID(GetCorrelationId());
 
         auto response = messenger.SendRequestReply(
-                "MPF.SUBJECT_COMPONENT_REGISRATION", *registration_request);
+                "MPF.SUBJECT_COMPONENT_REGISTRATION", *registration_request);
         if (response->getBooleanProperty("success")) {
             logger.Info(
                 "Successfully registered component. Response from server: ",

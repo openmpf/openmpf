@@ -178,6 +178,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
     @Test
     public void canStoreResults() throws IOException {
+        setupVersion();
         var dbJob = createDbJob();
         dbJob.setRetrievedDetectionJobs(true);
         var pbResult = createResultProtobuf();
@@ -196,6 +197,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
     @Test
     public void canStoreResultsNoCallback() throws IOException {
+        setupVersion();
         var dbJob = createDbJob(null);
         dbJob.setRetrievedDetectionJobs(true);
         var pbResult = createResultProtobuf();
@@ -271,7 +273,8 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                 expectedJobDetails,
                 Map.of("JOB_OUTPUT_PROP", "JOB_OUTPUT_VALUE"),
                 Map.of("SUBJECT", List.of(expectedEntity)),
-                Map.of("PROXIMITY", List.of(expectedRelationship)));
+                Map.of("PROXIMITY", List.of(expectedRelationship)),
+                "X.Y.Z");
 
         assertThat(jobResults).usingRecursiveComparison()
                 .withEqualsForType(INSTANT_EQ, Instant.class)
@@ -355,6 +358,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
     @Test
     public void canStoreCancellationResult() throws IOException {
+        setupVersion();
         var dbJob = createDbJob();
         dbJob.setRetrievedDetectionJobs(true);
         var callbackFuture = setupCallbackService(dbJob);
@@ -391,7 +395,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
         assertCallbackSent(dbJob, callbackFuture, transactionFuture);
 
-        var expectedJobResult = new SubjectJobResult(expectedJobDetails, null, null, null);
+        var expectedJobResult = new SubjectJobResult(expectedJobDetails, null, null, null, "X.Y.Z");
         assertThat(jobResult).usingRecursiveComparison()
                 .withEqualsForType(INSTANT_EQ, Instant.class)
                 .isEqualTo(expectedJobResult);
@@ -540,5 +544,10 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
         assertThat(transactionFuture).succeedsWithin(TestUtil.FUTURE_DURATION);
         assertThat(dbJob.getCallbackStatus()).isEqualTo(CallbackStatus.complete());
+    }
+
+    private void setupVersion() {
+        when(_mockPropertiesUtil.getSemanticVersion())
+                .thenReturn("X.Y.Z");
     }
 }

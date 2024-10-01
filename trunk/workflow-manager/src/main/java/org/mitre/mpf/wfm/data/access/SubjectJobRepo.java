@@ -56,9 +56,9 @@ import com.querydsl.jpa.JPQLQueryFactory;
 @Component
 @Transactional
 public class SubjectJobRepo {
-    private final JobRepository _jobRepo;
+    private final JobRepo _jobRepo;
 
-    private final JobOutputRepository _outputRepo;
+    private final JobOutputRepo _outputRepo;
 
     private final ObjectMapper _objectMapper;
 
@@ -66,8 +66,8 @@ public class SubjectJobRepo {
 
     @Inject
     SubjectJobRepo(
-            JobRepository jobRepo,
-            JobOutputRepository outputRepo,
+            JobRepo jobRepo,
+            JobOutputRepo outputRepo,
             ObjectMapper objectMapper,
             JPQLQueryFactory queryFactory) {
         _jobRepo = jobRepo;
@@ -154,7 +154,7 @@ public class SubjectJobRepo {
     }
 
     @Repository
-    private static interface JobRepository extends
+    private static interface JobRepo extends
             JpaRepository<DbSubjectJob, Long>,
             QuerydslPredicateExecutor<DbSubjectJob> {
     }
@@ -162,6 +162,6 @@ public class SubjectJobRepo {
     // Store output in different table so that job information can be retrieved without also
     // getting the job output.
     @Repository
-    private static interface JobOutputRepository extends JpaRepository<DbSubjectJobOutput, Long> {
+    private static interface JobOutputRepo extends JpaRepository<DbSubjectJobOutput, Long> {
     }
 }

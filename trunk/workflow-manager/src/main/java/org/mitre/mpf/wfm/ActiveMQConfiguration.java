@@ -120,7 +120,8 @@ public class ActiveMQConfiguration {
             org.apache.activemq.camel.component.ActiveMQConfiguration amqConfig) {
         var poolFactory = (PooledConnectionFactory) amqConfig.getConnectionFactory();
         var baseConnectionFactory = (ActiveMQConnectionFactory) poolFactory.getConnectionFactory();
-        // This feature interferes with Camel's ability to reply to temporary queues.
+        // When this feature is enabled, Camel is unable to reply to temporary queues. Disabling
+        // the feature is not an issue because we do not use topic advisories for anything.
         baseConnectionFactory.setWatchTopicAdvisories(false);
     }
 

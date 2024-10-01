@@ -251,7 +251,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId).toPath());
 
         try {
-            jmsUtils.destroyCancellationRoutes(jobId);
+            jmsUtils.destroyDetectionCancellationRoutes(jobId);
         }
         catch (Exception exception) {
             log.warn(String.format("Failed to destroy the cancellation routes associated with job %d." +

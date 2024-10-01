@@ -28,11 +28,7 @@ package org.mitre.mpf.mvc.controller;
 
 import static java.util.stream.Collectors.toList;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.function.Predicate;
 

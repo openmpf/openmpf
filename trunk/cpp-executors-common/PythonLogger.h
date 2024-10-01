@@ -38,7 +38,10 @@ namespace MPF {
 
 namespace py = pybind11;
 
-class AddLogContextFilter;
+namespace detail {
+    class AddLogContextFilter;
+}
+
 
 class PythonLogger : private PythonBase, public ILogger {
 public:
@@ -57,9 +60,7 @@ public:
     void SetContextMessage(std::string_view context_msg) override;
 
 private:
-    PythonLogger(std::shared_ptr<AddLogContextFilter> filter, py::handle logger);
-
-    std::shared_ptr<AddLogContextFilter> ctx_filter_;
+    std::shared_ptr<detail::AddLogContextFilter> ctx_filter_;
     py::function debug_;
     py::function info_;
     py::function warn_;

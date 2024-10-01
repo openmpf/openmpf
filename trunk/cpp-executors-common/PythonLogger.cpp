@@ -33,7 +33,7 @@
 
 namespace py = pybind11;
 
-namespace MPF {
+namespace MPF::detail {
     // The Python logging documentation recommends using a filter to add contextual information to
     // logs.
     // https://docs.python.org/3.8/howto/logging-cookbook.html#using-filters-to-impart-contextual-information
@@ -51,19 +51,19 @@ namespace MPF {
     private:
         py::str ctx_{""};
     };
-} // namespace MPF
+} // namespace MPF::detail
 
 
 PYBIND11_EMBEDDED_MODULE(log_ctx_filter, m) {
     py::class_<
             // Create Python binding for AddLogContextFilter so it can be passed to Python code.
-            MPF::AddLogContextFilter,
+            MPF::detail::AddLogContextFilter,
             // Use a std::shared_ptr for the holder type so that the same AddLogContextFilter
             // instance can be referenced from both C++ and Python code.
-            std::shared_ptr<MPF::AddLogContextFilter>
+            std::shared_ptr<MPF::detail::AddLogContextFilter>
         >(m, "AddLogContextFilter")
         .def(py::init<>())
-        .def("filter", &MPF::AddLogContextFilter::Filter);
+        .def("filter", &MPF::detail::AddLogContextFilter::Filter);
 }
 
 namespace MPF {
@@ -96,10 +96,10 @@ namespace {
             py::arg("handlers")=py::make_tuple(stream_handler));
     }
 
-    std::shared_ptr<AddLogContextFilter> CreateFilter(std::string_view log_level) {
+    std::shared_ptr<detail::AddLogContextFilter> CreateFilter(std::string_view log_level) {
         py::object filter = py::module_::import("log_ctx_filter").attr("AddLogContextFilter")();
         ConfigureLogging(log_level, filter);
-        return filter.cast<std::shared_ptr<MPF::AddLogContextFilter>>();
+        return filter.cast<std::shared_ptr<detail::AddLogContextFilter>>();
     }
 
 
@@ -111,18 +111,13 @@ namespace {
 
 
 PythonLogger::PythonLogger(std::string_view log_level, std::string_view logger_name)
-    : PythonLogger{CreateFilter(log_level), GetLogger(logger_name)}
-{
-}
-
-PythonLogger::PythonLogger(std::shared_ptr<AddLogContextFilter> filter, py::handle logger)
-    : ctx_filter_{std::move(filter)}
-    , debug_{logger.attr("debug")}
-    , info_{logger.attr("info")}
-    , warn_{logger.attr("warn")}
-    , error_{logger.attr("error")}
-    , fatal_{logger.attr("fatal")}
-{
+    : ctx_filter_{CreateFilter(log_level)} {
+    auto logger = GetLogger(logger_name);
+    debug_ = logger.attr("debug");
+    info_ = logger.attr("info");
+    warn_ = logger.attr("warn");
+    error_ = logger.attr("error");
+    fatal_ = logger.attr("fatal");
 }
 
 void PythonLogger::Debug(std::string_view message) {

@@ -59,7 +59,7 @@ public class JmsUtils {
     private CamelContext _camelContext;
 
 
-    public void cancel(final long jobId) throws Exception {
+    public void cancelDetectionJob(final long jobId) throws Exception {
         _camelContext.addRoutes(new RouteBuilder() {
             @Override
             public void configure() {
@@ -86,7 +86,7 @@ public class JmsUtils {
      * @param jobId
      * @throws Exception
      */
-    public synchronized void destroyCancellationRoutes(final long jobId) throws Exception {
+    public synchronized void destroyDetectionCancellationRoutes(final long jobId) throws Exception {
         _camelContext.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {

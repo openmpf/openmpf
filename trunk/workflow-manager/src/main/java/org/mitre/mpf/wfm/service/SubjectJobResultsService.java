@@ -189,7 +189,8 @@ public class SubjectJobResultsService {
 
     private void storeNoOutputResult(DbSubjectJob job) {
         var result = new SubjectJobResult(
-                SubjectJobRepo.getJobDetails(job), null, null, null);
+                SubjectJobRepo.getJobDetails(job), null, null, null,
+                _propertiesUtil.getSemanticVersion());
         storeResults(job, result);
     }
 
@@ -226,18 +227,20 @@ public class SubjectJobResultsService {
                 details,
                 originalResults.properties(),
                 originalResults.entities(),
-                originalResults.relationships());
+                originalResults.relationships(),
+                originalResults.openmpfVersion());
     }
 
 
-    private static SubjectJobResult convertResults(
+    private SubjectJobResult convertResults(
             DbSubjectJob job,
             SubjectProtobuf.SubjectTrackingResult pbResult) {
         var jobDetails = SubjectJobRepo.getJobDetails(job);
         var entityGroups = convertEntityGroups(pbResult);
         var relationshipGroups = getRelationshipGroups(pbResult);
         return new SubjectJobResult(
-                jobDetails, pbResult.getPropertiesMap(), entityGroups, relationshipGroups);
+                jobDetails, pbResult.getPropertiesMap(), entityGroups, relationshipGroups,
+                _propertiesUtil.getSemanticVersion());
     }
 
     private static Map<String, List<Entity>> convertEntityGroups(

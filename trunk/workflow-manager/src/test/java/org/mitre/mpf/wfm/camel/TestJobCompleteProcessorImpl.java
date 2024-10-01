@@ -223,7 +223,7 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
             .tiesDbStatusChanged(jobId, jobRequestEntity.getTiesDbStatus());
 
         verify(_mockJmsUtils)
-            .destroyCancellationRoutes(jobId);
+            .destroyDetectionCancellationRoutes(jobId);
 
 
         assertFalse(notificationFuture.isDone());

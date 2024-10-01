@@ -33,5 +33,6 @@ public record SubjectJobResult(
         SubjectJobDetails job,
         Map<String, String> properties,
         Map<String, List<Entity>> entities,
-        Map<String, List<Relationship>> relationships) {
+        Map<String, List<Relationship>> relationships,
+        String openmpfVersion) {
 }

@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 public class SubjectComponentRegistrationRouteBuilder extends RouteBuilder {
 
-    public static final String ENTRY_POINT = "activemq:MPF.SUBJECT_COMPONENT_REGISRATION";
+    public static final String ENTRY_POINT = "activemq:MPF.SUBJECT_COMPONENT_REGISTRATION";
 
     private static final Logger LOG = LoggerFactory.getLogger(
             SubjectComponentRegistrationRouteBuilder.class);

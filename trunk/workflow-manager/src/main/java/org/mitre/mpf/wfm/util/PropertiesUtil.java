@@ -143,7 +143,7 @@ public class PropertiesUtil {
 
         artifactsDirectory = createOrFail(share, "artifacts", permissions);
         markupDirectory = createOrFail(share, "markup", permissions);
-        outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
+        outputObjectsDirectory = createOrFail(share, "detection-output-objects", permissions);
         subjectTrackingResultsDir = createOrFail(
                 share, "subject-tracking-results", permissions).toPath();
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);

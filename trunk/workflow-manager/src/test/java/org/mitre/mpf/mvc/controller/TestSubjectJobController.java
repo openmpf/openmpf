@@ -302,8 +302,8 @@ public class TestSubjectJobController extends MockitoTest.Strict {
     private void matchJobDetails(ResultActions resultActions, String root) throws Exception {
         resultActions
             .andExpect(jsonPath("%s.id", root).value(123))
-            .andExpect(jsonPath("%s.timeReceived", root).value(isInThePast()))
-            .andExpect(jsonPath("%s.timeCompleted", root).value(nullValue()))
+            .andExpect(jsonPath("%s.startDate", root).value(isInThePast()))
+            .andExpect(jsonPath("%s.endDate", root).value(nullValue()))
             .andExpect(jsonPath("%s.retrievedDetectionJobs", root).value(false))
             .andExpect(
                     jsonPath("%s.cancellationState", root)

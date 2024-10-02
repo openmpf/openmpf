@@ -182,7 +182,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
             var dialect = dialectResolver.resolveDialect(
                     new DatabaseMetaDataDialectResolutionInfoAdapter(connection.getMetaData()));
 
-            var queryString = dialect.getSequenceNextValString("hibernate_sequence");
+            var queryString = dialect.getSequenceNextValString(JOB_ID_SEQUENCE_NAME);
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryString);
                  ResultSet resultSet = preparedStatement.executeQuery()) {
                 resultSet.next();

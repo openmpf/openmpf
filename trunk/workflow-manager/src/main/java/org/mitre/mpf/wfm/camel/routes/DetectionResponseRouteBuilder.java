@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
@@ -97,7 +96,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionResponse::newBuilder)) // Unpack the protobuf response.
+			.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionResponse.parser())) // Unpack the protobuf response.
 			.process(DetectionResponseProcessor.REF) // Run the response through the response processor.
 			.choice()
 				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(true))
@@ -111,7 +110,6 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
                     .process(RollUpProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
-                        .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
 						.streaming() // Aggregate responses in any order.
                         .process(ArtifactExtractionProcessor.REF)
 					.end()

@@ -130,7 +130,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 				//     "com.google.protobuf.InvalidProtocolBufferException: Message missing required fields: data_uri"
 				// Further debugging is necessary to determine the root cause.
 
-				.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionRequest::newBuilder)).convertBodyTo(String.class)
+				.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionRequest.parser())).convertBodyTo(String.class)
 				.multicast()
 					.pipeline()
 						.to(auditExitPoint) // send deserialized (readable) message to the exit point to indicate it has been processed, and for auditing

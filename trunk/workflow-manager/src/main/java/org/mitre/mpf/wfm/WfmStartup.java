@@ -31,12 +31,14 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletContext;
 
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
+import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.SystemMessageService;
@@ -67,6 +69,9 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
     @Autowired
     private Optional<StreamingJobRequestService> streamingJobRequestService;
 
+    @Autowired
+    private SubjectJobRepo subjectJobDao;
+
 
     @Autowired
     private SystemMessageService systemMessageService;
@@ -82,10 +87,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
     private ServerMediaService serverMediaService;
 
     // used to prevent the initialization behaviors from being executed more than once
-    private static boolean applicationRefreshed = false;
-    public boolean isApplicationRefreshed() { return  applicationRefreshed; }
+    private static AtomicBoolean applicationRefreshed = new AtomicBoolean(false);
+    public boolean isApplicationRefreshed() { return applicationRefreshed.get(); }
+
 
     private ScheduledExecutorService healthReportExecutorService = null;
+
 
     @Override
     public void onApplicationEvent(ApplicationEvent event) {
@@ -99,25 +106,40 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
             ThreadUtil.start();
 
-            if (!applicationRefreshed) {
-                log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
-
-                log.info("Marking any remaining running batch jobs as CANCELLED_BY_SHUTDOWN.");
-                jobRequestDao.cancelJobsInNonTerminalState();
-
-                streamingJobRequestDao.ifPresent(StreamingJobRequestDao::cancelJobsInNonTerminalState);
-
-                purgeServerStartupSystemMessages();
-                startFileIndexing(appContext);
+            if (applicationRefreshed.compareAndSet(false, true)) {
+                log.info("onApplicationEvent: {} {}", appContext.getDisplayName(), appContext.getId());
+                startAsyncInitializers(appContext);
                 startupRegistrationService.registerUnregisteredComponents();
-                startHealthReporting();
-                applicationRefreshed = true;
             }
         } else if (event instanceof ContextClosedEvent) {
             stopHealthReporting();
-            ThreadUtil.shutdown();
         }
     }
+
+    private void startAsyncInitializers(ApplicationContext appContext) {
+        runAsyncLogErrors(
+                "cancel incomplete batch jobs", jobRequestDao::cancelJobsInNonTerminalState);
+        if (streamingJobRequestDao.isPresent()) {
+            runAsyncLogErrors(
+                    "cancel incomplete streaming jobs",
+                    streamingJobRequestDao.get()::cancelJobsInNonTerminalState);
+        }
+        runAsyncLogErrors("cancel incomplete subject jobs", subjectJobDao::cancelIncompleteJobs);
+        runAsyncLogErrors(
+                "purge server start up system messages", this::purgeServerStartupSystemMessages);
+
+        startHealthReporting();
+        startFileIndexing(appContext);
+    }
+
+    private void runAsyncLogErrors(String action, ThreadUtil.ThrowingRunnable runnable) {
+        ThreadUtil.runAsync(runnable)
+                .exceptionally(e -> {
+                    log.error("Failed to " + action, e);
+                    return null;
+                });
+    }
+
 
     private void startFileIndexing(ApplicationContext appContext)  {
         if (appContext instanceof WebApplicationContext) {

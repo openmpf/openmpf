@@ -113,7 +113,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 .routeId("Streaming Job Summary Report Route")
                 .log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
                 .unmarshal(_protobufDataFormatFactory.create(
-                        DetectionProtobuf.StreamingDetectionResponse::newBuilder))
+                        DetectionProtobuf.StreamingDetectionResponse.parser()))
                 .process(exchange -> {
                     if (_wfmStartup.isApplicationRefreshed()) {
                         Message msg = exchange.getIn();

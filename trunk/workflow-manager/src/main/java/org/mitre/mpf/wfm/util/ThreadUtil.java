@@ -27,20 +27,46 @@
 
 package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.mvc.util.MdcUtil;
-import org.slf4j.MDC;
-
 import java.util.Collection;
-import java.util.concurrent.*;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import org.apache.camel.CamelContext;
+import org.apache.camel.management.mbean.ManagedThreadPool;
+import org.mitre.mpf.mvc.util.MdcUtil;
+import org.slf4j.MDC;
+
+import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ForwardingExecutorService;
+
 public class ThreadUtil {
 
-    private static ExecutorService THREAD_POOL = new MdcAwareCachedThreadPool();
+    private static MdcAwareCachedThreadPool THREAD_POOL = new MdcAwareCachedThreadPool();
+
+    private static final ExecutorService FORWARDING_EXECUTOR = new ForwardingExecutorService() {
+        protected ExecutorService delegate() {
+            return THREAD_POOL;
+        }
+    };
 
     private ThreadUtil() {
     }
+
+    public static ExecutorService getExecutorService() {
+        return FORWARDING_EXECUTOR;
+    }
+
 
     public static synchronized CustomCompletableFuture<Void> runAsync(ThrowingRunnable task) {
         return callAsync(task.asCallable());
@@ -127,6 +153,51 @@ public class ThreadUtil {
         }
         return (CustomCompletableFuture<T>) completedFuture(null)
             .thenCompose(x -> future);
+    }
+
+    public static <T> T join(CompletableFuture<T> future) {
+        return join(future, RuntimeException.class);
+    }
+
+    public static <T, E extends Throwable>
+            T join(CompletableFuture<T> future, Class<E> exceptionClass) throws E {
+        return join(future, exceptionClass, RuntimeException.class);
+    }
+
+    public static <T, E1 extends Throwable, E2 extends Throwable> T join(
+            CompletableFuture<T> future,
+            Class<E1> exceptionClass1,
+            Class<E2> exceptionClass2) throws E1, E2 {
+        try {
+            return future.join();
+        }
+        catch (CompletionException e) {
+            e = getOuterCompletionException(e);
+            Throwables.propagateIfPossible(e.getCause(), exceptionClass1, exceptionClass2);
+            throw e;
+        }
+    }
+
+    private static CompletionException getOuterCompletionException(CompletionException e) {
+        var seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        seen.add(e);
+        while (e.getCause() instanceof CompletionException cause && seen.add(cause)) {
+            e = cause;
+        }
+        return e;
+    }
+
+    public static Throwable unwrap(Throwable error) {
+        if (!(error instanceof CompletionException completionException)) {
+            return error;
+        }
+        var outer = getOuterCompletionException(completionException);
+        if (outer.getCause() != null && !(outer.getCause() instanceof CompletionException)) {
+            return outer.getCause();
+        }
+        else {
+            return outer;
+        }
     }
 
 
@@ -227,10 +298,13 @@ public class ThreadUtil {
 
     private static class MdcAwareCachedThreadPool extends ThreadPoolExecutor {
 
+        // Create thread pool with a maximum size of 1000 threads. If a job is received and there
+        // are already 1000 threads in the pool, the caller will run the job on their own thread.
+        // After completing a job, the thread will stay alive waiting for a new jobs for a minute.
         MdcAwareCachedThreadPool() {
-            // Uses same arguments as Executors.newCachedThreadPool()
-            super(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
-                  new SynchronousQueue<>(), MdcAwareCachedThreadPool::createThread);
+            super(0, 1000, 1, TimeUnit.MINUTES,
+                  new SynchronousQueue<>(), MdcAwareCachedThreadPool::createThread,
+                  new ThreadPoolExecutor.CallerRunsPolicy());
         }
 
         @Override
@@ -245,5 +319,15 @@ public class ThreadUtil {
         private static Thread createThread(Runnable target) {
             return new Thread(target, "mpf-pool-thread-" + _threadCount.incrementAndGet());
         }
+    }
+
+    public static ManagedThreadPool getManaged(CamelContext camelContext) {
+        return new ManagedThreadPool(
+                camelContext,
+                THREAD_POOL,
+                "SharedPool",
+                "ThreadUtil",
+                null,
+                null);
     }
 }

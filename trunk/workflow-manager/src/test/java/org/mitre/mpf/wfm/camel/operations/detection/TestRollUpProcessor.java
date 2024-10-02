@@ -61,6 +61,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JobPart;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mockito.Mock;
 
@@ -327,7 +328,7 @@ public class TestRollUpProcessor extends MockitoTest.Strict {
         when(job.getMedia())
             .thenReturn(List.of(media));
 
-        when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.ROLL_UP_FILE), any()))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.ROLL_UP_FILE), any(JobPart.class)))
             .thenReturn(rollUpPath);
 
         if (track != null) {

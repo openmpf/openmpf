@@ -27,10 +27,11 @@
 
 package org.mitre.mpf.mvc.util;
 
-import org.slf4j.MDC;
-
 import java.util.Map;
+import java.util.function.LongFunction;
 import java.util.function.Supplier;
+
+import org.slf4j.MDC;
 
 /**
  * Utility methods to make using CloseableMdc less verbose when it only needs to be set
@@ -101,6 +102,19 @@ public class MdcUtil {
         try (var mdc = CloseableMdc.job(jobId)) {
             return task.get();
         }
+    }
+
+
+    /**
+     * Adds the given job id to MDC context. Then, execute the task with the modified MDC context.
+     * After the task completes, reset the MDC context to its original value.
+     * @param jobId The job id to be added to the MDC context
+     * @param task The task to execute
+     * @param <T> The task's return type
+     * @return The result of calling task.apply(jobId)
+     */
+    public static <T> T job(long jobId, LongFunction<T> task) {
+        return job(jobId, () -> task.apply(jobId));
     }
 
 

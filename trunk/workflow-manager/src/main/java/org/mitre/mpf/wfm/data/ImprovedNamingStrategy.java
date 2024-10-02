@@ -26,10 +26,13 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.mitre.mpf.wfm.util.TextUtils;
 
 public class ImprovedNamingStrategy implements PhysicalNamingStrategy {
 
@@ -55,17 +58,23 @@ public class ImprovedNamingStrategy implements PhysicalNamingStrategy {
 
     @Override
     public Identifier toPhysicalTableName(Identifier identifier, JdbcEnvironment jdbcEnv) {
-        return convert(identifier);
+        var text = TextUtils.removePrefix(identifier.getText(), "Db");
+        return convert(text, identifier.isQuoted());
     }
 
     private static Identifier convert(Identifier identifier) {
         if (identifier == null || StringUtils.isBlank(identifier.getText())) {
             return identifier;
         }
+        return convert(identifier.getText(), identifier.isQuoted());
+    }
 
-        String regex = "([a-z])([A-Z])";
-        String replacement = "$1_$2";
-        String newName = identifier.getText().replaceAll(regex, replacement).toLowerCase();
-        return Identifier.toIdentifier(newName, identifier.isQuoted());
+    private static Pattern REGEX = Pattern.compile("([a-z])([A-Z])");
+
+    private static Identifier convert(String text, boolean quoted) {
+        var newName = REGEX.matcher(text)
+                .replaceAll(m -> m.group(1) + '_' + m.group(2))
+                .toLowerCase();
+        return Identifier.toIdentifier(newName, quoted);
     }
 }

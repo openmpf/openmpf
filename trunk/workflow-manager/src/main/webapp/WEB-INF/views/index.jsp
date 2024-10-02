@@ -155,6 +155,7 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 <!-- angular controllers -->
 <script src="resources/js/controllers/AboutCtrl.js"></script>
 <script src="resources/js/controllers/JobsCtrl.js"></script>
+<script src="resources/js/controllers/SubjectJobsCtrl.js"></script>
 <script src="resources/js/controllers/MarkupCtrl.js"></script>
 <script src="resources/js/controllers/ServerMediaCtrl.js"></script>
 <!-- admin -->

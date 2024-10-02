@@ -414,7 +414,7 @@ public class TestJobRequestService {
         assertTrue(_inProgressJobs.getJob(jobId).isCancelled());
 
         verify(_mockJmsUtils)
-                .cancel(jobId);
+                .cancelDetectionJob(jobId);
 
 
         var persistedRequestCaptor = ArgumentCaptor.forClass(JobRequest.class);

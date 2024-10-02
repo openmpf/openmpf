@@ -153,6 +153,15 @@ AppServices.factory('Components',
         }]
 );
 
+AppServices.factory('SubjectComponents', [
+    '$resource', $resource => {
+        const componentsResource = $resource('/subject/components/:name', {name: '@name'});
+        return {
+            query: () => componentsResource.query()
+        };
+    }]
+);
+
 AppServices.service('MediaService', function ($http) {
 
     this.getMaxFileUploadCnt = function () {

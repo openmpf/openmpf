@@ -123,4 +123,13 @@ public class TextUtils {
 			return a.compareTo(b);
 		}
 	}
+
+    public static String removePrefix(String string, String prefix) {
+        if (string.startsWith(prefix)) {
+            return string.substring(prefix.length());
+        }
+        else {
+            return string;
+        }
+    }
 }

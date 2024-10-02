@@ -38,8 +38,14 @@
                 <tr>
                     <th>Id</th>
                     <th>Component</th>
-                    <th>Time Received</th>
-                    <th>Time Completed</th>
+                    <th>
+                        <i class="fa fa-clock-o" title="Start"></i>
+                        Start Date
+                    </th>
+                    <th>
+                        <i class="fa fa-clock-o" title="Stop"></i>
+                        End Date
+                    </th>
                     <th>Results</th>
                 </tr>
             </thead>
@@ -58,8 +64,8 @@
                         </a>
                     </td>
                     <td>{{job.componentName}}</td>
-                    <td>{{job.timeReceived | formatDate}}</td>
-                    <td>{{job.timeCompleted | formatDate}}</td>
+                    <td>{{job.startDate | formatDate}}</td>
+                    <td>{{job.endDate | formatDate}}</td>
                     <td>
                         <a ng-href="subject/jobs/{{job.jobId}}/output">Results</a>
                     </td>

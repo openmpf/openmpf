@@ -36,8 +36,8 @@ import com.fasterxml.jackson.annotation.JsonView;
 public record SubjectJobDetails(
         long id,
         SubjectJobRequest request,
-        Instant timeReceived,
-        Optional<Instant> timeCompleted,
+        Instant startDate,
+        Optional<Instant> endDate,
         boolean retrievedDetectionJobs,
         CancellationState cancellationState,
         SortedSet<String> errors,

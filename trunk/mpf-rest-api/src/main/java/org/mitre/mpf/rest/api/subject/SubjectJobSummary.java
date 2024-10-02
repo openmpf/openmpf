@@ -32,6 +32,6 @@ import java.util.Optional;
 public record SubjectJobSummary(
         long jobId,
         String componentName,
-        Instant timeReceived,
-        Optional<Instant> timeCompleted) {
+        Instant startDate,
+        Optional<Instant> endDate) {
 }

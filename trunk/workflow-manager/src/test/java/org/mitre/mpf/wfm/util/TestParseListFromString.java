@@ -26,9 +26,7 @@
 package org.mitre.mpf.wfm.util;
 
 import org.junit.Test;
-import org.mitre.mpf.wfm.util.TextUtils;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;

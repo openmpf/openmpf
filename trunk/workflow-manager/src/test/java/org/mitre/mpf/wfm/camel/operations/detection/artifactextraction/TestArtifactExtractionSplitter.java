@@ -48,7 +48,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 
@@ -650,7 +649,7 @@ public class TestArtifactExtractionSplitter {
                 .put("detection.artifact.extraction.policy.last.frame", String.valueOf(last))
                 .put("detection.artifact.extraction.policy.top.quality.count", String.valueOf(qualityCount))
                 .put("detection.quality.selection.prop", qualityProp)
-                .put("ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES", bestDetectionNamesProp)
+                .put(ArtifactExtractionProcessor.BEST_DETECTION_PROP_NAMES, bestDetectionNamesProp)
                 .build();
         return new SystemPropertiesSnapshot(properties);
     }
@@ -743,24 +742,24 @@ public class TestArtifactExtractionSplitter {
 
 
         when(_mockAggregateJobPropertiesUtil.getCombinedProperties(job, media, action))
-                .thenReturn(pName -> pName.equals(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY)
+                .thenReturn(pName -> pName.equals(ArtifactExtractionProcessor.POLICY)
                             ? extractionPolicy.name()
                             : null);
 
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(ArtifactExtractionProcessor.EXEMPLAR_FRAME_PLUS_POLICY), any(BatchJob.class), any(Media.class), any(Action.class)))
         .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.exemplar.frame.plus"));
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(ArtifactExtractionProcessor.FIRST_FRAME_POLICY), any(BatchJob.class), any(Media.class), any(Action.class)))
         .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.first.frame"));
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(ArtifactExtractionProcessor.MIDDLE_FRAME_POLICY), any(BatchJob.class), any(Media.class), any(Action.class)))
         .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.middle.frame"));
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_LAST_FRAME"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(ArtifactExtractionProcessor.LAST_FRAME_POLICY), any(BatchJob.class), any(Media.class), any(Action.class)))
         .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.last.frame"));
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(ArtifactExtractionProcessor.TOP_QUALITY_COUNT), any(BatchJob.class), any(Media.class), any(Action.class)))
         .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.top.quality.count"));
         when(_mockAggregateJobPropertiesUtil.getValue(eq("QUALITY_SELECTION_PROPERTY"), any(BatchJob.class), any(Media.class), any(Action.class)))
         .thenReturn(systemPropertiesSnapshot.lookup("detection.quality.selection.prop"));
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES"), any(BatchJob.class), any(Media.class), any(Action.class)))
-        .thenReturn(systemPropertiesSnapshot.lookup("ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES"));
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(ArtifactExtractionProcessor.BEST_DETECTION_PROP_NAMES), any(BatchJob.class), any(Media.class), any(Action.class)))
+        .thenReturn(systemPropertiesSnapshot.lookup(ArtifactExtractionProcessor.BEST_DETECTION_PROP_NAMES));
 
 
         Exchange exchange = TestUtil.createTestExchange();

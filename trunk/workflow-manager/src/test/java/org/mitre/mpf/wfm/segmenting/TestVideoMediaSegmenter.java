@@ -42,7 +42,6 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,8 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
-
-import javax.validation.constraints.AssertFalse;
 
 import org.junit.Test;
 import org.mitre.mpf.test.MockitoTest;

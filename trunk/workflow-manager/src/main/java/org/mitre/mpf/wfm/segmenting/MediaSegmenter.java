@@ -52,7 +52,7 @@ public interface MediaSegmenter {
     static final Set<String> FEED_FORWARD_TYPES
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
-    public static final String MARK_BEST_DETECTION_PROPERTY_LIST = "FEED_FORWARD_BEST_DETECTION_PROP_NAMES";
+    public static final String FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST = "FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST";
 
     List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context);
 

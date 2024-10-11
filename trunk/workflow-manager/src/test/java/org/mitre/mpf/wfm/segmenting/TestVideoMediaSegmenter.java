@@ -347,7 +347,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         Map<String, String> propMap = new HashMap<>();
         propMap.put("FEED_FORWARD_TYPE", "FRAME");
         propMap.put("FEED_FORWARD_TOP_QUALITY_COUNT", "2");
-        propMap.put("FEED_FORWARD_BEST_DETECTION_PROP_NAMES", "BEST_SIZE");
+        propMap.put("FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST", "BEST_SIZE");
 
         var detectionContext = createTestDetectionContext(1, propMap, tracks, "CONFIDENCE");
 
@@ -365,7 +365,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
         assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
         assertContainsAlgoProperty("FEED_FORWARD_TOP_QUALITY_COUNT", "2", detectionRequests);
-        assertContainsAlgoProperty("FEED_FORWARD_BEST_DETECTION_PROP_NAMES", "BEST_SIZE", detectionRequests);
+        assertContainsAlgoProperty("FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST", "BEST_SIZE", detectionRequests);
 
 
         var track = request.getVideoRequest().getFeedForwardTrack();

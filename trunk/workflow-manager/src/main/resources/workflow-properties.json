@@ -98,7 +98,7 @@
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
-        "name": "FEED_FORWARD_BEST_DETECTION_PROP_NAMES",
+        "name": "FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST",
         "description": "A semi-colon delimited list of strings that define the detection property names to be used for feed-forward processing. If a detection in a track has a property that corresponds to any of the names in this list, that detection will be included in a feed-forward track, along with detections chosen based on the value of QUALITY_SELECTION_PROPERTY.",
         "type": "STRING",
         "defaultValue": "",

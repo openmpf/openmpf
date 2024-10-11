@@ -158,11 +158,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             includedDetections = new TreeSet<>(TopQualitySelectionUtil.getTopQualityDetections(
                               track.getDetections(), topQualityCount, topQualitySelectionProp));
 
-            String bestDetectionPropertyNamesList = getBestDetectionPropertyList(context);
-            if (!bestDetectionPropertyNamesList.isEmpty()) {
-                var propNameList = TextUtils.parseListFromString(bestDetectionPropertyNamesList);
+            var bestDetectionPropertyNamesList = getBestDetectionPropertyList(context);
+            log.info("bestDetectionPropertyNamesList: {}", bestDetectionPropertyNamesList);
+            if (bestDetectionPropertyNamesList.isPresent()) {
+                List<String> propNameList = TextUtils.parseListFromString(bestDetectionPropertyNamesList.get());
                 propNameList = TextUtils.trimAndUpper(propNameList, Collectors.toList());
-
+                log.info("propNameList: {}", propNameList);
                 for (Detection detection : track.getDetections()) {
                     for (String p : propNameList) {
                         if (detection.getDetectionProperties().containsKey(p)) {
@@ -203,13 +204,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private static int getTopQualityCount(DetectionContext context) {
         return Optional.ofNullable(
-                    context.getAlgorithmProperties().get(FEED_FORWARD_TOP_QUALITY_COUNT))
+                    context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_TOP_QUALITY_COUNT))
                 .map(Integer::parseInt)
                 .orElse(0);
     }
-    private static String getBestDetectionPropertyList(DetectionContext context) {
+    private static Optional<String> getBestDetectionPropertyList(DetectionContext context) {
         return Optional.ofNullable(
-                    context.getAlgorithmProperties().get(MARK_BEST_DETECTION_PROPERTY_LIST))
-                .orElse("");
+            context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST));
     }
 }

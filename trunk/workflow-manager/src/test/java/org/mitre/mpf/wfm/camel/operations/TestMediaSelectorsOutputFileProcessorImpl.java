@@ -86,7 +86,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 
 
-public class TestMediaSelectorsOutputFileProcessor extends MockitoTest.Strict {
+public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Strict {
 
     private static final long JOB_ID = 879;
 
@@ -108,7 +108,7 @@ public class TestMediaSelectorsOutputFileProcessor extends MockitoTest.Strict {
     private JsonPathService _mockJsonPathService;
 
     @InjectMocks
-    private MediaSelectorsOutputFileProcessor _mediaSelectorsOutputFileProcessor;
+    private MediaSelectorsOutputFileProcessorImpl _mediaSelectorsOutputFileProcessor;
 
     private Path _mediaPath;
 

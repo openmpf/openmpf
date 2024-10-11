@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertAllHaveFeedForwardTrack;
@@ -43,6 +44,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -57,6 +59,7 @@ import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadata;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
@@ -325,6 +328,56 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertEquals(5, shortTrack.getStopFrame());
         assertAllHaveFeedForwardTrack(detectionRequests);
     }
+
+    @Test
+    public void canCreateFeedForwardMessagesWithBestDetections() {
+        Media media = createTestMedia();
+
+        Detection d1 = new Detection(0, 0, 100, 100, (float)0.1, 2, 2,
+                                     Map.of("BEST_SIZE", "true"));
+        Detection d2 = new Detection(0, 0, 10, 10, (float)0.9, 0, 0,
+                                    Map.of());
+        Detection d3 = new Detection(0, 0, 10, 10, (float)0.8, 1, 1,
+                                    Map.of());
+        Detection d4 = new Detection(0, 0, 10, 10, (float)0.7, 3, 3,
+                                    Map.of());
+
+        Track trackInput = createTrack(d1, d2, d3, d4);
+        Set<Track> tracks = ImmutableSet.of(trackInput);
+        Map<String, String> propMap = new HashMap<>();
+        propMap.put("FEED_FORWARD_TYPE", "FRAME");
+        propMap.put("FEED_FORWARD_TOP_QUALITY_COUNT", "2");
+        propMap.put("FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST", "BEST_SIZE");
+
+        var detectionContext = createTestDetectionContext(1, propMap, tracks, "CONFIDENCE");
+
+        when(_mockTriggerProcessor.getTriggeredTracks(media, detectionContext))
+                .thenReturn(tracks.stream());
+
+        var detectionRequests = _videoMediaSegmenter.createDetectionRequests(media, detectionContext);
+
+        assertEquals(1, detectionRequests.size());
+        assertContainsExpectedMediaMetadata(detectionRequests);
+
+        var request = detectionRequests.get(0).protobuf();
+        assertTrue(request.getAlgorithmPropertiesCount() == 5);
+        assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
+        assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+        assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
+        assertContainsAlgoProperty("FEED_FORWARD_TOP_QUALITY_COUNT", "2", detectionRequests);
+        assertContainsAlgoProperty("FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST", "BEST_SIZE", detectionRequests);
+
+
+        var track = request.getVideoRequest().getFeedForwardTrack();
+
+        assertEquals(3, track.getFrameLocationsCount());
+        var frameLocations = track.getFrameLocationsMap().keySet();
+        assertTrue(frameLocations.contains(0));
+        assertTrue(frameLocations.contains(1));
+        assertTrue(frameLocations.contains(2));
+        assertFalse(frameLocations.contains(3));
+    }
+
 
 
     @Test

@@ -45,6 +45,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.TextUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -169,7 +170,7 @@ public class TriggerProcessor {
                 "The \"TRIGGER\" property did not contain any text to the "
                             + "left of the \"=\" character.");
         }
-        var triggerValues = parseTriggerValue(triggerParts[1]);
+        Set<String> triggerValues = new HashSet<String>(TextUtils.parseListFromString(triggerParts[1]));
         if (triggerValues.size() == 1) {
             var triggerValue = triggerValues.iterator().next();
             return track -> triggerValue.equals(getTrackTrigger(track, triggerKey));
@@ -186,44 +187,6 @@ public class TriggerProcessor {
             return null;
         }
         return propValue.strip();
-    }
-
-
-    private static Set<String> parseTriggerValue(String trigger) {
-        if (!trigger.contains(";") && !trigger.contains("\\")) {
-            return Set.of(trigger.strip());
-        }
-
-        var values = new HashSet<String>();
-        var currentSegment = new StringBuilder();
-        boolean inEscapeSequence = false;
-        for (int i = 0; i < trigger.length(); i++) {
-            char ch = trigger.charAt(i);
-            if (inEscapeSequence) {
-                inEscapeSequence = false;
-                currentSegment.append(ch);
-                continue;
-            }
-            switch (ch) {
-                case '\\' -> inEscapeSequence = true;
-                case ';' -> {
-                    var newValue = currentSegment.toString().strip();
-                    if (!newValue.isBlank()) {
-                        values.add(newValue);
-                    }
-                    currentSegment.setLength(0);
-                }
-                default -> currentSegment.append(ch);
-            }
-        }
-
-        if (!currentSegment.isEmpty()) {
-            var newValue = currentSegment.toString().strip();
-            if (!newValue.isBlank()) {
-                values.add(newValue);
-            }
-        }
-        return values;
     }
 
 

@@ -62,6 +62,15 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactExtractionProcessor.class);
 
+    public static final String POLICY = "ARTIFACT_EXTRACTION_POLICY";
+    public static final String CROPPING_POLICY = "ARTIFACT_EXTRACTION_POLICY_CROPPING";
+    public static final String EXEMPLAR_FRAME_PLUS_POLICY = "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS";
+    public static final String FIRST_FRAME_POLICY = "ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME";
+    public static final String MIDDLE_FRAME_POLICY = "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME";
+    public static final String LAST_FRAME_POLICY = "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME";
+    public static final String TOP_QUALITY_COUNT = "ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT";
+    public static final String BEST_DETECTION_PROP_NAMES = "ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES_LIST";
+
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final StorageService _storageService;

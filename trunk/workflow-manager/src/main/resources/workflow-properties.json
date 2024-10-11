@@ -91,7 +91,7 @@
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
-        "name": "ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES",
+        "name": "ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES_LIST",
         "description": "A semi-colon delimited list of strings that define the detection property names to be used for artifact extraction. If a detection in a track has a property that corresponds to any of the names in this list, an artifact will be created for it.",
         "type": "STRING",
         "defaultValue": "",

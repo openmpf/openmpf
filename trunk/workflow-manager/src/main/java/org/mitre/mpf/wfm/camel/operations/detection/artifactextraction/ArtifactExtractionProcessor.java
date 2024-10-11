@@ -69,7 +69,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
     public static final String MIDDLE_FRAME_POLICY = "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME";
     public static final String LAST_FRAME_POLICY = "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME";
     public static final String TOP_QUALITY_COUNT = "ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT";
-    public static final String BEST_DETECTION_PROP_NAMES = "ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES";
+    public static final String BEST_DETECTION_PROP_NAMES = "ARTIFACT_EXTRACTION_POLICY_BEST_DETECTION_PROP_NAMES_LIST";
 
     private final InProgressBatchJobsService _inProgressBatchJobs;
 

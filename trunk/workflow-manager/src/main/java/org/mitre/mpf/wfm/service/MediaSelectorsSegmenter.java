@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
@@ -48,9 +49,14 @@ public class MediaSelectorsSegmenter  {
 
     private final JsonPathService _jsonPathService;
 
+    private final MediaSelectorsOutputFileProcessor _mediaSelectorsOutputFileProcessor;
+
     @Inject
-    MediaSelectorsSegmenter(JsonPathService jsonPathService) {
+    MediaSelectorsSegmenter(
+            JsonPathService jsonPathService,
+            MediaSelectorsOutputFileProcessor mediaSelectorsOutputFileProcessor) {
         _jsonPathService = jsonPathService;
+        _mediaSelectorsOutputFileProcessor = mediaSelectorsOutputFileProcessor;
     }
 
 
@@ -63,8 +69,14 @@ public class MediaSelectorsSegmenter  {
             // case is not added here.
         };
         if (results.isEmpty()) {
-            throw new WfmProcessingException(
-                    "None of the media selectors matched content in the source document.");
+            var errorProp = context.getAlgorithmProperties().get(
+                    MpfConstants.MEDIA_SELECTORS_NO_MATCHES_IS_ERROR);
+            if (Boolean.parseBoolean(errorProp)) {
+                throw new WfmProcessingException(
+                        "None of the media selectors matched content in the source document.");
+            }
+            _mediaSelectorsOutputFileProcessor.createNoMatchOutputDocument(
+                    context.getJobId(), media);
         }
         return results;
     }

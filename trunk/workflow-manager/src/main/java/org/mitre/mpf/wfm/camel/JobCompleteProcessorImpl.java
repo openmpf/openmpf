@@ -495,7 +495,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getLength().orElse(0),
                     media.getSha256().orElse(null),
                     media.isFailed() ? "ERROR" : "COMPLETE",
-                    Objects.toString(media.getMediaSelectorsOutputUri()));
+                    media.getMediaSelectorsOutputUri().map(Object::toString).orElse(null));
 
             for (var frameRange : media.getFrameRanges()) {
                 mediaOutputObject.getFrameRanges().add(new JsonMediaRange(

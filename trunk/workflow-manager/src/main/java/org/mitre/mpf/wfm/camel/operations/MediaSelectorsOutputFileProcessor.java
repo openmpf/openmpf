@@ -31,6 +31,7 @@ import static java.util.stream.Collectors.toMap;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
@@ -45,6 +46,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.TrackCache;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
@@ -98,7 +100,7 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
             var job = _inProgressJobs.getJob(trackCache.getJobId());
             JobPartsIter.taskStream(job, trackCache.getTaskIndex())
                 .filter(jp -> !jp.media().getMediaSelectors().isEmpty())
-                .forEach(jp -> createOutputDocument(jp, trackCache.getTracks(jp)));
+                .forEach(jp -> createUpdatedOutputDocument(jp, trackCache.getTracks(jp)));
         }
         catch (Exception e) {
             var msg = "Failed to create document with updated selections due to: " + e;
@@ -107,22 +109,44 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
         }
     }
 
-
-    private void createOutputDocument(JobPart jobPart, Collection<Track> tracks)  {
-        try {
+    private void createUpdatedOutputDocument(JobPart jobPart, Collection<Track> tracks) {
+        createOutputDocument(jobPart.id(), jobPart.media().getId(), () -> {
             var selectorType = jobPart.media().getMediaSelectors().get(0).type();
-            var uri = switch (selectorType) {
+            return switch (selectorType) {
                 case JSON_PATH -> createJsonOutputDocument(jobPart, tracks);
                 // No default case so that compilation fails if a new enum value is added and a new
                 // case is not added here.
             };
-            _inProgressJobs.setMediaSelectorsOutputUri(
-                    jobPart.id(), jobPart.media().getId(), uri);
+        });
+    }
+
+    public void createNoMatchOutputDocument(long jobId, Media media) {
+        createOutputDocument(jobId, media.getId(), () -> {
+            var job = _inProgressJobs.getJob(jobId);
+            var selectorType = media.getMediaSelectors().get(0).type();
+            return _storageService.storeMediaSelectorsOutput(
+                    job, media,
+                    selectorType,
+                    out -> Files.copy(media.getProcessingPath(), out));
+        });
+    }
+
+
+    @FunctionalInterface
+    private static interface OutputFileCreationStrategy {
+        public URI create() throws IOException, StorageException;
+    }
+
+    private void createOutputDocument(
+                long jobId, long mediaId, OutputFileCreationStrategy fileCreator)  {
+        try {
+            var uri = fileCreator.create();
+            _inProgressJobs.setMediaSelectorsOutputUri(jobId, mediaId, uri);
         }
         catch (StorageException | WfmProcessingException | IOException e) {
             var msg = "Failed to create document with updated selections due to: " + e;
             LOG.error(msg, e);
-            _inProgressJobs.addError(jobPart, IssueCodes.OTHER, msg);
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.OTHER, msg);
         }
     }
 
@@ -162,7 +186,7 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
                         getMultipleOutputsHandler(jobPart)));
 
         var delimeter = _aggregateJobPropertiesUtil.getValue(
-                MpfConstants.SELECTOR_DELIMETER, jobPart);
+                MpfConstants.MEDIA_SELECTORS_DELIMETER, jobPart);
         if (delimeter == null || delimeter.isEmpty()) {
             return input -> replaceFieldContent(input, inputToOutput);
         }
@@ -194,7 +218,7 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
                 throw new WfmProcessingException(
                         "Could not create media selector output because one selected element "
                         + "produced multiple outputs and %s was set to ERROR"
-                        .formatted(MpfConstants.SELECTOR_DUPLICATE_POLICY));
+                        .formatted(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY));
             };
         };
     }
@@ -202,7 +226,7 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
 
     private MediaSelectorsDuplicatePolicy getDuplicatePolicy(JobPart jobPart) {
         var duplicatePolicyName = _aggregateJobPropertiesUtil.getValue(
-                MpfConstants.SELECTOR_DUPLICATE_POLICY, jobPart);
+                MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY, jobPart);
         if (duplicatePolicyName == null || duplicatePolicyName.isBlank()) {
             return MediaSelectorsDuplicatePolicy.LONGEST;
         }

@@ -29,6 +29,8 @@ package org.mitre.mpf.wfm.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
@@ -41,6 +43,7 @@ import org.junit.Test;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
@@ -56,18 +59,23 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
     @Mock
     private JsonPathService _mockJsonPathService;
 
+    @Mock
+    private MediaSelectorsOutputFileProcessor _mockOutputFileProcessor;
+
     @InjectMocks
     private MediaSelectorsSegmenter _mediaSelectorsSegmenter;
 
 
     @Test
-    public void testSegmentMediaNoMatches() {
+    public void testSegmentMediaNoMatchesIsError() {
         var selector = new MediaSelector(
                 "expr", MediaSelectorType.JSON_PATH,
                 Map.of(),
                 null);
         var media = createTestMedia(List.of(selector));
-        var context = createDetectionContext();
+        var context = createDetectionContext(
+                Map.of(MpfConstants.MEDIA_SELECTORS_NO_MATCHES_IS_ERROR, "true"));
+
         var mockEvaluator = mock(JsonPathEvaluator.class);
         when(_mockJsonPathService.load(media.getProcessingPath()))
                 .thenReturn(mockEvaluator);
@@ -75,6 +83,29 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
         assertThatExceptionOfType(WfmProcessingException.class)
                 .isThrownBy(() -> _mediaSelectorsSegmenter.segmentMedia(media, context))
                 .withMessageContaining("None of the media selectors matched content in the source document.");
+        verifyNoInteractions(_mockOutputFileProcessor);
+    }
+
+
+    @Test
+    public void testSegmentMediaNoMatchesIsNotError() {
+        var selector = new MediaSelector(
+                "expr", MediaSelectorType.JSON_PATH,
+                Map.of(),
+                null);
+        var media = createTestMedia(List.of(selector));
+        var context = createDetectionContext(
+                Map.of(MpfConstants.MEDIA_SELECTORS_NO_MATCHES_IS_ERROR, "false"));
+
+        var mockEvaluator = mock(JsonPathEvaluator.class);
+        when(_mockJsonPathService.load(media.getProcessingPath()))
+                .thenReturn(mockEvaluator);
+
+        var results = _mediaSelectorsSegmenter.segmentMedia(media, context);
+        assertThat(results).isEmpty();
+
+        verify(_mockOutputFileProcessor)
+                .createNoMatchOutputDocument(context.getJobId(), media);
     }
 
 
@@ -128,8 +159,12 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
     }
 
     private static DetectionContext createDetectionContext() {
+        return createDetectionContext(Map.of());
+    }
+
+    private static DetectionContext createDetectionContext(Map<String, String> properties) {
         return new DetectionContext(
                 0, 0, null, 0, null, false,
-                Map.of(), null, null, null);
+                properties, null, null, null);
     }
 }

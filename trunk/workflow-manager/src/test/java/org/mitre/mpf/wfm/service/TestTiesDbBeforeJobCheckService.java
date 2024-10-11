@@ -876,8 +876,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(Optional.of("SHA1"));
         when(jobMedia1.getUri())
             .thenReturn("http://localhost/dest-bucket/media1");
-        when(jobMedia1.getMediaSelectorsOutput())
-            .thenReturn(URI.create("http://localhost/dest-bucket/media-selectors-out.json"));
+        when(jobMedia1.getMediaSelectorsOutputUri())
+            .thenReturn(Optional.of(URI.create("http://localhost/dest-bucket/media-selectors-out.json")));
 
         var jobMedia2 = mock(Media.class);
         when(jobMedia2.getLinkedHash())
@@ -1050,11 +1050,11 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         compareMedia(media1, newMedia1, "http://localhost/dest-bucket/media1");
         assertEquals(
                 "http://localhost/dest-bucket/media-selectors-out.json",
-                newMedia1.getMediaSelectorsOutput());
+                newMedia1.getMediaSelectorsOutputUri());
 
         var newMedia2 = newOutputObject.getMedia().last();
         compareMedia(media2, newMedia2, "http://localhost/dest-bucket/media2");
-        assertNull(newMedia2.getMediaSelectorsOutput());
+        assertNull(newMedia2.getMediaSelectorsOutputUri());
 
         var newMarkup = newMedia1.getMarkupResult();
         var markupChecker = new FieldChecker<>(media1.getMarkupResult(), newMarkup);
@@ -1194,17 +1194,23 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         mediaChecker.eq(m -> m.getMediaMetadata());
         mediaChecker.eq(m -> m.getMediaProperties());
         if (oldMedia.getMarkupResult() == null) {
-            mediaChecker.eq(m -> m.getMarkupResult());
+            assertNull(newMedia.getMarkupResult());
         }
         else {
-            mediaChecker.neq(m -> m.getMarkupResult());
+            mediaChecker.map(m -> m.getMarkupResult())
+                // Using neq for path because during the S3 copy, it gets updated.
+                .neq(m -> m.getPath())
+                .eq(m -> m.getId())
+                .eq(m -> m.getStatus())
+                .eq(m -> m.getMessage());
         }
 
-        if (oldMedia.getMediaSelectorsOutput() == null) {
-            mediaChecker.eq(m -> m.getMediaSelectorsOutput());
+        if (oldMedia.getMediaSelectorsOutputUri() == null) {
+            assertNull(newMedia.getMediaSelectorsOutputUri());
         }
         else {
-            mediaChecker.neq(m -> m.getMediaSelectorsOutput());
+            // Using neq because during the S3 copy, the URI gets updated.
+            mediaChecker.neq(m -> m.getMediaSelectorsOutputUri());
         }
 
         mediaChecker.eq(m -> m.getTrackTypes().keySet());
@@ -1251,12 +1257,18 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     // have different fields for the two arguments to assertEquals.
     // Using this class ensures that same field is used for both arguments to assertEquals.
     private static record FieldChecker<T>(T expected, T actual) {
-        public void eq(Function<T, Object> propGetter) {
+        public FieldChecker<T> eq(Function<T, Object> propGetter) {
             assertEquals(propGetter.apply(expected), propGetter.apply(actual));
+            return this;
         }
 
-        public void neq(Function<T, Object> propGetter) {
+        public FieldChecker<T> neq(Function<T, Object> propGetter) {
             assertNotEquals(propGetter.apply(expected), propGetter.apply(actual));
+            return this;
+        }
+
+        public <U> FieldChecker<U> map(Function<T, U> mapper) {
+            return new FieldChecker<U>(mapper.apply(expected), mapper.apply(actual));
         }
     }
 

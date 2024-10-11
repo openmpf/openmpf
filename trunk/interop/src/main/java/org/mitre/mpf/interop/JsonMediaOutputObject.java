@@ -37,7 +37,7 @@ import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 @JsonPropertyOrder({
 		"mediaId", "parentMediaId", "path", "tiesDbSourceMediaPath", "sha256", "mimeType",
 		"mediaType", "length", "frameRanges", "timeRanges", "mediaMetadata", "mediaProperties",
-		"status", "detectionProcessingErrors", "markupResult", "mediaSelectorsOutput", "output"})
+		"status", "detectionProcessingErrors", "markupResult", "mediaSelectorsOutputUri", "output"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
 	@JsonProperty("mediaId")
@@ -115,10 +115,10 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private SortedMap<String, String> mediaProperties;
 	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
-	@JsonProperty("mediaSelectorsOutput")
-	private String mediaSelectorsOutput;
-	public String getMediaSelectorsOutput() { return mediaSelectorsOutput; }
-	public void setMediaSelectorsOutput(String uri) { mediaSelectorsOutput = uri; }
+	@JsonProperty("mediaSelectorsOutputUri")
+	private String mediaSelectorsOutputUri;
+	public String getMediaSelectorsOutputUri() { return mediaSelectorsOutputUri; }
+	public void setMediaSelectorsOutputUri(String uri) { mediaSelectorsOutputUri = uri; }
 
 	@JsonProperty("output")
 	@JsonPropertyDescription("The mapping of track types to a set of actions performed on the given medium.")
@@ -133,7 +133,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public JsonMediaOutputObject(
 			long mediaId, long parentMediaId, String path, String tiesDbSourceMediaPath,
 			String mediaType, String mimeType, int length, String sha256, String status,
-			String mediaSelectorsOutput) {
+			String mediaSelectorsOutputUri) {
 		this.mediaId = mediaId;
 		this.parentMediaId = parentMediaId;
 		this.path = path;
@@ -143,7 +143,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		this.length = length;
 		this.sha256 = sha256;
 		this.status = status;
-		this.mediaSelectorsOutput = mediaSelectorsOutput;
+		this.mediaSelectorsOutputUri = mediaSelectorsOutputUri;
 		this.frameRanges = new TreeSet<>();
 		this.timeRanges = new TreeSet<>();
 		this.trackTypes = new TreeMap<>(new TrackTypeComparator());

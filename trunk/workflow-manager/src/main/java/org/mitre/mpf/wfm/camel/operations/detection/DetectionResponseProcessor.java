@@ -449,7 +449,7 @@ public class DetectionResponseProcessor
     }
 
     private static String getSelectedInput(Map<String, Object> headers) {
-        return Optional.ofNullable(headers.get(MpfHeaders.SELECTED_CONTENT))
+        return Optional.ofNullable(headers.get(MpfHeaders.SELECTED_TEXT_CONTENT))
             .map(Object::toString)
             .orElse(null);
     }

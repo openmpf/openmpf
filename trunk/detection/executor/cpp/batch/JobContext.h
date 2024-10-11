@@ -51,7 +51,7 @@ struct ProtobufMetadata {
 
     const int action_index;
 
-    const std::optional<std::string> selected_content;
+    const std::optional<std::string> selected_text_content;
 };
 
 

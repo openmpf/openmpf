@@ -585,8 +585,8 @@ public class TiesDbBeforeJobCheckServiceImpl
             if (media.getMarkupResult() != null) {
                 uris.add(toUri(media.getMarkupResult().getPath(), "markup"));
             }
-            if (media.getMediaSelectorsOutput() != null) {
-                uris.add(toUri(media.getMediaSelectorsOutput(), "media selectors output"));
+            if (media.getMediaSelectorsOutputUri() != null) {
+                uris.add(toUri(media.getMediaSelectorsOutputUri(), "media selectors output"));
             }
         }
 
@@ -649,14 +649,14 @@ public class TiesDbBeforeJobCheckServiceImpl
                         oldMarkup.getMessage());
             }
 
-            var oldMediaSelectorsOutput = oldMedia.getMediaSelectorsOutput();
-            String newMediaSelectorsOutput;
-            if (oldMediaSelectorsOutput == null) {
-                newMediaSelectorsOutput = null;
+            var oldMediaSelectorsOutputUri = oldMedia.getMediaSelectorsOutputUri();
+            String newMediaSelectorsOutputUri;
+            if (oldMediaSelectorsOutputUri == null) {
+                newMediaSelectorsOutputUri = null;
             }
             else {
-                var oldUri = URI.create(oldMediaSelectorsOutput);
-                newMediaSelectorsOutput = updatedUris.get(oldUri).toString();
+                var oldUri = URI.create(oldMediaSelectorsOutputUri);
+                newMediaSelectorsOutputUri = updatedUris.get(oldUri).toString();
             }
 
 
@@ -680,7 +680,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                     oldMedia.getMediaMetadata(),
                     oldMedia.getMediaProperties(),
                     newMarkup,
-                    newMediaSelectorsOutput,
+                    newMediaSelectorsOutputUri,
                     newTrackTypeMap,
                     oldMedia.getDetectionProcessingErrors());
             newMediaList.add(newMedia);

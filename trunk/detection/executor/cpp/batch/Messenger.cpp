@@ -109,9 +109,9 @@ void Messenger::SendResponse(
     if (amq_meta.selector_id) {
         message->setStringProperty("MediaSelectorId", *amq_meta.selector_id);
     }
-    if (job_context.protobuf_metadata.selected_content) {
+    if (job_context.protobuf_metadata.selected_text_content) {
         message->setStringProperty(
-                "SelectedContent", *job_context.protobuf_metadata.selected_content);
+                "SelectedTextContent", *job_context.protobuf_metadata.selected_text_content);
     }
     message->writeBytes(response_bytes);
 

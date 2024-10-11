@@ -715,6 +715,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                     .thenReturn(algo);
                 if (algo.name().equals(firstAlgoName)) {
                     firstAlgoName = null;
+                    // We only need to set this up for the first algorithm because media selectors
+                    // only apply to the first stage in a pipeline. It needs to be lenient because
+                    // the tests that do not use media selectors do not call getAlgorithm.
                     lenient().when(pipelineElements.getAlgorithm(0, 0))
                         .thenReturn(algo);
                 }

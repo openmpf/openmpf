@@ -116,7 +116,7 @@ public class MediaSelectorsOutputFileProcessor extends WfmProcessor {
                 // No default case so that compilation fails if a new enum value is added and a new
                 // case is not added here.
             };
-            _inProgressJobs.setMediaSelectorsOutput(
+            _inProgressJobs.setMediaSelectorsOutputUri(
                     jobPart.id(), jobPart.media().getId(), uri);
         }
         catch (StorageException | WfmProcessingException | IOException e) {

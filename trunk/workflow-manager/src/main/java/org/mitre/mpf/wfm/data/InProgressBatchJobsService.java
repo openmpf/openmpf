@@ -575,7 +575,7 @@ public class InProgressBatchJobsService {
         addProcessingTime(jobId, action, -1);
     }
 
-    public synchronized void setMediaSelectorsOutput(long jobId, long mediaId, URI uri) {
-        getMediaImpl(jobId, mediaId).setMediaSelectorsOutput(uri);
+    public synchronized void setMediaSelectorsOutputUri(long jobId, long mediaId, URI uri) {
+        getMediaImpl(jobId, mediaId).setMediaSelectorsOutputUri(uri);
     }
 }

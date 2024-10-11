@@ -222,7 +222,8 @@ public class TestMediaSelectorsOutputFileProcessor extends MockitoTest.Strict {
                 .addJsonSelector("expr1", "OUTPUT1")
                 .addTrack(0, "INPUT_1_1", "OUTPUT1", "OUTPUT_1_1")
                 .addTrack(0, "INPUT_1_1", "OUTPUT1", "OUTPUT_1_2")
-                .doNotStoreOutput()
+                // The operation should fail, so no output should be stored.
+                .doNotExpectOutputToBeStored()
                 .getStringMappers();
         assertThat(mappers).isEmpty();
 
@@ -281,7 +282,7 @@ public class TestMediaSelectorsOutputFileProcessor extends MockitoTest.Strict {
             return this;
         }
 
-        public TestCaseBuilder doNotStoreOutput() {
+        public TestCaseBuilder doNotExpectOutputToBeStored() {
             _shouldBeStored = false;
             return this;
         }

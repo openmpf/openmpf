@@ -386,7 +386,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         exchange.getIn().setHeaders(Map.of(
                 MpfHeaders.JOB_ID, JOB_ID,
                 MpfHeaders.MEDIA_SELECTOR_ID, selectorId.toString(),
-                MpfHeaders.SELECTED_CONTENT, "input"));
+                MpfHeaders.SELECTED_TEXT_CONTENT, "input"));
         exchange.getIn().setBody(responseBuilder.build());
 
         detectionResponseProcessor.wfmProcess(exchange);

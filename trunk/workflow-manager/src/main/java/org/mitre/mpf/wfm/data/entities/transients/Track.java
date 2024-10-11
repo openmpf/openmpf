@@ -126,27 +126,7 @@ public class Track implements Comparable<Track> {
         return Optional.ofNullable(_selectedInput);
     }
 
-    /**
-     * Creates a new track instance with the given immutable parameters.
-     *
-     * @param jobId The job with which this track is associated.
-     * @param mediaId The medium with which this track is associated.
-     * @param taskIndex The task of the pipeline containing the action with which this track is associated.
-     * @param actionIndex The index of the action in the task of the pipeline which created this track.
-     * @param startOffsetFrameInclusive The zero-based index where the track begins in the medium.
-     *                                      Frame number is relevant for image and video files.
-     * @param endOffsetFrameInclusive The zero-based and inclusive stop index where the track ends in the medium.
-     *                                      Frame number is relevant for image and video files.
-     * @param startOffsetTimeInclusive The zero-based index where the track begins in the medium.
-     *                                      Time is given in milliseconds, and is relevant for video and audio files.
-     * @param endOffsetTimeInclusive The zero-based and inclusive stop index where the track ends in the medium.
-     *                                      Time is given in milliseconds, and is relevant for video and audio files.
-     * @param mergedTaskIndex The index of the task that should be reported after applying task merging.
-     * @param confidence The track confidence
-     * @param detections The collection of detections which correspond to the position of the object as it
-     *                   moves through the track.
-     * @param trackProperties Map containing the track level properties.
-     */
+
     @JsonCreator
     public Track(
             @JsonProperty("jobId") long jobId,

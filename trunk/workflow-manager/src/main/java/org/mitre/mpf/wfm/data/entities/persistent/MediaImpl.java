@@ -222,10 +222,10 @@ public class MediaImpl implements Media {
     @Override
     public ImmutableList<MediaSelector> getMediaSelectors() { return _mediaSelectors; }
 
-    private URI _mediaSelectorsOutput;
+    private URI _mediaSelectorsOutputUri;
     @Override
-    public URI getMediaSelectorsOutput() { return _mediaSelectorsOutput; }
-    public void setMediaSelectorsOutput(URI uri) { _mediaSelectorsOutput = uri; }
+    public Optional<URI> getMediaSelectorsOutputUri() { return Optional.ofNullable(_mediaSelectorsOutputUri); }
+    public void setMediaSelectorsOutputUri(URI uri) { _mediaSelectorsOutputUri = uri; }
 
 
     private TiesDbInfo _tiesDbInfo;
@@ -326,7 +326,7 @@ public class MediaImpl implements Media {
             @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
             @JsonProperty("timeRanges") Collection<MediaRange> timeRanges,
             @JsonProperty("mediaSelectors") Collection<MediaSelector> mediaSelectors,
-            @JsonProperty("mediaSelectorsOutput") URI mediaSelectorsOutput,
+            @JsonProperty("mediaSelectorsOutputUri") URI mediaSelectorsOutputUri,
             @JsonProperty("tiesDbInfo") TiesDbInfo tiesDbInfo) {
         this(id,
              parentId,
@@ -343,7 +343,7 @@ public class MediaImpl implements Media {
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
-        _mediaSelectorsOutput = mediaSelectorsOutput;
+        _mediaSelectorsOutputUri = mediaSelectorsOutputUri;
         _tiesDbInfo = tiesDbInfo;
     }
 
@@ -375,6 +375,7 @@ public class MediaImpl implements Media {
 
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
         originalMedia.getStorageUri().ifPresent(result::setStorageUri);
+        originalMedia.getMediaSelectorsOutputUri().ifPresent(result::setMediaSelectorsOutputUri);
 
         return result;
     }

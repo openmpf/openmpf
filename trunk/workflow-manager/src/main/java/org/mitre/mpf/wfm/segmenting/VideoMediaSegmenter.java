@@ -159,15 +159,13 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                               track.getDetections(), topQualityCount, topQualitySelectionProp));
 
             var bestDetectionPropertyNamesList = getBestDetectionPropertyList(context);
-            log.info("bestDetectionPropertyNamesList: {}", bestDetectionPropertyNamesList);
             if (bestDetectionPropertyNamesList.isPresent()) {
                 List<String> propNameList = TextUtils.parseListFromString(bestDetectionPropertyNamesList.get());
                 propNameList = TextUtils.trimAndUpper(propNameList, Collectors.toList());
-                log.info("propNameList: {}", propNameList);
                 for (Detection detection : track.getDetections()) {
                     for (String p : propNameList) {
                         if (detection.getDetectionProperties().containsKey(p)) {
-                            log.info("Will feed forward detection in frame {} with property {}", detection.getMediaOffsetFrame(), p);
+                            log.debug("Will feed forward detection in frame {} with property {}", detection.getMediaOffsetFrame(), p);
                             includedDetections.add(detection);
                             break;
                         }

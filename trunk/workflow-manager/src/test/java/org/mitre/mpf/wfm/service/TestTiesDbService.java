@@ -612,6 +612,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             Map.of("MEDIA_HASH", "MEDIA_676_HASH"),
             List.of(),
             List.of(),
+            List.of(),
             null
         );
 
@@ -622,6 +623,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             null,
             Map.of(MpfConstants.LINKED_MEDIA_HASH, "LINKED_MEDIA_HASH"),
             Map.of("MEDIA_HASH", "PARENT_MEDIA_HASH"),
+            List.of(),
             List.of(),
             List.of(),
             null
@@ -638,6 +640,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             Map.of(),
             List.of(),
             List.of(),
+            List.of(),
             null);
         _tiesDbChildMedia.addMetadata(MpfConstants.IS_DERIVATIVE_MEDIA, "true");
 
@@ -649,6 +652,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             null,
             Map.of(),
             Map.of(),
+            List.of(),
             List.of(),
             List.of(),
             null

@@ -30,7 +30,7 @@ public class StreamingJobCancelResponse {
 	private Long jobId;
 	private boolean doCleanup = false;
 	private String outputObjectDirectory;
-	private MpfResponse mpfResponse = new MpfResponse();
+	private MpfResponse mpfResponse;
 
 	/** Set response parameters.
 	 * @param jobId job id of this streaming job
@@ -43,7 +43,9 @@ public class StreamingJobCancelResponse {
 		this.doCleanup = doCleanup;
 	}
 
-	public StreamingJobCancelResponse() {}
+	public StreamingJobCancelResponse() {
+		mpfResponse = MpfResponse.success();
+	}
 
 	/** Constructor typically used for construction of a StreamingJobCancelResponse indicating an error.
 	 * @param jobId job id of this streaming job
@@ -54,7 +56,7 @@ public class StreamingJobCancelResponse {
 	 */
 	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup, int errorCode, String errorMessage) {
 		setResponseParameters(jobId, outputObjectDirectory, doCleanup);
-		mpfResponse.setMessage(errorCode, errorMessage);
+		mpfResponse = new MpfResponse(errorCode, errorMessage);
 	}
 
 	public Long getJobId() {

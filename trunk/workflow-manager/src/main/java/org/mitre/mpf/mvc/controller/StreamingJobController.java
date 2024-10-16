@@ -102,7 +102,7 @@ public class StreamingJobController {
                     StreamingJobCreationRequest streamingJobCreationRequest) {
 
         StreamingJobCreationResponse createResponse = createStreamingJobInternal(streamingJobCreationRequest);
-        if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
+        if (createResponse.getMpfResponse().isSuccessful()) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating streaming job");
@@ -183,7 +183,7 @@ public class StreamingJobController {
                                                                              @ApiParam(name = "doCleanup", value = "doCleanup", required = false, defaultValue = "false")
                                                                              @RequestParam(value = "doCleanup", required = false) boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = cancelStreamingJobInternal(jobId, doCleanup);
-        if (cancelResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
+        if (cancelResponse.getMpfResponse().isSuccessful()) {
             return new ResponseEntity<>(cancelResponse, HttpStatus.OK);
         } else {
             log.error("Error cancelling streaming job with id '{}'", jobId);

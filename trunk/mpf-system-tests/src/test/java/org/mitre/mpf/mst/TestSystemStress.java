@@ -59,9 +59,9 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         // mediaPaths.add(ioUtils.findFile("/samples/face/new_face_video.avi").toString());
 
         // for testing on Jenkins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4").toString())); // 13MG, 1 min
+        media.add(toMediaObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4"))); // 220MG, 2 mins
+        media.add(toMediaObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4"))); // 341MG, 3 mins
+        media.add(toMediaObject(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4"))); // 13MG, 1 min
         // rejects
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString());  // 1.25G
 
@@ -96,7 +96,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         Collection<File> files = FileUtils.listFiles(new File("/mpfdata/datasets/mugshots_10000"), fileFilter, null);
         int i = 0;
         for (File file : files) {
-            media.add(new JobCreationMediaData(file.getAbsoluteFile().toPath().toUri().toString()));
+            media.add(toMediaObject(file.getAbsoluteFile().toPath().toUri()));
             i++;
         }
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
@@ -113,9 +113,9 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         // mediaPaths.add(ioUtils.findFile("/samples/face/new_face_video.avi").toString());
 
         // for testing on Jenkins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/4kSampleFiles/News_H264.mp4").toString())); // 42MG, 10 secs
+        media.add(toMediaObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4"))); // 220MG, 2 mins
+        media.add(toMediaObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4"))); // 341MG, 3 mins
+        media.add(toMediaObject(ioUtils.findFile("/mpfdata/datasets/4kSampleFiles/News_H264.mp4"))); // 42MG, 10 secs
         // rejects:
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString();  // 1.25G, times out at 5 hours
 
@@ -174,8 +174,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         public void run() {
             try {
                 while (!fQueue.isEmpty()) {
-                    List<JobCreationMediaData> media = new LinkedList<>();
-                    media.add(new JobCreationMediaData(fQueue.take().getAbsoluteFile().toPath().toUri().toString()));
+                    var media = toMediaObjectList(fQueue.take().getAbsoluteFile().toPath().toUri());
                     runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
                     manyJobsNumFilesProcessed++;
                 }

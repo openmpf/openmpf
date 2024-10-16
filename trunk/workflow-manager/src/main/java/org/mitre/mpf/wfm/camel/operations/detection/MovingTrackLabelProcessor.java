@@ -183,7 +183,9 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 newDetectionsBuilder.build(),
                 newTrackProperties,
                 track.getExemplarPolicy(),
-                track.getQualitySelectionProperty());
+                track.getQualitySelectionProperty(),
+                track.getSelectorId().orElse(null),
+                track.getSelectedInput().orElse(null));
     }
 
 

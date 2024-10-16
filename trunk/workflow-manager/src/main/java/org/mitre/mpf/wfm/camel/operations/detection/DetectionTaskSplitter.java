@@ -229,6 +229,7 @@ public class DetectionTaskSplitter {
                 request.feedForwardTrack()
                     .ifPresent(t -> _taskMergingManager.addBreadCrumb(message, t));
             }
+            message.getHeaders().putAll(request.headers());
             message.setBody(request.protobuf());
             messages.add(message);
         }

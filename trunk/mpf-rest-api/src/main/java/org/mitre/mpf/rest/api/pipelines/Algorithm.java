@@ -80,7 +80,7 @@ public record Algorithm(
 
     public record Requires(@NotNull @Valid List<@AllNotBlank String> states) {
         public Requires {
-            states = Utils.trimAndUpper(states, ImmutableList.toImmutableList());
+            states = Utils.trimAndUpper(states);
         }
     }
 
@@ -90,8 +90,8 @@ public record Algorithm(
             @NotNull @Valid List<AlgorithmProperty> properties
     ) {
         public Provides {
-            states = Utils.trimAndUpper(states, ImmutableList.toImmutableList());
-            properties = ImmutableList.copyOf(properties);
+            states = Utils.trimAndUpper(states);
+            properties = Utils.toImmutableList(properties);
         }
     }
 }

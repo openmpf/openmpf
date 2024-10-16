@@ -35,6 +35,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -51,9 +52,14 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
     private final TriggerProcessor _triggerProcessor;
 
+    private final MediaSelectorsSegmenter _mediaSelectorsSegmenter;
+
     @Inject
-    DefaultMediaSegmenter(TriggerProcessor triggerProcessor) {
+    DefaultMediaSegmenter(
+            TriggerProcessor triggerProcessor,
+            MediaSelectorsSegmenter mediaSelectorsSegmenter) {
         _triggerProcessor = triggerProcessor;
+        _mediaSelectorsSegmenter = mediaSelectorsSegmenter;
     }
 
 
@@ -63,17 +69,29 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
                  media.getId(),
                  media.getMimeType());
 
-        if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
+        if (shouldProcessSelectors(media, context)) {
+            return _mediaSelectorsSegmenter.segmentMedia(media, context);
+        }
+        else if (shouldUseFeedForward(context)) {
             return _triggerProcessor.getTriggeredTracks(media, context)
                     .map(t -> createFeedForwardRequest(t, media, context))
                     .toList();
         }
-
-        var genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder().build();
-        var protobuf = createProtobuf(media, context, genericRequest);
-        return List.of(new DetectionRequest(protobuf));
+        else {
+            var genericRequest
+                    = DetectionProtobuf.DetectionRequest.GenericRequest.getDefaultInstance();
+            var protobuf = createProtobuf(media, context, genericRequest);
+            return List.of(new DetectionRequest(protobuf));
+        }
     }
 
+    private static boolean shouldProcessSelectors(Media media, DetectionContext context) {
+        return context.isFirstDetectionTask() && !media.getMediaSelectors().isEmpty();
+    }
+
+    private static boolean shouldUseFeedForward(DetectionContext context) {
+        return !context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context);
+    }
 
     private static DetectionProtobuf.DetectionRequest createProtobuf(
             Media media, DetectionContext context,

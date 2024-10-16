@@ -30,6 +30,8 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.nms.ServiceDescriptor;
 import org.mitre.mpf.rest.api.MpfResponse;
@@ -248,10 +250,7 @@ public class NodeController {
 
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
-		MpfResponse mpfResponse = new MpfResponse(
-				MpfResponse.RESPONSE_CODE_ERROR,
-				"Error while saving the node configuration. Please check server logs.");
-
+        MpfResponse mpfResponse;
 		boolean validAuth = false;
 
 		if (httpServletRequest != null) {
@@ -268,18 +267,18 @@ public class NodeController {
 				// saveNodeConfigSuccess will be set to true in the method below
 				// if successful
 				validAuth = true;
-				saveNodeManagerConfig(nodeManagerModels, mpfResponse);
+				mpfResponse = saveNodeManagerConfig(nodeManagerModels);
 			} else {
 				log.error("Invalid/non-admin user with name '{}' is attempting to save a new node configuration.",
 						authenticationModel.getUserPrincipalName());
-				mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
+				mpfResponse = MpfResponse.error(
 						"Node config changes not saved! You do not have the proper user privileges to make this change! Please log in as an admin user.");
 				// do not continue! - leads to false return
 			}
 		} else {
 			log.error("Null httpServletRequest - this should not happen.");
-			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
-			                       "Unknown error, please check the server logs or try the request again.");
+			mpfResponse = MpfResponse.error(
+                        "Unknown error, please check the server logs or try the request again.");
 			// do not continue! - leads to false return
 		}
 
@@ -293,12 +292,8 @@ public class NodeController {
 	@ResponseBody
 	@ResponseStatus(value = HttpStatus.CREATED) // return 201 for post
 	public MpfResponse saveNodeManagerConfigSession(@RequestBody List<NodeManagerModel> nodeManagerModels)
-			throws InterruptedException, IOException {
-		MpfResponse mpfResponse = new MpfResponse(
-				MpfResponse.RESPONSE_CODE_ERROR,
-				"Error while saving the node configuration. Please check server logs.");
-		saveNodeManagerConfig(nodeManagerModels, mpfResponse);
-		return mpfResponse;
+			throws IOException {
+		return saveNodeManagerConfig(nodeManagerModels);
 	}
 
 	/*
@@ -336,15 +331,15 @@ public class NodeController {
 
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
-		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while starting service. Please check server logs.");
+		var mpfResponse = new MutableObject<>(MpfResponse.error(
+                "Error while starting service. Please check server logs."));
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "start", serviceName,
 				mpfResponse);
 
 		//return 200 for successful post (there still could be an error in the
 		// 	nodeServiceStatusChangeResult) and 401 if bad auth
-		return new ResponseEntity<>(mpfResponse,
+		return new ResponseEntity<>(mpfResponse.getValue(),
 				validAuth ? HttpStatus.OK : HttpStatus.UNAUTHORIZED);
 	}
 
@@ -359,15 +354,15 @@ public class NodeController {
 
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
-		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while stopping service. Please check server logs.");
+        var mpfResponse = new MutableObject<>(MpfResponse.error(
+                "Error while stopping service. Please check server logs."));
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "stop", serviceName,
 				mpfResponse);
 
 		//return 200 for successful post (there still could be an error in the
 		//	nodeServiceStatusChangeResult) and 401 if bad auth
-		return new ResponseEntity<>(mpfResponse,
+		return new ResponseEntity<>(mpfResponse.getValue(),
 				validAuth ? HttpStatus.OK : HttpStatus.UNAUTHORIZED);
 	}
 
@@ -377,22 +372,16 @@ public class NodeController {
 	@ResponseStatus(value = HttpStatus.OK) // return 200 for successful post in this case
 	public MpfResponse startStopServiceSession(@PathVariable("startORstop") String startOrStopStr,
 			@PathVariable("serviceName") String serviceName) {
-
-		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while changing service state. Please check server logs.");
-
 		if (startOrStopStr.equals("start")) {
-			startService(serviceName, mpfResponse);
+			return startService(serviceName);
 		} else if (startOrStopStr.equals("stop")) {
-			shutdownService(serviceName, mpfResponse);
+			return shutdownService(serviceName);
 		} else {
 			String errorStr = "Invalid start or stop path variable of '" + startOrStopStr
 					+ "', the first path variable must be 'start' or 'stop'.";
 			log.error(errorStr);
-			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
+			return MpfResponse.error(errorStr);
 		}
-
-		return mpfResponse;
 	}
 
 	private DeployedNodeManagerModel getNodeManagerInfo() {
@@ -431,17 +420,16 @@ public class NodeController {
 		return nodeManagerPaletteMap;
 	}
 
-	private void saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels,
-			final MpfResponse mpfResponse) throws IOException, InterruptedException {
+	private MpfResponse saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
 
 		if (nodeManagerService.saveAndReloadNodeManagerConfig(nodeManagerModels)) {
 			log.info("Successfully updated the node config");
-			mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
+            return MpfResponse.success();
 		} else {
 			// should always access the nodeManagerConfigName resource and throw
 			// an exception before getting here
-			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
-			                       "Failed to access the node manager config resource.");
+			return MpfResponse.error(
+                    "Failed to access the node manager config resource.");
 		}
 	}
 
@@ -451,7 +439,7 @@ public class NodeController {
 	 * status change success or failure boolean and an error message
 	 */
 	private boolean startStopNodeService(HttpServletRequest httpServletRequest, String startOrStopStr,
-			String serviceName, MpfResponse mpfResponse) {
+			String serviceName, Mutable<MpfResponse> mpfResponse) {
 		boolean validAuth = false;
 
 		if (httpServletRequest != null && mpfResponse != null) {
@@ -469,14 +457,14 @@ public class NodeController {
 				log.error(
 						"Invalid/non-admin user with name '{}' is attempting to start or stop a service with name '{}'.",
 						authenticationModel.getUserPrincipalName(), serviceName);
-				mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
-						"Node service status not changed! You do not have the proper user privileges to make this change! Please log in as an admin user.");
+				mpfResponse.setValue(MpfResponse.error(
+						"Node service status not changed! You do not have the proper user privileges to make this change! Please log in as an admin user."));
 				// do not continue! - validAuth is false
 			}
 		} else {
 			log.error(
 					"Null httpServletRequest or nodeServiceStatusChangeResult - this should not happen. The issue must be due to incorrect usage of this method.");
-			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR, "Unknown error, please check the server logs.");
+			mpfResponse.setValue(MpfResponse.error("Unknown error, please check the server logs."));
 			// do not continue! - validAuth is false
 		}
 
@@ -485,14 +473,14 @@ public class NodeController {
 		// if we would like to start or stop the service
 		if (validAuth) {
 			if (startOrStopStr.equalsIgnoreCase("start")) {
-				startService(serviceName, mpfResponse);
+                mpfResponse.setValue(startService(serviceName));
 			} else if (startOrStopStr.equalsIgnoreCase("stop")) {
-				shutdownService(serviceName, mpfResponse);
+                mpfResponse.setValue(shutdownService(serviceName));
 			} else {
 				String errorStr = "Invalid start or stop option of '" + startOrStopStr
 						+ "', the option must be case insensitive 'start' or 'stop'.";
 				log.error(errorStr);
-				mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
+				mpfResponse.setValue(MpfResponse.error(errorStr));
 			}
 		}
 		// no need for else
@@ -500,28 +488,27 @@ public class NodeController {
 		return validAuth;
 	}
 
-	private void startService(String serviceName, final MpfResponse mpfResponse) {
+	private MpfResponse startService(String serviceName) {
 		log.debug("Try to start sevice with name: '{}'" + serviceName);
 		boolean result = nodeManagerStatus.startService(serviceName);
 		if (result) {
-			mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
+            return MpfResponse.success();
 		}
 		else {
-			mpfResponse.setMessage(
-					MpfResponse.RESPONSE_CODE_ERROR,
-					"Error starting the service with name '" + serviceName + "'. Please check the server logs.");
+			return MpfResponse.error(
+					"Error starting the service with name '" + serviceName
+                    + "'. Please check the server logs.");
 		}
 	}
 
-	private void shutdownService(String serviceName, final MpfResponse mpfResponse) {
+	private MpfResponse shutdownService(String serviceName) {
 		log.debug("Try to shut down sevice with name: '{}'" + serviceName);
 		boolean result = nodeManagerStatus.shutdownService(serviceName);
 		if (result) {
-			mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
+            return MpfResponse.success();
 		}
 		else {
-			mpfResponse.setMessage(
-					MpfResponse.RESPONSE_CODE_ERROR,
+			return MpfResponse.error(
 					"Error shutting down the service with name '" + serviceName + "'. Please check the server logs.");
 
 		}

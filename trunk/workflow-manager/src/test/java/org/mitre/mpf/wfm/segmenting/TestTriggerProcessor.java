@@ -435,6 +435,8 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 List.of(),
                 trackProps,
                 null,
+                null,
+                null,
                 null);
 
             _tracks.put(taskIdx, track);

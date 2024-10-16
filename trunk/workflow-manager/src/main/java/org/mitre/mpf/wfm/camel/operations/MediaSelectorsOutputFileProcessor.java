@@ -24,57 +24,15 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.wfm.camel.operations;
 
-package org.mitre.mpf.rest.api.util;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collector;
+// Need to use an interface here to prevent:
+// "Bean named 'mediaSelectorsOutputFileProcessor' is expected to be of type
+// 'org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor' but was actually of
+// type 'jdk.proxy2.$Proxy192'"
+public interface MediaSelectorsOutputFileProcessor {
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
-public class Utils {
-
-    private Utils() {
-    }
-
-    public static String trimAndUpper(String s) {
-        return s == null
-                ? null
-                : s.trim().toUpperCase();
-    }
-
-    public static String trim(String s) {
-        return s == null
-                ? null
-                : s.trim();
-    }
-
-
-    public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
-        return Optional.ofNullable(strings)
-                .stream()
-                .flatMap(Collection::stream)
-                .map(Utils::trimAndUpper)
-                .collect(collector);
-    }
-
-    public static ImmutableList<String> trimAndUpper(List<String> strings) {
-        return trimAndUpper(strings, ImmutableList.toImmutableList());
-    }
-
-    public static <T> ImmutableList<T> toImmutableList(Collection<T> collection) {
-        return Optional.ofNullable(collection)
-            .map(ImmutableList::copyOf)
-            .orElseGet(ImmutableList::of);
-    }
-
-    public static <K, V> ImmutableMap<K, V> toImmutableMap(Map<K, V> map) {
-        return Optional.ofNullable(map)
-            .map(ImmutableMap::copyOf)
-            .orElseGet(ImmutableMap::of);
-    }
+    public void createNoMatchOutputDocument(long jobId, Media media);
 }

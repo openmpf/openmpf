@@ -26,12 +26,11 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
 
 import javax.validation.Validator;
 import java.util.Collections;
@@ -45,16 +44,7 @@ import static org.mockito.Mockito.when;
 
 public class TestDescriptorValidator {
 
-    private ComponentDescriptorValidator _validator;
-
-    @Before
-    public void init() {
-        var springValidator = new LocalValidatorFactoryBean();
-        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
-        springValidator.afterPropertiesSet();
-        _validator = new ComponentDescriptorValidatorImpl(springValidator);
-    }
-
+    private ConstraintValidationService _validator = TestUtil.createConstraintValidator();
 
     @Test
     public void doesNotThrowExceptionWhenDescriptorHasNoViolations() throws InvalidComponentDescriptorException {
@@ -62,17 +52,19 @@ public class TestDescriptorValidator {
         when(mockSpringValidator.validate(notNull()))
                 .thenReturn(Collections.emptySet());
 
-        ComponentDescriptorValidator descriptorValidator = new ComponentDescriptorValidatorImpl(mockSpringValidator);
+        var descriptorValidator = new ConstraintValidationService(mockSpringValidator);
         var descriptor = new JsonComponentDescriptor(
                 null, null, null, null, null, null, null, null,
                 List.of(), null, List.of(), List.of(), List.of());
-        descriptorValidator.validate(descriptor);
+        descriptorValidator.validate(descriptor, InvalidComponentDescriptorException::new);
     }
 
 
     @Test
     public void canHandleValidDescriptor() throws InvalidComponentDescriptorException {
-        _validator.validate(TestDescriptorFactory.getWithCustomPipeline());
+        _validator.validate(
+                TestDescriptorFactory.getWithCustomPipeline(),
+                InvalidComponentDescriptorException::new);
     }
 
 
@@ -88,7 +80,7 @@ public class TestDescriptorValidator {
                 isEmpty("componentName"),
                 isNull("componentVersion"),
                 isNull("middlewareVersion"),
-                "sourceLanguage: must be java, c++, or python",
+                "sourceLanguage=\"null\": must be java, c++, or python",
                 "<root>: must contain batchLibrary, streamLibrary, or both",
                 isNull("algorithm"));
     }
@@ -110,9 +102,9 @@ public class TestDescriptorValidator {
         assertValidationErrors(
                 descriptor,
                 isNull("algorithm"),
-                isEmpty("environmentVariables[0].name"),
+                isNullForNotEmpty("environmentVariables[0].name"),
                 isNull("environmentVariables[0].value"),
-                "environmentVariables[1].sep: must be \":\" or null");
+                "environmentVariables[1].sep=\"asdf\": must be \":\" or null");
     }
 
 
@@ -136,7 +128,7 @@ public class TestDescriptorValidator {
                 isNull("algorithm"),
                 isEmpty("actions[1].description"),
                 isEmpty("actions[1].algorithm"),
-                isEmpty("actions[1].properties[0].name"),
+                isNullForNotEmpty("actions[1].properties[0].name"),
                 isNull("actions[1].properties[0].value"));
     }
 
@@ -145,7 +137,7 @@ public class TestDescriptorValidator {
     private void assertValidationErrors(JsonComponentDescriptor descriptor, String... expectedMessages) {
         assertTrue("No messages passed in to check", expectedMessages.length > 0);
         try {
-            _validator.validate(descriptor);
+            _validator.validate(descriptor, InvalidComponentDescriptorException::new);
             fail("Expected exception");
         }
         catch (InvalidComponentDescriptorException ex) {
@@ -166,10 +158,14 @@ public class TestDescriptorValidator {
 
 
     private static String isEmpty(String field) {
-       return field + ": may not be empty";
+        return "%s=\"\": may not be empty".formatted(field);
     }
 
     private static String isNull(String field) {
-        return field + ": may not be null" ;
+        return "%s=\"null\": may not be null".formatted(field);
+    }
+
+    private static String isNullForNotEmpty(String field) {
+        return "%s=\"null\": may not be empty".formatted(field);
     }
 }

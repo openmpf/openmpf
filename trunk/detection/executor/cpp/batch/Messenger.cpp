@@ -122,7 +122,7 @@ void Messenger::SendResponse(
             amq_meta.cms_priority,
             cms::Message::DEFAULT_TIME_TO_LIVE);
     session_->commit();
-    logger_.Info("Job response comitted.");
+    logger_.Info("Job response committed.");
 }
 
 

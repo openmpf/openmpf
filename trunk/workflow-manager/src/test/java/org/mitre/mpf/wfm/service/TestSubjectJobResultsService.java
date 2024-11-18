@@ -76,14 +76,11 @@ import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
-import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJobOutput;
 import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.springframework.security.util.FieldUtils;
 import org.springframework.transaction.TransactionStatus;
@@ -126,9 +123,6 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
     private Path _subjectOutputRoot;
 
-    @Captor
-    private ArgumentCaptor<DbSubjectJobOutput> _dbOutputCaptor;
-
     private boolean _jobShouldBeSaved = true;
 
     @Before
@@ -152,18 +146,12 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         if (_jobShouldBeSaved) {
             verify(_mockSubjectJobRepo)
                 .save(argThat(j -> j.getId() == JOB_ID));
-
-            verify(_mockSubjectJobRepo)
-                .saveOutput(argThat(j -> !j.getOutput().isBlank()));
-
             verify(_mockJmsUtils)
                 .deleteSubjectCancelRoute(JOB_ID, COMPONENT_NAME);
         }
         else {
             verify(_mockSubjectJobRepo, never())
                 .save(any());
-            verify(_mockSubjectJobRepo, never())
-                .saveOutput(any());
         }
     }
 
@@ -203,7 +191,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         var pbResult = createResultProtobuf();
 
         _subjectJobResultsService.completeJob(JOB_ID, pbResult);
-        verifyOutputOnDiskAndInDb();
+        verifyOutputOnDisk();
 
         assertThat(dbJob.getCallbackStatus()).isEqualTo(CallbackStatus.notRequested());
         assertCorrectJobResultsSaved(dbJob, null ,null);
@@ -234,7 +222,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
             DbSubjectJob dbJob,
             URI callbackUri,
             CallbackMethod callbackMethod) throws IOException {
-        var jobResults = verifyOutputOnDiskAndInDb();
+        var jobResults = verifyOutputOnDisk();
 
         var expectedRequest = new SubjectJobRequest(
                 COMPONENT_NAME,
@@ -340,17 +328,9 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
             .isInstanceOf(WfmProcessingException.class)
             .hasCauseInstanceOf(NoSuchFileException.class);
 
-        verify(_mockSubjectJobRepo)
-            .saveOutput(_dbOutputCaptor.capture());
-
-        var dbJobOutput = _dbOutputCaptor.getValue();
-        var dbResult = _objectMapper.readValue(dbJobOutput.getOutput(), SubjectJobResult.class);
-
-        assertThat(dbResult.job().errors())
+        assertThat(dbJob.getErrors())
             .singleElement(Assertions.STRING)
             .contains("Failed to write output object");
-
-        assertThat(dbJob.getErrors()).containsExactlyInAnyOrderElementsOf(dbResult.job().errors());
 
         assertCallbackSent(dbJob, callbackFuture, transactionFuture);
     }
@@ -370,7 +350,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                 .isEqualTo(DbCancellationState.CANCELLED_BY_USER);
         assertJobCompletedInThePast(dbJob);
 
-        var jobResult = verifyOutputOnDiskAndInDb();
+        var jobResult = verifyOutputOnDisk();
 
         var expectedRequest = new SubjectJobRequest(
                 COMPONENT_NAME,
@@ -450,10 +430,8 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
     }
 
 
-    private SubjectJobResult verifyOutputOnDiskAndInDb() throws IOException {
+    private SubjectJobResult verifyOutputOnDisk() throws IOException {
         var fileContent = Files.readString(_subjectOutputRoot.resolve(JOB_ID + ".json"));
-        verify(_mockSubjectJobRepo)
-            .saveOutput(argThat(a -> a.getOutput().equals(fileContent)));
         var result = _objectMapper.readValue(fileContent, SubjectJobResult.class);
 
         assertThat(result.job().callbackStatus())
@@ -476,7 +454,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         assertThat(job.getCancellationState()).isEqualTo(DbCancellationState.NOT_CANCELLED);
         assertJobCompletedInThePast(job);
 
-        var jobResult = verifyOutputOnDiskAndInDb();
+        var jobResult = verifyOutputOnDisk();
 
         assertThat(jobResult.entities()).isNull();
         assertThat(jobResult.relationships()).isNull();

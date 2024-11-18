@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.data.access;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -40,7 +42,6 @@ import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
-import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJobOutput;
 import org.mitre.mpf.wfm.data.entities.persistent.QDbSubjectJob;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QPageRequest;
@@ -48,7 +49,6 @@ import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSortedSet;
 import com.querydsl.jpa.JPQLQueryFactory;
@@ -58,8 +58,6 @@ import com.querydsl.jpa.JPQLQueryFactory;
 public class SubjectJobRepo {
     private final JobRepo _jobRepo;
 
-    private final JobOutputRepo _outputRepo;
-
     private final ObjectMapper _objectMapper;
 
     private final JPQLQueryFactory _queryFactory;
@@ -67,11 +65,9 @@ public class SubjectJobRepo {
     @Inject
     SubjectJobRepo(
             JobRepo jobRepo,
-            JobOutputRepo outputRepo,
             ObjectMapper objectMapper,
             JPQLQueryFactory queryFactory) {
         _jobRepo = jobRepo;
-        _outputRepo = outputRepo;
         _objectMapper = objectMapper;
         _queryFactory = queryFactory;
     }
@@ -120,26 +116,21 @@ public class SubjectJobRepo {
         return _jobRepo.findAll(pageRequest).stream();
     }
 
-    public void saveOutput(DbSubjectJobOutput subjectTrackingJobOutput) {
-        _outputRepo.save(subjectTrackingJobOutput);
-    }
-
 
     public Optional<SubjectJobResult> getOutput(long jobId) {
-        return getOutputString(jobId)
-            .map(s -> {
+        return tryFindById(jobId)
+            .flatMap(DbSubjectJob::getOutputUri)
+            .map(uri -> {
                 try {
-                    return _objectMapper.readValue(s, SubjectJobResult.class);
+                    var file =  Path.of(uri).toFile();
+                    return _objectMapper.readValue(file, SubjectJobResult.class);
                 }
-                catch (JsonProcessingException e) {
+                catch (IOException e) {
                     throw new WfmProcessingException(e);
                 }
             });
     }
 
-    public Optional<String> getOutputString(long jobId) {
-        return _outputRepo.findById(jobId).map(j -> j.getOutput());
-    }
 
     public void cancelIncompleteJobs() {
         var job = QDbSubjectJob.dbSubjectJob;
@@ -157,11 +148,5 @@ public class SubjectJobRepo {
     private static interface JobRepo extends
             JpaRepository<DbSubjectJob, Long>,
             QuerydslPredicateExecutor<DbSubjectJob> {
-    }
-
-    // Store output in different table so that job information can be retrieved without also
-    // getting the job output.
-    @Repository
-    private static interface JobOutputRepo extends JpaRepository<DbSubjectJobOutput, Long> {
     }
 }

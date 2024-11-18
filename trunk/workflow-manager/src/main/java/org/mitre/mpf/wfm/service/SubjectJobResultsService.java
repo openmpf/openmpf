@@ -49,7 +49,6 @@ import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
-import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJobOutput;
 import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -59,7 +58,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -203,32 +201,12 @@ public class SubjectJobResultsService {
             Files.writeString(resultsPath, json);
             LOG.info("Wrote job results to {}", resultsPath);
             job.setOutputUri(resultsPath.toUri());
-            _subjectJobRepo.saveOutput(new DbSubjectJobOutput(job, json));
         }
         catch (IOException e) {
             var message = "Failed to write output object to disk due to: " + e;
             job.addError(message);
-            var updatedResults = updateSubjectJobResult(job, results);
-            try {
-                var json = _objectWriter.writeValueAsString(updatedResults);
-                _subjectJobRepo.saveOutput(new DbSubjectJobOutput(job, json));
-            }
-            catch (JsonProcessingException suppressed) {
-                e.addSuppressed(suppressed);
-            }
-            throw new WfmProcessingException(e);
+            throw new WfmProcessingException(message, e);
         }
-    }
-
-    private static SubjectJobResult updateSubjectJobResult(
-            DbSubjectJob job, SubjectJobResult originalResults) {
-        var details = SubjectJobRepo.getJobDetails(job);
-        return new SubjectJobResult(
-                details,
-                originalResults.properties(),
-                originalResults.entities(),
-                originalResults.relationships(),
-                originalResults.openmpfVersion());
     }
 
 

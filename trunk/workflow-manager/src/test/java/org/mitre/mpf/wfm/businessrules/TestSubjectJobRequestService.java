@@ -50,6 +50,8 @@ import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import javax.validation.Validator;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -61,6 +63,7 @@ import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
@@ -93,6 +96,12 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
 
     @Mock
     private SubjectJobToProtobufConverter _mockSubjectJobToProtobufConverter;
+
+    @Mock
+    private SubjectComponentRepo _mockSubjectComponentRepo;
+
+    @Mock
+    private Validator _mockValidator;
 
     @Mock
     private JmsUtils _mockJmsUtils;
@@ -154,6 +163,7 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
     public void testRunJob() {
         setupTransaction();
         setupMockSave();
+        setupComponentRepo();
 
         var jobSentToCamelFuture = ThreadUtil.<Exchange>newFuture();
         when(_mockProducerTemplate.asyncSend(
@@ -234,6 +244,7 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
     public void testRunJobCanHandleFutureException() {
         setupMockSave();
         setupDetectionFutures();
+        setupComponentRepo();
         var pbJobFuture = setupConverter();
 
         var returnedJobId = _subjectJobRequestService.runJob(_jobRequest);
@@ -252,6 +263,7 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
     public void testRunJobCanHandleDbException() {
         setupMockSave();
         setupDetectionFutures();
+        setupComponentRepo();
         var pbJobFuture = setupConverter();
 
         var returnedJobId = _subjectJobRequestService.runJob(_jobRequest);
@@ -297,6 +309,11 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
                 FieldUtils.setProtectedFieldValue("id", dbJob, 130L);
                 return dbJob;
             });
+    }
+
+    private void setupComponentRepo() {
+        when(_mockSubjectComponentRepo.existsById("TEST_COMPONENT"))
+            .thenReturn(true);
     }
 
     private CompletableFuture<SubjectProtobuf.SubjectTrackingJob> setupConverter() {

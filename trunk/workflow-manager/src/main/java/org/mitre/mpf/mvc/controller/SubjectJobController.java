@@ -37,9 +37,12 @@ import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
 import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
 import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.subject.SubjectJobSummary;
+import org.mitre.mpf.wfm.businessrules.InvalidJobRequestException;
 import org.mitre.mpf.wfm.businessrules.SubjectJobRequestService;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -61,6 +64,8 @@ import software.amazon.awssdk.http.HttpStatusCode;
 @RestController
 @RequestMapping(path = "/subject/jobs", produces = "application/json")
 public class SubjectJobController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SubjectJobController.class);
 
     private final SubjectJobRequestService _subjectJobRequestService;
 
@@ -110,10 +115,17 @@ public class SubjectJobController {
     @PostMapping
     @ExposedMapping
     @ApiOperation("Creates a new subject tracking job")
-    public ResponseEntity<Void> createJob(
+    public ResponseEntity<Object> createJob(
             @RequestBody SubjectJobRequest jobRequest) {
-        var jobId = _subjectJobRequestService.runJob(jobRequest);
-        return MdcUtil.job(jobId, PostResponseUtil::createdResponse);
+        try {
+            var jobId = _subjectJobRequestService.runJob(jobRequest);
+            return MdcUtil.job(jobId, PostResponseUtil::createdResponse);
+        }
+        catch (InvalidJobRequestException e) {
+            var msg = "Failed to create job due to: " + e;
+            LOG.error(msg, e);
+            return ResponseEntity.badRequest().body(new MessageModel(msg));
+        }
     }
 
 

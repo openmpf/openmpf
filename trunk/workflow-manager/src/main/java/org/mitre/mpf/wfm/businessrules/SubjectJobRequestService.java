@@ -27,9 +27,13 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
+import static java.util.stream.Collectors.joining;
+
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
 
 import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -38,6 +42,7 @@ import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.camel.routes.SubjectJobRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
@@ -61,6 +66,10 @@ public class SubjectJobRequestService {
 
     private final SubjectJobToProtobufConverter _subjectJobToProtobufConverter;
 
+    private final SubjectComponentRepo _subjectComponentRepo;
+
+    private final Validator _validator;
+
     private final JmsUtils _jmsUtils;
 
     private final PropertiesUtil _propertiesUtil;
@@ -77,6 +86,8 @@ public class SubjectJobRequestService {
                 InProgressBatchJobsService inProgressDetectionJobsService,
                 PastJobResultsService pastJobResultsService,
                 SubjectJobToProtobufConverter subjectJobToProtobufConverter,
+                SubjectComponentRepo subjectComponentRepo,
+                Validator validator,
                 JmsUtils jmsUtils,
                 PropertiesUtil propertiesUtil,
                 ProducerTemplate producerTemplate,
@@ -86,6 +97,8 @@ public class SubjectJobRequestService {
         _inProgressDetectionJobsService = inProgressDetectionJobsService;
         _pastJobResultsService = pastJobResultsService;
         _subjectJobToProtobufConverter = subjectJobToProtobufConverter;
+        _subjectComponentRepo = subjectComponentRepo;
+        _validator = validator;
         _jmsUtils = jmsUtils;
         _propertiesUtil = propertiesUtil;
         _producerTemplate = producerTemplate;
@@ -94,6 +107,7 @@ public class SubjectJobRequestService {
 
 
     public long runJob(SubjectJobRequest request) {
+        validateJobRequest(request);
         long jobId = addJobToDb(request).getId();
         try (var ctx = CloseableMdc.job(jobId)) {
             var futures = request.detectionJobIds().stream()
@@ -111,6 +125,31 @@ public class SubjectJobRequestService {
     public void cancel(long jobId) {
         var job = _subjectJobRepo.findById(jobId);
         _jmsUtils.cancelSubjectJob(jobId, job.getComponentName());
+    }
+
+
+    private void validateJobRequest(SubjectJobRequest request) {
+        var validationErrors = _validator.validate(request);
+        if (!validationErrors.isEmpty()) {
+            var errorMsg = validationErrors.stream()
+                .map(cv -> createViolationMessage(cv))
+                .sorted()
+                .collect(joining("\n", "The following fields have errors:\n", ""));
+            throw new InvalidJobRequestException(errorMsg);
+        }
+        if (!_subjectComponentRepo.existsById(request.componentName().toUpperCase())) {
+            throw new InvalidJobRequestException(
+                    "No component named \"%s\" is registered.".formatted(request.componentName()));
+        }
+    }
+
+    private static String createViolationMessage(ConstraintViolation<?> violation) {
+        var violationPath = violation.getPropertyPath().toString();
+
+        var errorMsgPath = violationPath.isEmpty()
+                ? "<root>"
+                : violationPath;
+        return errorMsgPath + ": " + violation.getMessage();
     }
 
 

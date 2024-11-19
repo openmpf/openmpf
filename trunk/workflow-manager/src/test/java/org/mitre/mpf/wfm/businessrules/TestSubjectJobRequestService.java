@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -130,7 +131,7 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
     private SubjectJobRequest _jobRequest = new SubjectJobRequest(
             "TEST_COMPONENT",
             OptionalInt.of(2),
-            List.of(101L, 102L),
+            Set.of(101L, 102L),
             Map.of("JOB_PROP", "JOB_VALUE"),
             Optional.of(URI.create("http://localhost:1234")),
             Optional.of(CallbackMethod.POST),
@@ -182,7 +183,7 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
         var output101 = mock(JsonOutputObject.class);
 
         var output102 = mock(JsonOutputObject.class);
-        when(_mockPastJobResultsService.getJobResults(102L))
+        when(_mockPastJobResultsService.getDetectionJobResults(102L))
                 .thenReturn(output102);
 
         var pbJobFuture = setupConverter();

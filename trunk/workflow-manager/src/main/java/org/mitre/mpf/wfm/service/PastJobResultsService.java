@@ -32,6 +32,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import javax.inject.Inject;
 
@@ -40,6 +42,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -85,8 +88,8 @@ public class PastJobResultsService {
     }
 
 
-    public JsonOutputObject getJobResults(long jobId) {
-        try (var is = getJobResultsStream(jobId)) {
+    public JsonOutputObject getDetectionJobResults(long jobId) {
+        try (var is = getDetectionJobResultsStream(jobId)) {
             return _objectMapper.readValue(is, JsonOutputObject.class);
         }
         catch (IOException e) {
@@ -96,11 +99,27 @@ public class PastJobResultsService {
     }
 
 
-    public InputStream getJobResultsStream(long jobId) {
+    public InputStream getDetectionJobResultsStream(long jobId) {
         return getLocalJobResultsStream(jobId)
             .or(() -> getTiesDbJobResultsStream(jobId))
             .orElseThrow(() -> new WfmProcessingException(
                     "Job %s was not found in the database." /* or TiesDb. */.formatted(jobId)));
+    }
+
+
+    public InputStream getJobResultsStream(DbSubjectJob dbJob) {
+        if (!dbJob.isComplete()) {
+            throw new WfmProcessingException(
+                    "Can not get results for job %s because it is still running."
+                    .formatted(dbJob.getId()));
+        }
+        var outputUri = dbJob.getOutputUri().orElseThrow(
+                () -> new WfmProcessingException(
+                    "Job %s did not produce any output.".formatted(dbJob.getId())));
+        return getLocalJobResultsStream(
+                dbJob.getId(),
+                outputUri,
+                () -> _aggregateJobPropertiesUtil.getCombinedProperties(dbJob));
     }
 
 
@@ -116,37 +135,45 @@ public class PastJobResultsService {
         }
 
         var outputObjectUri = URI.create(jobRequest.getOutputObjectPath());
-        if ("file".equalsIgnoreCase(outputObjectUri.getScheme())) {
+        var result = getLocalJobResultsStream(jobId, outputObjectUri, () -> {
+            var job = _jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+            return _aggregateJobPropertiesUtil.getCombinedProperties(job);
+        });
+        return Optional.of(result);
+    }
+
+
+    private InputStream getLocalJobResultsStream(
+            long jobId,
+            URI outputUri,
+            Supplier<UnaryOperator<String>> propsSupplier) {
+        if ("file".equalsIgnoreCase(outputUri.getScheme())) {
             try {
-                return Optional.of(Files.newInputStream(Path.of(outputObjectUri)));
+                return Files.newInputStream(Path.of(outputUri));
             }
             catch (IOException e) {
                 throw new WfmProcessingException(
                     "Failed to open the results for job %s at \"%s\" due to: %s"
-                    .formatted(jobId, outputObjectUri, e), e);
+                    .formatted(jobId, outputUri, e), e);
             }
         }
 
-        var job = _jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
-        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job);
+        var combinedProperties = propsSupplier.get();
         try {
             if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
-                return Optional.of(_s3StorageBackend.getFromS3(
-                    jobRequest.getOutputObjectPath(), combinedProperties));
+                return _s3StorageBackend.getFromS3(outputUri.toString(), combinedProperties);
             }
             else {
-                var request = new HttpGet(outputObjectUri);
+                var request = new HttpGet(outputUri);
                 var future = _httpClient.executeRequest(
                         request, _propertiesUtil.getHttpCallbackRetryCount());
-
-                var result = ThreadUtil.join(future).getEntity().getContent();
-                return Optional.of(result);
+                return ThreadUtil.join(future).getEntity().getContent();
             }
         }
         catch (StorageException | IOException e) {
             throw new WfmProcessingException(
                 "Failed to get the results for job %s at \"%s\" due to: %s"
-                .formatted(jobId, outputObjectUri, e), e);
+                .formatted(jobId, outputUri, e), e);
         }
     }
 

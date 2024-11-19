@@ -77,6 +77,9 @@ public class SubjectComponentRegistrationRouteBuilder extends RouteBuilder {
             var descriptor = _objectMapper.readValue(
                     exchange.getIn().getBody(String.class),
                     SubjectComponentDescriptor.class);
+            LOG.info(
+                    "Received subject component registration request for \"{}\".",
+                    descriptor.componentName());
             var registrationResult = _componentService.registerComponent(descriptor);
             response.setHeader("success", true);
             response.setHeader("detail", registrationResult.description);

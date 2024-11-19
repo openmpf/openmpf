@@ -27,24 +27,6 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Table;
-import org.apache.commons.lang3.mutable.Mutable;
-import org.mitre.mpf.interop.JsonIssueDetails;
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.ThreadUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -52,6 +34,30 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Semaphore;
+import java.util.function.Function;
+
+import javax.inject.Inject;
+
+import org.apache.commons.lang3.mutable.Mutable;
+import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.IssueSources;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Table;
 
 @Service
 public class StorageService {
@@ -212,6 +218,37 @@ public class StorageService {
             futures.add(future);
         }
         ThreadUtil.allOf(futures).join();
+    }
+
+
+    public URI store(
+            SubjectJobResult jobResult,
+            Function<String, SubjectJobResult> addWarningFunc) throws IOException {
+        Exception remoteException = null;
+        try {
+            for (var remoteBackend : _remoteBackends) {
+                if (remoteBackend.canStore(jobResult)) {
+                    return remoteBackend.store(jobResult);
+                }
+            }
+        }
+        catch (IOException | StorageException ex) {
+            remoteException = ex;
+            var warning =
+                    "The output object was stored locally because storing it remotely failed "
+                    + "due to: " + ex;
+            LOG.warn(warning, ex);
+            jobResult = addWarningFunc.apply(warning);
+        }
+        try {
+            return _localBackend.store(jobResult);
+        }
+        catch (IOException localException) {
+            if (remoteException != null) {
+                localException.addSuppressed(remoteException);
+            }
+            throw localException;
+        }
     }
 
 

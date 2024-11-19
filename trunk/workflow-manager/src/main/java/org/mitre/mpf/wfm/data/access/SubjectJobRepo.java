@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.wfm.data.access;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -38,7 +36,6 @@ import javax.transaction.Transactional;
 
 import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
 import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
-import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
@@ -58,8 +55,6 @@ import com.querydsl.jpa.JPQLQueryFactory;
 public class SubjectJobRepo {
     private final JobRepo _jobRepo;
 
-    private final ObjectMapper _objectMapper;
-
     private final JPQLQueryFactory _queryFactory;
 
     @Inject
@@ -68,7 +63,6 @@ public class SubjectJobRepo {
             ObjectMapper objectMapper,
             JPQLQueryFactory queryFactory) {
         _jobRepo = jobRepo;
-        _objectMapper = objectMapper;
         _queryFactory = queryFactory;
     }
 
@@ -114,21 +108,6 @@ public class SubjectJobRepo {
         var job = QDbSubjectJob.dbSubjectJob;
         var pageRequest = QPageRequest.of(page - 1, pageLen, job.id.desc());
         return _jobRepo.findAll(pageRequest).stream();
-    }
-
-
-    public Optional<SubjectJobResult> getOutput(long jobId) {
-        return tryFindById(jobId)
-            .flatMap(DbSubjectJob::getOutputUri)
-            .map(uri -> {
-                try {
-                    var file =  Path.of(uri).toFile();
-                    return _objectMapper.readValue(file, SubjectJobResult.class);
-                }
-                catch (IOException e) {
-                    throw new WfmProcessingException(e);
-                }
-            });
     }
 
 

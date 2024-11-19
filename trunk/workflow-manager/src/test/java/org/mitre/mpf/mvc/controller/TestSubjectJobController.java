@@ -40,12 +40,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.hamcrest.BaseMatcher;
@@ -68,7 +70,9 @@ import org.mitre.mpf.wfm.businessrules.SubjectJobRequestService;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
+import org.mitre.mpf.wfm.service.PastJobResultsService;
 import org.mitre.mpf.wfm.util.CallbackStatus;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.http.MediaType;
@@ -89,10 +93,13 @@ public class TestSubjectJobController extends MockitoTest.Strict {
     @Mock
     private SubjectJobRepo _mockSubjectJobRepo;
 
+    @Mock
+    private PastJobResultsService _mockPastJobResultsService;
+
     @Before
     public void setup() {
         var controller = new SubjectJobController(
-                _mockSubjectJobRequestService, _mockSubjectJobRepo);
+                _mockSubjectJobRequestService, _mockSubjectJobRepo, _mockPastJobResultsService);
         _mockMvc = TestUtil.initMockMvc(controller);
     }
 
@@ -165,7 +172,7 @@ public class TestSubjectJobController extends MockitoTest.Strict {
         var expectedRequest = new SubjectJobRequest(
                 "ExampleComponent",
                 OptionalInt.of(7),
-                List.of(1L, 2L, 3L),
+                Set.of(1L, 2L, 3L),
                 Map.of("PROP", "VALUE"),
                 Optional.of(URI.create("http://localhost:4321")),
                 Optional.of(CallbackMethod.POST),
@@ -225,27 +232,15 @@ public class TestSubjectJobController extends MockitoTest.Strict {
         _mockMvc.perform(get("/subject/jobs/654/output"))
             .andExpect(status().isNotFound());
 
-        var tracks = Map.of("TRACK_TYPE", List.of("TRACK1", "TRACK2"));
-        var entity = new Entity(
-            "TEST_ID",
-            0.9,
-            tracks,
-            Map.of("ENTITY_PROP", "ENTITY_VALUE"));
+        var jobResult = createSubjectJobResult();
+        var jsonBytes = ObjectMapperFactory.customObjectMapper().writeValueAsBytes(jobResult);
 
-        var relationship = new Relationship(
-                List.of("ENTITY_1", "ENTITY_2"),
-                List.of(new MediaReference("MEDIA_1", List.of(10L, 11L, 12L))),
-                Map.of("RELATIONSHIP_PROP", "RELATIONSHIP_VALUE"));
+        var dbJob = new DbSubjectJob();
+        when(_mockSubjectJobRepo.tryFindById(654))
+            .thenReturn(Optional.of(dbJob));
+        when(_mockPastJobResultsService.getJobResultsStream(dbJob))
+                .thenReturn(new ByteArrayInputStream(jsonBytes));
 
-        var jobResult = new SubjectJobResult(
-                createJobDetails(),
-                Map.of("JOB_OUT_PROP", "JOB_OUT_VALUE"),
-                Map.of("ENTITY_TYPE", List.of(entity)),
-                Map.of("PROXIMITY", List.of(relationship)),
-                "X.Y.Z");
-
-        when(_mockSubjectJobRepo.getOutput(654))
-            .thenReturn(Optional.of(jobResult));
 
 
         var resultActions = _mockMvc.perform(get("/subject/jobs/654/output"))
@@ -277,13 +272,34 @@ public class TestSubjectJobController extends MockitoTest.Strict {
     }
 
 
+    public static SubjectJobResult createSubjectJobResult() {
+        var tracks = Map.of("TRACK_TYPE", List.of("TRACK1", "TRACK2"));
+        var entity = new Entity(
+            "TEST_ID",
+            0.9,
+            tracks,
+            Map.of("ENTITY_PROP", "ENTITY_VALUE"));
+
+        var relationship = new Relationship(
+                List.of("ENTITY_1", "ENTITY_2"),
+                List.of(new MediaReference("MEDIA_1", List.of(10L, 11L, 12L))),
+                Map.of("RELATIONSHIP_PROP", "RELATIONSHIP_VALUE"));
+
+        return new SubjectJobResult(
+                createJobDetails(),
+                Map.of("JOB_OUT_PROP", "JOB_OUT_VALUE"),
+                Map.of("ENTITY_TYPE", List.of(entity)),
+                Map.of("PROXIMITY", List.of(relationship)),
+                "X.Y.Z");
+    }
+
     private static SubjectJobDetails createJobDetails() {
         return new SubjectJobDetails(
                 123L,
                 new SubjectJobRequest(
                         "ExampleComponent",
                         OptionalInt.of(8),
-                        List.of(1L, 2L, 3L),
+                        Set.of(1L, 2L, 3L),
                         Map.of("PROP", "VALUE"),
                         Optional.of(URI.create("http://localhost:1234")),
                         Optional.of(CallbackMethod.POST),
@@ -294,7 +310,7 @@ public class TestSubjectJobController extends MockitoTest.Strict {
                 CancellationState.NOT_CANCELLED,
                 ImmutableSortedSet.of(),
                 ImmutableSortedSet.of("TEST_WARNING"),
-                Optional.empty(),
+                Optional.of(URI.create("file:///fake/path")),
                 CallbackStatus.jobRunning());
     }
 

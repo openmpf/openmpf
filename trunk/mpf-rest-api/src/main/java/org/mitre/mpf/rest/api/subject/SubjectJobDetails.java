@@ -42,16 +42,20 @@ public record SubjectJobDetails(
         CancellationState cancellationState,
         SortedSet<String> errors,
         SortedSet<String> warnings,
+
+        // @JsonView is being used to prevent the "outputUri" and "callbackStatus" fields from
+        // appearing in the JSON output object.
+        @JsonView(RestView.class)
         Optional<URI> outputUri,
 
-        // @JsonView is being used to prevent the "callbackStatus" field from appearing in the JSON
-        // output object. The callback occurs after the output object is written, so the callback
-        // status is not known at the time the output object is created.
+        // The callback occurs after the output object is written, so the callback status is not
+        // known at the time the output object is created.
         @JsonView(RestView.class)
         String callbackStatus) {
 
 
-    // When this view is used, callbackStatus will not be included when writing out the JSON.
+    // When this view is used, outputUri and callbackStatus will not be included when writing out
+    // the JSON.
     public interface OutputObjectView {
     }
 

@@ -30,7 +30,6 @@ import static java.util.stream.Collectors.toMap;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +41,6 @@ import org.mitre.mpf.rest.api.subject.CallbackMethod;
 import org.mitre.mpf.rest.api.subject.Entity;
 import org.mitre.mpf.rest.api.subject.Relationship;
 import org.mitre.mpf.rest.api.subject.Relationship.MediaReference;
-import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
 import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
@@ -58,10 +56,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 @Component
 public class SubjectJobResultsService {
 
@@ -69,7 +63,7 @@ public class SubjectJobResultsService {
 
     private final PropertiesUtil _propertiesUtil;
 
-    private final ObjectWriter _objectWriter;
+    private final StorageService _storageService;
 
     private final SubjectJobRepo _subjectJobRepo;
 
@@ -82,16 +76,13 @@ public class SubjectJobResultsService {
     @Inject
     SubjectJobResultsService(
             PropertiesUtil propertiesUtil,
-            ObjectMapper objectMapper,
+            StorageService storageService,
             SubjectJobRepo subjectJobRepo,
             JmsUtils jmsUtils,
             JobCompleteCallbackService jobCompleteCallbackService,
             TransactionTemplate transactionTemplate) {
         _propertiesUtil = propertiesUtil;
-        _objectWriter = objectMapper
-                .copy()
-                .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
-                .writerWithView(SubjectJobDetails.OutputObjectView.class);
+        _storageService = storageService;
         _subjectJobRepo = subjectJobRepo;
         _jmsUtils = jmsUtils;
         _jobCompleteCallbackService = jobCompleteCallbackService;
@@ -195,18 +186,28 @@ public class SubjectJobResultsService {
 
     private void storeResults(DbSubjectJob job, SubjectJobResult results) {
         try {
-            var json = _objectWriter.writeValueAsString(results);
-            var resultsPath = _propertiesUtil.getSubjectTrackingResultsDir()
-                    .resolve(job.getId() + ".json");
-            Files.writeString(resultsPath, json);
-            LOG.info("Wrote job results to {}", resultsPath);
-            job.setOutputUri(resultsPath.toUri());
+            var outputUri = _storageService.store(results, w -> addWarning(w, job, results));
+            job.setOutputUri(outputUri);
         }
         catch (IOException e) {
             var message = "Failed to write output object to disk due to: " + e;
             job.addError(message);
             throw new WfmProcessingException(message, e);
         }
+    }
+
+    private static SubjectJobResult addWarning(
+            String warning,
+            DbSubjectJob job,
+            SubjectJobResult originalResults) {
+        job.addWarning(warning);
+        var details = SubjectJobRepo.getJobDetails(job);
+        return new SubjectJobResult(
+                details,
+                originalResults.properties(),
+                originalResults.entities(),
+                originalResults.relationships(),
+                originalResults.openmpfVersion());
     }
 
 

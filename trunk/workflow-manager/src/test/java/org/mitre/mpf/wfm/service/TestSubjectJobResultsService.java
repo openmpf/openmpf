@@ -30,9 +30,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -40,27 +40,23 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.apache.http.HttpResponse;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.subject.CallbackMethod;
 import org.mitre.mpf.rest.api.subject.CancellationState;
 import org.mitre.mpf.rest.api.subject.Entity;
@@ -78,16 +74,16 @@ import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.JmsUtils;
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.springframework.security.util.FieldUtils;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSortedSet;
 
 public class TestSubjectJobResultsService extends MockitoTest.Strict {
@@ -96,15 +92,15 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
     private static final String COMPONENT_NAME = "MY_COMPONENT";
 
-    private static final BiPredicate<Instant, Instant> INSTANT_EQ
-            = TestSubjectJobResultsService::equalAfterTruncate;
+    private static final URI OUTPUT_URI = URI.create("file:///fake/output/321.json");
 
     private SubjectJobResultsService _subjectJobResultsService;
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
 
-    private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
+    @Mock
+    private StorageService _mockStorageService;
 
     @Mock
     private SubjectJobRepo _mockSubjectJobRepo;
@@ -118,22 +114,16 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
     @Mock
     private TransactionTemplate _mockTransactionTemplate;
 
-    @Rule
-    public TemporaryFolder _tempFolder = new TemporaryFolder();
-
-    private Path _subjectOutputRoot;
+    @Captor
+    private ArgumentCaptor<SubjectJobResult> _storedResultCaptor;
 
     private boolean _jobShouldBeSaved = true;
 
     @Before
-    public void setup() throws IOException {
-        _subjectOutputRoot = _tempFolder.newFolder("subject").toPath();
-        lenient().when(_mockPropertiesUtil.getSubjectTrackingResultsDir())
-            .thenReturn(_subjectOutputRoot);
-
+    public void setup() {
         _subjectJobResultsService = new SubjectJobResultsService(
                 _mockPropertiesUtil,
-                _objectMapper,
+                _mockStorageService,
                 _mockSubjectJobRepo,
                 _mockJmsUtils,
                 _mockCallbackService,
@@ -172,6 +162,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         var pbResult = createResultProtobuf();
         var responseFuture = setupCallbackService(dbJob);
         var transactionDoneFuture = setupTransaction();
+        setUpStorageService();
 
         _subjectJobResultsService.completeJob(JOB_ID, pbResult);
 
@@ -189,9 +180,9 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         var dbJob = createDbJob(null);
         dbJob.setRetrievedDetectionJobs(true);
         var pbResult = createResultProtobuf();
+        setUpStorageService();
 
         _subjectJobResultsService.completeJob(JOB_ID, pbResult);
-        verifyOutputOnDisk();
 
         assertThat(dbJob.getCallbackStatus()).isEqualTo(CallbackStatus.notRequested());
         assertCorrectJobResultsSaved(dbJob, null ,null);
@@ -221,13 +212,11 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
     private void assertCorrectJobResultsSaved(
             DbSubjectJob dbJob,
             URI callbackUri,
-            CallbackMethod callbackMethod) throws IOException {
-        var jobResults = verifyOutputOnDisk();
-
+            CallbackMethod callbackMethod) {
         var expectedRequest = new SubjectJobRequest(
                 COMPONENT_NAME,
                 OptionalInt.of(6),
-                List.of(4L, 5L, 6L),
+                Set.of(4L, 5L, 6L),
                 Map.of("TEST_PROP", "TEST_VALUE"),
                 Optional.ofNullable(callbackUri),
                 Optional.ofNullable(callbackMethod),
@@ -243,7 +232,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                 ImmutableSortedSet.of("COMPONENT_ERROR"),
                 ImmutableSortedSet.of(),
                 Optional.empty(),
-                null);
+                "JOB RUNNING");
 
         var expectedEntity = new Entity(
                 "ENTITY_1_ID",
@@ -264,12 +253,14 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                 Map.of("PROXIMITY", List.of(expectedRelationship)),
                 "X.Y.Z");
 
+        var jobResults = _storedResultCaptor.getValue();
         assertThat(jobResults).usingRecursiveComparison()
-                .withEqualsForType(INSTANT_EQ, Instant.class)
+                .withEqualsForType(TestUtil::equalAfterTruncate, Instant.class)
                 .isEqualTo(expectedResult);
 
         verify(_mockSubjectJobRepo)
             .save(same(dbJob));
+        assertThat(dbJob.getOutputUri()).hasValue(OUTPUT_URI);
     }
 
 
@@ -318,10 +309,16 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
 
     @Test
     public void canHandleIoExceptionWhenSavingJson() throws IOException {
-        Files.delete(_subjectOutputRoot);
         var dbJob = createDbJob();
         var callbackFuture = setupCallbackService(dbJob);
         var transactionFuture = setupTransaction();
+
+        when(_mockStorageService.store(_storedResultCaptor.capture(), any()))
+            .thenAnswer(inv -> {
+                Function<String, SubjectJobResult> addWarningFunc = inv.getArgument(1);
+                addWarningFunc.apply("<test-warning>");
+                throw new NoSuchFileException("file");
+            });
 
         var protobuf =  SubjectProtobuf.SubjectTrackingResult.getDefaultInstance();
         assertThatThrownBy(() -> _subjectJobResultsService.completeJob(JOB_ID, protobuf))
@@ -331,6 +328,10 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         assertThat(dbJob.getErrors())
             .singleElement(Assertions.STRING)
             .contains("Failed to write output object");
+
+        assertThat(dbJob.getWarnings())
+            .singleElement(Assertions.STRING)
+            .contains("<test-warning>");
 
         assertCallbackSent(dbJob, callbackFuture, transactionFuture);
     }
@@ -343,6 +344,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         dbJob.setRetrievedDetectionJobs(true);
         var callbackFuture = setupCallbackService(dbJob);
         var transactionFuture = setupTransaction();
+        setUpStorageService();
 
         _subjectJobResultsService.cancel(JOB_ID);
 
@@ -350,12 +352,12 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                 .isEqualTo(DbCancellationState.CANCELLED_BY_USER);
         assertJobCompletedInThePast(dbJob);
 
-        var jobResult = verifyOutputOnDisk();
+        var jobResult = _storedResultCaptor.getValue();
 
         var expectedRequest = new SubjectJobRequest(
                 COMPONENT_NAME,
                 OptionalInt.of(6),
-                List.of(4L, 5L, 6L),
+                Set.of(4L, 5L, 6L),
                 Map.of("TEST_PROP", "TEST_VALUE"),
                 Optional.of(URI.create("http://localhost:4814")),
                 Optional.of(CallbackMethod.POST),
@@ -371,14 +373,15 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                 ImmutableSortedSet.of(),
                 ImmutableSortedSet.of(),
                 Optional.empty(),
-                null);
+                "JOB RUNNING");
 
         assertCallbackSent(dbJob, callbackFuture, transactionFuture);
 
         var expectedJobResult = new SubjectJobResult(expectedJobDetails, null, null, null, "X.Y.Z");
         assertThat(jobResult).usingRecursiveComparison()
-                .withEqualsForType(INSTANT_EQ, Instant.class)
+                .withEqualsForType(TestUtil::equalAfterTruncate, Instant.class)
                 .isEqualTo(expectedJobResult);
+        assertThat(dbJob.getOutputUri()).hasValue(OUTPUT_URI);
     }
 
 
@@ -430,23 +433,13 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
     }
 
 
-    private SubjectJobResult verifyOutputOnDisk() throws IOException {
-        var fileContent = Files.readString(_subjectOutputRoot.resolve(JOB_ID + ".json"));
-        var result = _objectMapper.readValue(fileContent, SubjectJobResult.class);
-
-        assertThat(result.job().callbackStatus())
-                .as("Callback status should not be in output.")
-                .isNull();
-        return result;
-    }
-
-
     @Test
     public void canHandleCompleteWithError() throws IOException {
         var job = createDbJob();
         job.addError("TEST ERROR");
         var responseFuture = setupCallbackService(job);
         var transactionFuture = setupTransaction();
+        setUpStorageService();
 
         _subjectJobResultsService.completeWithError(
                 JOB_ID, "TEST ERROR 2", new IllegalStateException("<error2>"));
@@ -454,7 +447,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         assertThat(job.getCancellationState()).isEqualTo(DbCancellationState.NOT_CANCELLED);
         assertJobCompletedInThePast(job);
 
-        var jobResult = verifyOutputOnDisk();
+        var jobResult = _storedResultCaptor.getValue();
 
         assertThat(jobResult.entities()).isNull();
         assertThat(jobResult.relationships()).isNull();
@@ -467,6 +460,7 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                     .contains("IllegalStateException", "<error2>"));
 
         assertCallbackSent(job, responseFuture, transactionFuture);
+        assertThat(job.getOutputUri()).hasValue(OUTPUT_URI);
     }
 
 
@@ -485,10 +479,6 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         assertJobCompletedInThePast(job);
     }
 
-    private static boolean equalAfterTruncate(Instant x, Instant y) {
-        return x.truncatedTo(ChronoUnit.MILLIS).equals(y.truncatedTo(ChronoUnit.MILLIS));
-    }
-
 
     private CompletionStage<Void> setupTransaction() {
         var transactionDoneFuture = ThreadUtil.<Void>newFuture();
@@ -503,6 +493,11 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
         // The caller should only be using the returned value to know when the transaction has been
         // invoked.
         return transactionDoneFuture.minimalCompletionStage();
+    }
+
+    private void setUpStorageService() throws IOException {
+        when(_mockStorageService.store(_storedResultCaptor.capture(), notNull()))
+                .thenReturn(OUTPUT_URI);
     }
 
 

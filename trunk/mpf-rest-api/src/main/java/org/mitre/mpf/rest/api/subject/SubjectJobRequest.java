@@ -31,9 +31,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;
+import org.mitre.mpf.rest.api.util.Utils;
 import org.mitre.mpf.rest.api.util.ValidName;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -47,7 +49,7 @@ public record SubjectJobRequest(
         OptionalInt priority,
 
         @NotEmpty
-        Collection<Long> detectionJobIds,
+        Set<Long> detectionJobIds,
 
         Map<String, String> jobProperties,
 
@@ -61,4 +63,9 @@ public record SubjectJobRequest(
         Optional<CallbackMethod> callbackMethod,
 
         Optional<String> externalId) {
+
+    public SubjectJobRequest {
+        detectionJobIds = Utils.toImmutableSet(detectionJobIds);
+        jobProperties = Utils.toImmutableMap(jobProperties);
+    }
 }

@@ -190,7 +190,7 @@ public class SubjectJobRequestService {
                     if (optResult.isPresent()) {
                         return optResult.get();
                     }
-                    return _pastJobResultsService.getJobResults(detectionJobId);
+                    return _pastJobResultsService.getDetectionJobResults(detectionJobId);
                 });
     }
 }

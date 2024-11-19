@@ -314,7 +314,7 @@ public class JobController {
             if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
                 return ResponseEntity.notFound().build();
             }
-            var resultsStream = pastJobResultsService.getJobResultsStream(internalJobId);
+            var resultsStream = pastJobResultsService.getDetectionJobResultsStream(internalJobId);
             return ResponseEntity.ok(new InputStreamResource(resultsStream));
         }
         catch (WfmProcessingException e) {

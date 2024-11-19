@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.mvc.util.PostResponseUtil;
 import org.mitre.mpf.rest.api.MessageModel;
@@ -41,8 +42,10 @@ import org.mitre.mpf.wfm.businessrules.InvalidJobRequestException;
 import org.mitre.mpf.wfm.businessrules.SubjectJobRequestService;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
+import org.mitre.mpf.wfm.service.PastJobResultsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -71,12 +74,16 @@ public class SubjectJobController {
 
     private final SubjectJobRepo _subjectJobRepo;
 
+    private final PastJobResultsService _pastJobResultsService;
+
     @Inject
     SubjectJobController(
             SubjectJobRequestService subjectJobRequestService,
-            SubjectJobRepo subjectJobDao) {
+            SubjectJobRepo subjectJobDao,
+            PastJobResultsService pastJobResultsService) {
         _subjectJobRequestService = subjectJobRequestService;
         _subjectJobRepo = subjectJobDao;
+        _pastJobResultsService = pastJobResultsService;
     }
 
 
@@ -131,14 +138,21 @@ public class SubjectJobController {
 
     @GetMapping("{jobId}/output")
     @ExposedMapping
-    @ApiOperation("Gets a subject tracking job's output.")
+    @ApiOperation(
+            value = "Gets a subject tracking job's output.",
+            response = SubjectJobResult.class)
     @ApiResponses({
         @ApiResponse(code = HttpStatusCode.NOT_FOUND, message = "Job output does not exist."),
     })
-    public ResponseEntity<SubjectJobResult> getOutput(@PathVariable long jobId) {
-        return MdcUtil.job(jobId, () -> ResponseEntity.of(_subjectJobRepo.getOutput(jobId)));
+    public ResponseEntity<Object> getOutput(@PathVariable long jobId) {
+        try (var ctx = CloseableMdc.job(jobId)) {
+            return ResponseEntity.of(
+                    _subjectJobRepo
+                    .tryFindById(jobId)
+                    .map(_pastJobResultsService::getJobResultsStream)
+                    .map(InputStreamResource::new));
+        }
     }
-
 
 
     @PostMapping("{jobId}/cancel")

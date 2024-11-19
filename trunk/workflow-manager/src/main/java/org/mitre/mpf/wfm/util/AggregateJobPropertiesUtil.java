@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
+import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -378,6 +379,24 @@ public class AggregateJobPropertiesUtil {
                 jobProperties,
                 systemPropertiesSnapshot
         ).getValue();
+    }
+
+    public UnaryOperator<String> getCombinedProperties(SubjectJobResult jobResult) {
+        return getCombinedSubjectJobProperties(jobResult.job().request().jobProperties());
+    }
+
+    public UnaryOperator<String> getCombinedProperties(DbSubjectJob dbJob) {
+        return getCombinedSubjectJobProperties(dbJob.getJobProperties());
+    }
+
+    private UnaryOperator<String> getCombinedSubjectJobProperties(Map<String, String> jobProps) {
+        return propName -> {
+            var propValue = jobProps.get(propName);
+            if (propValue != null && !propValue.isBlank()) {
+                return propValue;
+            }
+            return _workflowPropertyService.getPropertyValue(propName);
+        };
     }
 
 

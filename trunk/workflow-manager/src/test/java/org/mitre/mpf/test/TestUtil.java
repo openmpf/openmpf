@@ -36,6 +36,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -58,13 +60,14 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.springframework.core.io.PathResource;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 public class TestUtil {
 
-    public static final Duration FUTURE_DURATION = Duration.ofMillis(10);
+    public static final Duration FUTURE_DURATION = Duration.ofMillis(15);
 
     private TestUtil() {
 
@@ -190,6 +193,7 @@ public class TestUtil {
     public static MockMvc initMockMvc(Object controller) {
         var setup = MockMvcBuilders.standaloneSetup(controller);
         var converters = new ArrayList<HttpMessageConverter<?>>();
+        converters.add(new ResourceHttpMessageConverter());
         new WebMvcConfig().extendMessageConverters(converters);
         setup.setMessageConverters(converters.toArray(HttpMessageConverter[]::new));
         return setup.build();
@@ -227,6 +231,11 @@ public class TestUtil {
     public static <T> FutureAssert<T> assertNotDone(Future<T> future) {
         return assertDoesNotCompleteWithin(future, FUTURE_DURATION);
     }
+
+    public static boolean equalAfterTruncate(Instant x, Instant y) {
+        return x.truncatedTo(ChronoUnit.MILLIS).equals(y.truncatedTo(ChronoUnit.MILLIS));
+    }
+
 
     public static LocalValidatorFactoryBean createValidator() {
         var validator = new ValidatorConfig().localValidatorFactoryBean();

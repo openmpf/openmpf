@@ -24,33 +24,30 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# This project is not intended to be built on its own. Instead, build the parent project using
-# openmpf-projects/openmpf/trunk/CMakeLists.txt.
+import abc
 
-project(VideoOverlay)
-set(CMAKE_CXX_STANDARD 17)
-aux_source_directory(./src/main/cpp SRC)
+class ILogger(abc.ABC):
 
-find_package(OpenCV 4.9.0 EXACT REQUIRED PATHS /opt/opencv-4.9.0 COMPONENTS opencv_core opencv_freetype)
+    @abc.abstractmethod
+    def debug(self, message: str) -> None:
+        ...
 
-find_package(mpfComponentInterface REQUIRED)
-find_package(mpfDetectionComponentApi REQUIRED)
+    @abc.abstractmethod
+    def info(self, message: str) -> None:
+        ...
 
+    @abc.abstractmethod
+    def warn(self, message: str) -> None:
+        ...
 
-include_directories(${JAVA_INCLUDE_PATH} ${JAVA_INCLUDE_PATH2} ${OpenCV_INCLUDE_DIRS})
-add_library(mpfopencvjni SHARED ${SRC})
+    @abc.abstractmethod
+    def error(self, message: str) -> None:
+        ...
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JAVA_JVM_LIBRARY} heif mpfProtobufs
-    mpfDetectionComponentApi)
+    @abc.abstractmethod
+    def fatal(self, message: str) -> None:
+        ...
 
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(TARGET mpfopencvjni POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:mpfopencvjni>"
-        -D DEP_LIBS_INSTALL_LOCATION="${CMAKE_INSTALL_PREFIX}/lib"
-        -P ${CopySharedLibDependencies_LOCATION})
-endif()
-
-install(TARGETS mpfopencvjni
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+    @abc.abstractmethod
+    def set_context_message(self, context_msg: str) -> None:
+        ...

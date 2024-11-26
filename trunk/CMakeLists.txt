@@ -100,4 +100,4 @@ add_subdirectory(detection/executor/cpp)
 # Build the video overlay utility
 add_subdirectory(video-overlay)
 
-add_subdirectory(subject-tracking/executor/cpp)
+add_subdirectory(subject-tracking/executor)

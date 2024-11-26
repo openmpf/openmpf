@@ -24,33 +24,40 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# This project is not intended to be built on its own. Instead, build the parent project using
-# openmpf-projects/openmpf/trunk/CMakeLists.txt.
+from __future__ import annotations
 
-project(VideoOverlay)
-set(CMAKE_CXX_STANDARD 17)
-aux_source_directory(./src/main/cpp SRC)
+import time
+from typing import Optional
 
-find_package(OpenCV 4.9.0 EXACT REQUIRED PATHS /opt/opencv-4.9.0 COMPONENTS opencv_core opencv_freetype)
-
-find_package(mpfComponentInterface REQUIRED)
-find_package(mpfDetectionComponentApi REQUIRED)
+import proton
+import proton.handlers
+import proton.reactor
 
 
-include_directories(${JAVA_INCLUDE_PATH} ${JAVA_INCLUDE_PATH2} ${OpenCV_INCLUDE_DIRS})
-add_library(mpfopencvjni SHARED ${SRC})
+def create_message(body, **kwargs) -> proton.Message:
+    return proton.Message(body, **kwargs, creation_time=time.time())
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JAVA_JVM_LIBRARY} heif mpfProtobufs
-    mpfDetectionComponentApi)
 
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(TARGET mpfopencvjni POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:mpfopencvjni>"
-        -D DEP_LIBS_INSTALL_LOCATION="${CMAKE_INSTALL_PREFIX}/lib"
-        -P ${CopySharedLibDependencies_LOCATION})
-endif()
+class ComponentLoadError(Exception):
+    pass
 
-install(TARGETS mpfopencvjni
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+
+def get_condition_description(event: proton.Event) -> Optional[str]:
+    def get_description(obj):
+        if cond := getattr(obj, 'condition', None):
+            return cond.description
+        else:
+            return None
+
+    if msg := get_description(event):
+        return msg
+    if msg := get_description(event.context):
+        return msg
+    if msg := get_description(event.link):
+        return msg
+    if msg := get_description(event.session):
+        return msg
+    if msg := get_description(event.transport):
+        return msg
+    if msg := get_description(event.connection):
+        return msg

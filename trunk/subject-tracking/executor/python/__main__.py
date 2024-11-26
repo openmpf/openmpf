@@ -23,25 +23,10 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-cmake_minimum_required(VERSION 3.6)
 
-project(subject-tracking-executor)
-set(CMAKE_CXX_STANDARD 17)
+import sys
 
-set(subject_tracking_files
-    main.cpp
-    PythonComponent.cpp PythonComponent.h
-    ComponentRegistration.cpp ComponentRegistration.h
-    JobReceiver.cpp JobReceiver.h
-    JobContext.h
-    ExecutorConfig.cpp ExecutorConfig.h
-    ComponentExecutor.cpp ComponentExecutor.h
-)
+import mpf_subject_executor
 
-add_executable(subject_tracking_executor ${subject_tracking_files})
-
-set_target_properties(subject_tracking_executor PROPERTIES CXX_VISIBILITY_PRESET hidden)
-
-target_link_libraries(subject_tracking_executor cpp_executors_common mpfProtobufs pybind11::embed)
-
-install(TARGETS subject_tracking_executor RUNTIME DESTINATION bin)
+if __name__ == '__main__':
+    sys.exit(mpf_subject_executor.main())

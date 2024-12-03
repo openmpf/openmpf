@@ -27,6 +27,10 @@
 cmake_minimum_required(VERSION 3.6)
 project(cpp-executors)
 
+set(PYBIND11_CPP_STANDARD -std=c++17)
+set(PYBIND11_PYTHON_VERSION 3.8)
+add_subdirectory(pybind11)
+
 # Build the detection component executable for batch jobs
 add_subdirectory(batch)
 # Build the executables for streaming jobs

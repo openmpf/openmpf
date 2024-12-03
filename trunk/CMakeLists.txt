@@ -88,12 +88,6 @@ endif()
 set(MSG_UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/detection/executor/cpp/common)
 set(MSG_UTILS_FILE ${MSG_UTILS_DIR}/MPFMessageUtils.cpp)
 
-set(PYBIND11_CPP_STANDARD -std=c++17)
-set(PYBIND11_PYTHON_VERSION 3.8)
-add_subdirectory(pybind11)
-
-add_subdirectory(cpp-executors-common)
-
 # Build the component executors.
 add_subdirectory(detection/executor/cpp)
 

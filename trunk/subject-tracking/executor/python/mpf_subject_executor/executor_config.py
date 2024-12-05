@@ -37,8 +37,8 @@ from typing import NamedTuple, Tuple
 
 def get_config() -> ExecutorConfig:
     cli_args = parse_cli_args()
-    if not cli_args.amq_uri:
-        cli_args.amq_uri = get_broker_uri_from_env()
+    if not cli_args.amqp_uri:
+        cli_args.amqp_uri = get_broker_uri_from_env()
     if not cli_args.language:
         cli_args.language = get_language_from_env()
     mpf_home = Path(os.getenv('MPF_HOME') or '/opt/mpf')
@@ -50,8 +50,8 @@ def get_config() -> ExecutorConfig:
         raise InvalidConfigurationError('Only Python components are currently supported.')
 
     return ExecutorConfig(
-        cli_args.amq_uri,
-        int(os.getenv('AMQ_CONNECT_ATTEMPTS', '20')),
+        cli_args.amqp_uri,
+        int(os.getenv('AMQP_CONNECT_ATTEMPTS', '20')),
         queue_name,
         descriptor_string,
         name,
@@ -61,7 +61,7 @@ def get_config() -> ExecutorConfig:
 
 
 class ExecutorConfig(NamedTuple):
-    amq_uri: str
+    amqp_uri: str
     num_connection_attempts: int
     job_queue: str
     descriptor_string: str
@@ -72,11 +72,11 @@ class ExecutorConfig(NamedTuple):
 
 
 def get_broker_uri_from_env() -> str:
-    if env_broker_uri := os.getenv('ACTIVE_MQ_BROKER_URI'):
+    if env_broker_uri := os.getenv('AMQP_BROKER_URI'):
         return env_broker_uri
     if host := os.getenv('ACTIVE_MQ_HOST'):
         return f'amqp://{host}:5672'
-    raise InvalidConfigurationError('ACTIVE_MQ_BROKER_URI, ACTIVE_MQ_HOST, and -a where not set.')
+    raise InvalidConfigurationError('AMQP_BROKER_URI, ACTIVE_MQ_HOST, and -a where not set.')
 
 
 def get_language_from_env() -> str:
@@ -162,7 +162,7 @@ def get_log_level_and_set_env() -> str:
 
 def parse_cli_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--amq-uri')
+    parser.add_argument('-a', '--amqp-uri')
     parser.add_argument('-d', '--descriptor-path')
     parser.add_argument('-l', '--language')
     return parser.parse_args()

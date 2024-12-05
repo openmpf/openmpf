@@ -97,7 +97,8 @@ class StartupHandler(proton.handlers.MessagingHandler):
 
 
     def on_start(self, event: proton.Event) -> None:
-        connection = event.container.connect(self._config.amq_uri)
+        self._logger.info('Connecting to ', self._config.amqp_uri)
+        connection = event.container.connect(self._config.amqp_uri)
         RegistrationHandler(
                 self._logger,
                 self._config.descriptor_string,
@@ -106,8 +107,7 @@ class StartupHandler(proton.handlers.MessagingHandler):
                 on_complete=self._component_registered)
 
 
-    def _component_registered(self, event: proton.Event) -> None:
-        assert event.connection
+    def _component_registered(self, event: util.EventWithConnection) -> None:
         self._exit_stack.enter_context(
                 JobHandler(self._logger, self._config, event.container, event.connection))
 

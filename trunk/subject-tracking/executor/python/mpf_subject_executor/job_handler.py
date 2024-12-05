@@ -67,7 +67,7 @@ class JobHandler(proton.handlers.MessagingHandler):
         JobExecutor(logger, config, self._job_request_queue, job_done_injector)
 
 
-    def on_message(self, event: proton.Event) -> None:
+    def on_message(self, event: util.OnMessageEvent) -> None:
         # We only issue the broker one credit at a time, so we will not receive additional
         # messages until receiver.flow is called.
         self._try_begin_job_context(event.message)
@@ -77,7 +77,6 @@ class JobHandler(proton.handlers.MessagingHandler):
             self._job_request_queue.put(event)
         else:
             self._logger.info('Received invalid message')
-            assert event.delivery
             self.reject(event.delivery)
             # The previous credit was consumed by the invalid message, so we need to issue a new
             # credit to receive an additional message.
@@ -144,7 +143,7 @@ class JobTransactionHandler(proton.handlers.TransactionHandler):
     def on_transaction_declare_failed(self, event: proton.Event) -> None:
         self._on_transaction_failed(event)
 
-    def on_transaction_commit_failed(self, event: proton.Event) -> None:
+    def on_transaction_commit_failed(self, event: util.EventWithConnection) -> None:
         if self._commit_failed:
             self._on_transaction_failed(event)
             return
@@ -155,7 +154,6 @@ class JobTransactionHandler(proton.handlers.TransactionHandler):
         self._logger.warn(
             'Committing the transaction failed. Will re-attempt the transaction once.')
         self._commit_failed = True
-        assert event.connection
         event.container.declare_transaction(event.connection, self, settle_before_discharge=True)
 
     def _on_transaction_failed(self, event: proton.Event) -> None:
@@ -173,7 +171,7 @@ class JobExecutor:
             self,
             logger: LoggerWrapper,
             config: ExecutorConfig,
-            job_request_queue: queue.Queue[Optional[proton.Event]],
+            job_request_queue: queue.Queue[Optional[util.OnMessageEvent]],
             job_done_injector: proton.reactor.EventInjector) -> None:
         self._logger = logger
         self._config = config
@@ -218,7 +216,11 @@ class JobExecutor:
                 self._run_job(component, pb_job, job_event)
 
 
-    def _run_job(self, component, job: pb_sub.SubjectTrackingJob, job_request_event: proton.Event):
+    def _run_job(
+                self,
+                component,
+                job: pb_sub.SubjectTrackingJob,
+                job_request_event: util.OnMessageEvent):
         self._logger.info('Sending job to component.')
         pb_result = component.get_subjects(job)
         self._logger.info('Received response from component.')
@@ -256,9 +258,8 @@ class JobExecutor:
 
 
 class JobResponseReadyEvent(proton.reactor.ApplicationEvent):
-    def __init__(self, request_event: proton.Event, response: proton.Message) -> None:
+    def __init__(self, request_event: util.OnMessageEvent, response: proton.Message) -> None:
         super().__init__('job_response_ready')
-        assert request_event.delivery
         self.request_delivery = request_event.delivery
         self._handler = request_event.handler
         self.response = response

@@ -34,6 +34,7 @@ import proton.reactor
 from . import executor_util as util
 from .logger_wrapper import LoggerWrapper
 
+OnCompleteCallback = Callable[[util.EventWithConnection], None]
 
 class RegistrationHandler(proton.handlers.MessagingHandler):
     def __init__(
@@ -42,11 +43,11 @@ class RegistrationHandler(proton.handlers.MessagingHandler):
             descriptor_string: str,
             container: proton.reactor.Container,
             connection: proton.Connection,
-            on_complete: Callable[[proton.Event], None]) -> None:
+            on_complete: OnCompleteCallback) -> None:
         super().__init__(prefetch=0, auto_accept=False, peer_close_is_error=True)
-        self._on_complete = on_complete
         self._logger = logger
         self._descriptor_string = descriptor_string
+        self._on_complete = on_complete
 
         self._sender = container.create_sender(connection, 'MPF.SUBJECT_COMPONENT_REGISTRATION')
         self._receiver = container.create_receiver(connection, dynamic=True, handler=self)
@@ -66,8 +67,12 @@ class RegistrationHandler(proton.handlers.MessagingHandler):
         self._sender.send(message)
 
 
-    def on_message(self, event: proton.Event) -> None:
-        assert event.delivery
+    def on_message(self, event: util.OnMessageEvent) -> None:
+        if event.message.properties is None:
+            self.reject(event.delivery)
+            raise ComponentRegistrationError(
+                    'The registration response was missing required properties.')
+
         self.accept(event.delivery)
         details = event.message.properties.get('detail')
         if event.message.properties.get('success'):

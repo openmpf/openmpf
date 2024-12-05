@@ -27,6 +27,7 @@
 from __future__ import annotations
 
 import time
+import typing
 from typing import Optional
 
 import proton
@@ -61,3 +62,24 @@ def get_condition_description(event: proton.Event) -> Optional[str]:
         return msg
     if msg := get_description(event.connection):
         return msg
+
+
+if typing.TYPE_CHECKING:
+    # The classes below are only used for type checking, they will not be defined at runtime.
+    # Many properties from proton.Event are declared as Optional because the same event class is
+    # used for all events. There are many times where, based on the handler method being called, we
+    # know that certain properties will be present. For example, in an `on_connection_opened` or an
+    # `on_message` handler, the connection property will never be None.
+    class EventWithConnection(proton.Event):
+        @property
+        def connection(self) -> proton.Connection:
+            ...
+
+    class OnMessageEvent(EventWithConnection):
+        @property
+        def delivery(self) -> proton.Delivery:
+            ...
+
+        @property
+        def message(self) -> proton.Message:
+            ...

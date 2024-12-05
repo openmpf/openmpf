@@ -34,7 +34,6 @@ import proton.reactor
 from . import executor_util as util
 from .logger_wrapper import LoggerWrapper
 
-OnCompleteCallback = Callable[[util.EventWithConnection], None]
 
 class RegistrationHandler(proton.handlers.MessagingHandler):
     def __init__(
@@ -43,7 +42,7 @@ class RegistrationHandler(proton.handlers.MessagingHandler):
             descriptor_string: str,
             container: proton.reactor.Container,
             connection: proton.Connection,
-            on_complete: OnCompleteCallback) -> None:
+            on_complete: Callable[[util.EventWithConnection], None]) -> None:
         super().__init__(prefetch=0, auto_accept=False, peer_close_is_error=True)
         self._logger = logger
         self._descriptor_string = descriptor_string

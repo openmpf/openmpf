@@ -24,6 +24,8 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <limits>
+#include <stdexcept>
 #include <variant>
 
 #include "MPFMessageUtils.h"
@@ -78,9 +80,17 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
     }
 
     std::vector<unsigned char> Serialize(const mpf_buffers::DetectionResponse& detection_response) {
-        int protobuf_size = detection_response.ByteSize();
+        std::size_t protobuf_size = detection_response.ByteSizeLong();
+        if (protobuf_size > std::numeric_limits<int>::max()) {
+            throw std::length_error(
+                "Could not send response because the response protobuf was "
+                + std::to_string(protobuf_size)
+                + " bytes, but ActiveMQ only accepts messages up to "
+                + std::to_string(std::numeric_limits<int>::max())
+                + " bytes.");
+        }
         std::vector<unsigned char> proto_bytes(protobuf_size);
-        detection_response.SerializeToArray(proto_bytes.data(), protobuf_size);
+        detection_response.SerializeWithCachedSizesToArray(proto_bytes.data());
         return proto_bytes;
     }
 

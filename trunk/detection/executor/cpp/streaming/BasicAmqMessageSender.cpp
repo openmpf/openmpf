@@ -24,6 +24,9 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <limits>
+#include <stdexcept>
+
 #include <activemq/library/ActiveMQCPP.h>
 
 #pragma GCC diagnostic push
@@ -140,11 +143,21 @@ namespace MPF { namespace COMPONENT {
             }
         }
 
-        int proto_bytes_size = protobuf_response.ByteSize();
-        std::unique_ptr<unsigned char[]> proto_bytes(new unsigned char[proto_bytes_size]);
+        int proto_bytes_size_long = protobuf_response.ByteSizeLong();
+        if (proto_bytes_size_long > std::numeric_limits<int>::max()) {
+            throw std::length_error(
+                "Could not send response because the response protobuf was "
+                + std::to_string(proto_bytes_size_long)
+                + " bytes, but ActiveMQ only accepts messages up to "
+                + std::to_string(std::numeric_limits<int>::max())
+                + " bytes.");
+        }
+        int proto_bytes_size = static_cast<int>(proto_bytes_size_long);
+        auto proto_bytes = std::make_unique<unsigned char[]>(proto_bytes_size);
         protobuf_response.SerializeWithCachedSizesToArray(proto_bytes.get());
 
-        std::unique_ptr<cms::BytesMessage> message(session_->createBytesMessage(proto_bytes.get(), proto_bytes_size));
+        std::unique_ptr<cms::BytesMessage> message(session_->createBytesMessage(
+                proto_bytes.get(), proto_bytes_size));
         message->setLongProperty("JOB_ID", job_id_);
 
         summary_report_producer_->send(message.get());

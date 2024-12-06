@@ -27,7 +27,9 @@
 #ifndef MPF_AMQ_MESSAGE_H_
 #define MPF_AMQ_MESSAGE_H_
 
+#include <limits>
 #include <memory>
+#include <stdexcept>
 
 #include <cms/Session.h>
 #include <cms/Message.h>
@@ -159,11 +161,21 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
             }
         }
         // Now serialize and set the message body
-        std::unique_ptr<unsigned char[]> response_contents(new unsigned char[response.ByteSize()]);
-        response.SerializeToArray(static_cast<void *>(response_contents.get()), response.ByteSize());
-        bytes_msg.setBodyBytes(response_contents.get(), response.ByteSize());
+        std::size_t proto_bytes_size_long = response.ByteSizeLong();
+        if (proto_bytes_size_long > std::numeric_limits<int>::max()) {
+            throw std::length_error(
+                "Could not send response because the response protobuf was "
+                + std::to_string(proto_bytes_size_long)
+                + " bytes, but ActiveMQ only accepts messages up to "
+                + std::to_string(std::numeric_limits<int>::max())
+                + " bytes.");
+        }
+        int proto_bytes_size = static_cast<int>(proto_bytes_size_long);
+        auto proto_bytes = std::make_unique<unsigned char[]>(proto_bytes_size);
+        response.SerializeWithCachedSizesToArray(proto_bytes.get());
+        bytes_msg.setBodyBytes(proto_bytes.get(), proto_bytes_size);
     }
-    
+
 };
 
 
@@ -265,7 +277,7 @@ class AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
         frame_offset_bytes_ = msg_->getLongProperty("FRAME_STORE_OFFSET");
     }
 
-};  
+};
 
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture

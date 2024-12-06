@@ -80,7 +80,7 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
     }
 
     std::vector<unsigned char> Serialize(const mpf_buffers::DetectionResponse& detection_response) {
-        std::size_t protobuf_size = detection_response.ByteSizeLong();
+        auto protobuf_size = detection_response.ByteSizeLong();
         if (protobuf_size > std::numeric_limits<int>::max()) {
             throw std::length_error(
                 "Could not send response because the response protobuf was "

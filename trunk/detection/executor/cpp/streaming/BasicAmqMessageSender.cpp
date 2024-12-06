@@ -143,7 +143,7 @@ namespace MPF { namespace COMPONENT {
             }
         }
 
-        int proto_bytes_size_long = protobuf_response.ByteSizeLong();
+        auto proto_bytes_size_long = protobuf_response.ByteSizeLong();
         if (proto_bytes_size_long > std::numeric_limits<int>::max()) {
             throw std::length_error(
                 "Could not send response because the response protobuf was "
@@ -152,7 +152,7 @@ namespace MPF { namespace COMPONENT {
                 + std::to_string(std::numeric_limits<int>::max())
                 + " bytes.");
         }
-        int proto_bytes_size = static_cast<int>(proto_bytes_size_long);
+        auto proto_bytes_size = static_cast<int>(proto_bytes_size_long);
         auto proto_bytes = std::make_unique<unsigned char[]>(proto_bytes_size);
         protobuf_response.SerializeWithCachedSizesToArray(proto_bytes.get());
 

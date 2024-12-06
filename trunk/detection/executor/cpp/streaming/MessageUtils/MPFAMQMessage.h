@@ -170,7 +170,7 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
                 + std::to_string(std::numeric_limits<int>::max())
                 + " bytes.");
         }
-        int proto_bytes_size = static_cast<int>(proto_bytes_size_long);
+        auto proto_bytes_size = static_cast<int>(proto_bytes_size_long);
         auto proto_bytes = std::make_unique<unsigned char[]>(proto_bytes_size);
         response.SerializeWithCachedSizesToArray(proto_bytes.get());
         bytes_msg.setBodyBytes(proto_bytes.get(), proto_bytes_size);

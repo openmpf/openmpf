@@ -28,14 +28,14 @@ from __future__ import annotations
 
 import time
 import typing
-from typing import Optional
+from typing import Optional, Union
 
 import proton
 import proton.handlers
 import proton.reactor
 
 
-def create_message(body, **kwargs) -> proton.Message:
+def create_message(body: Union[bytes, str], **kwargs) -> proton.Message:
     return proton.Message(body, **kwargs, creation_time=time.time())
 
 

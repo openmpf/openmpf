@@ -69,7 +69,7 @@ class PythonComponent:
             if group_matches:
                 # An entry point in the "mpf.exported_component" group was found, but the
                 # left-hand side of the '=' was something else. For example
-                #'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
+                # 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
                 # We really only care about the entry point group, since we don't do anything
                 # with entry point name.
                 return group_matches.load()

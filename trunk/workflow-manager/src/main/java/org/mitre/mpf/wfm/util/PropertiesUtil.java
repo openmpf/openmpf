@@ -694,6 +694,10 @@ public class PropertiesUtil {
         return _mpfPropertiesConfig.getString("amq.open.wire.bind.address");
     }
 
+    public String getAmqAmqpBindAddress() {
+        return _mpfPropertiesConfig.getString("amq.amqp.bind.address");
+    }
+
     //
     // Streaming job properties
     //

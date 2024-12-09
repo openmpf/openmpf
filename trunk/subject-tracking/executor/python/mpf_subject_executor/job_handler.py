@@ -73,7 +73,7 @@ class JobHandler(proton.handlers.MessagingHandler):
         self._try_begin_job_context(event.message)
         self._logger.info('New message received.')
         if isinstance(event.message.body, memoryview):
-            # The job is processed asynchronously to avoid blocking the event loop.
+            # The job is executed on a background thread to avoid blocking the event loop.
             self._job_request_queue.put(event)
         else:
             self._logger.info('Received invalid message')

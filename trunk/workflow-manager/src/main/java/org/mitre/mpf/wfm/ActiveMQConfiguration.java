@@ -60,7 +60,7 @@ public class ActiveMQConfiguration {
     public BrokerService activemqBroker(PropertiesUtil propertiesUtil) throws Exception {
         var broker = new BrokerService();
         broker.addConnector(propertiesUtil.getAmqOpenWireBindAddress());
-        broker.addConnector("amqp+nio://0.0.0.0:5672?transport.transformer=jms");
+        broker.addConnector(propertiesUtil.getAmqAmqpBindAddress());
         broker.setPersistent(false);
         // Remove memory limit.
         broker.getSystemUsage().getMemoryUsage().setLimit(0);

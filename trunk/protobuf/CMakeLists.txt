@@ -27,6 +27,9 @@
 cmake_minimum_required(VERSION 3.6)
 project(MPF_PROTOBUF)
 
+# In our Dockerfiles, we compile a static version of libprotobuf. Video overlay depends on
+# mpfProtobufs and is a shared library. In order for a shared library to link to a static library,
+# position independent code must be enabled.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # https://github.com/protocolbuffers/protobuf/blob/main/docs/cmake_protobuf_generate.md

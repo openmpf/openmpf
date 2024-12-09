@@ -54,8 +54,8 @@ public record SubjectJobDetails(
         String callbackStatus) {
 
 
-    // When this view is used, outputUri and callbackStatus will not be included when writing out
-    // the JSON.
+    // When this view is used to instantiate a Jackson ObjectWriter with DEFAULT_VIEW_INCLUSION
+    // enabled, outputUri and callbackStatus will not be included when writing out the JSON.
     public interface OutputObjectView {
     }
 

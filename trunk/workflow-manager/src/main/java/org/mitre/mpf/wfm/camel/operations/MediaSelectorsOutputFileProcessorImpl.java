@@ -97,6 +97,9 @@ public class MediaSelectorsOutputFileProcessorImpl
     public void wfmProcess(Exchange exchange) {
         exchange.getOut().setBody(exchange.getIn().getBody());
         var trackCache = exchange.getIn().getBody(TrackCache.class);
+        if (trackCache.getTaskIndex() != 0) {
+            return;
+        }
         try {
             var job = _inProgressJobs.getJob(trackCache.getJobId());
             JobPartsIter.taskStream(job, trackCache.getTaskIndex())

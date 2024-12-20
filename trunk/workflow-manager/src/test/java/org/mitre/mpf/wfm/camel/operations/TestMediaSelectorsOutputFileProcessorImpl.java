@@ -122,6 +122,21 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
 
     @Test
+    public void doesNotCreateOutputFilesForStagesAfterFirst() {
+        var exchange = TestUtil.createTestExchange();
+        exchange.getIn().setHeader(MpfHeaders.JOB_ID, JOB_ID);
+        var trackCache = new TrackCache(JOB_ID, 1, _mockInProgressJobs);
+        exchange.getIn().setBody(trackCache);
+
+        _mediaSelectorsOutputFileProcessor.process(exchange);
+
+        verifyNoInteractions(
+            _mockInProgressJobs, _mockAggJobProps, _mockStorageService, _mockJsonPathService);
+        assertThat(exchange.getOut().getBody()).isSameAs(trackCache);
+    }
+
+
+    @Test
     public void testOutputUpdatedFileCreation() throws IOException, StorageException {
         var mappers = _testBuilder.addJsonSelector("expr1", "OUTPUT1")
                 .addJsonSelector("expr2", "OUTPUT2")

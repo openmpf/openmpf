@@ -50,11 +50,11 @@ add_library(mpfProtobufs STATIC ${MPF_PROTO_SRCS})
 target_link_libraries(mpfProtobufs ${Protobuf_LIBRARY})
 
 # include ourselves for building
-target_include_directories(mpfProtobufs PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(mpfProtobufs PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${Protobuf_INCLUDE_DIRS})
 
 # Video overlay is a shared library, so it needs to link with the shared version of libprotobuf.
 find_file(Protobuf_SHARED_LIBRARY libprotobuf.so
             PATHS /apps/install/lib /usr/lib64 /usr/lib/x86_64-linux-gnu)
 add_library(mpfProtobufsShared SHARED ${MPF_PROTO_SRCS})
 target_link_libraries(mpfProtobufsShared ${Protobuf_SHARED_LIBRARY})
-target_include_directories(mpfProtobufsShared PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(mpfProtobufsShared PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${Protobuf_INCLUDE_DIRS})

@@ -60,6 +60,7 @@ public class ActiveMQConfiguration {
     public BrokerService activemqBroker(PropertiesUtil propertiesUtil) throws Exception {
         var broker = new BrokerService();
         broker.addConnector(propertiesUtil.getAmqOpenWireBindAddress());
+        // The subject executor uses an AMQP client because there is no OpenWire client for Python.
         broker.addConnector(propertiesUtil.getAmqAmqpBindAddress());
         broker.setPersistent(false);
         // Remove memory limit.

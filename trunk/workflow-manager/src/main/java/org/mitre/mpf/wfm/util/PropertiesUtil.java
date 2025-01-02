@@ -143,9 +143,7 @@ public class PropertiesUtil {
 
         artifactsDirectory = createOrFail(share, "artifacts", permissions);
         markupDirectory = createOrFail(share, "markup", permissions);
-        outputObjectsDirectory = createOrFail(share, "detection-output-objects", permissions);
-        subjectTrackingResultsDir = createOrFail(
-                share, "subject-tracking-results", permissions).toPath();
+        outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
         temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
         derivativeMediaDirectory = createOrFail(share, "derivative-media", permissions);
@@ -380,7 +378,7 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private Path createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
+    public Path createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
         return createOutputObjectsFile(jobId,outputObjectsDirectory,outputObjectType);
     }
 
@@ -396,12 +394,6 @@ public class PropertiesUtil {
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path;
-    }
-
-    private Path subjectTrackingResultsDir;
-
-    public Path getSubjectTrackingResultsDir() {
-        return subjectTrackingResultsDir;
     }
 
     private File remoteMediaDirectory;

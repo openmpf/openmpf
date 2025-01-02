@@ -159,8 +159,8 @@ public class LocalStorageBackendImpl implements LocalStorageBackend {
 
     @Override
     public URI store(SubjectJobResult jobResult) throws IOException {
-        var resultsPath = _propertiesUtil.getSubjectTrackingResultsDir()
-                .resolve(jobResult.job().id() + ".json");
+        var resultsPath = _propertiesUtil.createOutputObjectsFile(
+                jobResult.job().id(), "subject");
         _subjectJobResultWriter.writeValue(resultsPath.toFile(), jobResult);
         return resultsPath.toUri();
     }

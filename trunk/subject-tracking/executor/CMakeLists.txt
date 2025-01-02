@@ -24,9 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-file(GLOB_RECURSE SRC_FILES *.py)
 
 # Make sure mpfProtobufs is built before installing the Python files.
+file(GLOB_RECURSE SRC_FILES *.py)
 add_custom_target(pySubjectExecutor ALL SOURCES ${SRC_FILES} DEPENDS mpfProtobufs)
 
 install(DIRECTORY python/ DESTINATION bin/subject_executor)

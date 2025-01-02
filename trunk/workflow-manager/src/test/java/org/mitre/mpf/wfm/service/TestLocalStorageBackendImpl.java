@@ -75,13 +75,15 @@ public class TestLocalStorageBackendImpl extends MockitoTest.Strict {
 
     @Test
     public void outputObjectViewUsedWhenStoringSubjectResults() throws IOException {
-        var subjectResultsDir = _tempFolder.newFolder("subject-results").toPath();
-        when(_mockPropertiesUtil.getSubjectTrackingResultsDir())
-                .thenReturn(subjectResultsDir);
+        var outputObjectsDir = _tempFolder.newFolder("output-objects");
+        Files.createDirectories(outputObjectsDir.toPath().resolve("123"));
+
+        when(_mockPropertiesUtil.createOutputObjectsFile(123, "subject"))
+            .thenReturn(outputObjectsDir.toPath().resolve("123/subject.json"));
 
         var jobDetails = TestSubjectJobController.createSubjectJobResult();
         var resultsUri = _localStorageBackend.store(jobDetails);
-        assertThat(resultsUri.toString()).endsWith("/123.json");
+        assertThat(resultsUri.toString()).endsWith("/123/subject.json");
 
         var resultsString = Files.readString(Path.of(resultsUri));
         assertThat(resultsString).doesNotContain("outputUri", "callbackStatus");

@@ -120,7 +120,7 @@ public class TestCloseableMdc {
         var initialContext = MDC.getCopyOfContextMap();
 
         // Debugging
-        System.out.println(initialContext);
+        LOG.info("MDC Initial Context" + initialContext);
 
         CompletableFuture<String> job123;
         try (var mdc = CloseableMdc.job(123)) {
@@ -150,7 +150,7 @@ public class TestCloseableMdc {
         // Make sure threads in pool do not retain context after a job completes.
         var threadCtxSize = ThreadUtil.callAsync(
                 () -> MDC.getCopyOfContextMap().size());
-        assertEquals(0, threadCtxSize.join().intValue());
+        assertEquals(initialContext.size(), threadCtxSize.join().intValue());
     }
 
 

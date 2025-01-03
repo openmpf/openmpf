@@ -311,6 +311,11 @@ public class OutputChecker {
             "DERIVATIVE_MEDIA_ID"
     );
 
+    private static final List<String> PROPERTIES_THAT_CONTAIN_A_LIST_OF_DOUBLES = Arrays.asList(
+            "SPEAKER_LANGUAGE_CONFIDENCES",
+            "WORD_CONFIDENCES"
+    );
+
     /**
      * Compare the actual properties to the expected properties
      *
@@ -326,8 +331,32 @@ public class OutputChecker {
         for (var expected : expProperties.entrySet()) {
             if (!PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES.contains(expected.getKey())) {
                 var actualValue = actProperties.get(expected.getKey());
-                _errorCollector.checkThat(type + " Property: " + expected.getKey(),
-                        actualValue, isPropertyMatching(expected.getValue()));
+                var expectedValue = expProperties.get(expected.getKey());
+
+                if(!PROPERTIES_THAT_CONTAIN_A_LIST_OF_DOUBLES.contains(expected.getKey())) {
+                    // Compare the whole string
+                    _errorCollector.checkThat(type + " Property: " + expected.getKey(),
+                        actualValue, isPropertyMatching(expectedValue));
+                } else {
+                    // Split and compare each part of the list
+                    String[] actualParts = actualValue.split(",");
+                    String[] expectedParts = expectedValue.split(",");
+
+                    if (actualParts.length != expectedParts.length) {
+                        // Lengths do not match, so just compare the whole string
+                        _errorCollector.checkThat(type + " Property: " + expected.getKey(),
+                            actualValue, isPropertyMatching(expectedValue));
+                    } else {
+                        // Compare each part of the list
+                        for (int i = 0; i < expectedParts.length; i++) {
+                            var expectedPart = expectedParts[i].trim();
+                            var actualPart = actualParts[i].trim();
+
+                            _errorCollector.checkThat(type + " Property: " + expected.getKey(),
+                                actualPart, isPropertyMatching(expectedPart));
+                        }
+                    }
+                }
             }
         }
     }

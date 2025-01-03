@@ -117,10 +117,8 @@ public class TestCloseableMdc {
 
     @Test
     public void testMdcThreadingWithChainedFutures() {
+        // Save the initial context
         var initialContext = MDC.getCopyOfContextMap();
-
-        // Debugging
-        LOG.info("MDC Initial Context" + initialContext);
 
         CompletableFuture<String> job123;
         try (var mdc = CloseableMdc.job(123)) {

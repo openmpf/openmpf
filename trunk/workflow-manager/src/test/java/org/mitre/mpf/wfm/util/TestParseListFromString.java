@@ -71,6 +71,42 @@ public class TestParseListFromString {
     }
 
     @Test
+    public void ParseListWithUnnecessaryDoubleBackslash() {
+        String testString = "Hey\\Hello;World";
+        List<String> result = new ArrayList<String>(TextUtils.parseListFromString(testString));
+        assertTrue(result.size() == 2);
+        assertTrue(result.get(0).equals("HeyHello"));
+        assertTrue(result.get(1).equals("World"));
+    }
+
+    @Test
+    public void ParseListWithQuadrupleBackslash() {
+        String testString = "Hey\\\\Hello;World";
+        List<String> result = new ArrayList<String>(TextUtils.parseListFromString(testString));
+        assertTrue(result.size() == 2);
+        assertTrue(result.get(0).equals("Hey\\Hello"));
+        assertTrue(result.get(1).equals("World"));
+    }
+
+    @Test
+    public void ParseListWithNewlines() {
+        String testString = "Hey\nHello;World\\\nFoo\\nBar";
+        List<String> result = new ArrayList<String>(TextUtils.parseListFromString(testString));
+        assertTrue(result.size() == 2);
+        assertTrue(result.get(0).equals("Hey\nHello"));
+        assertTrue(result.get(1).equals("World\nFoonBar"));
+    }
+
+    @Test
+    public void ParseListWith8BackslashesAndNewline() {
+        String testString = "Hey\\\\\\\\\nHello;World";
+        List<String> result = new ArrayList<String>(TextUtils.parseListFromString(testString));
+        assertTrue(result.size() == 2);
+        assertTrue(result.get(0).equals("Hey\\\\\nHello"));
+        assertTrue(result.get(1).equals("World"));
+    }
+
+    @Test
     public void ParseListWithExtraDelimiter() {
         String testString = "Hello;;World";
         List<String> result = new ArrayList<String>(TextUtils.parseListFromString(testString));

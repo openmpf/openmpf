@@ -24,12 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.subject;
+package org.mitre.mpf.interop.subject;
 
-public enum CallbackMethod {
-    POST, GET;
+import java.util.List;
+import java.util.Map;
 
-    public static CallbackMethod getDefault() {
-        return POST;
+public record Relationship(
+        List<String> entities,
+        List<MediaReference> frames,
+        Map<String, String> properties) {
+
+    public record MediaReference(String mediaId, List<Long> frames) {
     }
 }

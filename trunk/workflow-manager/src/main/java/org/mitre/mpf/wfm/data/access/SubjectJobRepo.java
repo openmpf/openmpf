@@ -34,8 +34,8 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
-import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
+import org.mitre.mpf.interop.subject.SubjectJobDetails;
+import org.mitre.mpf.interop.subject.SubjectJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;

@@ -31,7 +31,7 @@ import com.google.common.collect.Table;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;

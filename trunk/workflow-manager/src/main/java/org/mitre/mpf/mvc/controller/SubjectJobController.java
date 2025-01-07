@@ -30,13 +30,13 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.interop.subject.SubjectJobDetails;
+import org.mitre.mpf.interop.subject.SubjectJobRequest;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.mvc.util.PostResponseUtil;
 import org.mitre.mpf.rest.api.MessageModel;
-import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
-import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
-import org.mitre.mpf.rest.api.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.subject.SubjectJobSummary;
 import org.mitre.mpf.wfm.businessrules.InvalidJobRequestException;
 import org.mitre.mpf.wfm.businessrules.SubjectJobRequestService;

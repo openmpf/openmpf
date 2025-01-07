@@ -24,14 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.subject;
+package org.mitre.mpf.interop.subject;
 
-import java.util.List;
-import java.util.Map;
+public enum CallbackMethod {
+    POST, GET;
 
-public record Entity(
-        String id,
-        double score,
-        Map<String, List<String>> tracks,
-        Map<String, String> properties) {
+    public static CallbackMethod getDefault() {
+        return POST;
+    }
 }

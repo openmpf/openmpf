@@ -41,7 +41,7 @@ import javax.inject.Inject;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;

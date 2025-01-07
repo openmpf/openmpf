@@ -47,7 +47,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;

@@ -37,8 +37,8 @@ import javax.validation.Validator;
 
 import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.subject.SubjectJobRequest;
 import org.mitre.mpf.mvc.util.CloseableMdc;
-import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.camel.routes.SubjectJobRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;

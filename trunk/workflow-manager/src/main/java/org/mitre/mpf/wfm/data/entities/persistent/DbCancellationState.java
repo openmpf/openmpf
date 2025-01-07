@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.mitre.mpf.rest.api.subject.CancellationState;
+import org.mitre.mpf.interop.subject.CancellationState;
 
 public enum DbCancellationState {
     NOT_CANCELLED,

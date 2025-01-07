@@ -37,11 +37,11 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.mitre.mpf.rest.api.subject.CallbackMethod;
-import org.mitre.mpf.rest.api.subject.Entity;
-import org.mitre.mpf.rest.api.subject.Relationship;
-import org.mitre.mpf.rest.api.subject.Relationship.MediaReference;
-import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.interop.subject.CallbackMethod;
+import org.mitre.mpf.interop.subject.Entity;
+import org.mitre.mpf.interop.subject.Relationship;
+import org.mitre.mpf.interop.subject.Relationship.MediaReference;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;

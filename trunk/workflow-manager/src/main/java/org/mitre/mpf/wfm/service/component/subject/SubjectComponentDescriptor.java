@@ -32,8 +32,8 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.NotBlank;
+import org.mitre.mpf.interop.util.ValidName;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
-import org.mitre.mpf.rest.api.util.ValidName;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
 
 

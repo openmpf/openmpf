@@ -57,14 +57,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mitre.mpf.rest.api.subject.CallbackMethod;
-import org.mitre.mpf.rest.api.subject.CancellationState;
-import org.mitre.mpf.rest.api.subject.Entity;
-import org.mitre.mpf.rest.api.subject.Relationship;
-import org.mitre.mpf.rest.api.subject.Relationship.MediaReference;
-import org.mitre.mpf.rest.api.subject.SubjectJobDetails;
-import org.mitre.mpf.rest.api.subject.SubjectJobRequest;
-import org.mitre.mpf.rest.api.subject.SubjectJobResult;
+import org.mitre.mpf.interop.subject.CallbackMethod;
+import org.mitre.mpf.interop.subject.CancellationState;
+import org.mitre.mpf.interop.subject.Entity;
+import org.mitre.mpf.interop.subject.Relationship;
+import org.mitre.mpf.interop.subject.SubjectJobDetails;
+import org.mitre.mpf.interop.subject.SubjectJobRequest;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -240,7 +239,8 @@ public class TestSubjectJobResultsService extends MockitoTest.Strict {
                 Map.of("TEST_TRACK_TYPE", List.of("FIRST_TRACK_ID", "SECOND_TRACK_ID")),
                 Map.of("PROP", "VALUE"));
 
-        var expectedMediaRef = new MediaReference("MEDIA_ID", List.of(5_000L, 5_001L));
+        var expectedMediaRef = new Relationship.MediaReference(
+                "MEDIA_ID", List.of(5_000L, 5_001L));
         var expectedRelationship = new Relationship(
                 List.of("ENTITY_1_ID", "ENTITY_2_ID"),
                 List.of(expectedMediaRef),

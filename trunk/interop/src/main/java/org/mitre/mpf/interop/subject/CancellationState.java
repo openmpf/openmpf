@@ -24,48 +24,8 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.subject;
+package org.mitre.mpf.interop.subject;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.Set;
-
-import org.hibernate.validator.constraints.NotEmpty;
-import org.hibernate.validator.constraints.Range;
-import org.mitre.mpf.rest.api.util.Utils;
-import org.mitre.mpf.rest.api.util.ValidName;
-
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-public record SubjectJobRequest(
-        @ValidName
-        String componentName,
-
-        @Range(min = 1, max = 9)
-        OptionalInt priority,
-
-        @NotEmpty
-        Set<Long> detectionJobIds,
-
-        Map<String, String> jobProperties,
-
-        // The annotation is being used to change the field name so that it is consistent with
-        // JobCreationRequest.
-        @JsonProperty("callbackURL")
-        // When parsing a request, also accept callbackUri for the field name.
-        @JsonAlias("callbackUri")
-        Optional<URI> callbackUri,
-
-        Optional<CallbackMethod> callbackMethod,
-
-        Optional<String> externalId) {
-
-    public SubjectJobRequest {
-        detectionJobIds = Utils.toImmutableSet(detectionJobIds);
-        jobProperties = Utils.toImmutableMap(jobProperties);
-    }
+public enum CancellationState {
+    NOT_CANCELLED, CANCELLED_BY_USER, CANCELLED_BY_SHUTDOWN
 }

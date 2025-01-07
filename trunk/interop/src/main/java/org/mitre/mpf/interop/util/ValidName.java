@@ -24,32 +24,31 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.interop.util;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
-import javax.validation.ReportAsSingleViolation;
 
 import org.hibernate.validator.constraints.NotBlank;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
+@Target({ ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
         ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = ValidName.Validator.class)
 @NotBlank
 public @interface ValidName {
     String message() default "may not contain / or ;";
-    Class<?>[] groups() default { };
-    Class<? extends Payload>[] payload() default { };
 
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
 
     public static class Validator implements ConstraintValidator<ValidName, String> {
 

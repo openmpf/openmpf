@@ -46,7 +46,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 
-import org.mitre.mpf.rest.api.subject.CallbackMethod;
+import org.mitre.mpf.interop.subject.CallbackMethod;
 import org.mitre.mpf.wfm.data.access.hibernate.AbstractHibernateDao;
 import org.mitre.mpf.wfm.util.CallbackStatus;
 

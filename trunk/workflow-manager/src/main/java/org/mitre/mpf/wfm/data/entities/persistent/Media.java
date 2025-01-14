@@ -114,6 +114,8 @@ public interface Media {
 
     public ImmutableList<MediaSelector> getMediaSelectors();
 
+    public Optional<String> getMediaSelectorsOutputAction();
+
     public Optional<URI> getMediaSelectorsOutputUri();
 
     public Optional<TiesDbInfo> getTiesDbInfo();

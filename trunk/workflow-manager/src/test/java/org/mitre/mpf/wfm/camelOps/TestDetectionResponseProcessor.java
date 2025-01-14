@@ -155,7 +155,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
         MediaImpl media = new MediaImpl(
                 MEDIA_ID, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
-                Map.of(), Map.of(), List.of(), List.of(), List.of(), null);
+                Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
         media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(

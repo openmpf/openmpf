@@ -152,7 +152,7 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
 
         MediaImpl media = new MediaImpl(
                 mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), _tempFolder.newFile().toPath(),
-                Map.of(), Map.of(), List.of(), List.of(), List.of(), null);
+                Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
 
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
@@ -177,7 +177,7 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
         MediaImpl media = new MediaImpl(
                 mediaId, "https://www.mitre.org/" + UUID.randomUUID(), UriScheme.HTTPS,
                 _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(), List.of(), List.of(),
-                 null);
+                null, null);
 
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
@@ -201,10 +201,10 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
         ImmutableCollection<MediaImpl> media = ImmutableList.of(
                 new MediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
                               Paths.get("/some/local/path.jpg"), Map.of(), Map.of(), List.of(),
-                              List.of(), List.of(), null),
+                              List.of(), List.of(), null, null),
                 new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
                               _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(),
-                              List.of(), List.of(), null));
+                              List.of(), List.of(), null, null));
 
         var job = mock(BatchJob.class);
         when(job.isCancelled())

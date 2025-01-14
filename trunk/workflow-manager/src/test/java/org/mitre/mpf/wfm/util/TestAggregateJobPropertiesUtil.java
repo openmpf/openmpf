@@ -165,7 +165,7 @@ public class TestAggregateJobPropertiesUtil {
             var media = new MediaImpl(
                     2, "file:/example.mp4", UriScheme.FILE,
                     Path.of("remote-media", "example.mp4"), mediaProperties, Map.of(),
-                    List.of(), List.of(), List.of(), null);
+                    List.of(), List.of(), List.of(), null, null);
             media.setType(MediaType.VIDEO);
             media.setMimeType("video/mp4");
 

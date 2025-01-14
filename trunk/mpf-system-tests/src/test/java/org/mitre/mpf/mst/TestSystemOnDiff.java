@@ -32,6 +32,9 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationMediaSelector;
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
@@ -40,6 +43,8 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.io.IOException;
+import java.net.URI;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -1252,5 +1257,60 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 algorithmProperties,
                 Collections.emptyMap(),
                 "/samples/derivative-media/text-embedded-and-images.pdf");
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void runJsonPathTest() throws IOException {
+        var pipelineName = "TEST JSON PATH";
+        addPipeline(
+                pipelineName,
+                "FASTTEXT LANGUAGE ID TEXT FILE TASK",
+                "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK");
+
+        var selector1 = new JobCreationMediaSelector(
+                "$.spanishMessages.*.content",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "TRANSLATION");
+        var selector2 = new JobCreationMediaSelector(
+                "$.chineseMessages.*.content",
+                MediaSelectorType.JSON_PATH,
+                Map.of(),
+                "TRANSLATION");
+
+        var mediaUrl = getClass().getResource("/samples/text/test-media-selectors.json");
+        var media = new JobCreationMediaData(
+                mediaUrl.toString(),
+                Map.of(),
+                Map.of(),
+                List.of(),
+                List.of(),
+                List.of(selector1, selector2),
+                Optional.of("ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION"));
+
+        var job = new JobCreationRequest(
+                List.of(media),
+                Map.of(),
+                Map.of(),
+                null,
+                pipelineName,
+                null,
+                true,
+                4,
+                null,
+                null);
+
+        var outputObject = runSystemTest(job, "output/text/runJsonPathTest.json");
+
+        var actualMediaSelectorsUri = URI.create(
+                outputObject.getMedia().first().getMediaSelectorsOutputUri());
+        var actualMediaSelectorsOut = objectMapper.readTree(actualMediaSelectorsUri.toURL());
+
+        var expectedMediaSelectorsUrl = getClass()
+                .getResource("/output/text/runJsonPathTestMediaSelectorsOut.json");
+        var expectedMediaSelectorsOut = objectMapper.readTree(expectedMediaSelectorsUrl);
+        assertEquals(expectedMediaSelectorsOut, actualMediaSelectorsOut);
     }
 }

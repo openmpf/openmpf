@@ -97,13 +97,10 @@ public class MediaSelectorsOutputFileProcessorImpl
     public void wfmProcess(Exchange exchange) {
         exchange.getOut().setBody(exchange.getIn().getBody());
         var trackCache = exchange.getIn().getBody(TrackCache.class);
-        if (trackCache.getTaskIndex() != 0) {
-            return;
-        }
         try {
             var job = _inProgressJobs.getJob(trackCache.getJobId());
             JobPartsIter.taskStream(job, trackCache.getTaskIndex())
-                .filter(jp -> !jp.media().getMediaSelectors().isEmpty())
+                .filter(jp -> isOutputAction(jp))
                 .forEach(jp -> createUpdatedOutputDocument(jp, trackCache.getTracks(jp)));
         }
         catch (Exception e) {
@@ -112,6 +109,18 @@ public class MediaSelectorsOutputFileProcessorImpl
             _inProgressJobs.addJobError(trackCache.getJobId(), IssueCodes.OTHER, msg);
         }
     }
+
+
+    private static boolean isOutputAction(JobPart jobPart) {
+        if (jobPart.media().getMediaSelectors().isEmpty()) {
+            return false;
+        }
+        return jobPart.media()
+                .getMediaSelectorsOutputAction()
+                .map(jobPart.action().name()::equals)
+                .orElseGet(() -> jobPart.job().getPipelineElements().getAllActions().size() == 1);
+    }
+
 
     private void createUpdatedOutputDocument(JobPart jobPart, Collection<Track> tracks) {
         createOutputDocument(jobPart.id(), jobPart.media().getId(), () -> {

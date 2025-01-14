@@ -613,6 +613,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             List.of(),
             List.of(),
             List.of(),
+            null,
             null
         );
 
@@ -626,6 +627,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             List.of(),
             List.of(),
             List.of(),
+            null,
             null
         );
 
@@ -641,6 +643,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             List.of(),
             List.of(),
             List.of(),
+            null,
             null);
         _tiesDbChildMedia.addMetadata(MpfConstants.IS_DERIVATIVE_MEDIA, "true");
 
@@ -655,6 +658,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             List.of(),
             List.of(),
             List.of(),
+            null,
             null
         );
         _allMedia = List.of(_tiesDbMedia, _tiesDbParentMedia, _tiesDbChildMedia, _noTiesDbMedia);

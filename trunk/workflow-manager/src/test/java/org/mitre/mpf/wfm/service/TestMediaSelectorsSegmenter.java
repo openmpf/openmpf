@@ -71,6 +71,7 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
         var selector = new MediaSelector(
                 "expr", MediaSelectorType.JSON_PATH,
                 Map.of(),
+                null,
                 null);
         var media = createTestMedia(List.of(selector));
         var context = createDetectionContext(
@@ -92,6 +93,7 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
         var selector = new MediaSelector(
                 "expr", MediaSelectorType.JSON_PATH,
                 Map.of(),
+                null,
                 null);
         var media = createTestMedia(List.of(selector));
         var context = createDetectionContext(
@@ -155,7 +157,7 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
             Path.of("/path/to/media"),
             Map.of("MEDIA-PROP1", "MEDIA-VALUE1"),
             Map.of(), List.of(), List.of(),
-            mediaSelectors, null);
+            mediaSelectors, null, null);
     }
 
     private static DetectionContext createDetectionContext() {

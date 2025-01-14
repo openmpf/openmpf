@@ -53,6 +53,10 @@ public class Utils {
                 : s.trim();
     }
 
+    public static Optional<String> trimAndUpper(Optional<String> optString) {
+        return optString.map(Utils::trimAndUpper);
+    }
+
 
     public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
         return Optional.ofNullable(strings)

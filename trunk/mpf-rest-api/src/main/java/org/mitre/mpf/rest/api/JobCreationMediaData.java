@@ -28,10 +28,12 @@ package org.mitre.mpf.rest.api;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.validation.Valid;
 
 import org.mitre.mpf.rest.api.util.Utils;
+import org.mitre.mpf.rest.api.util.ValidName;
 
 
 public record JobCreationMediaData(
@@ -42,7 +44,9 @@ public record JobCreationMediaData(
         List<JobCreationMediaRange> timeRanges,
 
         @Valid
-        List<JobCreationMediaSelector> mediaSelectors) {
+        List<JobCreationMediaSelector> mediaSelectors,
+
+        Optional<@ValidName(required = false) String> mediaSelectorsOutputAction) {
 
     public JobCreationMediaData {
         properties = Utils.toImmutableMap(properties);
@@ -50,5 +54,6 @@ public record JobCreationMediaData(
         frameRanges = Utils.toImmutableList(frameRanges);
         timeRanges = Utils.toImmutableList(timeRanges);
         mediaSelectors = Utils.toImmutableList(mediaSelectors);
+        mediaSelectorsOutputAction = Utils.trimAndUpper(mediaSelectorsOutputAction);
     }
 }

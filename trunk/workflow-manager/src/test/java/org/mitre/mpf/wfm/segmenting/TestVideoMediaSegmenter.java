@@ -364,7 +364,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         URI mediaUri = URI.create("file:///example.avi");
         MediaImpl media = new MediaImpl(
                 1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
-                Map.of(), List.of(), List.of(), List.of(), null);
+                Map.of(), List.of(), List.of(), List.of(), null, null);
         media.setLength(50);
         media.addMetadata("mediaKey1", "mediaValue1");
         return media;
@@ -376,7 +376,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         var mediaUri = TestUtil.findFile("/samples/video_01.mp4");
         MediaImpl media = new MediaImpl(
                 1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
-                Map.of(), frameBoundaries, timeBoundaries, List.of(), null);
+                Map.of(), frameBoundaries, timeBoundaries, List.of(), null, null);
         media.setLength(200);
         var fps = new Fraction(30_000, 1_001);
         media.addMetadata("FPS", Double.toString(fps.toDouble()));

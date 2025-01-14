@@ -222,6 +222,12 @@ public class MediaImpl implements Media {
     @Override
     public ImmutableList<MediaSelector> getMediaSelectors() { return _mediaSelectors; }
 
+    private final String _mediaSelectorsOutputAction;
+    @Override
+    public Optional<String> getMediaSelectorsOutputAction() {
+        return Optional.ofNullable(_mediaSelectorsOutputAction);
+    }
+
     private URI _mediaSelectorsOutputUri;
     @Override
     public Optional<URI> getMediaSelectorsOutputUri() { return Optional.ofNullable(_mediaSelectorsOutputUri); }
@@ -265,6 +271,7 @@ public class MediaImpl implements Media {
             Collection<MediaRange> frameRanges,
             Collection<MediaRange> timeRanges,
             Collection<MediaSelector> mediaSelectors,
+            String mediaSelectorsOutputAction,
             String errorMessage) {
         _id = id;
         _parentId = parentId;
@@ -277,6 +284,7 @@ public class MediaImpl implements Media {
         _frameRanges = ImmutableSet.copyOf(frameRanges);
         _timeRanges = ImmutableSet.copyOf(timeRanges);
         _mediaSelectors = ImmutableList.copyOf(mediaSelectors);
+        _mediaSelectorsOutputAction = mediaSelectorsOutputAction;
 
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
@@ -294,6 +302,7 @@ public class MediaImpl implements Media {
             Collection<MediaRange> frameRanges,
             Collection<MediaRange> timeRanges,
             Collection<MediaSelector> mediaSelectors,
+            String mediaSelectorsOutputAction,
             String errorMessage) {
         this(
             id,
@@ -307,6 +316,7 @@ public class MediaImpl implements Media {
             frameRanges,
             timeRanges,
             mediaSelectors,
+            mediaSelectorsOutputAction,
             errorMessage);
     }
 
@@ -326,6 +336,7 @@ public class MediaImpl implements Media {
             @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
             @JsonProperty("timeRanges") Collection<MediaRange> timeRanges,
             @JsonProperty("mediaSelectors") Collection<MediaSelector> mediaSelectors,
+            @JsonProperty("mediaSelectorsOutputAction") String mediaSelectorsOutputAction,
             @JsonProperty("mediaSelectorsOutputUri") URI mediaSelectorsOutputUri,
             @JsonProperty("tiesDbInfo") TiesDbInfo tiesDbInfo) {
         this(id,
@@ -339,6 +350,7 @@ public class MediaImpl implements Media {
              frameRanges,
              timeRanges,
              mediaSelectors,
+             mediaSelectorsOutputAction,
              errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
@@ -365,6 +377,7 @@ public class MediaImpl implements Media {
                 originalMedia.getFrameRanges(),
                 originalMedia.getTimeRanges(),
                 originalMedia.getMediaSelectors(),
+                originalMedia.getMediaSelectorsOutputAction().orElse(null),
                 originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());

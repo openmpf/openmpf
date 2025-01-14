@@ -77,7 +77,7 @@ public class TestMediaInspectionSplitter extends MockitoTest.Strict {
         URI testURI = TestUtil.findFile("/samples/new_face_video.avi");
         var testMedia = new MediaImpl(
                 testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Map.of(),
-                Map.of(), List.of(), List.of(), List.of(), null);
+                Map.of(), List.of(), List.of(), List.of(), null, null);
 
         var testJob = new BatchJobImpl(
                 jobId,

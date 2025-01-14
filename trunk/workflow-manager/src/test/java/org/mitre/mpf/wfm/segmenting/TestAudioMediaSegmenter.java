@@ -175,7 +175,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		URI mediaUri = URI.create("file:///example.wav");
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
-				Map.of(), List.of(), List.of(), List.of(), null);
+				Map.of(), List.of(), List.of(), List.of(), null, null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

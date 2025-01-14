@@ -26,33 +26,51 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedSet;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertAllHaveFeedForwardTrack;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertContainsAlgoProperty;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertContainsExpectedMediaMetadata;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertNoneHaveFeedForwardTrack;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.containsExpectedDetectionProperties;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createDetectionProperties;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTestDetectionContext;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.junit.Test;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import java.net.URI;
-import java.nio.file.Paths;
-import java.util.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 
 public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
@@ -163,10 +181,68 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
 
     @Test
-    public void mediaSelectorsOnlyApplyToFirstStage() {
+    public void mediaSelectorsSegmenterOnlyApplyToFirstStage() {
         var media = createMediaWithJsonSelector();
         var context = createTestDetectionContext(1, Map.of(), Set.of());
         _defaultMediaSegmenter.createDetectionRequests(media, context);
+        verifyNoInteractions(_mockSelectorSegmenter);
+    }
+
+
+    @Test
+    public void mediaSelectorInfoCopiedDuringFeedForward() {
+        var media = createMediaWithJsonSelector();
+
+        var selector1Id = UUID.randomUUID();
+        var content1 = "<content1>";
+        var track1 = mock(Track.class);
+        when(track1.getSelectorId())
+            .thenReturn(Optional.of(selector1Id));
+        when(track1.getSelectedInput())
+            .thenReturn(Optional.of(content1));
+        when(track1.getExemplar())
+            .thenReturn(createDetection(1));
+
+        var selector2Id = UUID.randomUUID();
+        var content2 = "<content2>";
+        var track2 = mock(Track.class);
+        when(track2.getSelectorId())
+            .thenReturn(Optional.of(selector2Id));
+        when(track2.getSelectedInput())
+            .thenReturn(Optional.of(content2));
+        when(track2.getExemplar())
+            .thenReturn(createDetection(1));
+
+        var context = createTestDetectionContext(
+                1,
+                Map.of(MediaSegmenter.FEED_FORWARD_TYPE, "REGION"),
+                Set.of(track1, track2));
+
+        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+                .thenAnswer(i -> Stream.of(track1, track2));
+
+        var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
+
+        assertThat(detectionRequests).satisfiesExactlyInAnyOrder(
+            dr -> {
+                assertThat(dr.headers())
+                    .isEqualTo(Map.of(MpfHeaders.MEDIA_SELECTOR_ID, selector1Id.toString()));
+                assertThat(dr.feedForwardTrack()).hasValue(track1);
+                assertThat(dr.protobuf().getMediaMetadataMap())
+                    .containsOnly(
+                        Map.entry("mediaKey1", "mediaValue1"),
+                        Map.entry(MpfConstants.SELECTED_CONTENT, content1));
+            },
+            dr -> {
+                assertThat(dr.headers())
+                    .isEqualTo(Map.of(MpfHeaders.MEDIA_SELECTOR_ID, selector2Id.toString()));
+                assertThat(dr.feedForwardTrack()).hasValue(track2);
+                assertThat(dr.protobuf().getMediaMetadataMap())
+                    .containsOnly(
+                        Map.entry("mediaKey1", "mediaValue1"),
+                        Map.entry(MpfConstants.SELECTED_CONTENT, content2));
+            }
+        );
         verifyNoInteractions(_mockSelectorSegmenter);
     }
 
@@ -196,7 +272,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		URI mediaUri = URI.create("file:///example.foo");
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
-				Map.of(), List.of(), List.of(), mediaSelectors, null);
+				Map.of(), List.of(), List.of(), mediaSelectors, null, null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

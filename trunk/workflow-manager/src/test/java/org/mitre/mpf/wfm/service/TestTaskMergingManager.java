@@ -112,7 +112,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
         _testMedia = new MediaImpl(
                 321, "file:///fake-uri", UriScheme.FILE, null, Map.of(), Map.of(),
-                List.of(), List.of(), List.of(), null);
+                List.of(), List.of(), List.of(), null, null);
 
         _testJob = new BatchJobImpl(
             123, null, null,

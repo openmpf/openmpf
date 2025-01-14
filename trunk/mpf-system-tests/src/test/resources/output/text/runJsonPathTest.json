@@ -1,0 +1,700 @@
+{
+    "openmpfVersion": "9.0",
+    "jobId": "ubuntu-14",
+    "errors": [],
+    "warnings": [],
+    "timing": {
+        "processingTime": 384,
+        "actions": [
+            {
+                "name": "FASTTEXT LANGUAGE ID TEXT FILE ACTION",
+                "processingTime": 6
+            },
+            {
+                "name": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION",
+                "processingTime": 363
+            },
+            {
+                "name": "KEYWORD TAGGING (WITH FF REGION) ACTION",
+                "processingTime": 15
+            }
+        ]
+    },
+    "objectId": "9e38d1c9-b576-484a-b12d-66a5ecd76541",
+    "pipeline": {
+        "name": "CUSTOM ARGOS TRANSLATION (WITH FASTTEXT LANGUAGE ID AND KEYWORD TAGGING) TEXT FILE PIPELINE",
+        "description": "asdf",
+        "tasks": [
+            {
+                "actionType": "DETECTION",
+                "name": "FASTTEXT LANGUAGE ID TEXT FILE TASK",
+                "description": "Uses FastText to perform language identification on a plain text file.",
+                "actions": [
+                    {
+                        "algorithm": "FASTTEXTLANGUAGE",
+                        "name": "FASTTEXT LANGUAGE ID TEXT FILE ACTION",
+                        "description": "Uses FastText to perform language identification on a plain text file.",
+                        "properties": {}
+                    }
+                ]
+            },
+            {
+                "actionType": "DETECTION",
+                "name": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) TASK",
+                "description": "Uses Argos Translate to perform translation on feed-forward tracks and detections.",
+                "actions": [
+                    {
+                        "algorithm": "ARGOSTRANSLATION",
+                        "name": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION",
+                        "description": "Uses Argos Translation to perform translation on feed-forward tracks and detections.",
+                        "properties": {
+                            "FEED_FORWARD_TYPE": "REGION",
+                            "OUTPUT_MERGE_WITH_PREVIOUS_TASK": "FALSE"
+                        }
+                    }
+                ]
+            },
+            {
+                "actionType": "DETECTION",
+                "name": "KEYWORD TAGGING (WITH FF REGION) TASK",
+                "description": "Performs keyword tagging on feed-forward tracks and detections.",
+                "actions": [
+                    {
+                        "algorithm": "KEYWORDTAGGING",
+                        "name": "KEYWORD TAGGING (WITH FF REGION) ACTION",
+                        "description": "Performs keyword tagging on feed-forward tracks and detections.",
+                        "properties": {
+                            "FEED_FORWARD_TYPE": "REGION",
+                            "OUTPUT_MERGE_WITH_PREVIOUS_TASK": "TRUE"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "priority": 4,
+    "siteId": "mpf1",
+    "externalJobId": null,
+    "timeStart": "2025-01-15T07:53:40.314-05:00",
+    "timeStop": "2025-01-15T07:53:40.803-05:00",
+    "status": "COMPLETE",
+    "algorithmProperties": {},
+    "jobProperties": {},
+    "environmentVariableProperties": {},
+    "media": [
+        {
+            "mediaId": 4,
+            "parentMediaId": -1,
+            "path": "file:///opt/mpf/share/remote-media/test-media-selectors.json",
+            "sha256": "bd88e67b61fa9d27066770bb73680e791ca671f699c442b6a7f8ca3c2ff4da7a",
+            "mimeType": "application/json",
+            "mediaType": "UNKNOWN",
+            "length": -1,
+            "frameRanges": [],
+            "timeRanges": [],
+            "mediaMetadata": {
+                "MIME_TYPE": "application/json"
+            },
+            "mediaProperties": {},
+            "status": "COMPLETE",
+            "detectionProcessingErrors": {},
+            "markupResult": null,
+            "mediaSelectorsOutputUri": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/media-selectors-output/14/4/media-selectors-output.json",
+            "output": {
+                "LANGUAGE": [
+                    {
+                        "action": "FASTTEXT LANGUAGE ID TEXT FILE ACTION",
+                        "algorithm": "FASTTEXTLANGUAGE",
+                        "tracks": [
+                            {
+                                "index": 0,
+                                "id": "087407bb2efaf786a820ea11e11468509f00d65e309fbed5219fd1b96e275120",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "LANGUAGE",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "SPA",
+                                    "ISO_SCRIPT": "LATN",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "0.999992847442627",
+                                    "TEXT": "¿Donde está el aeropuerto?"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "SPA",
+                                        "ISO_SCRIPT": "LATN",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "0.999992847442627",
+                                        "TEXT": "¿Donde está el aeropuerto?"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "SPA",
+                                            "ISO_SCRIPT": "LATN",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "0.999992847442627",
+                                            "TEXT": "¿Donde está el aeropuerto?"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 1,
+                                "id": "087407bb2efaf786a820ea11e11468509f00d65e309fbed5219fd1b96e275120",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "LANGUAGE",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "SPA",
+                                    "ISO_SCRIPT": "LATN",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "0.9999971389770508",
+                                    "TEXT": "¿Hola, cómo estás?"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "SPA",
+                                        "ISO_SCRIPT": "LATN",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "0.9999971389770508",
+                                        "TEXT": "¿Hola, cómo estás?"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "SPA",
+                                            "ISO_SCRIPT": "LATN",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "0.9999971389770508",
+                                            "TEXT": "¿Hola, cómo estás?"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 2,
+                                "id": "087407bb2efaf786a820ea11e11468509f00d65e309fbed5219fd1b96e275120",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "LANGUAGE",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "ZHO",
+                                    "ISO_SCRIPT": "HANS",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                    "TEXT": "你叫什么名字？"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "ZHO",
+                                        "ISO_SCRIPT": "HANS",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                        "TEXT": "你叫什么名字？"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "ZHO",
+                                            "ISO_SCRIPT": "HANS",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                            "TEXT": "你叫什么名字？"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 3,
+                                "id": "087407bb2efaf786a820ea11e11468509f00d65e309fbed5219fd1b96e275120",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "LANGUAGE",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "ZHO",
+                                    "ISO_SCRIPT": "HANS",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                    "TEXT": "你在哪里？"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "ZHO",
+                                        "ISO_SCRIPT": "HANS",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                        "TEXT": "你在哪里？"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "ZHO",
+                                            "ISO_SCRIPT": "HANS",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                            "TEXT": "你在哪里？"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 4,
+                                "id": "087407bb2efaf786a820ea11e11468509f00d65e309fbed5219fd1b96e275120",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "LANGUAGE",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "ZHO",
+                                    "ISO_SCRIPT": "HANS",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                    "TEXT": "现在是几奌？"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "ZHO",
+                                        "ISO_SCRIPT": "HANS",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                        "TEXT": "现在是几奌？"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "ZHO",
+                                            "ISO_SCRIPT": "HANS",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                            "TEXT": "现在是几奌？"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "TRANSLATION": [
+                    {
+                        "action": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION",
+                        "algorithm": "ARGOSTRANSLATION",
+                        "tracks": [
+                            {
+                                "index": 0,
+                                "id": "9c1f655faac62bd37bff0cdd1d266876ed77bea02d783d8d72fc6469f0eb63e7",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "TRANSLATION",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "SPA",
+                                    "ISO_SCRIPT": "LATN",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "0.9999971389770508",
+                                    "TAGS": "",
+                                    "TEXT": "¿Hola, cómo estás?",
+                                    "TRANSLATION": "Hello, how are you?",
+                                    "TRANSLATION_SOURCE_LANGUAGE": "es"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "SPA",
+                                        "ISO_SCRIPT": "LATN",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "0.9999971389770508",
+                                        "TAGS": "",
+                                        "TEXT": "¿Hola, cómo estás?",
+                                        "TRANSLATION": "Hello, how are you?",
+                                        "TRANSLATION_SOURCE_LANGUAGE": "es"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "SPA",
+                                            "ISO_SCRIPT": "LATN",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "0.9999971389770508",
+                                            "TAGS": "",
+                                            "TEXT": "¿Hola, cómo estás?",
+                                            "TRANSLATION": "Hello, how are you?",
+                                            "TRANSLATION_SOURCE_LANGUAGE": "es"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 1,
+                                "id": "9c1f655faac62bd37bff0cdd1d266876ed77bea02d783d8d72fc6469f0eb63e7",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "TRANSLATION",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "ZHO",
+                                    "ISO_SCRIPT": "HANS",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                    "TAGS": "",
+                                    "TEXT": "你在哪里？",
+                                    "TRANSLATION": "Where are you?",
+                                    "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "ZHO",
+                                        "ISO_SCRIPT": "HANS",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                        "TAGS": "",
+                                        "TEXT": "你在哪里？",
+                                        "TRANSLATION": "Where are you?",
+                                        "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "ZHO",
+                                            "ISO_SCRIPT": "HANS",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                            "TAGS": "",
+                                            "TEXT": "你在哪里？",
+                                            "TRANSLATION": "Where are you?",
+                                            "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 2,
+                                "id": "9c1f655faac62bd37bff0cdd1d266876ed77bea02d783d8d72fc6469f0eb63e7",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "TRANSLATION",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "ZHO",
+                                    "ISO_SCRIPT": "HANS",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                    "TAGS": "",
+                                    "TEXT": "现在是几奌？",
+                                    "TRANSLATION": "What time is it?",
+                                    "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "ZHO",
+                                        "ISO_SCRIPT": "HANS",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                        "TAGS": "",
+                                        "TEXT": "现在是几奌？",
+                                        "TRANSLATION": "What time is it?",
+                                        "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "ZHO",
+                                            "ISO_SCRIPT": "HANS",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                            "TAGS": "",
+                                            "TEXT": "现在是几奌？",
+                                            "TRANSLATION": "What time is it?",
+                                            "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 3,
+                                "id": "9c1f655faac62bd37bff0cdd1d266876ed77bea02d783d8d72fc6469f0eb63e7",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "TRANSLATION",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "SPA",
+                                    "ISO_SCRIPT": "LATN",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "0.999992847442627",
+                                    "TAGS": "TRAVEL",
+                                    "TEXT": "¿Donde está el aeropuerto?",
+                                    "TRANSLATION": "Where's the airport?",
+                                    "TRANSLATION TRAVEL TRIGGER WORDS": "airport",
+                                    "TRANSLATION TRAVEL TRIGGER WORDS OFFSET": "12-18",
+                                    "TRANSLATION_SOURCE_LANGUAGE": "es"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "SPA",
+                                        "ISO_SCRIPT": "LATN",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "0.999992847442627",
+                                        "TAGS": "TRAVEL",
+                                        "TEXT": "¿Donde está el aeropuerto?",
+                                        "TRANSLATION": "Where's the airport?",
+                                        "TRANSLATION TRAVEL TRIGGER WORDS": "airport",
+                                        "TRANSLATION TRAVEL TRIGGER WORDS OFFSET": "12-18",
+                                        "TRANSLATION_SOURCE_LANGUAGE": "es"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "SPA",
+                                            "ISO_SCRIPT": "LATN",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "0.999992847442627",
+                                            "TAGS": "TRAVEL",
+                                            "TEXT": "¿Donde está el aeropuerto?",
+                                            "TRANSLATION": "Where's the airport?",
+                                            "TRANSLATION TRAVEL TRIGGER WORDS": "airport",
+                                            "TRANSLATION TRAVEL TRIGGER WORDS OFFSET": "12-18",
+                                            "TRANSLATION_SOURCE_LANGUAGE": "es"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "index": 4,
+                                "id": "9c1f655faac62bd37bff0cdd1d266876ed77bea02d783d8d72fc6469f0eb63e7",
+                                "startOffsetFrame": 0,
+                                "stopOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetTime": 0,
+                                "type": "TRANSLATION",
+                                "confidence": -1.0,
+                                "trackProperties": {
+                                    "ISO_LANGUAGE": "ZHO",
+                                    "ISO_SCRIPT": "HANS",
+                                    "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                    "TAGS": "IDENTITY DOCUMENT",
+                                    "TEXT": "你叫什么名字？",
+                                    "TRANSLATION": "What's your name?",
+                                    "TRANSLATION IDENTITY DOCUMENT TRIGGER WORDS": "name",
+                                    "TRANSLATION IDENTITY DOCUMENT TRIGGER WORDS OFFSET": "12-15",
+                                    "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": 0,
+                                    "height": 0,
+                                    "confidence": -1.0,
+                                    "detectionProperties": {
+                                        "ISO_LANGUAGE": "ZHO",
+                                        "ISO_SCRIPT": "HANS",
+                                        "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                        "TAGS": "IDENTITY DOCUMENT",
+                                        "TEXT": "你叫什么名字？",
+                                        "TRANSLATION": "What's your name?",
+                                        "TRANSLATION IDENTITY DOCUMENT TRIGGER WORDS": "name",
+                                        "TRANSLATION IDENTITY DOCUMENT TRIGGER WORDS OFFSET": "12-15",
+                                        "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                    },
+                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                    "artifactPath": null
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": 0,
+                                        "height": 0,
+                                        "confidence": -1.0,
+                                        "detectionProperties": {
+                                            "ISO_LANGUAGE": "ZHO",
+                                            "ISO_SCRIPT": "HANS",
+                                            "PRIMARY_LANGUAGE_CONFIDENCE": "1",
+                                            "TAGS": "IDENTITY DOCUMENT",
+                                            "TEXT": "你叫什么名字？",
+                                            "TRANSLATION": "What's your name?",
+                                            "TRANSLATION IDENTITY DOCUMENT TRIGGER WORDS": "name",
+                                            "TRANSLATION IDENTITY DOCUMENT TRIGGER WORDS OFFSET": "12-15",
+                                            "TRANSLATION_SOURCE_LANGUAGE": "zh"
+                                        },
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

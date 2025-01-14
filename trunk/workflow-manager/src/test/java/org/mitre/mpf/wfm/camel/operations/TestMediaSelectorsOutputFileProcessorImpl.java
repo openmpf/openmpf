@@ -28,13 +28,17 @@ package org.mitre.mpf.wfm.camel.operations;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
@@ -43,6 +47,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -122,17 +127,23 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
 
     @Test
-    public void doesNotCreateOutputFilesForStagesAfterFirst() {
+    public void doesNothingWhenWrongTask() {
+        var mediaSelector = new MediaSelector(
+                "expr", MediaSelectorType.JSON_PATH, Map.of(), "result");
+        when(_mockInProgressJobs.getJob(JOB_ID))
+                .thenReturn(createTestJob(List.of(mediaSelector)));
+
         var exchange = TestUtil.createTestExchange();
-        exchange.getIn().setHeader(MpfHeaders.JOB_ID, JOB_ID);
-        var trackCache = new TrackCache(JOB_ID, 1, _mockInProgressJobs);
+        // The job is configured to create the media selectors output file in the second task.
+        // Here, we invoke the processor for the first task.
+        var trackCache = new TrackCache(JOB_ID, 0, _mockInProgressJobs);
         exchange.getIn().setBody(trackCache);
+        exchange.getIn().setHeader(MpfHeaders.JOB_ID, JOB_ID);
 
         _mediaSelectorsOutputFileProcessor.process(exchange);
 
-        verifyNoInteractions(
-            _mockInProgressJobs, _mockAggJobProps, _mockStorageService, _mockJsonPathService);
-        assertThat(exchange.getOut().getBody()).isSameAs(trackCache);
+        verifyNoMoreInteractions(_mockInProgressJobs);
+        verifyNoInteractions(_mockAggJobProps, _mockStorageService, _mockJsonPathService);
     }
 
 
@@ -356,11 +367,11 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
         @SuppressWarnings("unchecked")
         public List<UnaryOperator<String>> getStringMappers() throws IOException, StorageException {
             var exchange = TestUtil.createTestExchange();
-            var trackCache = new TrackCache(JOB_ID, 0, _mockInProgressJobs);
+            var trackCache = new TrackCache(JOB_ID, 1, _mockInProgressJobs);
             exchange.getIn().setBody(trackCache);
             exchange.getIn().setHeader(MpfHeaders.JOB_ID, JOB_ID);
 
-            var job = createTestJob();
+            var job = createTestJob(_mediaSelectors);
             when(_mockInProgressJobs.getJob(JOB_ID))
                 .thenReturn(job);
 
@@ -369,7 +380,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
                 .thenReturn(mockEvaluator);
 
             var sortedTracks = new TreeSet<>(_tracks);
-            when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, 0, 0))
+            when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, 1, 1))
                 .thenReturn(sortedTracks);
 
             _mediaSelectorsOutputFileProcessor.process(exchange);
@@ -388,6 +399,9 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
             verify(_mockInProgressJobs, never())
                 .addError(any(), any(), any());
 
+            verify(_mockInProgressJobs, never())
+                    .getTracks(anyLong(), anyLong(), anyInt(), intThat(i -> i != 1));
+
             var mappers = new ArrayList<UnaryOperator<String>>();
             var notPresentString = UUID.randomUUID().toString();
             for (var selector : _mediaSelectors) {
@@ -405,29 +419,41 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
             return mappers;
         }
+    }
 
-
-        private MediaImpl createTestMedia() {
-            return new MediaImpl(
-                    MEDIA_ID, "file:///path/to/media", null, _mediaPath, Map.of(),
-                    Map.of(), List.of(), List.of(), _mediaSelectors, null);
+    private static JobPipelineElements createTestPipeline() {
+        var algos = new ArrayList<Algorithm>();
+        var actions = new ArrayList<Action>();
+        for (int i = 1; i <= 3; i++) {
+            var algo = new Algorithm("ALGO" + i, null, null, null, null, null, null, false, false);
+            algos.add(algo);
+            var action = new Action("ACTION" + i, null, algo.name(), null);
+            actions.add(action);
         }
+        var task1 = new Task("TASK1", null, List.of(actions.get(0).name()));
+        var task2 = new Task(
+                "TASK2", null,
+                List.of(actions.get(1).name(), actions.get(2).name()));
+        var pipeline = new Pipeline("PIPELINE", null, List.of(task1.name(), task2.name()));
 
-        private BatchJobImpl createTestJob() {
-            var algo = new Algorithm("ALGO", null, null, null, null, null, null, false, false);
-            var action = new Action("ACTION", null, algo.name(), null);
-            var task = new Task("TASK", null, List.of(action.name()));
-            var pipeline = new Pipeline("PIPELINE", null, List.of(task.name()));
+        return new JobPipelineElements(pipeline, List.of(task1, task2), actions, algos);
+    }
 
-            var pipelineElements = new JobPipelineElements(
-                    pipeline, List.of(task), List.of(action), List.of(algo));
+    private MediaImpl createTestMedia(Collection<MediaSelector> mediaSelectors) {
+        return new MediaImpl(
+                MEDIA_ID, "file:///path/to/media", null, _mediaPath, Map.of(),
+                Map.of(), List.of(), List.of(), mediaSelectors, "ACTION3", null);
+    }
 
-            return new BatchJobImpl(
-                    JOB_ID,
-                    null,
-                    null,
-                    pipelineElements, 0, null, null,
-                    List.of(createTestMedia()), Map.of(), Map.of(), false);
-        }
+
+    private BatchJobImpl createTestJob(Collection<MediaSelector> mediaSelectors) {
+        var pipelineElements = createTestPipeline();
+        return new BatchJobImpl(
+                JOB_ID,
+                null,
+                null,
+                pipelineElements, 0, null, null,
+                List.of(createTestMedia(mediaSelectors)),
+                Map.of(), Map.of(), false);
     }
 }

@@ -191,7 +191,7 @@ public class TestTrackMergingProcessor {
 
         URI mediaUri = ioUtils.findFile(filePath);
         Media media = inProgressJobs.initMedia(mediaUri.toString(), Map.of(), Map.of(), List.of(),
-                                               List.of(), List.of());
+                                               List.of(), List.of(), null);
         long mediaId = media.getId();
 
         inProgressJobs.addJob(
@@ -278,7 +278,7 @@ public class TestTrackMergingProcessor {
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
         Media media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
-                Map.of(), Map.of(), List.of(), List.of(), List.of(), null);
+                Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
 
         inProgressJobs.addJob(
                 TEST_JOB_ID,

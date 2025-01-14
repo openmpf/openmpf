@@ -30,10 +30,8 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.slf4j.Logger;
@@ -78,10 +76,9 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
                     .toList();
         }
         else {
-            var genericRequest
-                    = DetectionProtobuf.DetectionRequest.GenericRequest.getDefaultInstance();
-            var protobuf = createProtobuf(media, context, genericRequest);
-            return List.of(new DetectionRequest(protobuf));
+            var pbDetectionRequest = MediaSegmenter.initializeRequest(media, context);
+            pbDetectionRequest.getGenericRequestBuilder();
+            return List.of(new DetectionRequest(pbDetectionRequest.build()));
         }
     }
 
@@ -93,25 +90,14 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
         return !context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context);
     }
 
-    private static DetectionProtobuf.DetectionRequest createProtobuf(
-            Media media, DetectionContext context,
-            DetectionProtobuf.DetectionRequest.GenericRequest genericRequest) {
-        return MediaSegmenter.initializeRequest(media, context)
-                .setGenericRequest(genericRequest)
-                .build();
-    }
-
 
     private static DetectionRequest createFeedForwardRequest(
             Track track, Media media, DetectionContext ctx) {
-        var genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder();
-
-        Detection exemplar = track.getExemplar();
-
-        genericRequest.getFeedForwardTrackBuilder()
-                .setConfidence(exemplar.getConfidence())
-                .putAllDetectionProperties(exemplar.getDetectionProperties());
-        var protobuf = createProtobuf(media, ctx, genericRequest.build());
-        return new DetectionRequest(protobuf, track);
+        var pbDetectionRequest = MediaSegmenter.initializeRequest(media, ctx);
+        pbDetectionRequest.getGenericRequestBuilder()
+                .getFeedForwardTrackBuilder()
+                .setConfidence(track.getExemplar().getConfidence())
+                .putAllDetectionProperties(track.getExemplar().getDetectionProperties());
+        return MediaSelectorsSegmenter.createFeedForwardDetectionRequest(pbDetectionRequest, track);
     }
 }

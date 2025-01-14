@@ -1,0 +1,32 @@
+{
+    "otherStuffKey": ["other stuff value"],
+    "spanishMessages": [
+        {
+            "to": "spanish recipient 1",
+            "from": "spanish sender 1",
+            "content": "Hello, how are you?"
+        },
+        {
+            "to": "spanish recipient 2",
+            "from": "spanish sender 2",
+            "content": "Where's the airport?"
+        }
+    ],
+    "chineseMessages": [
+        {
+            "to": "chinese recipient 1",
+            "from": "chinese sender 1",
+            "content": "What time is it?"
+        },
+        {
+            "to": "chinese recipient 2",
+            "from": "chinese sender 2",
+            "content": "What's your name?"
+        },
+        {
+            "to": "chinese recipient 3",
+            "from": "chinese sender 3",
+            "content": "Where are you?"
+        }
+    ]
+}

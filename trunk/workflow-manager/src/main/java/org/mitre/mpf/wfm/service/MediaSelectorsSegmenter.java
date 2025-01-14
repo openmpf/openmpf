@@ -29,15 +29,20 @@ package org.mitre.mpf.wfm.service;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.DetectionRequest;
@@ -57,6 +62,45 @@ public class MediaSelectorsSegmenter  {
             MediaSelectorsOutputFileProcessor mediaSelectorsOutputFileProcessor) {
         _jsonPathService = jsonPathService;
         _mediaSelectorsOutputFileProcessor = mediaSelectorsOutputFileProcessor;
+    }
+
+
+    public static void validateSelectors(
+            Collection<Media> media,
+            JobPipelineElements pipeline) {
+        media.forEach(m -> validateSelectors(m, pipeline));
+    }
+
+    private static void validateSelectors(Media media, JobPipelineElements pipeline) {
+        if (media.getMediaSelectors().isEmpty()) {
+            return;
+        }
+        var numSelectorTypes = media.getMediaSelectors().stream()
+            .map(MediaSelector::type)
+            .distinct()
+            .limit(2)
+            .count();
+        if (numSelectorTypes > 1) {
+            // All of the planned selectors types operate on different file types, so using
+            // multiple types for the same media does not make sense. If we do add selector
+            // types that can be mixed, then this restriction can be removed.
+            throw new WfmProcessingException("All media selectors must have the same type.");
+        }
+
+        var outputAction = media.getMediaSelectorsOutputAction();
+        if (outputAction.isPresent()) {
+            var action = pipeline.getAction(outputAction.get());
+            if (action == null) {
+                throw new WfmProcessingException(
+                    "\"mediaSelectorsOutputAction\" was set to \"" + outputAction.get()
+                    + "\", but the pipeline does not contain an action with that name.");
+            }
+        }
+        else if (pipeline.getAllActions().size() > 1) {
+            throw new WfmProcessingException(
+                    "The job request included media that set \"mediaSelectors\", "
+                    + "but \"mediaSelectorsOutputAction\" was not set.");
+        }
     }
 
 
@@ -106,11 +150,28 @@ public class MediaSelectorsSegmenter  {
                 DetectionContext context,
                 MediaSelector selector) {
         var pbDetectionRequest = MediaSegmenter.initializeRequest(media, context)
-                .putAllAlgorithmProperties(selector.selectionProperties())
-                .putMediaMetadata(MpfConstants.SELECTED_CONTENT, evalResult);
+                .putAllAlgorithmProperties(selector.selectionProperties());
         pbDetectionRequest.getGenericRequestBuilder().build();
-        return new DetectionRequest(
-                pbDetectionRequest.build(),
-                Map.of(MpfHeaders.MEDIA_SELECTOR_ID, selector.id().toString()));
+        var headers = addSelectorInfo(pbDetectionRequest, evalResult, selector.id());
+        return new DetectionRequest(pbDetectionRequest.build(), headers);
+    }
+
+
+    public static DetectionRequest createFeedForwardDetectionRequest(
+            DetectionProtobuf.DetectionRequest.Builder requestBuilder,
+            Track track) {
+        var headers = track.getSelectedInput()
+                .map(in -> addSelectorInfo(requestBuilder, in, track.getSelectorId().orElseThrow()))
+                .orElseGet(Map::of);
+        return new DetectionRequest(requestBuilder.build(), Optional.of(track), headers);
+    }
+
+
+    private static Map<String, String> addSelectorInfo(
+            DetectionProtobuf.DetectionRequest.Builder requestBuilder,
+            String selectedContent,
+            UUID selectorId) {
+        requestBuilder.putMediaMetadata(MpfConstants.SELECTED_CONTENT, selectedContent);
+        return Map.of(MpfHeaders.MEDIA_SELECTOR_ID, selectorId.toString());
     }
 }

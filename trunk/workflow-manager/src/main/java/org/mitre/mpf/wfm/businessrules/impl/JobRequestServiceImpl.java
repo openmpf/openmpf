@@ -51,6 +51,7 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
 import org.mitre.mpf.wfm.service.ConstraintValidationService;
+import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
@@ -126,7 +127,6 @@ public class JobRequestServiceImpl implements JobRequestService {
     @Override
     public CreationResult run(JobCreationRequest jobCreationRequest) {
         _validator.validate(jobCreationRequest, "JobCreationRequest");
-        checkSelectors(jobCreationRequest);
 
         List<Media> media = jobCreationRequest.media()
                 .stream()
@@ -136,7 +136,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                         m.metadata(),
                         convertRanges(m.frameRanges()),
                         convertRanges(m.timeRanges()),
-                        convertSelectors(m.mediaSelectors())))
+                        convertSelectors(m.mediaSelectors()),
+                        m.mediaSelectorsOutputAction().orElse(null)))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.priority())
@@ -227,7 +228,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                         m.getProvidedMetadata(),
                         m.getFrameRanges(),
                         m.getTimeRanges(),
-                        m.getMediaSelectors()))
+                        m.getMediaSelectors(),
+                        m.getMediaSelectorsOutputAction().orElse(null)))
                 .collect(ImmutableList.toImmutableList());
 
 
@@ -372,6 +374,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
 
         checkProperties(pipeline, media, jobProperties, overriddenAlgoProps, systemPropertiesSnapshot);
+        MediaSelectorsSegmenter.validateSelectors(media, pipeline);
 
         if (media.isEmpty()) {
             throw new WfmProcessingException(
@@ -475,22 +478,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                 LOG.warn("The job is not in progress and cannot be cancelled at this time.");
             }
             return true;
-        }
-    }
-
-    private static void checkSelectors(JobCreationRequest jobCreationRequest) {
-        for (var media : jobCreationRequest.media()) {
-            var numSelectorTypes = media.mediaSelectors().stream()
-                    .map(JobCreationMediaSelector::type)
-                    .distinct()
-                    .limit(2)
-                    .count();
-            if (numSelectorTypes > 1) {
-                // All of the planned selectors types operate on different file types, so using
-                // multiple types for the same media does not make sense. If we do add selector
-                // types that can be mixed, then this restriction can be removed.
-                throw new WfmProcessingException("All media selectors must have the same type.");
-            }
         }
     }
 }

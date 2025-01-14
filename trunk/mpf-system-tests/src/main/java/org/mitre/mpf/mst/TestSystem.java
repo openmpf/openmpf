@@ -236,7 +236,8 @@ public abstract class TestSystem {
                 Map.of(),
                 List.of(),
                 List.of(),
-                List.of());
+                List.of(),
+                Optional.empty());
     }
 
     protected JobCreationMediaData toMediaObject(URI uri) {
@@ -281,10 +282,7 @@ public abstract class TestSystem {
                 priority,
                 null,
                 null);
-
-        long jobRequestId = jobRequestService.run(jobRequest).jobId();
-        Assert.assertTrue(waitFor(jobRequestId));
-        return jobRequestId;
+        return runJob(jobRequest);
     }
 
     protected long runPipelineOnMedia(
@@ -305,6 +303,10 @@ public abstract class TestSystem {
                 null,
                 null);
 
+        return runJob(jobRequest);
+    }
+
+    protected long runJob(JobCreationRequest jobRequest) {
         long jobRequestId = jobRequestService.run(jobRequest).jobId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
@@ -348,10 +350,10 @@ public abstract class TestSystem {
         }
     }
 
-    protected void runSystemTest(String pipelineName,
+    protected JsonOutputObject runSystemTest(String pipelineName,
                                  String expectedOutputJsonPath,
                                  String... testMediaFiles) throws Exception {
-        runSystemTest(
+        return runSystemTest(
                 pipelineName,
                 expectedOutputJsonPath,
                 Collections.emptyMap(),
@@ -359,32 +361,45 @@ public abstract class TestSystem {
                 testMediaFiles);
     }
 
-    protected void runSystemTest(String pipelineName,
+    protected JsonOutputObject runSystemTest(String pipelineName,
                                  String expectedOutputJsonPath,
                                  Map<String, Map<String, String>> algorithmProperties,
                                  Map<String, String> jobProperties,
-                                 String... testMediaFiles) throws Exception {
-        List<JobCreationMediaData> mediaPaths = new LinkedList<>();
-        for (String filePath : testMediaFiles) {
-            mediaPaths.add(toMediaObject(ioUtils.findFile(filePath)));
-        }
+                                 String... testMediaFiles) throws IOException {
+        var media = Stream.of(testMediaFiles)
+            .map(f -> toMediaObject(ioUtils.findFile(f)))
+            .toList();
 
-        long jobId = runPipelineOnMedia(
-                pipelineName,
-                mediaPaths,
-                algorithmProperties,
+        var jobRequest = new JobCreationRequest(
+                media,
                 jobProperties,
-                propertiesUtil.getJmsPriority());
+                algorithmProperties,
+                UUID.randomUUID().toString(),
+                pipelineName,
+                null,
+                true,
+                propertiesUtil.getJmsPriority(),
+                null,
+                null);
+        return runSystemTest(jobRequest, expectedOutputJsonPath);
+    }
 
-        if (!DISABLE_OUTPUT_CHECKING) {
-            URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
-            log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
-
-            JsonOutputObject expectedOutputJson = objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
-            JsonOutputObject actualOutputJson = getJobOutputObject(jobId);
-
-            outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
+    protected JsonOutputObject runSystemTest(
+            JobCreationRequest jobRequest, String expectedOutputJsonPath) throws  IOException {
+        long jobId = runJob(jobRequest);
+        if (DISABLE_OUTPUT_CHECKING) {
+            return getJobOutputObject(jobId);
         }
+
+        URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
+        log.info(
+                "Deserializing expected output {} and actual output for job {}",
+                expectedOutputPath, jobId);
+        var expectedOutputJson = objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
+        var actualOutputJson = getJobOutputObject(jobId);
+        outputChecker.compareJsonOutputObjects(
+                expectedOutputJson, actualOutputJson, jobRequest.pipelineName());
+        return actualOutputJson;
     }
 
 

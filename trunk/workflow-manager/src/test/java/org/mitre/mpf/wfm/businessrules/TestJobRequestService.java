@@ -47,11 +47,13 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -137,12 +139,12 @@ public class TestJobRequestService {
     private final TiesDbBeforeJobCheckService _mockTiesDbBeforeJobCheckService
                     = mock(TiesDbBeforeJobCheckService.class);
 
-    private final ProducerTemplate _mockProduceTemplate = mock(ProducerTemplate.class);
+    private final ProducerTemplate _mockProducerTemplate = mock(ProducerTemplate.class);
 
     private final JobRequestService _jobRequestService = new JobRequestServiceImpl(
                     _mockPropertiesUtil, _aggregateJobPropertiesUtil, _mockPipelineService,
                     _jsonUtils, _mockJmsUtils, _inProgressJobs, _mockJobRequestDao,
-                    _mockMarkupResultDao, _mockTiesDbBeforeJobCheckService, _mockProduceTemplate,
+                    _mockMarkupResultDao, _mockTiesDbBeforeJobCheckService, _mockProducerTemplate,
                     TestUtil.createConstraintValidator());
 
     @Rule
@@ -166,7 +168,8 @@ public class TestJobRequestService {
                 Map.of(),
                 List.of(new JobCreationMediaRange(0, 50), new JobCreationMediaRange(100, 300)),
                 List.of(),
-                List.of());
+                List.of(),
+                Optional.empty());
 
         var jobCreationMedia2 = new JobCreationMediaData(
                 "http://my_media2.mp4",
@@ -174,7 +177,8 @@ public class TestJobRequestService {
                 Map.of(),
                 List.of(),
                 List.of(),
-                List.of());
+                List.of(),
+                Optional.empty());
 
         return new JobCreationRequest(
             List.of(jobCreationMedia1, jobCreationMedia2),
@@ -266,7 +270,7 @@ public class TestJobRequestService {
         assertEquals("TEST PIPELINE", jobRequestEntity.getPipeline());
         assertEquals(defaultPriority, jobRequestEntity.getPriority());
 
-        verify(_mockProduceTemplate)
+        verify(_mockProducerTemplate)
                 .sendBodyAndHeaders(eq(MediaRetrieverRouteBuilder.ENTRY_POINT), eq(ExchangePattern.InOnly),
                                     isNull(), eq(Map.of(MpfHeaders.JOB_ID, 123L,
                                                         MpfHeaders.JMS_PRIORITY, defaultPriority)));
@@ -335,7 +339,7 @@ public class TestJobRequestService {
                 "POST",
                 List.of(new MediaImpl(567, "http://media.mp4", UriScheme.HTTP, Paths.get("temp"),
                                       Map.of("media_prop1", "media_val1"), Map.of(),
-                                      List.of(), List.of(), List.of(), "error")),
+                                      List.of(), List.of(), List.of(), null, "error")),
                 Map.of("job_prop1", "job_val1"),
                 Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")),
                 false);
@@ -388,7 +392,7 @@ public class TestJobRequestService {
                 .broadcast(321, BatchJobStatusType.IN_PROGRESS);
         verifyNoMoreInteractions(_mockJobStatusBroadcaster);
 
-        verify(_mockProduceTemplate)
+        verify(_mockProducerTemplate)
                 .sendBodyAndHeaders(eq(MediaRetrieverRouteBuilder.ENTRY_POINT), eq(ExchangePattern.InOnly),
                                     isNull(), eq(Map.of(MpfHeaders.JOB_ID, 321L,
                                                         MpfHeaders.JMS_PRIORITY, 3)));
@@ -448,7 +452,7 @@ public class TestJobRequestService {
                 jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineElements(),
                 3, null, null,
                 List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"),
-                                      Map.of(), Map.of(), List.of(), List.of(), List.of(), null)),
+                                      Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null)),
                 Map.of(), Map.of(), false);
 
         jobRequestEntity.setStatus(BatchJobStatusType.IN_PROGRESS);
@@ -523,11 +527,11 @@ public class TestJobRequestService {
                 MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, "file:///opt/mpf/share/1.json");
 
         // Verify job is routed past media inspection.
-        verify(_mockProduceTemplate)
+        verify(_mockProducerTemplate)
                 .sendBodyAndHeaders(
                         JobRouterRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, null,
                         expectedHeaders);
-        verifyNoMoreInteractions(_mockProduceTemplate);
+        verifyNoMoreInteractions(_mockProducerTemplate);
 
         // Verify job data is persisted in the database like a regular job.
         var jobRequestEntity = jobRequestEntityCaptor.getValue();
@@ -542,12 +546,124 @@ public class TestJobRequestService {
     public void testValidator() {
         var selector = new JobCreationMediaSelector(
                 "", MediaSelectorType.JSON_PATH, Map.of(), "out");
-        var media = new JobCreationMediaData(null, null, null, null, null, List.of(selector));
+        var media = new JobCreationMediaData(null, null, null, null, null, List.of(selector), Optional.of("test"));
         var job = new JobCreationRequest(
                 List.of(media), null, null, null, null, null, null, null, null, null);
-
         assertThatExceptionOfType(WfmProcessingException.class)
             .isThrownBy(() -> _jobRequestService.run(job))
             .withMessageContaining("media[0].mediaSelectors[0].expression=\"\": may not be empty");
+        verifyNoInteractions(_mockProducerTemplate);
+    }
+
+
+    @Test
+    public void mediaSelectorsActionIsOptionalWhenSingleAction() {
+        var selector = new JobCreationMediaSelector(
+                "<expr>", MediaSelectorType.JSON_PATH, Map.of(), "out");
+        var pipeline = createJobPipelineElements();
+        var job = setUpMediaSelectorsActionValidation(pipeline, List.of(selector), null);
+        _jobRequestService.run(job);
+        verifyJobSentToCamel();
+    }
+
+    @Test
+    public void mediaSelectorsActionIsRequiredWhenMultipleActions() {
+        var selector = new JobCreationMediaSelector(
+                "<expr>", MediaSelectorType.JSON_PATH, Map.of(), "out");
+        var pipeline = createMultiStagePipelineElements();
+        var job = setUpMediaSelectorsActionValidation(
+                pipeline, List.of(selector), "TEST ACTION1");
+        _jobRequestService.run(job);
+        verifyJobSentToCamel();
+    }
+
+
+    private void verifyJobSentToCamel() {
+        verify(_mockProducerTemplate)
+                .sendBodyAndHeaders(
+                        eq(MediaRetrieverRouteBuilder.ENTRY_POINT),
+                        eq(ExchangePattern.InOnly),
+                        isNull(),
+                        TestUtil.nonEmptyMap());
+    }
+
+
+    @Test
+    public void missingMediaSelectorsActionIsErrorWhenMultipleActions() {
+        var selector = new JobCreationMediaSelector(
+                "<expr>", MediaSelectorType.JSON_PATH, Map.of(), "out");
+        var pipeline = createMultiStagePipelineElements();
+        var job = setUpMediaSelectorsActionValidation(pipeline, List.of(selector), null);
+        assertThatExceptionOfType(WfmProcessingException.class)
+            .isThrownBy(() -> _jobRequestService.run(job))
+            .withMessageContaining("\"mediaSelectorsOutputAction\" was not set");
+        verifyNoInteractions(_mockProducerTemplate);
+    }
+
+
+    @Test
+    public void isErrorWhenMediaSelectorsActionNotInPipeline() {
+        var selector = new JobCreationMediaSelector(
+                "<expr>", MediaSelectorType.JSON_PATH, Map.of(), "out");
+        var pipeline = createMultiStagePipelineElements();
+        var job = setUpMediaSelectorsActionValidation(
+                pipeline, List.of(selector), "<MISSING ACTION>");
+        assertThatExceptionOfType(WfmProcessingException.class)
+            .isThrownBy(() -> _jobRequestService.run(job))
+            .withMessageContaining("pipeline does not contain an action with that name");
+        verifyNoInteractions(_mockProducerTemplate);
+    }
+
+
+    private JobCreationRequest setUpMediaSelectorsActionValidation(
+            JobPipelineElements pipeline,
+            List<JobCreationMediaSelector> mediaSelectors,
+            String outputAction) {
+        URI mediaUri;
+        try {
+            mediaUri = _temporaryFolder.newFile().toURI();
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        var media = new JobCreationMediaData(
+                mediaUri.toString(), null, null, null, null,
+                mediaSelectors,
+                Optional.ofNullable(outputAction));
+
+        var job = new JobCreationRequest(
+                List.of(media), null, null, null, pipeline.getName(), null, null, null, null, null);
+
+        when(_mockPipelineService.getBatchPipelineElements(pipeline.getName()))
+            .thenReturn(pipeline);
+
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(eq(job), any(), any(), any()))
+                .thenReturn(TiesDbCheckResult.noResult(TiesDbCheckStatus.NOT_REQUESTED));
+
+        when(_mockJobRequestDao.persist(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+        return job;
+    }
+
+    private static JobPipelineElements createMultiStagePipelineElements() {
+        var algos = new ArrayList<Algorithm>();
+        var actions = new ArrayList<Action>();
+        var tasks = new ArrayList<Task>();
+
+        for (int i = 1; i <= 3; i++) {
+            var algorithm = new Algorithm("TEST ALGO" + i, "desc", ActionType.DETECTION, "TEST",
+                                        OptionalInt.empty(),
+                                        new Algorithm.Requires(List.of()),
+                                        new Algorithm.Provides(List.of(), List.of()),
+                                        true, true);
+            algos.add(algorithm);
+            var action = new Action("TEST ACTION" + i, "desc", algorithm.name(), List.of());
+            actions.add(action);
+            var task = new Task("Test Task" + i, "desc", List.of(action.name()));
+            tasks.add(task);
+        }
+        var taskNames = tasks.stream().map(Task::name).toList();
+        var pipeline = new Pipeline("TEST PIPELINE", "desc", taskNames);
+        return new JobPipelineElements(pipeline, tasks, actions, algos);
     }
 }

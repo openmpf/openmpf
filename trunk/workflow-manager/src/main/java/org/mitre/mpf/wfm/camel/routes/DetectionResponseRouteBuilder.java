@@ -33,7 +33,6 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.CommitUpdatedTracksProcessor;
-import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor;
 import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;

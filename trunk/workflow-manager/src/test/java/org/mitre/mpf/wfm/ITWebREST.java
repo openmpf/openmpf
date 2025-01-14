@@ -52,6 +52,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -157,7 +158,8 @@ public class ITWebREST {
                 Map.of(),
                 List.of(),
                 List.of(),
-                List.of());
+                List.of(),
+                Optional.empty());
 
 		var jobCreationRequest = new JobCreationRequest(
                 List.of(media),
@@ -411,7 +413,8 @@ public class ITWebREST {
                 Map.of(),
                 List.of(),
                 List.of(),
-                List.of());
+                List.of(),
+                Optional.empty());
 
         var jobCreationRequest = new JobCreationRequest(
                 List.of(creationMedia),

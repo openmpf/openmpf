@@ -403,7 +403,8 @@ public class InProgressBatchJobsService {
             Map<String, String> providedMetadataProperties,
             Collection<MediaRange> frameRanges,
             Collection<MediaRange> timeRanges,
-            Collection<MediaSelector> mediaSelectors) {
+            Collection<MediaSelector> mediaSelectors,
+            String mediaSelectorsOutputAction) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -440,6 +441,7 @@ public class InProgressBatchJobsService {
                     frameRanges,
                     timeRanges,
                     mediaSelectors,
+                    mediaSelectorsOutputAction,
                     errorMessage);
             var mimeType = providedMetadataProperties.get("MIME_TYPE");
             if (mimeType != null && !mimeType.isBlank()) {
@@ -460,6 +462,7 @@ public class InProgressBatchJobsService {
                     frameRanges,
                     timeRanges,
                     mediaSelectors,
+                    mediaSelectorsOutputAction,
                     e.getMessage());
         }
     }
@@ -493,6 +496,7 @@ public class InProgressBatchJobsService {
                 ImmutableSet.of(),
                 ImmutableSet.of(),
                 ImmutableList.of(),
+                null,
                 errorMessage);
 
         derivativeMedia.addMetadata(metadata);

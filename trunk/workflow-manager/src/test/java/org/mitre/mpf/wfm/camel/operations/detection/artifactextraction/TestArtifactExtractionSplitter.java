@@ -671,7 +671,7 @@ public class TestArtifactExtractionSplitter {
                 Map.of(), expectedFrames);
     }
 
-    // Simplified arguments for test cases where best detection property don't matter.
+    // Simplified arguments for test cases where best detection property doesn't matter.
     private void runTest(ArtifactExtractionPolicy extractionPolicy,
                          SystemPropertiesSnapshot systemPropertiesSnapshot,
                          int exemplarFrame,

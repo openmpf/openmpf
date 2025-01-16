@@ -155,7 +155,8 @@ public class Main {
                         Map.of(),
                         List.of(),
                         List.of(),
-                        List.of());
+                        List.of(),
+                        Optional.empty());
         var jobCreationRequest = new JobCreationRequest(
                 List.of(mediaData),
                 Map.of(),

@@ -77,7 +77,7 @@ public class TestDescriptorValidator {
 
         assertValidationErrors(
                 descriptor,
-                isEmpty("componentName"),
+                isBlank("componentName"),
                 isNull("componentVersion"),
                 isNull("middlewareVersion"),
                 "sourceLanguage=\"null\": must be java, c++, or python",
@@ -127,7 +127,7 @@ public class TestDescriptorValidator {
                 descriptor,
                 isNull("algorithm"),
                 isEmpty("actions[1].description"),
-                isEmpty("actions[1].algorithm"),
+                isBlank("actions[1].algorithm"),
                 isNullForNotEmpty("actions[1].properties[0].name"),
                 isNull("actions[1].properties[0].value"));
     }
@@ -159,6 +159,10 @@ public class TestDescriptorValidator {
 
     private static String isEmpty(String field) {
         return "%s=\"\": may not be empty".formatted(field);
+    }
+
+    private static String isBlank(String field) {
+        return "%s=\"\": may not be blank".formatted(field);
     }
 
     private static String isNull(String field) {

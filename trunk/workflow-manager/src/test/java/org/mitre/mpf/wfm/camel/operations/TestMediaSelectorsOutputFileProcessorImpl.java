@@ -78,6 +78,7 @@ import org.mitre.mpf.wfm.service.JsonPathService;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JobPart;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -216,7 +217,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
     @Test
     public void testLongestDuplicatePolicy() throws IOException, StorageException {
-        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), notNull()))
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), any(JobPart.class)))
             .thenReturn("LONGEST");
         var mappers = _testBuilder
                 .addJsonSelector("expr1", "OUTPUT1")
@@ -231,7 +232,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
     @Test
     public void testJoinDuplicatePolicy() throws IOException, StorageException {
-        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), notNull()))
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), any(JobPart.class)))
             .thenReturn("JOIN");
         var mappers = _testBuilder
                 .addJsonSelector("expr1", "OUTPUT1")
@@ -250,7 +251,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
     @Test
     public void errorDuplicatePolicyIsNotTriggeredWhenOutputIsSame() throws IOException, StorageException {
-        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), notNull()))
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), any(JobPart.class)))
             .thenReturn("ERROR");
         var mappers = _testBuilder
                 .addJsonSelector("expr1", "OUTPUT1")
@@ -264,7 +265,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
     @Test
     public void errorDuplicatePolicyIsNotTriggeredWhenOneOutputBlank() throws IOException, StorageException {
-        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), notNull()))
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), any(JobPart.class)))
             .thenReturn("ERROR");
         var mappers = _testBuilder
                 .addJsonSelector("expr1", "OUTPUT1")
@@ -277,7 +278,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
     @Test
     public void errorDuplicatePolicyThrowsException() throws IOException, StorageException {
-        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), notNull()))
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), any(JobPart.class)))
             .thenReturn("ERROR");
         var mappers = _testBuilder
                 .addJsonSelector("expr1", "OUTPUT1")
@@ -295,10 +296,10 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
     @Test
     public void testDelimeter() throws IOException, StorageException {
-        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DELIMETER), notNull()))
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DELIMETER), any(JobPart.class)))
             .thenReturn("| Updated:");
 
-        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), notNull()))
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), any(JobPart.class)))
             .thenReturn("ERROR");
 
         var mappers = _testBuilder

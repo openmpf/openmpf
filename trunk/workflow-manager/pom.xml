@@ -46,6 +46,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
         <spring.boot.version>2.7.18</spring.boot.version>
+        <querydsl.version>5.1.0</querydsl.version>
         <!--
             extraArgLine is required so that the JaCoCo code coverage plugin can be used.
             To get the code coverage information for a unit test class the following command
@@ -169,7 +170,10 @@
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-orm</artifactId>
@@ -511,6 +515,11 @@
             <artifactId>springfox-swagger-ui</artifactId>
             <version>${springfox.swagger.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-bean-validators</artifactId>
+            <version>${springfox.swagger.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.atmosphere</groupId>
@@ -578,6 +587,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-amqp</artifactId>
+            <version>${activemq.framework.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-client</artifactId>
             <version>${activemq.framework.version}</version>
         </dependency>
@@ -610,6 +624,18 @@
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>${byte.buddy.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-apt</artifactId>
+            <version>${querydsl.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-jpa</artifactId>
+            <version>${querydsl.version}</version>
         </dependency>
     </dependencies>
 
@@ -856,6 +882,25 @@
                         </goals>
                         <configuration>
                             <skip>${skipITs}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- Enables the Querydsl annotation processor. At compile time it will generate
+                     classes for each class annotated with @Entity. The generated class name is a
+                     "Q" followed by the @Enitity class name. -->
+                <groupId>com.mysema.maven</groupId>
+                <artifactId>apt-maven-plugin</artifactId>
+                <version>1.1.3</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/generated-sources/java</outputDirectory>
+                            <processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
                         </configuration>
                     </execution>
                 </executions>

@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 import com.google.common.io.ByteStreams;
@@ -37,6 +38,10 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.interop.subject.CancellationState;
+import org.mitre.mpf.interop.subject.SubjectJobDetails;
+import org.mitre.mpf.interop.subject.SubjectJobRequest;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -55,6 +60,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
@@ -830,6 +836,48 @@ public class TestS3StorageBackend {
                 MediaSelectorType.JSON_PATH,
                 outputProcessor);
 
+        assertThat(remoteUri).isEqualTo(_expectedUri);
+        assertThat(filePath).doesNotExist();
+        assertThat(OBJECTS_POSTED)
+                .singleElement()
+                .isEqualTo(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);
+    }
+
+
+    @Test
+    public void canStoreSubjectResult() throws IOException, StorageException {
+        var filePath = getTestFileCopy();
+
+        var jobRequest = new SubjectJobRequest(
+                "component name",
+                OptionalInt.empty(),
+                Set.of(),
+                getS3Properties(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty());
+
+        var jobDetails = new SubjectJobDetails(
+                1L,
+                jobRequest,
+                Instant.now(),
+                Optional.empty(),
+                true,
+                CancellationState.NOT_CANCELLED,
+                ImmutableSortedSet.of(),
+                ImmutableSortedSet.of(),
+                Optional.empty(),
+                "JOB RUNNING");
+
+        var subjectResults = new SubjectJobResult(
+                jobDetails, Map.of(), Map.of(), Map.of(), "X.Y.Z");
+
+        when(_mockLocalStorageBackend.store(subjectResults))
+                .thenReturn(filePath.toUri());
+
+        assertThat(_s3StorageBackend.canStore(subjectResults)).isTrue();
+
+        var remoteUri = _s3StorageBackend.store(subjectResults);
         assertThat(remoteUri).isEqualTo(_expectedUri);
         assertThat(filePath).doesNotExist();
         assertThat(OBJECTS_POSTED)

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.util;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -379,6 +381,24 @@ public class AggregateJobPropertiesUtil {
         ).getValue();
     }
 
+    public UnaryOperator<String> getCombinedProperties(SubjectJobResult jobResult) {
+        return getCombinedSubjectJobProperties(jobResult.job().request().jobProperties());
+    }
+
+    public UnaryOperator<String> getCombinedProperties(DbSubjectJob dbJob) {
+        return getCombinedSubjectJobProperties(dbJob.getJobProperties());
+    }
+
+    private UnaryOperator<String> getCombinedSubjectJobProperties(Map<String, String> jobProps) {
+        return propName -> {
+            var propValue = jobProps.get(propName);
+            if (propValue != null && !propValue.isBlank()) {
+                return propValue;
+            }
+            return _workflowPropertyService.getPropertyValue(propName);
+        };
+    }
+
 
     public UnaryOperator<String> getCombinedProperties(BatchJob job, URI mediaUri) {
         var matchingMedia = Optional.<Media>empty();
@@ -577,5 +597,17 @@ public class AggregateJobPropertiesUtil {
             return false;
         }
         return true;
+    }
+
+
+    public Optional<String> getValue(String propertyName, DbSubjectJob job) {
+        return Stream.<UnaryOperator<String>>of(
+                    p -> System.getenv("MPF_PROP_" + p),
+                    job.getJobProperties()::get,
+                    // TODO: handle systemPropertiesSnapshot
+                    _workflowPropertyService::getPropertyValue)
+                .map(op -> op.apply(propertyName))
+                .filter(s -> s != null && !s.isEmpty())
+                .findFirst();
     }
 }

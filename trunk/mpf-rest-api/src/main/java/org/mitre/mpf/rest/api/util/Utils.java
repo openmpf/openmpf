@@ -31,10 +31,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collector;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class Utils {
 
@@ -60,6 +62,12 @@ public class Utils {
                 .flatMap(Collection::stream)
                 .map(Utils::trimAndUpper)
                 .collect(collector);
+    }
+
+    public static <T> ImmutableSet<T> toImmutableSet(Set<T> set) {
+        return Optional.ofNullable(set)
+            .map(ImmutableSet::copyOf)
+            .orElseGet(ImmutableSet::of);
     }
 
     public static ImmutableList<String> trimAndUpper(List<String> strings) {

@@ -229,7 +229,9 @@ public class MasterNodeStateManager extends ChannelReceiver {
 
         // do we expect replies, like Inactive
         try {
-            Thread.sleep(10000); // shutdown takes some time - let the messages get out
+            if (streamingJobManager.getActiveJobCount() > 0) {
+                Thread.sleep(10000); // shutdown takes some time - let the messages get out
+            }
         } catch (InterruptedException e) {
             LOG.error("Received interrupt during shutdown. Ignoring interrupt since already shutting down", e);
             Thread.currentThread().interrupt();

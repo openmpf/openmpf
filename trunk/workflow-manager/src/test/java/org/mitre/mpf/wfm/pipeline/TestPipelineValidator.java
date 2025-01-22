@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
@@ -67,9 +68,13 @@ public class TestPipelineValidator {
 
     private final PipelinePartLookup _pipelinePartLookup = createPartLookup();
 
-    private PipelineValidator _pipelineValidator = new PipelineValidator(
-            TestUtil.createConstraintValidator(), _mockWorkflowPropertyService);
+    private PipelineValidator _pipelineValidator;
 
+    @Before
+    public void init() {
+        _pipelineValidator = new PipelineValidator(
+                TestUtil.createConstraintValidator(), _mockWorkflowPropertyService);
+    }
 
     private PipelinePartLookup createPartLookup() {
         return new PipelinePartLookup() {

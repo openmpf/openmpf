@@ -73,7 +73,7 @@ add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FI
 target_include_directories(batch_executor_lib PUBLIC
 	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
 
-target_link_libraries(batch_executor_lib PUBLIC mpfProtobufs
+target_link_libraries(batch_executor_lib PUBLIC mpfProtobufs $<TARGET_OBJECTS:mpfProtobufs>
 	pybind11::embed ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES})
 
 

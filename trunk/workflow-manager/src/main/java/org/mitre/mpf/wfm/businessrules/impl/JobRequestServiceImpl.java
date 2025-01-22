@@ -462,7 +462,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                     // If this operation fails, any remaining pending items will continue to process, but
                     // the future splitters should not create any new work items. In short, if this fails,
                     // the system should not be affected, but the job may not complete any faster.
-                    _jmsUtils.cancel(jobId);
+                    _jmsUtils.cancelDetectionJob(jobId);
                 } catch (Exception exception) {
                     LOG.warn("Failed to remove the pending work elements in the message broker " +
                                  "for this job. The job must complete the pending work " +

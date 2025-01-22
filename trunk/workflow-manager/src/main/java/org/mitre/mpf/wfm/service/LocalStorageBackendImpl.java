@@ -27,14 +27,23 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Table;
-import com.google.common.collect.Tables;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+
+import javax.inject.Inject;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.subject.SubjectJobDetails;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -45,14 +54,11 @@ import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
 
 @Component
 public class LocalStorageBackendImpl implements LocalStorageBackend {
@@ -60,6 +66,8 @@ public class LocalStorageBackendImpl implements LocalStorageBackend {
     private final PropertiesUtil _propertiesUtil;
 
     private final ObjectMapper _objectMapper;
+
+    private final ObjectWriter _subjectJobResultWriter;
 
     private final InProgressBatchJobsService _inProgressJobs;
 
@@ -70,6 +78,10 @@ public class LocalStorageBackendImpl implements LocalStorageBackend {
                             InProgressBatchJobsService inProgressBatchJobsService) {
         _propertiesUtil = propertiesUtil;
         _objectMapper = objectMapper;
+        _subjectJobResultWriter = objectMapper
+                .copy()
+                .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+                .writerWithView(SubjectJobDetails.OutputObjectView.class);
         _inProgressJobs = inProgressBatchJobsService;
     }
 
@@ -140,6 +152,19 @@ public class LocalStorageBackendImpl implements LocalStorageBackend {
         var storagePath = _propertiesUtil.createDerivativeMediaPath(job.getId(), media);
         Files.move(media.getLocalPath(), storagePath);
         _inProgressJobs.addStorageUri(job.getId(), media.getId(), storagePath.toUri().toString());
+    }
+
+    @Override
+    public boolean canStore(SubjectJobResult jobResult) {
+        return true;
+    }
+
+    @Override
+    public URI store(SubjectJobResult jobResult) throws IOException {
+        var resultsPath = _propertiesUtil.createOutputObjectsFile(
+                jobResult.job().id(), "subject");
+        _subjectJobResultWriter.writeValue(resultsPath.toFile(), jobResult);
+        return resultsPath.toUri();
     }
 
 

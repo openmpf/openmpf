@@ -230,7 +230,9 @@ public class MediaImpl implements Media {
 
     private URI _mediaSelectorsOutputUri;
     @Override
-    public Optional<URI> getMediaSelectorsOutputUri() { return Optional.ofNullable(_mediaSelectorsOutputUri); }
+    public Optional<URI> getMediaSelectorsOutputUri() {
+        return Optional.ofNullable(_mediaSelectorsOutputUri);
+    }
     public void setMediaSelectorsOutputUri(URI uri) { _mediaSelectorsOutputUri = uri; }
 
 

@@ -26,15 +26,33 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.OptionalInt;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.RunListener;
-import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.ValueType;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.WorkflowProperty;
@@ -45,27 +63,13 @@ import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.OptionalInt;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 
 
-@ContextConfiguration(classes = PipelineController.class)
-
-@RunWith(SpringJUnit4ClassRunner.class)
-@RunListener.ThreadSafe
-public class TestPipelineController {
+public class TestPipelineController extends MockitoTest.Strict {
 
     private MockMvc mockMvc;
 
@@ -81,12 +85,12 @@ public class TestPipelineController {
         TestUtil.initPipelineDataFiles(mockPropertiesUtil, _tempFolder);
 
         var mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
-        when(mockWorkflowPropertyService.getProperties())
+        lenient().when(mockWorkflowPropertyService.getProperties())
                 .thenReturn(ImmutableList.of(
                         new WorkflowProperty("TEST_WF_PROPERTY", "WF PROP DESCR",
                                              ValueType.INT, "5", null,
                                              List.of(org.mitre.mpf.wfm.enums.MediaType.VIDEO))));
-        when(mockWorkflowPropertyService.getPropertyValue("TEST_WF_PROPERTY"))
+        lenient().when(mockWorkflowPropertyService.getPropertyValue("TEST_WF_PROPERTY"))
                 .thenReturn("5");
 
         var pipelineValidator = new PipelineValidator(
@@ -98,8 +102,7 @@ public class TestPipelineController {
         var pipelineController = new PipelineController(mockPropertiesUtil, mockWorkflowPropertyService,
                                                         pipelineService);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(pipelineController).build();
-
+        mockMvc = TestUtil.initMockMvc(pipelineController);
 
         var testAlgoProp = new AlgorithmProperty(
                 "TEST_ALGO_PROP", "Test algo property", ValueType.BOOLEAN, "TRUE", null);

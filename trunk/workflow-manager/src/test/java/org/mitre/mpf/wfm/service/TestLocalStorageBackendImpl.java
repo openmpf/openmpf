@@ -32,20 +32,27 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
+import org.mitre.mpf.mvc.controller.TestSubjectJobController;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.Mock;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TestLocalStorageBackendImpl extends MockitoTest.Strict {
 
@@ -54,6 +61,8 @@ public class TestLocalStorageBackendImpl extends MockitoTest.Strict {
 
     @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
+
+    private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
     private LocalStorageBackendImpl _localStorageBackend;
 
@@ -64,7 +73,7 @@ public class TestLocalStorageBackendImpl extends MockitoTest.Strict {
     public void init() {
         _localStorageBackend = new LocalStorageBackendImpl(
                 _mockPropertiesUtil,
-                ObjectMapperFactory.customObjectMapper(),
+                _objectMapper,
                 _mockInProgressJobs);
     }
 
@@ -99,5 +108,30 @@ public class TestLocalStorageBackendImpl extends MockitoTest.Strict {
         assertThat(outputPath)
                 .content(StandardCharsets.UTF_8)
                 .isEqualTo("<TEST CONTENT>");
+    }
+
+    @Test
+    public void outputObjectViewUsedWhenStoringSubjectResults() throws IOException {
+        var outputObjectsDir = _tempFolder.newFolder("output-objects");
+        Files.createDirectories(outputObjectsDir.toPath().resolve("123"));
+
+        when(_mockPropertiesUtil.createOutputObjectsFile(123, "subject"))
+            .thenReturn(outputObjectsDir.toPath().resolve("123/subject.json"));
+
+        var jobDetails = TestSubjectJobController.createSubjectJobResult();
+        var resultsUri = _localStorageBackend.store(jobDetails);
+        assertThat(resultsUri.toString()).endsWith("/123/subject.json");
+
+        var resultsString = Files.readString(Path.of(resultsUri));
+        assertThat(resultsString).doesNotContain("outputUri", "callbackStatus");
+
+        var parsedResults = _objectMapper.readValue(resultsString, SubjectJobResult.class);
+        assertThat(parsedResults)
+                .usingRecursiveComparison()
+                .withEqualsForType(TestUtil::equalAfterTruncate, Instant.class)
+                .ignoringFields("job.callbackStatus", "job.outputUri")
+                .isEqualTo(jobDetails);
+        assertThat(parsedResults.job().callbackStatus()).isNull();
+        assertThat(parsedResults.job().outputUri()).isEmpty();
     }
 }

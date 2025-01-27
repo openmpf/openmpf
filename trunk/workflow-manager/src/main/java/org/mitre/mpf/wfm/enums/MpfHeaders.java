@@ -51,6 +51,8 @@ public class MpfHeaders {
 
 		OUTPUT_OBJECT_URI_FROM_TIES_DB = "OUTPUT_OBJECT_URI_FROM_TIES_DB",
 
+        CANCELLED = "CANCELLED",
+
         MEDIA_SELECTOR_ID = "MediaSelectorId",
         SELECTED_TEXT_CONTENT = "SelectedTextContent";
 

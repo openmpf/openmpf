@@ -26,25 +26,30 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.List;
+
+import javax.validation.Validator;
+
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.service.ConstraintValidationService;
 
-import javax.validation.Validator;
-import java.util.Collections;
-import java.util.List;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.notNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class TestDescriptorValidator {
 
     private ConstraintValidationService _validator = TestUtil.createConstraintValidator();
+
 
     @Test
     public void doesNotThrowExceptionWhenDescriptorHasNoViolations() throws InvalidComponentDescriptorException {

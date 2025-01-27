@@ -77,7 +77,7 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.unmarshal(protobufDataFormatFactory.create(Markup.MarkupResponse::newBuilder))
+			.unmarshal(protobufDataFormatFactory.create(Markup.MarkupResponse.parser()))
 			.process(MarkupResponseProcessor.REF)
 			.choice()
 				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(true))

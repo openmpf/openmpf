@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.interop.util;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -37,17 +37,19 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
+@Target({ ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
         ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = ValidName.Validator.class)
 public @interface ValidName {
+
     String message() default "may not contain / or ;";
-    Class<?>[] groups() default { };
-    Class<? extends Payload>[] payload() default { };
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
 
     boolean required() default true;
-
 
     public static class Validator implements ConstraintValidator<ValidName, String> {
 
@@ -57,8 +59,7 @@ public @interface ValidName {
         public void initialize(ValidName constraintAnnotation) {
             if (constraintAnnotation.required()) {
                 _isValidPred = Validator::isValidRequired;
-            }
-            else {
+            } else {
                 _isValidPred = Validator::isValidNotRequired;
             }
         }
@@ -72,7 +73,7 @@ public @interface ValidName {
             if (value == null) {
                 ctx.disableDefaultConstraintViolation();
                 ctx.buildConstraintViolationWithTemplate("may not be null")
-                    .addConstraintViolation();
+                        .addConstraintViolation();
                 return false;
             }
             return isValidNotRequired(value, ctx);
@@ -85,7 +86,7 @@ public @interface ValidName {
             if (value.isBlank()) {
                 ctx.disableDefaultConstraintViolation();
                 ctx.buildConstraintViolationWithTemplate("may not be blank")
-                    .addConstraintViolation();
+                        .addConstraintViolation();
                 return false;
             }
             return !value.contains("/") && !value.contains(";");

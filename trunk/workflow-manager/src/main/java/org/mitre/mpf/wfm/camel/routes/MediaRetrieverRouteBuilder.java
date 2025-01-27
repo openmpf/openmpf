@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.ActiveMQConfiguration;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
@@ -62,7 +61,6 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
             .setExchangePattern(ExchangePattern.InOnly)
             .split().method(RemoteMediaSplitter.REF, "split")
                 .parallelProcessing()
-                .executorServiceRef(ActiveMQConfiguration.SPLITTER_THREAD_POOL_REF)
                 .streaming()
                 .process(RemoteMediaProcessor.REF)
             .end()

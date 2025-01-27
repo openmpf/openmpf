@@ -48,7 +48,6 @@ public class JniLoader {
 
             var libNames = List.of(
                     "libmpfDetectionComponentApi.so",
-                    "libmpfProtobufsShared.so",
                     "libmpfopencvjni.so");
 
             for (var libName : libNames) {

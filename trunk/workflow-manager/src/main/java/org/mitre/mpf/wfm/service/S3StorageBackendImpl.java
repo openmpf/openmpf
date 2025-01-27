@@ -52,6 +52,7 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.http.ConnectionClosedException;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -268,6 +269,23 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                 job.getMedia(media.getParentId()));
         URI uploadedUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties);
         _inProgressJobs.addStorageUri(job.getId(), media.getId(), uploadedUri.toString());
+    }
+
+
+    @Override
+    public boolean canStore(SubjectJobResult jobResult) throws StorageException  {
+        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(jobResult);
+        return S3StorageBackend.requiresS3ResultUpload(combinedProperties);
+    }
+
+    @Override
+    public URI store(SubjectJobResult jobResult) throws IOException, StorageException {
+        var localUri = _localStorageBackend.store(jobResult);
+        var localPath = Path.of(localUri);
+        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(jobResult);
+        var uploadedUri = putInS3IfAbsent(localPath, combinedProperties);
+        Files.delete(localPath);
+        return uploadedUri;
     }
 
 

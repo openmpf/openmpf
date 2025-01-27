@@ -49,6 +49,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.REQUIRED)
 public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
 
+    public static final String JOB_ID_SEQUENCE_NAME = "job_id_sequence";
+
     /**
      * <p>The type of elements managed by this dao.</p>
      */
@@ -245,4 +247,3 @@ public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
     }
 
 }
-

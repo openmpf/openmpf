@@ -334,39 +334,11 @@ public class InProgressBatchJobsService {
         var media = getMediaImpl(error.getJobId(), error.getMediaId());
         media.setFailed(true);
 
-        // process the error codes in the detection processing result
-        switch (error.getErrorCode()) {
-            // fatal error codes
-            case MpfConstants.BAD_FRAME_SIZE:
-            case MpfConstants.COULD_NOT_OPEN_DATAFILE:
-            case MpfConstants.COULD_NOT_READ_DATAFILE:
-            case MpfConstants.COULD_NOT_OPEN_MEDIA:
-            case MpfConstants.COULD_NOT_READ_MEDIA:
-            // case MpfConstants.DEAD_LETTER:
-            case MpfConstants.DETECTION_FAILED:
-            case MpfConstants.DETECTION_NOT_INITIALIZED:
-            case MpfConstants.FILE_WRITE_ERROR:
-            case MpfConstants.GPU_ERROR:
-            case MpfConstants.INVALID_PROPERTY:
-            case MpfConstants.MEMORY_ALLOCATION_FAILED:
-            case MpfConstants.MISSING_PROPERTY:
-            case MpfConstants.NETWORK_ERROR:
-            case MpfConstants.UNRECOGNIZED_DETECTION_ERROR:
-            case MpfConstants.UNSUPPORTED_DATA_TYPE: {
-                // set the job status to ERROR
-                setJobStatus(error.getJobId(), BatchJobStatusType.ERROR.onError());
-                break;
-            }
-            // cancel error code
-            case MpfConstants.REQUEST_CANCELLED: {
-                cancelJob(error.getJobId());
-                break;
-            }
-            // non fatal error codes
-            default: {
-                setJobStatus(error.getJobId(), job.getStatus().onError());
-                break;
-            }
+        if (error.getErrorCode().equals(MpfConstants.REQUEST_CANCELLED)) {
+            cancelJob(error.getJobId());
+        }
+        else {
+            setJobStatus(error.getJobId(), job.getStatus().onError());
         }
     }
 

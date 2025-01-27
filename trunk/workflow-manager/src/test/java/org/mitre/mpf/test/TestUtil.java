@@ -40,6 +40,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -86,6 +87,10 @@ public class TestUtil {
 
     public static <T, C extends Collection<? extends T>> C nonEmptyCollection() {
         return describedArgThat(c -> !c.isEmpty(), "nonEmptyCollection()");
+    }
+
+    public static <K, V, M extends Map<K, V>> M nonEmptyMap() {
+        return describedArgThat(m -> !m.isEmpty(), "nonEmptyMap()");
     }
 
     public static <T> T describedArgThat(Predicate<T> pred, String description, Object... args) {

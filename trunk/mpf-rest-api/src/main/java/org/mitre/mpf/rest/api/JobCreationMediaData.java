@@ -32,8 +32,8 @@ import java.util.Optional;
 
 import javax.validation.Valid;
 
+import org.mitre.mpf.interop.util.ValidName;
 import org.mitre.mpf.rest.api.util.Utils;
-import org.mitre.mpf.rest.api.util.ValidName;
 
 
 public record JobCreationMediaData(

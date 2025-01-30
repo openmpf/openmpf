@@ -68,7 +68,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 public class TestUtil {
 
-    public static final Duration FUTURE_DURATION = Duration.ofMillis(15);
+    public static final Duration FUTURE_DURATION = Duration.ofMillis(30);
 
     private TestUtil() {
 

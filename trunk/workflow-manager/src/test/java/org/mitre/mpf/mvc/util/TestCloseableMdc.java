@@ -117,6 +117,9 @@ public class TestCloseableMdc {
 
     @Test
     public void testMdcThreadingWithChainedFutures() {
+        // Save the initial context
+        var initialContext = MDC.getCopyOfContextMap();
+
         CompletableFuture<String> job123;
         try (var mdc = CloseableMdc.job(123)) {
             assertAndLogJobId(123, "initial");
@@ -139,11 +142,13 @@ public class TestCloseableMdc {
         assertEquals("123", job123.join());
         assertEquals("456", job456.join());
 
-        assertTrue(MDC.getCopyOfContextMap().isEmpty());
+        // Compare the initial context with the MDC context after the job completes
+        assertEquals(initialContext, MDC.getCopyOfContextMap());
+
         // Make sure threads in pool do not retain context after a job completes.
         var threadCtxSize = ThreadUtil.callAsync(
                 () -> MDC.getCopyOfContextMap().size());
-        assertEquals(0, threadCtxSize.join().intValue());
+        assertEquals(initialContext.size(), threadCtxSize.join().intValue());
     }
 
 

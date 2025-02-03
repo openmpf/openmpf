@@ -60,6 +60,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -154,7 +155,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                 }
 
                 boolean cropping = Boolean.parseBoolean(_aggregateJobPropertiesUtil
-                                   .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_CROPPING, job, media, action));
+                                   .getValue(ArtifactExtractionProcessor.CROPPING_POLICY, job, media, action));
                 boolean isRotationFillBlack = isRotationFillBlack(job, media, action);
                 var request = new ArtifactExtractionRequest(
                         job.getId(),
@@ -243,7 +244,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         SortedSet<Integer> framesToExtract = new TreeSet<>();
 
         String exemplarPlusCountProp = _aggregateJobPropertiesUtil
-                .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS_PROPERTY, job, media, action);
+                .getValue(ArtifactExtractionProcessor.EXEMPLAR_FRAME_PLUS_POLICY, job, media, action);
         int exemplarPlusCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyExemplarFramePlus();
         // Check that the string is parsable in case the user entered a bad integer
         // value
@@ -251,7 +252,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             exemplarPlusCount = Integer.parseInt(exemplarPlusCountProp);
         } catch (NumberFormatException e) {
             LOG.warn("Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                    MpfConstants.ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS_PROPERTY, exemplarPlusCountProp,
+                    ArtifactExtractionProcessor.EXEMPLAR_FRAME_PLUS_POLICY, exemplarPlusCountProp,
                     exemplarPlusCount);
         }
 
@@ -284,19 +285,19 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         int firstDetectionFrame = track.getDetections().first().getMediaOffsetFrame();
         int lastDetectionFrame = track.getDetections().last().getMediaOffsetFrame();
         if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
-                .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME_PROPERTY, job, media, action))) {
+                .getValue(ArtifactExtractionProcessor.FIRST_FRAME_POLICY, job, media, action))) {
             LOG.debug("Will extract first frame {}", firstDetectionFrame);
             framesToExtract.add(firstDetectionFrame);
         }
 
         if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
-                .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_LAST_FRAME_PROPERTY, job, media, action))) {
+                .getValue(ArtifactExtractionProcessor.LAST_FRAME_POLICY, job, media, action))) {
             LOG.debug("Will extract last frame {}", lastDetectionFrame);
             framesToExtract.add(lastDetectionFrame);
         }
 
         if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
-                .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME_PROPERTY, job, media, action))) {
+                .getValue(ArtifactExtractionProcessor.MIDDLE_FRAME_POLICY, job, media, action))) {
             // The goal here is to find the detection in the track that is closest to the
             // "middle" frame. The middle frame is the frame that is equally distant from the start and stop
             // frames, but that frame does not necessarily contain a detection in this track, so we
@@ -323,12 +324,12 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
         int topQualityCount = job.getSystemPropertiesSnapshot().getArtifactExtractionPolicyTopQualityCount();
         String topQualityCountProp = _aggregateJobPropertiesUtil
-                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, job, media, action);
+                    .getValue(ArtifactExtractionProcessor.TOP_QUALITY_COUNT, job, media, action);
         try {
             topQualityCount = Integer.parseInt(topQualityCountProp);
         } catch (NumberFormatException e) {
             LOG.warn("Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                MpfConstants.ARTIFACT_EXTRACTION_POLICY_TOP_QUALITY_COUNT_PROPERTY, topQualityCountProp,
+                ArtifactExtractionProcessor.TOP_QUALITY_COUNT, topQualityCountProp,
                 topQualityCount);
         }
         if (topQualityCount > 0) {
@@ -340,6 +341,20 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                     detection.getMediaOffsetFrame(),
                     detection.getConfidence());
                 framesToExtract.add(detection.getMediaOffsetFrame());
+            }
+        }
+
+        String bestDetectionPropNames = _aggregateJobPropertiesUtil
+                .getValue(ArtifactExtractionProcessor.BEST_DETECTION_PROP_NAMES, job, media, action);
+        var propNameList = TextUtils.parseListFromString(bestDetectionPropNames);
+        propNameList = TextUtils.trimAndUpper(propNameList, Collectors.toList());
+        for (Detection detection : track.getDetections()) {
+            for (String p : propNameList) {
+                if (detection.getDetectionProperties().containsKey(p)) {
+                    LOG.debug("Will extract detection in frame {} with property {}", detection.getMediaOffsetFrame(), p);
+                    framesToExtract.add(detection.getMediaOffsetFrame());
+                    break;
+                }
             }
         }
 
@@ -374,7 +389,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
     private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, Media media, Action action) {
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media,
                 action);
-        String extractionPolicyString = combinedProperties.apply(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY);
+        String extractionPolicyString = combinedProperties.apply(ArtifactExtractionProcessor.POLICY);
 
         ArtifactExtractionPolicy defaultPolicy = job.getSystemPropertiesSnapshot().getDefaultArtifactExtractionPolicy();
         return ArtifactExtractionPolicy.parse(extractionPolicyString, defaultPolicy);

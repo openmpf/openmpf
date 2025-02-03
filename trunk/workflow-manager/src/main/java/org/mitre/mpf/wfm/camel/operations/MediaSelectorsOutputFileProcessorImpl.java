@@ -35,6 +35,8 @@ import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BinaryOperator;
 import java.util.function.UnaryOperator;
 
@@ -192,12 +194,14 @@ public class MediaSelectorsOutputFileProcessorImpl
                 JobPart jobPart,
                 Collection<Track> tracks,
                 MediaSelector selector) {
+        var multipleOutputsHandler = getMultipleOutputsHandler(jobPart);
         var inputToOutput = tracks.stream()
                 .filter(t -> t.getSelectedInput().isPresent())
-                .collect(toMap(
-                        t -> t.getSelectedInput().get(),
-                        t -> t.getTrackProperties().get(selector.resultDetectionProperty()),
-                        getMultipleOutputsHandler(jobPart)));
+                .map(t -> Map.entry(
+                        t.getSelectedInput().get(),
+                        getOutput(t, selector, multipleOutputsHandler)))
+                .filter(e -> e.getValue().isPresent())
+                .collect(toMap(Map.Entry::getKey, e -> e.getValue().get(), multipleOutputsHandler));
 
         var delimeter = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.MEDIA_SELECTORS_DELIMETER, jobPart);
@@ -208,6 +212,29 @@ public class MediaSelectorsOutputFileProcessorImpl
             return input -> appendFieldContent(input, delimeter, inputToOutput);
         }
     }
+
+    private static Optional<String> getOutput(
+            Track track,
+            MediaSelector selector,
+            BinaryOperator<String> multipleOutputsHandler) {
+        var resultProp = selector.resultDetectionProperty();
+        var trackProp = Optional.ofNullable(track.getTrackProperties().get(resultProp));
+        if (trackProp.isPresent()) {
+            return trackProp;
+        }
+
+        var exemplarProp = Optional.ofNullable(track.getExemplar())
+            .map(e -> e.getDetectionProperties().get(resultProp));
+        if (exemplarProp.isPresent()) {
+            return exemplarProp;
+        }
+
+        return track.getDetections().stream()
+            .map(d -> d.getDetectionProperties().get(resultProp))
+            .filter(Objects::nonNull)
+            .reduce(multipleOutputsHandler);
+    }
+
 
     private BinaryOperator<String> getMultipleOutputsHandler(JobPart jobPart) {
         var policyHandler = getDuplicatePolicyHandler(jobPart);

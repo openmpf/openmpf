@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -90,6 +91,7 @@ import org.mockito.Mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 
 
 public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Strict {
@@ -166,6 +168,20 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
         var mapper2 = mappers.get(1);
         assertNotMapped(mapper2, "INPUT_1_1", "INPUT_1_2");
         assertMapped(mapper2, "INPUT_2_1", "OUTPUT_2_1");
+    }
+
+
+    @Test
+    public void testMissingProp() throws IOException, StorageException {
+        var mappers = _testBuilder.addJsonSelector("expr1", "OUTPUT1")
+                .addTrack(0, "INPUT_1_1", "OUTPUT1", "OUTPUT_1_1")
+                .addTrack(0, "INPUT_1_2", "WRONG_PROP", "OUTPUT_1_2")
+                .getStringMappers();
+
+        assertThat(mappers).hasSize(1);
+        var mapper = mappers.get(0);
+        assertMapped(mapper, "INPUT_1_1", "OUTPUT_1_1");
+        assertMapped(mapper, "INPUT_1_2", "INPUT_1_2");
     }
 
 
@@ -351,6 +367,8 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
                     .thenReturn(Optional.of(input));
             when(track.getTrackProperties())
                     .thenReturn(ImmutableSortedMap.of(outputProp, outputValue));
+            lenient().when(track.getDetections())
+                    .thenReturn(ImmutableSortedSet.of());
             _tracks.add(track);
             return this;
         }

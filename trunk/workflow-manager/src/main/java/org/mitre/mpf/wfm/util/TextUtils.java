@@ -132,4 +132,44 @@ public class TextUtils {
             return string;
         }
     }
+
+    public static List<String> parseListFromString(String listOfStrings) {
+        if (listOfStrings == null || listOfStrings.isEmpty()) {
+            return List.of();
+        }
+        if (!listOfStrings.contains(";") && !listOfStrings.contains("\\")) {
+            return Arrays.asList(listOfStrings.strip());
+        }
+
+        var values = new ArrayList<String>();
+        var currentSegment = new StringBuilder();
+        boolean inEscapeSequence = false;
+        for (int i = 0; i < listOfStrings.length(); i++) {
+            char ch = listOfStrings.charAt(i);
+            if (inEscapeSequence) {
+                inEscapeSequence = false;
+                currentSegment.append(ch);
+                continue;
+            }
+            switch (ch) {
+                case '\\' -> inEscapeSequence = true;
+                case ';' -> {
+                    var newValue = currentSegment.toString().strip();
+                    if (!newValue.isBlank()) {
+                        values.add(newValue);
+                    }
+                    currentSegment.setLength(0);
+                }
+                default -> currentSegment.append(ch);
+            }
+        }
+
+        if (!currentSegment.isEmpty()) {
+            var newValue = currentSegment.toString().strip();
+            if (!newValue.isBlank()) {
+                values.add(newValue);
+            }
+        }
+        return values;
+    }
 }

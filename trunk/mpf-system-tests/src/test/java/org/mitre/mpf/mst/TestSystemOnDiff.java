@@ -40,6 +40,7 @@ import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientTask;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -59,8 +60,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runArtifactExtractionAllDetectionsTest() {
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put("OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY", "true");
-        jobProperties.put("ARTIFACT_EXTRACTION_POLICY", "ALL_DETECTIONS");
-        jobProperties.put("ARTIFACT_EXTRACTION_POLICY_CROPPING", "false");
+        jobProperties.put(ArtifactExtractionProcessor.POLICY, "ALL_DETECTIONS");
+        jobProperties.put(ArtifactExtractionProcessor.CROPPING_POLICY, "false");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, jobProperties);
@@ -103,7 +104,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runArtifactExtractionArtifactsAndExemplarsOnlyTest() {
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put("OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY", "true");
-        jobProperties.put("ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME", "true");
+        jobProperties.put(ArtifactExtractionProcessor.FIRST_FRAME_POLICY, "true");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, jobProperties);
@@ -176,8 +177,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         addAction(propActionName, "FACECV",
                   ImmutableMap.of(
                           "OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY", "true",
-                          "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS", "1"));
-
+                          ArtifactExtractionProcessor.EXEMPLAR_FRAME_PLUS_POLICY, "1"));
         String propTaskName = "TEST OCV FACE WITH ARTIFACT EXTRACTION PROPERTIES TASK";
         addTask(propTaskName, propActionName);
 
@@ -257,7 +257,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionWithPolicyNoneTest() {
         Map<String, String> jobProperties = new HashMap<>();
-        jobProperties.put("ARTIFACT_EXTRACTION_POLICY", "NONE");
+        jobProperties.put(ArtifactExtractionProcessor.POLICY, "NONE");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, jobProperties);

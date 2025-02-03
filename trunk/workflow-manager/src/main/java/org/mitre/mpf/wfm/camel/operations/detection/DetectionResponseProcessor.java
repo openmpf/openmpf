@@ -196,7 +196,7 @@ public class DetectionResponseProcessor
             // Drop the track if it doesn't pass the quality filter but we know that the quality
             // selection property exists as a track property. Tracks that don't contain the quality selection property
             // as a track property will still be processed.
-            if (!qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties) &&
+            if (!qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties, false) &&
                     ("CONFIDENCE".equalsIgnoreCase(qualitySelectionProp) || trackProperties.containsKey(qualitySelectionProp))) {
                 continue;
                 }
@@ -209,7 +209,7 @@ public class DetectionResponseProcessor
                         .stream()
                         .filter(e -> qualityFilter.meetsThreshold(
                                 e.getValue().getConfidence(),
-                                e.getValue().getDetectionPropertiesMap()))
+                                e.getValue().getDetectionPropertiesMap(), true))
                         .map(e -> toDetection(e.getKey(), e.getValue(), frameTimeInfo))
                         .toList();
 
@@ -273,7 +273,7 @@ public class DetectionResponseProcessor
                         "Unsupported operation. Derivative media is not supported for jobs with audio source media.");
             }
 
-            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties)) {
+            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties, true)) {
                 Detection detection = new Detection(
                         0,
                         0,
@@ -331,7 +331,7 @@ public class DetectionResponseProcessor
                         "Unsupported operation. Derivative media is not supported for jobs with image source media.");
             }
 
-            if (qualityFilter.meetsThreshold(location.getConfidence(), locationProperties)) {
+            if (qualityFilter.meetsThreshold(location.getConfidence(), locationProperties, true)) {
                 Track track = new Track(
                         jobId,
                         detectionResponse.getMediaId(),
@@ -386,7 +386,7 @@ public class DetectionResponseProcessor
                 trackProperties = mutableTrackProperties;
             }
 
-            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties))
+            if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties, true))
                 processGenericTrack(jobId, detectionResponse, objectTrack,
                                     trackProperties, mergedTaskIdx, headers);
         }
@@ -535,21 +535,21 @@ public class DetectionResponseProcessor
     }
 
     private static interface QualityFilter {
-        boolean meetsThreshold(double confidence, Map<String, String> detectionProperties);
+        boolean meetsThreshold(double confidence, Map<String, String> detectionProperties, boolean reportWarning);
     }
 
     private QualityFilter createQualityFilter(BatchJob job, Media media, Action action) {
         var qualityThresholdProp = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.QUALITY_THRESHOLD_PROPERTY, job, media, action);
         if (qualityThresholdProp == null || qualityThresholdProp.isBlank()) {
-            return (c, p) -> true;
+            return (c, p, b) -> true;
         }
 
         double qualityThreshold;
         try {
             qualityThreshold = Double.parseDouble(qualityThresholdProp);
             if (qualityThreshold == Double.NEGATIVE_INFINITY) {
-                return (c, p) -> true;
+                return (c, p, b) -> true;
             }
         }
         catch (NumberFormatException e) {
@@ -557,12 +557,12 @@ public class DetectionResponseProcessor
                     job.getId(), media.getId(), IssueCodes.OTHER,
                     "Expected %s to be a number but it was was: %s".formatted(
                         MpfConstants.QUALITY_THRESHOLD_PROPERTY, qualityThresholdProp));
-            return (c, p) -> true;
+            return (c, p, b) -> true;
         }
 
         var qualityProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
         if (qualityProp.equalsIgnoreCase("CONFIDENCE")) {
-            return (c, p) -> c >= qualityThreshold;
+            return (c, p, b) -> c >= qualityThreshold;
         }
         else {
             return createQualityFilter(qualityProp, qualityThreshold);
@@ -573,16 +573,18 @@ public class DetectionResponseProcessor
             String qualityPropName, double qualityThreshold) {
         return new QualityFilter() {
             boolean _loggedWarning;
+            String propName = qualityPropName;
+            double threshold = qualityThreshold;
 
             public boolean meetsThreshold(
-                    double confidence, Map<String, String> detectionProperties) {
-                var qualityValue = detectionProperties.getOrDefault(qualityPropName, "");
+                    double confidence, Map<String, String> detectionProperties, boolean reportWarning) {
+                var qualityValue = detectionProperties.getOrDefault(propName, "");
                 try {
-                    return Double.parseDouble(qualityValue) >= qualityThreshold;
+                    return Double.parseDouble(qualityValue) >= threshold;
                 }
                 catch (NumberFormatException e) {
-                    if (!_loggedWarning) {
-                        log.warn("One or more detections did not have a valid quality property.");
+                    if (reportWarning && !_loggedWarning) {
+                        log.warn("QualityFilter: One or more detections did not have a valid quality property.");
                         _loggedWarning = true;
                     }
                     return false;

@@ -98,5 +98,17 @@ struct JobContext {
         auto duration_ms = std::chrono::round<std::chrono::milliseconds>(duration);
         return duration_ms.count();
     }
+
+    std::string get_mime_type() const {
+        return std::visit([](const auto& job) -> std::string {
+            const auto& properties = job.media_properties;
+            auto it = properties.find("MIME_TYPE");
+            if (it != properties.end()) {
+                return it->second;
+            }
+
+            return "UNKNOWN_MIME";
+        }, job);
+    }
 };
 }

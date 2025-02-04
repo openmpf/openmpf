@@ -280,7 +280,8 @@ public class MediaSelectorsOutputFileProcessorImpl
 
     private static String appendFieldContent(
             String input, String delimeter, Map<String, String> inputToOutput) {
-        var output = inputToOutput.getOrDefault(input, "<no content>");
-        return String.join(" ", input, delimeter, output);
+        return Optional.ofNullable(inputToOutput.get(input))
+                .map(o -> "%s %s %s".formatted(input, delimeter, o))
+                .orElse(input);
     }
 }

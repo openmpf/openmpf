@@ -340,6 +340,28 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
     }
 
 
+    @Test
+    public void testDelimeterWithMissingValue() throws IOException, StorageException {
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DELIMETER), any(JobPart.class)))
+                .thenReturn(":");
+
+        when(_mockAggJobProps.getValue(eq(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY), any(JobPart.class)))
+                .thenReturn("ERROR");
+
+        var mappers = _testBuilder
+                .addJsonSelector("expr1", "OUTPUT_1")
+                .addJsonSelector("expr2", "OUTPUT_2")
+                .addTrack(0, "INPUT_1", "OUTPUT_1", "OUTPUT_1_1")
+                .addTrack(1, "INPUT_1", "OUTPUT_1", "OUTPUT_1_2")
+                .disableNoPresentCheck()
+                .getStringMappers();
+
+        assertThat(mappers).hasSize(2);
+        assertMapped(mappers.get(0), "INPUT_1", "INPUT_1 : OUTPUT_1_1");
+        assertMapped(mappers.get(1), "INPUT_1", "INPUT_1");
+    }
+
+
     private class TestCaseBuilder {
 
         private List<MediaSelector> _mediaSelectors = new ArrayList<>();

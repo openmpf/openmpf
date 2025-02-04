@@ -72,6 +72,15 @@ public class CompareUtils {
     }
 
 
+    public static <T extends Comparable<T>> Comparator<Optional<T>> optionalCompare() {
+        return optionalCompare(Comparator.<T>naturalOrder());
+    }
+
+    public static <T> Comparator<Optional<T>> optionalCompare(Comparator<T> comparator) {
+        return Comparator.comparing(o -> o.orElse(null), Comparator.nullsFirst(comparator));
+    }
+
+
     public static <T, U> Comparator<T> sortedSetCompare(Function<T, SortedSet<U>> toSortedSetFunc) {
         return Comparator.nullsFirst(Comparator.comparing(toSortedSetFunc, CompareUtils::doSortedSetCompare));
     }

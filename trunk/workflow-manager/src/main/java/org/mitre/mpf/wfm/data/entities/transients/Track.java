@@ -176,8 +176,8 @@ public class Track implements Comparable<Track> {
         return Objects.hash(
                 _jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
                 _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
-                _mergedTaskIndex, _confidence, _trackProperties, _exemplar,
-                _detections);
+                _mergedTaskIndex, _confidence, _selectorId, _selectedInput, _trackProperties,
+                _exemplar, _detections);
     }
 
     @Override
@@ -214,6 +214,8 @@ public class Track implements Comparable<Track> {
                 .thenComparingInt(Track::getEndOffsetTimeInclusive)
                 .thenComparingInt(Track::getMergedTaskIndex)
                 .thenComparingDouble(Track::getConfidence)
+                .thenComparing(Track::getSelectorId, CompareUtils.optionalCompare())
+                .thenComparing(Track::getSelectedInput, CompareUtils.optionalCompare())
                 .thenComparing(Track::getTrackProperties, CompareUtils.MAP_COMPARATOR)
                 .thenComparing(Track::getExemplar, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(Track::getDetections, DETECTION_SET_COMPARATOR));

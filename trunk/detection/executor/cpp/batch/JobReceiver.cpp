@@ -117,11 +117,10 @@ void JobReceiver::ReportJobError(
 }
 
 void JobReceiver::ReportUnsupportedDataType(const JobContext& context) {
-    std::string mime_type = context.get_mime_type();
     ReportJobError(
         context, MPFDetectionError::MPF_UNSUPPORTED_DATA_TYPE,
         "The detection component does not support the '" + context.job_type_name
-            + "' data type. The MIME was detected as '" + mime_type
+            + "' data type. The MIME was detected as '" + context.get_mime_type()
             + "', which is classified as a non-media type (neither an image, video, nor audio file). "
             + "Please use a valid media file type (image, video, or audio) for processing.");
 }

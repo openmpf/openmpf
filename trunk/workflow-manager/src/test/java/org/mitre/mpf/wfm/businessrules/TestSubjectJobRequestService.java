@@ -62,6 +62,7 @@ import org.mitre.mpf.interop.subject.CallbackMethod;
 import org.mitre.mpf.interop.subject.SubjectJobRequest;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
@@ -181,8 +182,13 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
         setupDetectionFutures();
 
         var output101 = mock(JsonOutputObject.class);
+        when(output101.getStatus())
+                .thenReturn("COMPLETE");
 
         var output102 = mock(JsonOutputObject.class);
+        when(output102.getStatus())
+                .thenReturn("COMPLETE");
+
         when(_mockPastJobResultsService.getDetectionJobResults(102L))
                 .thenReturn(output102);
 
@@ -285,6 +291,35 @@ public class TestSubjectJobRequestService extends MockitoTest.Strict {
 
         verifyCompletedWithError(exception);
         verifyNoInteractions(_mockProducerTemplate);
+    }
+
+    @Test
+    public void testDetectionJobErrorStatus() {
+        setupMockSave();
+        setupDetectionFutures();
+        setupComponentRepo();
+        setupConverter();
+
+        var returnedJobId = _subjectJobRequestService.runJob(_jobRequest);
+        assertThat(returnedJobId).isEqualTo(130L);
+
+        var output101 = mock(JsonOutputObject.class);
+        when(output101.getStatus())
+                .thenReturn("ERROR");
+        _detectionFuture1.complete(Optional.of(output101));
+
+        var output102 = mock(JsonOutputObject.class);
+        when(output102.getStatus())
+                .thenReturn("COMPLETE");
+        _detectionFuture2.complete(Optional.of(output102));
+
+        var futures = _outputObjectFuturesCaptor.getValue();
+        assertThat(futures).satisfiesExactlyInAnyOrder(
+                o -> assertThat(o).succeedsWithin(FUTURE_DURATION),
+                o -> assertThat(o).failsWithin(FUTURE_DURATION)
+                        .withThrowableThat()
+                        .withCauseExactlyInstanceOf(WfmProcessingException.class)
+                        .withMessageContaining("unexpected status"));
     }
 
 

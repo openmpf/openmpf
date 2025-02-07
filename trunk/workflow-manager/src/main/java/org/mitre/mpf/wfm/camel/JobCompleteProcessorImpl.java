@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,14 +64,12 @@ import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -265,67 +264,41 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
+
+    private static final EnumSet<DetectionError> FATAL_ERROR_CODES = EnumSet.of(
+            DetectionError.BAD_FRAME_SIZE,
+            DetectionError.COULD_NOT_OPEN_DATAFILE,
+            DetectionError.COULD_NOT_READ_DATAFILE,
+            DetectionError.COULD_NOT_OPEN_MEDIA,
+            DetectionError.COULD_NOT_READ_MEDIA,
+            DetectionError.DETECTION_FAILED,
+            DetectionError.DETECTION_NOT_INITIALIZED,
+            DetectionError.FILE_WRITE_ERROR,
+            DetectionError.GPU_ERROR,
+            DetectionError.INVALID_PROPERTY,
+            DetectionError.MEMORY_ALLOCATION_FAILED,
+            DetectionError.MISSING_PROPERTY,
+            DetectionError.NETWORK_ERROR,
+            DetectionError.UNRECOGNIZED_DETECTION_ERROR,
+            DetectionError.UNSUPPORTED_DATA_TYPE);
+
     private BatchJobStatusType updateJobStatus(BatchJob job) {
-        boolean anyComplete = false;
-        boolean anyFailed = false;
-
-        for(Media media : job.getMedia()) {
-            if(media.isFailed()) {
-                anyFailed = true;
-            } else {
-                anyComplete = true;
-            }
+        var completionStatus = job.getStatus().onComplete();
+        if (completionStatus != BatchJobStatusType.COMPLETE_WITH_ERRORS) {
+            return completionStatus;
         }
-
-        if(anyComplete && anyFailed) {
-            // COMPLETE_WITH_ERRORS - detections have both errors + completed
-            return job.getStatus().onError();
-        } else if(anyComplete) {
-            // COMPLETE - no errors detected
-            return job.getStatus().onComplete();
-        } else {
-            // COMPLETE_WITH_ERRORS or ERROR - check for fatal errors
-            return checkDetectionErrors(job);
+        boolean anyMediaSuccessful = job.getMedia().stream().anyMatch(m -> !m.isFailed());
+        if (anyMediaSuccessful) {
+            return completionStatus;
         }
+        return job.getDetectionProcessingErrors()
+            .stream()
+            .filter(de -> FATAL_ERROR_CODES.contains(DetectionError.valueOf(de.getErrorCode())))
+            .findAny()
+            .map(de -> completionStatus.onFatalError())
+            .orElse(completionStatus);
     }
 
-    private BatchJobStatusType checkDetectionErrors(BatchJob job) {
-        BatchJobImpl jobImpl = (BatchJobImpl) job;
-
-        //check for fatal errors
-        for(DetectionProcessingError error : job.getDetectionProcessingErrors()) {
-            DetectionProtobuf.DetectionError errorType = DetectionProtobuf.DetectionError.valueOf(error.getErrorCode());
-
-            switch (errorType) {
-                // fatal error codes
-                case BAD_FRAME_SIZE:
-                case COULD_NOT_OPEN_DATAFILE:
-                case COULD_NOT_READ_DATAFILE:
-                case COULD_NOT_OPEN_MEDIA:
-                case COULD_NOT_READ_MEDIA:
-                case DETECTION_FAILED:
-                case DETECTION_NOT_INITIALIZED:
-                case FILE_WRITE_ERROR:
-                case GPU_ERROR:
-                case INVALID_PROPERTY:
-                case MEMORY_ALLOCATION_FAILED:
-                case MISSING_PROPERTY:
-                case NETWORK_ERROR:
-                case UNRECOGNIZED_DETECTION_ERROR:
-                case UNSUPPORTED_DATA_TYPE: {
-                    // set the job status to ERROR
-                    jobImpl.setStatus(BatchJobStatusType.ERROR);
-                    break;
-                }
-                // non fatal error
-                default: {
-                    break;
-                }
-            }
-        }
-
-        return job.getStatus().onError();
-    }
 
     private void checkCallbacks(BatchJob job, JobRequest jobRequest) {
         if (job.getCallbackUrl().isPresent()) {

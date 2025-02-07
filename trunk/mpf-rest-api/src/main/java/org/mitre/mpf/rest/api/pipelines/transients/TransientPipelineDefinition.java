@@ -57,10 +57,17 @@ public class TransientPipelineDefinition {
         return _actions;
     }
 
+    private final String _displayName;
+
+    public getDisplayname() {
+        return _displayName;
+    }
+
     public TransientPipelineDefinition(
             @JsonProperty("pipeline") List<String> pipeline,
             @JsonProperty("tasks") List<TransientTask> tasks,
-            @JsonProperty("actions") List<TransientAction> actions) {
+            @JsonProperty("actions") List<TransientAction> actions, 
+            @JsonProperty("displayName"} String displayName) {
         _pipeline = Utils.trimAndUpper(pipeline, ImmutableList.toImmutableList());
         _tasks = tasks == null
                 ? ImmutableList.of()

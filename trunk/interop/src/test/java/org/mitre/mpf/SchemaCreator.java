@@ -30,6 +30,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.subject.SubjectJobRequest;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 
 import java.io.File;
 
@@ -49,11 +51,12 @@ public class SchemaCreator {
                 // JsonTask.class,
                 // JsonTrackOutputObject.class
                 JsonSegmentSummaryReport.class,
-                JsonHealthReportCollection.class
+                JsonHealthReportCollection.class,
+                SubjectJobRequest.class,
+                SubjectJobResult.class
         }) {
             JsonSchema jsonSchema = jsonSchemaGenerator.generateSchema(clazz);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(clazz.getSimpleName()+".schema.json"), jsonSchema);
         }
     }
 }
-

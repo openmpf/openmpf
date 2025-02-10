@@ -290,8 +290,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
     private BatchJobStatusType checkDetectionErrors(BatchJob job) {
-        BatchJobImpl jobImpl = (BatchJobImpl) job;
-
         //check for fatal errors
         for(DetectionProcessingError error : job.getDetectionProcessingErrors()) {
             DetectionProtobuf.DetectionError errorType = DetectionProtobuf.DetectionError.valueOf(error.getErrorCode());
@@ -314,8 +312,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 case UNRECOGNIZED_DETECTION_ERROR:
                 case UNSUPPORTED_DATA_TYPE: {
                     // set the job status to ERROR
-                    jobImpl.setStatus(BatchJobStatusType.ERROR);
-                    break;
+                    return BatchJobStatusType.ERROR;
                 }
                 // non fatal error
                 default: {

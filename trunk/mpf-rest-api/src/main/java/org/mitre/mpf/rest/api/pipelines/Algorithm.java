@@ -34,10 +34,10 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.NotBlank;
+import org.mitre.mpf.interop.util.ValidName;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
 import org.mitre.mpf.rest.api.util.Utils;
-import org.mitre.mpf.rest.api.util.ValidName;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;

@@ -43,9 +43,23 @@
                 <li class="dropdown">
                     <a class="dropdown-toggle active" id="jobs_dropdown" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Jobs<span class="caret"></span></a>
                     <ul class="dropdown-menu">
-                        <li><a ui-sref="jobs" id="menu_jobs" title="View status of queued jobs">Status</a></li>
-                        <li><a ui-sref="/server_media" id="menu_server_media" title="Create jobs and upload media to the server">Create</a></li>
+                        <li>
+                            <a ui-sref="jobs" id="menu_jobs" title="View status of queued jobs">
+                                Detection Job Status
+                            </a>
+                        </li>
+                        <li>
+                            <a ui-sref="/server_media" id="menu_server_media"
+                                    title="Create jobs and upload media to the server">
+                                Create Detection Job
+                            </a>
+                        </li>
                         <li><a ui-sref="/adminStatistics" id="menu_adminStatistics" title="Displays job statistics">Statistics</a></li>
+                        <li>
+                            <a ui-sref="/subject-jobs" title="View status of subject tracking jobs">
+                                Subject Tracking Job Status
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li ng-if="!dockerEnabled"><a ui-sref="/adminNodes" title="View and edit running nodes and process">Nodes</a></li>

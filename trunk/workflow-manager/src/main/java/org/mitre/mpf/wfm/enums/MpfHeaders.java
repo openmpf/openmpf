@@ -49,7 +49,9 @@ public class MpfHeaders {
 
 		UNSOLICITED = "Unsolicited",
 
-		OUTPUT_OBJECT_URI_FROM_TIES_DB = "OUTPUT_OBJECT_URI_FROM_TIES_DB";
+		OUTPUT_OBJECT_URI_FROM_TIES_DB = "OUTPUT_OBJECT_URI_FROM_TIES_DB",
+
+        CANCELLED = "CANCELLED";
 
 
 	private MpfHeaders() {

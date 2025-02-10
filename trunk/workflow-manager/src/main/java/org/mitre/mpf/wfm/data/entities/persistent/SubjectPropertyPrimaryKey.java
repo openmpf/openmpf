@@ -24,46 +24,30 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
-import java.lang.annotation.Target;
-
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
-import javax.validation.ReportAsSingleViolation;
-
-import org.hibernate.validator.constraints.NotBlank;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
-        ElementType.ANNOTATION_TYPE })
-@Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = ValidName.Validator.class)
-@NotBlank
-public @interface ValidName {
-    String message() default "may not contain / or ;";
-    Class<?>[] groups() default { };
-    Class<? extends Payload>[] payload() default { };
+import java.io.Serializable;
+import java.util.Objects;
 
 
-    public static class Validator implements ConstraintValidator<ValidName, String> {
+// Used by DbSubjectComponentProperty to specify a composite primary key consisting of
+// DbSubjectComponent's primary key and the property name. This ensures that a given component
+// can only have one definition for a property.
+public class SubjectPropertyPrimaryKey implements Serializable {
 
-        @Override
-        public void initialize(ValidName constraintAnnotation) {
-        }
+    private DbSubjectComponent component;
 
-        @Override
-        public boolean isValid(String value, ConstraintValidatorContext context) {
-            if (value == null) {
-                // Use the error message from @NotBlank when the value is null.
-                return true;
-            }
-            return !value.contains("/") && !value.contains(";");
-        }
+    private String name;
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(component, name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof SubjectPropertyPrimaryKey other)
+                && Objects.equals(component, other.component)
+                && Objects.equals(name, other.name);
     }
 }

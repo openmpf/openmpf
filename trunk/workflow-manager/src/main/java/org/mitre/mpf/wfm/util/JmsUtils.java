@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
@@ -37,13 +40,13 @@ import org.mitre.mpf.wfm.camel.routes.DetectionCancellationRouteBuilder;
 import org.mitre.mpf.wfm.camel.routes.MarkupCancellationRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.google.common.base.Throwables;
 
 @Component
 public class JmsUtils {
@@ -56,7 +59,7 @@ public class JmsUtils {
     private CamelContext _camelContext;
 
 
-    public void cancel(final long jobId) throws Exception {
+    public void cancelDetectionJob(final long jobId) throws Exception {
         _camelContext.addRoutes(new RouteBuilder() {
             @Override
             public void configure() {
@@ -83,7 +86,7 @@ public class JmsUtils {
      * @param jobId
      * @throws Exception
      */
-    public synchronized void destroyCancellationRoutes(final long jobId) throws Exception {
+    public synchronized void destroyDetectionCancellationRoutes(final long jobId) throws Exception {
         _camelContext.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -111,6 +114,39 @@ public class JmsUtils {
         }
     }
 
+    public void cancelSubjectJob(long jobId, String componentName) {
+        var routeId = getSubjectCancellationRouteId(jobId, componentName);
+        if (_camelContext.getRoute(routeId) != null) {
+            return;
+        }
+
+        try {
+            _camelContext.addRoutes(new RouteBuilder() {
+                @Override
+                public void configure() throws Exception {
+                    fromF("activemq:MPF.SUBJECT_%s_REQUEST?selector=JobId=%s", componentName, jobId)
+                        .routeId(routeId)
+                        .setHeader(MpfHeaders.CANCELLED, constant(true));
+                }
+            });
+        }
+        catch (Exception e) {
+            Throwables.throwIfUnchecked(e);
+            throw new IllegalStateException(e);
+        }
+    }
+
+
+    public void deleteSubjectCancelRoute(long jobId, String componentName) {
+        var routeId = getSubjectCancellationRouteId(jobId, componentName);
+        try {
+            _camelContext.stopRoute(routeId);
+            _camelContext.removeRoute(routeId);
+        }
+        catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
 
     private static String createCancellationRouteName(long jobId, String... params) {
@@ -122,5 +158,9 @@ public class JmsUtils {
             return prefix;
         }
         return prefix + ' ' + String.join(" ", params);
+    }
+
+    private static String getSubjectCancellationRouteId(long jobId, String componentName) {
+        return createCancellationRouteName(jobId, "SUBJECT", componentName);
     }
 }

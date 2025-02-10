@@ -124,6 +124,15 @@ public class TextUtils {
 		}
 	}
 
+    public static String removePrefix(String string, String prefix) {
+        if (string.startsWith(prefix)) {
+            return string.substring(prefix.length());
+        }
+        else {
+            return string;
+        }
+    }
+
     public static List<String> parseListFromString(String listOfStrings) {
         if (listOfStrings == null || listOfStrings.isEmpty()) {
             return List.of();
@@ -163,6 +172,4 @@ public class TextUtils {
         }
         return values;
     }
-
-
 }

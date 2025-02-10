@@ -28,8 +28,14 @@
 package org.mitre.mpf.rest.api.util;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collector;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class Utils {
 
@@ -55,5 +61,17 @@ public class Utils {
                 .flatMap(Collection::stream)
                 .map(Utils::trimAndUpper)
                 .collect(collector);
+    }
+
+    public static <T> ImmutableSet<T> toImmutableSet(Set<T> set) {
+        return Optional.ofNullable(set)
+            .map(ImmutableSet::copyOf)
+            .orElseGet(ImmutableSet::of);
+    }
+
+    public static <K, V> ImmutableMap<K, V> toImmutableMap(Map<K, V> map) {
+        return Optional.ofNullable(map)
+            .map(ImmutableMap::copyOf)
+            .orElseGet(ImmutableMap::of);
     }
 }

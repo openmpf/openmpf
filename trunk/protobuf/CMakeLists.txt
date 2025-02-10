@@ -27,34 +27,28 @@
 cmake_minimum_required(VERSION 3.6)
 project(MPF_PROTOBUF)
 
-## Find ProtoBufs
-# When performing non-Docker builds, we must account for how the old build guide told developers
-# to install libraries in non-standard locations under /apps.
-if (EXISTS /apps/install/include/google/protobuf)
-    set(Protobuf_INCLUDE_DIR /apps/install/include)
-endif()
-find_file(Protobuf_LIBRARY libprotobuf.a
-            PATHS /apps/install/lib /usr/lib64 /usr/lib/x86_64-linux-gnu)
-find_package(Protobuf REQUIRED)
+# In our Dockerfiles, we compile a static version of libprotobuf. Video overlay depends on
+# mpfProtobufs and is a shared library. In order for a shared library to link to a static library,
+# position independent code must be enabled.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")
+# https://github.com/protocolbuffers/protobuf/blob/main/docs/cmake_protobuf_generate.md
+find_package(protobuf CONFIG REQUIRED)
 
-# build protobuf cpp files
-# this puts the generated files under build/protobufs
-PROTOBUF_GENERATE_CPP(MPF_PROTO_SRCS MPF_PROTO_HEADERS ${PROTO_FILES})
+add_library(
+    mpfProtobufs OBJECT
+    src/main/proto/detection.proto
+    src/main/proto/markup.proto
+    src/main/proto/subject.proto)
 
-# Tell cmake these will exist at build time
-set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
+target_link_libraries(mpfProtobufs PUBLIC protobuf::libprotobuf)
 
-add_library(mpfProtobufs STATIC ${MPF_PROTO_SRCS})
-target_link_libraries(mpfProtobufs ${Protobuf_LIBRARY})
-
-# include ourselves for building
 target_include_directories(mpfProtobufs PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
-# Video overlay is a shared library, so it needs to link with the shared version of libprotobuf.
-find_file(Protobuf_SHARED_LIBRARY libprotobuf.so
-            PATHS /apps/install/lib /usr/lib64 /usr/lib/x86_64-linux-gnu)
-add_library(mpfProtobufsShared SHARED ${MPF_PROTO_SRCS})
-target_link_libraries(mpfProtobufsShared ${Protobuf_SHARED_LIBRARY})
-target_include_directories(mpfProtobufsShared PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+protobuf_generate(TARGET mpfProtobufs
+    IMPORT_DIRS src/main/proto
+    LANGUAGE python
+    PLUGIN_OPTIONS pyi_out
+    PROTOC_OUT_DIR ${CMAKE_SOURCE_DIR}/subject-tracking/executor/python/mpf_subject_executor/mpf_proto)
+
+protobuf_generate(TARGET mpfProtobufs IMPORT_DIRS src/main/proto LANGUAGE cpp)

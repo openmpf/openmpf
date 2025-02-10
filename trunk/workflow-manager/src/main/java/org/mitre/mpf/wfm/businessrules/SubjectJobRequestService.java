@@ -39,12 +39,14 @@ import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.subject.SubjectJobRequest;
 import org.mitre.mpf.mvc.util.CloseableMdc;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.SubjectProtobuf;
 import org.mitre.mpf.wfm.camel.routes.SubjectJobRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
 import org.mitre.mpf.wfm.service.SubjectJobResultsService;
 import org.mitre.mpf.wfm.util.JmsUtils;
@@ -111,7 +113,7 @@ public class SubjectJobRequestService {
         long jobId = addJobToDb(request).getId();
         try (var ctx = CloseableMdc.job(jobId)) {
             var futures = request.detectionJobIds().stream()
-                .map(this::getDetectionOutputObject)
+                .map(detId -> getDetectionOutputObject(jobId, detId))
                 .toList();
 
             _subjectJobToProtobufConverter.createJob(jobId, futures, request.jobProperties())
@@ -184,13 +186,34 @@ public class SubjectJobRequestService {
     }
 
 
-    private CompletableFuture<JsonOutputObject> getDetectionOutputObject(long detectionJobId) {
+    private CompletableFuture<JsonOutputObject> getDetectionOutputObject(
+            long subjectJobId, long detectionJobId) {
         return _inProgressDetectionJobsService.getJobResultsAvailableFuture(detectionJobId)
                 .thenApplyAsync(optResult -> {
                     if (optResult.isPresent()) {
                         return optResult.get();
                     }
                     return _pastJobResultsService.getDetectionJobResults(detectionJobId);
+                })
+                .thenApply(o -> checkOutputObject(subjectJobId, detectionJobId, o));
+    }
+
+
+    private JsonOutputObject checkOutputObject(
+                long subjectJobId, long detectionJobId, JsonOutputObject outputObject) {
+        var jobStatus = BatchJobStatusType.parse(outputObject.getStatus());
+        return switch (jobStatus) {
+            case COMPLETE -> outputObject;
+            case COMPLETE_WITH_WARNINGS -> {
+                _transactionTemplate.executeWithoutResult(t -> {
+                    var job = _subjectJobRepo.findById(subjectJobId);
+                    job.addWarning("Detection job %s had warnings.".formatted(detectionJobId));
                 });
+                yield outputObject;
+            }
+            default -> throw new WfmProcessingException(
+                    "Could not run subject tracking job because detection job %s had the unexpected status: %s"
+                    .formatted(detectionJobId, jobStatus));
+        };
     }
 }

@@ -117,12 +117,21 @@ void JobReceiver::ReportJobError(
 }
 
 void JobReceiver::ReportUnsupportedDataType(const JobContext& context) {
-    ReportJobError(
-        context, MPFDetectionError::MPF_UNSUPPORTED_DATA_TYPE,
-        "The detection component does not support the '" + context.job_type_name
-            + "' data type. The MIME was detected as '" + context.get_mime_type()
-            + "', which is classified as a non-media type (neither an image, video, nor audio file). "
-            + "Please use a valid media file type (image, video, or audio) for processing.");
+    if(context.job_type == MPFDetectionDataType::UNKNOWN) {
+        ReportJobError(
+            context, MPFDetectionError::MPF_UNSUPPORTED_DATA_TYPE,
+            "The detection component does not support detection data type of '"
+                + context.job_type_name + "'. The MIME_TYPE was detected to be '"
+                + context.get_mime_type() + "', which was classified as '"
+                + context.job_type_name + "' because it isn't an image, video, or audio file. "
+                + "The component does not support any '"
+                + context.job_type_name + "' media.");
+    } else {
+        ReportJobError(
+            context, MPFDetectionError::MPF_UNSUPPORTED_DATA_TYPE,
+            "The detection component does not support detection data type of '"
+                + context.get_mime_type() + "'.");
+    }
 }
 
 void JobReceiver::RejectJob() {

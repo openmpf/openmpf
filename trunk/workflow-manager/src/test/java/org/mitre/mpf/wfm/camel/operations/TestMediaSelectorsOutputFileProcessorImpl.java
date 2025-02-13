@@ -332,7 +332,6 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
         var mappers = _testBuilder
                 .addJsonSelector("expr1", "OUTPUT1")
                 .addTrack(0, "INPUT_1", "OUTPUT1", "OUTPUT_1")
-                .disableNoPresentCheck()
                 .getStringMappers();
 
         assertThat(mappers).hasSize(1);
@@ -353,7 +352,6 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
                 .addJsonSelector("expr2", "OUTPUT_2")
                 .addTrack(0, "INPUT_1", "OUTPUT_1", "OUTPUT_1_1")
                 .addTrack(1, "INPUT_1", "OUTPUT_1", "OUTPUT_1_2")
-                .disableNoPresentCheck()
                 .getStringMappers();
 
         assertThat(mappers).hasSize(2);
@@ -369,8 +367,6 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
         private List<Track> _tracks = new ArrayList<>();
 
         private boolean _shouldBeStored = true;
-
-        private boolean _shouldCheckNotPresent = true;
 
         public TestCaseBuilder addJsonSelector(String expr, String outputProp) {
             var selector = new MediaSelector(
@@ -397,11 +393,6 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
         public TestCaseBuilder doNotExpectOutputToBeStored() {
             _shouldBeStored = false;
-            return this;
-        }
-
-        public TestCaseBuilder disableNoPresentCheck() {
-            _shouldCheckNotPresent = false;
             return this;
         }
 
@@ -452,10 +443,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
                 var mapper = captor.getValue();
                 mappers.add(mapper);
-
-                if (_shouldCheckNotPresent) {
-                    assertNotMapped(mapper, notPresentString);
-                }
+                assertNotMapped(mapper, notPresentString);
             }
 
             return mappers;

@@ -54,7 +54,9 @@ public class TransientPipelinePartLookup implements PipelinePartLookup {
     public TransientPipelinePartLookup(TransientPipelineDefinition transientPipeline,
                                        PipelinePartLookup existingPipelineParts) {
 
-        var pipelineName = "Job specified transient pipeline";
+        //var pipelineName = "Job specified transient pipeline";
+        var pipelineName = transientPipeline.getDisplayName();
+
         _pipeline = new Pipeline(pipelineName, pipelineName, transientPipeline.getPipeline());
 
         _tasks = transientPipeline.getTasks()

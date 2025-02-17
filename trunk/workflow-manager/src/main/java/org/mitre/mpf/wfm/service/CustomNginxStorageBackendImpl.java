@@ -47,6 +47,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -188,6 +189,18 @@ public class CustomNginxStorageBackendImpl implements CustomNginxStorageBackend 
             URI newUri = store(serviceUri, inputStream);
             _inProgressBatchJobs.addStorageUri(job.getId(), media.getId(), newUri.toString());
         }
+    }
+
+
+    @Override
+    public boolean canStore(SubjectJobResult jobResult) {
+        return false;
+    }
+
+    @Override
+    public URI store(SubjectJobResult jobResult) throws IOException, StorageException {
+        throw new UnsupportedOperationException(
+                "Subject job results can only be stored locally or in S3.");
     }
 
 

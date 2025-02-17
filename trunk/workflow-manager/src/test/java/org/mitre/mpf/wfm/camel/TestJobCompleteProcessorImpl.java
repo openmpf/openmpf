@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camel;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -40,18 +39,15 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.Optional;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHttpResponse;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -59,14 +55,13 @@ import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.CensorPropertiesService;
+import org.mitre.mpf.wfm.service.JobCompleteCallbackService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
@@ -78,7 +73,6 @@ import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
@@ -118,9 +112,6 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
     private HttpClientUtils _mockHttpClientUtils;
 
     @Mock
-    private OAuthClientTokenProvider _mockOAuthClientTokenProvider;
-
-    @Mock
     private JmsUtils _mockJmsUtils;
 
     @Mock
@@ -128,6 +119,9 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
 
     @Mock
     private TiesDbBeforeJobCheckService _mockTiesDbBeforeJobCheckService;
+
+    @Mock
+    private JobCompleteCallbackService _mockJobCompleteCallbackService;
 
     @InjectMocks
     private JobCompleteProcessorImpl _jobCompleteProcessorImpl;
@@ -147,12 +141,6 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
 
         when(_mockPropertiesUtil.getJobOutputObjectsDirectory(anyLong()))
             .thenReturn(_tempDir.newFolder("output-objects"));
-
-        when(_mockPropertiesUtil.getHttpCallbackRetryCount())
-            .thenReturn(3);
-
-        when(_mockPropertiesUtil.getExportedJobId(anyLong()))
-            .thenAnswer(inv -> "test-" + inv.getArgument(0));
     }
 
 
@@ -173,9 +161,6 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
         when(job.getId())
             .thenReturn(jobId);
 
-        var media = mock(Media.class);
-        when(job.getMedia())
-            .thenReturn(List.of(media));
         // When a job is skipped because it is in TiesDb, we should use the status from TiesDb.
         // Use IN_PROGRESS as the status in this test because when a job is not skipped
         // the status will change to COMPLETE.
@@ -184,8 +169,6 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
         var callbackUrl = "http://localhost:2000/callback";
         when(job.getCallbackUrl())
             .thenReturn(Optional.of(callbackUrl));
-        when(job.getCallbackMethod())
-            .thenReturn(Optional.of("GET"));
 
         when(_mockInProgressBatchJobs.getJob(jobId))
             .thenReturn(job);
@@ -199,12 +182,8 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
                 job, new URI(outputUri), jobRequestEntity))
             .thenReturn(newOutputUri);
 
-        when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.CALLBACK_USE_OIDC, job, media))
-            .thenReturn("true");
-
-        var callbackRequestCaptor = ArgumentCaptor.forClass(HttpGet.class);
         var httpResponseFuture = ThreadUtil.<HttpResponse>newFuture();
-        when(_mockHttpClientUtils.executeRequest(callbackRequestCaptor.capture(), eq(3)))
+        when(_mockJobCompleteCallbackService.sendCallback(job, newOutputUri))
             .thenReturn(httpResponseFuture);
 
         var notificationFuture = ThreadUtil.<Long>newFuture();
@@ -244,17 +223,15 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
             .tiesDbStatusChanged(jobId, jobRequestEntity.getTiesDbStatus());
 
         verify(_mockJmsUtils)
-            .destroyCancellationRoutes(jobId);
+            .destroyDetectionCancellationRoutes(jobId);
 
-        var callbackRequest = callbackRequestCaptor.getValue();
-        assertTrue(callbackRequest.getURI().toString().contains(String.valueOf(jobId)));
 
         assertFalse(notificationFuture.isDone());
         httpResponseFuture.complete(new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK"));
         assertEquals(jobId, (long) notificationFuture.join());
 
-        verify(_mockOAuthClientTokenProvider)
-            .addToken(callbackRequest);
+        verify(_mockJobRequestDao)
+            .setCallbackSuccessful(jobId);
 
         verify(_mockInProgressBatchJobs)
             .clearJob(jobId);

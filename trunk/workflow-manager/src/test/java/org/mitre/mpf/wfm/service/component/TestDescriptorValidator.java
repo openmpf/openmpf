@@ -26,12 +26,11 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.mitre.mpf.test.TestUtil;
 
 import javax.validation.Validator;
 import java.util.Collections;
@@ -49,10 +48,7 @@ public class TestDescriptorValidator {
 
     @Before
     public void init() {
-        var springValidator = new LocalValidatorFactoryBean();
-        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
-        springValidator.afterPropertiesSet();
-        _validator = new ComponentDescriptorValidatorImpl(springValidator);
+        _validator = new ComponentDescriptorValidatorImpl(TestUtil.createValidator());
     }
 
 

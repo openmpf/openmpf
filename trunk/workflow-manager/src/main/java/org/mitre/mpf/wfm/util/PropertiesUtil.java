@@ -378,7 +378,7 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private Path createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
+    public Path createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
         return createOutputObjectsFile(jobId,outputObjectsDirectory,outputObjectType);
     }
 
@@ -684,6 +684,10 @@ public class PropertiesUtil {
 
     public String getAmqOpenWireBindAddress() {
         return _mpfPropertiesConfig.getString("amq.open.wire.bind.address");
+    }
+
+    public String getAmqAmqpBindAddress() {
+        return _mpfPropertiesConfig.getString("amq.amqp.bind.address");
     }
 
     //

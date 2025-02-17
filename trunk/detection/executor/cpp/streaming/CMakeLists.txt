@@ -73,7 +73,8 @@ set(streaming_component_executor_files
 	ExecutorErrors.cpp ExecutorErrors.h
 	ExecutorUtils.cpp ExecutorUtils.h)
 
-add_library(streaming_executor_lib OBJECT ${streaming_component_executor_files})
+add_library(streaming_executor_lib OBJECT
+	${streaming_component_executor_files} $<TARGET_OBJECTS:mpfProtobufs>)
 target_include_directories(streaming_executor_lib PUBLIC
 	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>)

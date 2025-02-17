@@ -42,16 +42,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -76,6 +79,7 @@ import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -104,6 +108,9 @@ public class InProgressBatchJobsService {
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
     private final Collection<Long> _jobsWithCallbacksInProgress = new HashSet<>();
+
+    private final Map<Long, CompletableFuture<Optional<JsonOutputObject>>> _resultsAvailableFutures
+            = new HashMap<>();
 
 
     @Inject
@@ -166,6 +173,7 @@ public class InProgressBatchJobsService {
                 .filter(Media::isFailed)
                 .forEach(m -> addError(jobId, m.getId(), IssueCodes.MEDIA_INITIALIZATION, m.getErrorMessage()));
 
+        _resultsAvailableFutures.put(jobId, ThreadUtil.newFuture());
         return job;
     }
 
@@ -197,6 +205,10 @@ public class InProgressBatchJobsService {
         _redis.clearTracks(job);
         _jobs.remove(jobId);
         _jobsWithCallbacksInProgress.remove(jobId);
+        var resultsAvailableFuture = _resultsAvailableFutures.remove(jobId);
+        if (!resultsAvailableFuture.isDone()) {
+            resultsAvailableFuture.complete(Optional.empty());
+        }
 
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
@@ -552,6 +564,22 @@ public class InProgressBatchJobsService {
             throw new IllegalArgumentException(String.format("Job %s does not have media with id %s", jobId, mediaId));
         }
         return media;
+    }
+
+
+    public synchronized CompletableFuture<Optional<JsonOutputObject>>
+            getJobResultsAvailableFuture(long jobId) {
+        return Optional.ofNullable(_resultsAvailableFutures.get(jobId))
+                .map(CompletableFuture::copy)
+                .orElseGet(() -> ThreadUtil.completedFuture(Optional.empty()));
+    }
+
+    public synchronized void reportJobResultsAvailable(long jobId, JsonOutputObject outputObject) {
+        var future = _resultsAvailableFutures.get(jobId);
+        if (future == null) {
+            throw new WfmProcessingException("Unable to locate batch job with id: " + jobId);
+        }
+        future.completeAsync(() -> Optional.ofNullable(outputObject));
     }
 
 

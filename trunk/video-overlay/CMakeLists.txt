@@ -40,7 +40,7 @@ find_package(mpfDetectionComponentApi REQUIRED)
 include_directories(${JAVA_INCLUDE_PATH} ${JAVA_INCLUDE_PATH2} ${OpenCV_INCLUDE_DIRS})
 add_library(mpfopencvjni SHARED ${SRC})
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JAVA_JVM_LIBRARY} heif mpfProtobufsShared
+target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JAVA_JVM_LIBRARY} heif mpfProtobufs
     mpfDetectionComponentApi)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")

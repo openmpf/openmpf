@@ -24,35 +24,47 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
-public class MethodStatus {
+import java.util.Comparator;
+import java.util.Map;
+import java.util.UUID;
 
-    public enum StatusCode {UNDEFINED, SUCCESS, ERROR, WARNING };
-	private StatusCode statusCode=StatusCode.UNDEFINED;
-	public StatusCode getStatus() { return statusCode; };
+import org.mitre.mpf.interop.util.CompareUtils;
+import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.util.Utils;
 
-	private String summary;
-	public String getSummary() { return summary; }
+public record MediaSelector(
+        String expression,
+        MediaSelectorType type,
+        Map<String, String> selectionProperties,
+        String resultDetectionProperty,
+        UUID id) {
 
-	private String detail;
-	public String getDetail() { return detail; }
-
-    public MethodStatus(StatusCode statusCode, String summary) { this(statusCode, summary, null); }
-    public MethodStatus(StatusCode statusCode, String summary, String detail) {
-	    this.statusCode = statusCode;
-        this.summary = summary;
-        this.detail = detail;
+    public MediaSelector {
+        selectionProperties = Utils.toImmutableMap(selectionProperties);
     }
 
-    public boolean isSuccess() { return statusCode == StatusCode.SUCCESS; }
-    public boolean isError() { return statusCode == StatusCode.ERROR; }
-    public boolean isWarning() { return statusCode == StatusCode.WARNING; }
-    public boolean isUndefined() { return statusCode == StatusCode.UNDEFINED; }
-
-    @Override
-    public String toString() {
-	    return "statusCode: " + statusCode + ", summary: " + summary + ", detail: " + detail;
+    public MediaSelector(
+            String expression,
+            MediaSelectorType type,
+            Map<String, String> selectionProperties,
+            String resultDetectionProperty) {
+        this(expression, type, selectionProperties, resultDetectionProperty, UUID.randomUUID());
     }
 
+
+    private static final Comparator<MediaSelector> DEFAULT_COMPARATOR = Comparator
+            .nullsFirst(Comparator
+                .comparing(MediaSelector::expression)
+                .thenComparing(MediaSelector::type)
+                .thenComparing(MediaSelector::resultDetectionProperty)
+                .thenComparing(MediaSelector::selectionProperties, CompareUtils.MAP_COMPARATOR));
+
+    public static Comparator<MediaSelector> comparator() {
+        // We return a Comparator here instead of making the class implement Comparable because
+        // when implementing Comparable, you generally need to also override .equals() and
+        // .hashCode() to make them consistent with .compareTo().
+        return DEFAULT_COMPARATOR;
+    }
 }

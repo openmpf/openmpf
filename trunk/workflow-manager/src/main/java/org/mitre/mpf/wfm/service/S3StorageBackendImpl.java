@@ -51,6 +51,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.http.ConnectionClosedException;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -60,6 +61,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.RetryUtil;
@@ -832,5 +834,27 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         public String toString() {
             return getCause().toString();
         }
+    }
+
+    @Override
+    public boolean canStoreMediaSelectorsOutput(BatchJob job, Media media) throws StorageException {
+        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        return S3StorageBackend.requiresS3ResultUpload(combinedProperties);
+    }
+
+
+    @Override
+    public URI storeMediaSelectorsOutput(
+            BatchJob job,
+            Media media,
+            MediaSelectorType selectorType,
+            OutputProcessor outputProcessor) throws StorageException, IOException {
+        var localUri = _localStorageBackend.storeMediaSelectorsOutput(
+                job, media, selectorType, outputProcessor);
+        var localPath = Path.of(localUri);
+        var uploadedUri = putInS3IfAbsent(
+                localPath, _aggregateJobPropertiesUtil.getCombinedProperties(job, media));
+        Files.delete(localPath);
+        return uploadedUri;
     }
 }

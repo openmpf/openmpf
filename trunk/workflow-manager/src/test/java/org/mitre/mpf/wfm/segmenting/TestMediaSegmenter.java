@@ -465,7 +465,8 @@ public class TestMediaSegmenter {
                 detectionList, "CONFIDENCE");
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, 1,
-				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "", "CONFIDENCE");
+				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "", "CONFIDENCE",
+                null, null);
 		return track;
 	}
 

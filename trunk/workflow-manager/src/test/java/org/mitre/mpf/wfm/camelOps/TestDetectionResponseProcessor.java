@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -42,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.UUID;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -153,7 +155,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
         MediaImpl media = new MediaImpl(
                 MEDIA_ID, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
-                Map.of(), Map.of(), List.of(), List.of(), null);
+                Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
         media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(
@@ -370,6 +372,34 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
     }
+
+
+    @Test
+    public void testSelectors() {
+        var responseBuilder = DetectionProtobuf.DetectionResponse.newBuilder()
+                .setMediaId(MEDIA_ID);
+        responseBuilder.getGenericResponseBuilder().addGenericTracks(
+                DetectionProtobuf.GenericTrack.newBuilder().setConfidence(1));
+
+        var exchange = new DefaultExchange(new DefaultCamelContext());
+        var selectorId = UUID.randomUUID();
+        exchange.getIn().setHeaders(Map.of(
+                MpfHeaders.JOB_ID, JOB_ID,
+                MpfHeaders.MEDIA_SELECTOR_ID, selectorId.toString(),
+                MpfHeaders.SELECTED_TEXT_CONTENT, "input"));
+        exchange.getIn().setBody(responseBuilder.build());
+
+        detectionResponseProcessor.wfmProcess(exchange);
+
+        var trackCaptor = ArgumentCaptor.forClass(Track.class);
+        verify(mockInProgressJobs)
+            .addTrack(trackCaptor.capture());
+
+        var track = trackCaptor.getValue();
+        assertThat(track.getSelectorId()).contains(selectorId);
+        assertThat(track.getSelectedInput()).contains("input");
+    }
+
 
     private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error,
                                                                      int startFrame, int stopFrame,

@@ -37,7 +37,7 @@ import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 @JsonPropertyOrder({
 		"mediaId", "parentMediaId", "path", "tiesDbSourceMediaPath", "sha256", "mimeType",
 		"mediaType", "length", "frameRanges", "timeRanges", "mediaMetadata", "mediaProperties",
-		"status", "detectionProcessingErrors", "markupResult", "output"})
+		"status", "detectionProcessingErrors", "markupResult", "mediaSelectorsOutputUri", "output"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
 	@JsonProperty("mediaId")
@@ -115,6 +115,11 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private SortedMap<String, String> mediaProperties;
 	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
+	@JsonProperty("mediaSelectorsOutputUri")
+	private String mediaSelectorsOutputUri;
+	public String getMediaSelectorsOutputUri() { return mediaSelectorsOutputUri; }
+	public void setMediaSelectorsOutputUri(String uri) { mediaSelectorsOutputUri = uri; }
+
 	@JsonProperty("output")
 	@JsonPropertyDescription("The mapping of track types to a set of actions performed on the given medium.")
 	private SortedMap<String, SortedSet<JsonActionOutputObject>> trackTypes;
@@ -127,7 +132,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	public JsonMediaOutputObject(
 			long mediaId, long parentMediaId, String path, String tiesDbSourceMediaPath,
-			String mediaType, String mimeType, int length, String sha256, String status) {
+			String mediaType, String mimeType, int length, String sha256, String status,
+			String mediaSelectorsOutputUri) {
 		this.mediaId = mediaId;
 		this.parentMediaId = parentMediaId;
 		this.path = path;
@@ -137,6 +143,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		this.length = length;
 		this.sha256 = sha256;
 		this.status = status;
+		this.mediaSelectorsOutputUri = mediaSelectorsOutputUri;
 		this.frameRanges = new TreeSet<>();
 		this.timeRanges = new TreeSet<>();
 		this.trackTypes = new TreeMap<>(new TrackTypeComparator());
@@ -163,11 +170,12 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			@JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
 			@JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
 			@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
+			@JsonProperty("mediaSelectorsOutput") String mediaSelectorsOutput,
 			@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> trackTypes,
 			@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
 		JsonMediaOutputObject jsonMediaOutputObject = new JsonMediaOutputObject(
 				mediaId, parentMediaId, path, tiesDbSourceMediaPath, mediaType, mimeType, length,
-				sha256, status);
+				sha256, status, mediaSelectorsOutput);
 		jsonMediaOutputObject.markupResult = markupResult;
 
 		if (frameRanges != null) {
@@ -176,11 +184,11 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		if (timeRanges != null) {
 			jsonMediaOutputObject.timeRanges.addAll(timeRanges);
 		}
-		if(mediaMetadata != null) {
+		if (mediaMetadata != null) {
 			jsonMediaOutputObject.mediaMetadata.putAll(mediaMetadata);
 		}
 
-		if(mediaProperties != null) {
+		if (mediaProperties != null) {
 			jsonMediaOutputObject.mediaProperties.putAll(mediaProperties);
 		}
 
@@ -188,7 +196,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			jsonMediaOutputObject.trackTypes.putAll(trackTypes);
 		}
 
-		if(detectionProcessingErrors != null) {
+		if (detectionProcessingErrors != null) {
 			jsonMediaOutputObject.detectionProcessingErrors.putAll(detectionProcessingErrors);
 		}
 

@@ -78,7 +78,8 @@ public class TestSubjectJobToProtobufConverter {
                 "video/mp4",
                 1000,
                 "SHA",
-                "status");
+                "status",
+                null);
         mediaOutput.getMediaProperties().put("MEDIA_PROP1", "MEDIA_VALUE1");
 
         var actionOutput1 = new JsonActionOutputObject("ACTION1", "ALGO1");
@@ -175,7 +176,8 @@ public class TestSubjectJobToProtobufConverter {
                 "image/jpeg",
                 1,
                 "SHA2",
-                "status");
+                "status",
+                null);
         mediaOutput.getMediaProperties().put("MEDIA_PROP2", "MEDIA_VALUE2");
 
         var actionOutput = new JsonActionOutputObject("ACTION3", "ALGO3");

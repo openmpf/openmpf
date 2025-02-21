@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.SortedSet;
 
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.util.JobPart;
 
 public class TrackCache {
 
@@ -67,6 +68,10 @@ public class TrackCache {
         return _cache.computeIfAbsent(
                 new CacheKey(mediaId, actionIndex),
                 k -> _inProgressJobs.getTracks(_jobId, mediaId, _taskIndex, actionIndex));
+    }
+
+    public SortedSet<Track> getTracks(JobPart jobPart) {
+        return getTracks(jobPart.media().getId(), jobPart.actionIndex());
     }
 
 

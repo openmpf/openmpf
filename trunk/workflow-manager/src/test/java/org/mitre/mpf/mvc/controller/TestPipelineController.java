@@ -94,7 +94,8 @@ public class TestPipelineController extends MockitoTest.Strict {
                 .thenReturn("5");
 
         var pipelineValidator = new PipelineValidator(
-                TestUtil.createValidator(), mockWorkflowPropertyService);
+                TestUtil.createConstraintValidator(),
+                mockWorkflowPropertyService);
 
         var pipelineService = new PipelineServiceImpl(mockPropertiesUtil, _objectMapper, pipelineValidator);
 

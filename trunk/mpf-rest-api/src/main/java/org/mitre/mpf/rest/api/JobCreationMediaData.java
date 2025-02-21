@@ -26,67 +26,34 @@
 
 package org.mitre.mpf.rest.api;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
+import javax.validation.Valid;
+
+import org.mitre.mpf.interop.util.ValidName;
+import org.mitre.mpf.rest.api.util.Utils;
 
 
-public class JobCreationMediaData {
+public record JobCreationMediaData(
+        String mediaUri,
+        Map<String, String> properties,
+        Map<String, String> metadata,
+        List<JobCreationMediaRange> frameRanges,
+        List<JobCreationMediaRange> timeRanges,
 
-    private String mediaUri;
+        @Valid
+        List<JobCreationMediaSelector> mediaSelectors,
 
-    private Map<String, String> properties = new HashMap<>();
+        Optional<@ValidName(required = false) String> mediaSelectorsOutputAction) {
 
-    private Map<String, String> metadata = new HashMap<>();
-
-    private List<JobCreationMediaRange> frameRanges = new ArrayList<>();
-
-    private List<JobCreationMediaRange> timeRanges = new ArrayList<>();
-
-    public JobCreationMediaData() {}
-
-    public JobCreationMediaData(String uri) {
-        this.mediaUri = uri;
-    }
-
-    public String getMediaUri() {
-        return mediaUri;
-    }
-
-    public void setMediaUri(String mediaUri) {
-        this.mediaUri = mediaUri;
-    }
-
-    public Map<String, String> getProperties() {
-        return properties;
-    }
-
-    public Map<String, String> getMetadata() {
-        return metadata;
-    }
-
-    public void setProperties(Map<String, String> properties) {
-        this.properties = properties;
-    }
-
-    public void setMetadata(Map<String, String> metadata) {
-        this.metadata = metadata;
-    }
-
-    public List<JobCreationMediaRange> getFrameRanges() {
-        return frameRanges;
-    }
-
-    public void setFrameRanges(List<JobCreationMediaRange> frameRanges) {
-        this.frameRanges = frameRanges;
-    }
-
-    public List<JobCreationMediaRange> getTimeRanges() {
-        return timeRanges;
-    }
-
-    public void setTimeRanges(List<JobCreationMediaRange> timeRanges) {
-        this.timeRanges = timeRanges;
+    public JobCreationMediaData {
+        properties = Utils.toImmutableMap(properties);
+        metadata = Utils.toImmutableMap(metadata);
+        frameRanges = Utils.toImmutableList(frameRanges);
+        timeRanges = Utils.toImmutableList(timeRanges);
+        mediaSelectors = Utils.toImmutableList(mediaSelectors);
+        mediaSelectorsOutputAction = Utils.trimAndUpper(mediaSelectorsOutputAction);
     }
 }

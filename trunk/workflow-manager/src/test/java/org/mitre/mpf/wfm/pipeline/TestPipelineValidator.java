@@ -57,8 +57,6 @@ import static org.mockito.Mockito.when;
 
 public class TestPipelineValidator {
 
-    private PipelineValidator _pipelineValidator;
-
     private final WorkflowPropertyService _mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
 
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
@@ -70,10 +68,12 @@ public class TestPipelineValidator {
 
     private final PipelinePartLookup _pipelinePartLookup = createPartLookup();
 
+    private PipelineValidator _pipelineValidator;
+
     @Before
     public void init() {
         _pipelineValidator = new PipelineValidator(
-                TestUtil.createValidator(), _mockWorkflowPropertyService);
+                TestUtil.createConstraintValidator(), _mockWorkflowPropertyService);
     }
 
     private PipelinePartLookup createPartLookup() {
@@ -607,7 +607,7 @@ public class TestPipelineValidator {
 
         assertValidationErrors(
                 pipeline,
-                createViolationMessage("name", pipeline.name(), "may not be empty"),
+                createViolationMessage("name", pipeline.name(), "may not be null"),
                 createViolationMessage("description", pipeline.description(), "may not be empty"),
                 createViolationMessage("tasks", "[]", "may not be empty"));
 
@@ -615,7 +615,7 @@ public class TestPipelineValidator {
         assertValidationErrors(
                 pipeline,
                 createViolationMessage("name", pipeline.name(), "may not contain / or ;"),
-                createViolationMessage("tasks[1].<collection element>", pipeline.tasks().get(1), "may not be empty"),
+                createViolationMessage("tasks[1].<collection element>", pipeline.tasks().get(1), "may not be blank"),
                 createViolationMessage("tasks[2].<collection element>", pipeline.tasks().get(2), "may not contain / or ;"));
 
         pipeline = new Pipeline("PIPELINE", "desc.desc", List.of("TASK", "ASDF"));
@@ -629,14 +629,14 @@ public class TestPipelineValidator {
 
         assertValidationErrors(
                 task,
-                createViolationMessage("name", task.name(), "may not be empty"),
+                createViolationMessage("name", task.name(), "may not be blank"),
                 createViolationMessage("description", task.description(), "may not be empty"),
                 createViolationMessage("actions", "[]", "may not be empty"));
 
         task = new Task("TASK", "desc/desc", List.of("ACTION", ""));
         assertValidationErrors(
                 task,
-                createViolationMessage("actions[1].<collection element>", task.actions().get(1), "may not be empty"));
+                createViolationMessage("actions[1].<collection element>", task.actions().get(1), "may not be blank"));
 
         task = new Task("TASK", "desc/desc", List.of("ACTION", "ASDF"));
         _pipelineValidator.validateOnAdd(task, Map.of());
@@ -653,9 +653,9 @@ public class TestPipelineValidator {
         var action = new Action(null, null, "", List.of(property1, property2, property3));
         assertValidationErrors(
                 action,
-                createViolationMessage("name", action.name(), "may not be empty"),
+                createViolationMessage("name", action.name(), "may not be null"),
                 createViolationMessage("description", action.description(), "may not be empty"),
-                createViolationMessage("algorithm", action.algorithm(), "may not be empty"),
+                createViolationMessage("algorithm", action.algorithm(), "may not be blank"),
                 createViolationMessage("properties[1].name", property2.name(), "may not be empty"),
                 createViolationMessage("properties[2].value", property3.value(), "may not be null"));
 
@@ -671,7 +671,7 @@ public class TestPipelineValidator {
                                             false, false);
         assertValidationErrors(
                 algorithm,
-                createViolationMessage("name", algorithm.name(), "may not be empty"),
+                createViolationMessage("name", algorithm.name(), "may not be blank"),
                 createViolationMessage("description", algorithm.description(), "may not be empty"),
                 createViolationMessage("actionType", null, "may not be null"),
                 createViolationMessage("trackType", algorithm.trackType(), "may not be empty"),

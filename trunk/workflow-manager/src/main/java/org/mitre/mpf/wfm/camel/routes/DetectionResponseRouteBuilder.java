@@ -32,6 +32,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.CommitUpdatedTracksProcessor;
+import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.RollUpProcessor;
@@ -108,6 +109,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.process(MovingTrackLabelProcessor.REF) // Detect and flag moving tracks. Remove stationary tracks if requested by job.
 					.process(DetectionTransformationProcessor.REF)
                     .process(RollUpProcessor.REF)
+                    .process(MediaSelectorsOutputFileProcessorImpl.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
 						.streaming() // Aggregate responses in any order.

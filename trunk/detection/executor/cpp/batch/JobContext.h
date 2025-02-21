@@ -29,6 +29,7 @@
 #include <chrono>
 #include <string>
 #include <memory>
+#include <optional>
 #include <variant>
 
 #include <cms/Destination.h>
@@ -49,6 +50,8 @@ struct ProtobufMetadata {
     const int task_index;
 
     const int action_index;
+
+    const std::optional<std::string> selected_text_content;
 };
 
 
@@ -62,6 +65,8 @@ struct AmqMetadata {
     const std::string bread_crumb_id;
 
     const int split_size;
+
+    const std::optional<std::string> selector_id;
 };
 
 

@@ -40,6 +40,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +56,7 @@ import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.mvc.WebMvcConfig;
 import org.mitre.mpf.wfm.ValidatorConfig;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
@@ -63,11 +65,10 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 public class TestUtil {
 
-    public static final Duration FUTURE_DURATION = Duration.ofMillis(15);
+    public static final Duration FUTURE_DURATION = Duration.ofMillis(30);
 
     private TestUtil() {
 
@@ -86,6 +87,10 @@ public class TestUtil {
 
     public static <T, C extends Collection<? extends T>> C nonEmptyCollection() {
         return describedArgThat(c -> !c.isEmpty(), "nonEmptyCollection()");
+    }
+
+    public static <K, V, M extends Map<K, V>> M nonEmptyMap() {
+        return describedArgThat(m -> !m.isEmpty(), "nonEmptyMap()");
     }
 
     public static <T> T describedArgThat(Predicate<T> pred, String description, Object... args) {
@@ -190,6 +195,12 @@ public class TestUtil {
                            nodeManagerEnabled());
     }
 
+    public static ConstraintValidationService createConstraintValidator() {
+        var validator = new ValidatorConfig().localValidatorFactoryBean();
+        validator.afterPropertiesSet();
+        return new ConstraintValidationService(validator);
+    }
+
     public static MockMvc initMockMvc(Object controller) {
         var setup = MockMvcBuilders.standaloneSetup(controller);
         var converters = new ArrayList<HttpMessageConverter<?>>();
@@ -234,12 +245,5 @@ public class TestUtil {
 
     public static boolean equalAfterTruncate(Instant x, Instant y) {
         return x.truncatedTo(ChronoUnit.MILLIS).equals(y.truncatedTo(ChronoUnit.MILLIS));
-    }
-
-
-    public static LocalValidatorFactoryBean createValidator() {
-        var validator = new ValidatorConfig().localValidatorFactoryBean();
-        validator.afterPropertiesSet();
-        return validator;
     }
 }

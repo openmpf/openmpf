@@ -152,8 +152,8 @@ public class TiesDbBeforeJobCheckServiceImpl
             Collection<Media> media,
             JobPipelineElements jobPipelineElements) {
         return checkIfJobInTiesDb(
-                jobCreationRequest.getJobProperties(),
-                jobCreationRequest.getAlgorithmProperties(),
+                jobCreationRequest.jobProperties(),
+                jobCreationRequest.algorithmProperties(),
                 systemPropertiesSnapshot,
                 media,
                 jobPipelineElements);
@@ -583,16 +583,11 @@ public class TiesDbBeforeJobCheckServiceImpl
         var uris = new HashSet<URI>();
 
         for (var media : outputObject.getMedia()) {
-            try {
-                if (media.getMarkupResult() != null) {
-                    uris.add(new URI(media.getMarkupResult().getPath()));
-                }
+            if (media.getMarkupResult() != null) {
+                uris.add(toUri(media.getMarkupResult().getPath(), "markup"));
             }
-            catch (URISyntaxException e) {
-                throw new StorageException(
-                        "Could not copy markup to new bucket because \"%s\" is not a valid URI."
-                                .formatted(media.getPath()),
-                        e);
+            if (media.getMediaSelectorsOutputUri() != null) {
+                uris.add(toUri(media.getMediaSelectorsOutputUri(), "media selectors output"));
             }
         }
 
@@ -608,19 +603,22 @@ public class TiesDbBeforeJobCheckServiceImpl
 
         while (artifactPaths.hasNext()) {
             var path = artifactPaths.next();
-            try {
-                uris.add(new URI(path));
-            }
-            catch (URISyntaxException e) {
-                throw new StorageException(
-                        "Could not copy artifact to new bucket because \"%s\" is not a valid URI."
-                                .formatted(path),
-                        e);
-            }
+            uris.add(toUri(path, "artifact"));
         }
         return uris;
     }
 
+    private static URI toUri(String uriString, String objectName) throws StorageException {
+        try {
+            return new URI(uriString);
+        }
+        catch (URISyntaxException e) {
+            throw new StorageException(
+                    "Could not copy %s to new bucket because \"%s\" is not a valid URI."
+                            .formatted(objectName, uriString),
+                    e);
+        }
+    }
 
     private JsonOutputObject createOutputObjectWithUpdatedUris(
             BatchJob newJob, JsonOutputObject oldOutputObject, Map<URI, URI> updatedUris) {
@@ -652,6 +650,17 @@ public class TiesDbBeforeJobCheckServiceImpl
                         oldMarkup.getMessage());
             }
 
+            var oldMediaSelectorsOutputUri = oldMedia.getMediaSelectorsOutputUri();
+            String newMediaSelectorsOutputUri;
+            if (oldMediaSelectorsOutputUri == null) {
+                newMediaSelectorsOutputUri = null;
+            }
+            else {
+                var oldUri = URI.create(oldMediaSelectorsOutputUri);
+                newMediaSelectorsOutputUri = updatedUris.get(oldUri).toString();
+            }
+
+
             var oldMediaHash = Objects.requireNonNullElse(
                     oldMedia.getMediaProperties().get(MpfConstants.LINKED_MEDIA_HASH),
                     oldMedia.getSha256());
@@ -672,6 +681,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                     oldMedia.getMediaMetadata(),
                     oldMedia.getMediaProperties(),
                     newMarkup,
+                    newMediaSelectorsOutputUri,
                     newTrackTypeMap,
                     oldMedia.getDetectionProcessingErrors());
             newMediaList.add(newMedia);

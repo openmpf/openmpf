@@ -36,8 +36,6 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.mitre.mpf.interop.util.ValidName;
 import org.mitre.mpf.rest.api.util.Utils;
 
-import com.google.common.collect.ImmutableList;
-
 
 public record Pipeline (
     @ValidName String name,
@@ -48,6 +46,6 @@ public record Pipeline (
     public Pipeline{
         name = Utils.trimAndUpper(name);
         description = Utils.trim(description);
-        tasks = Utils.trimAndUpper(tasks, ImmutableList.toImmutableList());
+        tasks = Utils.trimAndUpper(tasks);
     }
 }

@@ -25,6 +25,7 @@
  ******************************************************************************/
 
 #include <filesystem>
+#include <optional>
 #include <utility>
 
 #include <MPFDetectionObjects.h>
@@ -253,10 +254,16 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
 
 
     ProtobufMetadata GetMetadata(const mpf_buffers::DetectionRequest& detection_request) {
+        std::optional<std::string> selected_content;
+        auto content_iter = detection_request.media_metadata().find("SELECTED_CONTENT");
+        if (content_iter != detection_request.media_metadata().end()) {
+            selected_content = content_iter->second;
+        }
         return {
             detection_request.media_id(),
             detection_request.task_index(),
-            detection_request.action_index()
+            detection_request.action_index(),
+            std::move(selected_content)
         };
     }
 }

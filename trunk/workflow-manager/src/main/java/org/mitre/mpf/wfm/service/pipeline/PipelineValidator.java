@@ -34,12 +34,11 @@ import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientTask;
 import org.mitre.mpf.rest.api.util.Utils;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validator;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -49,23 +48,23 @@ import static java.util.stream.Collectors.*;
 @Service
 public class PipelineValidator {
 
-    private final Validator _validator;
+    private final ConstraintValidationService _validationService;
 
     private final WorkflowPropertyService _workflowPropertyService;
 
+
     @Inject
-    public PipelineValidator(Validator validator, WorkflowPropertyService workflowPropertyService) {
-        _validator = validator;
+    public PipelineValidator(
+            ConstraintValidationService validationService,
+            WorkflowPropertyService workflowPropertyService) {
+        _validationService = validationService;
         _workflowPropertyService = workflowPropertyService;
     }
 
 
     public <T extends PipelineElement> void validateOnAdd(T newPipelineElement, Map<String, T> existingItems) {
-        var violations = _validator.<PipelineElement>validate(newPipelineElement);
-        if (!violations.isEmpty()) {
-            throw new InvalidPipelineException(
-                    createFieldErrorMessages(newPipelineElement.name(), violations));
-        }
+        _validationService.validate(
+                newPipelineElement, newPipelineElement.name(), InvalidPipelineException::new);
 
         T existing = existingItems.get(newPipelineElement.name());
         if (existing != null && !existing.equals(newPipelineElement)) {
@@ -76,35 +75,23 @@ public class PipelineValidator {
         }
     }
 
-    private static String createFieldErrorMessages(
-            String itemName, Collection<? extends ConstraintViolation<?>> violations) {
-        var prefix = itemName + " has errors in the following fields:\n";
-        return violations
-                .stream()
-                .map(v -> String.format("%s=\"%s\": %s", v.getPropertyPath(), v.getInvalidValue(),
-                                        v.getMessage()))
-                .sorted()
-                .collect(joining("\n", prefix, ""));
-    }
-
 
     public void validateTransientPipeline(
             TransientPipelineDefinition transientPipeline,
             TransientPipelinePartLookup pipelinePartLookup) {
-        var violations = _validator.validate(transientPipeline);
-        if (!violations.isEmpty()) {
-            throw new InvalidPipelineException(
-                    createFieldErrorMessages("The pipelineDefinition", violations));
-        }
+        _validationService.validate(
+                transientPipeline, "The pipelineDefinition",
+                InvalidPipelineException::new);
+
         checkForDuplicates(transientPipeline);
         verifyBatchPipelineRunnable(pipelinePartLookup.getPipelineName(), pipelinePartLookup);
     }
 
     private static void checkForDuplicates(TransientPipelineDefinition transientPipeline) {
-        var duplicateTasks = getDuplicateNames(transientPipeline.getTasks(),
-                                               TransientTask::getName);
-        var duplicateActions = getDuplicateNames(transientPipeline.getActions(),
-                                                 TransientAction::getName);
+        var duplicateTasks = getDuplicateNames(transientPipeline.tasks(),
+                                               TransientTask::name);
+        var duplicateActions = getDuplicateNames(transientPipeline.actions(),
+                                                 TransientAction::name);
         if (duplicateTasks.isEmpty() && duplicateActions.isEmpty()) {
             return;
         }

@@ -28,12 +28,13 @@
 package org.mitre.mpf.rest.api.util;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collector;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -54,6 +55,10 @@ public class Utils {
                 : s.trim();
     }
 
+    public static Optional<String> trimAndUpper(Optional<String> optString) {
+        return optString.map(Utils::trimAndUpper);
+    }
+
 
     public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
         return Optional.ofNullable(strings)
@@ -67,6 +72,16 @@ public class Utils {
         return Optional.ofNullable(set)
             .map(ImmutableSet::copyOf)
             .orElseGet(ImmutableSet::of);
+    }
+
+    public static ImmutableList<String> trimAndUpper(List<String> strings) {
+        return trimAndUpper(strings, ImmutableList.toImmutableList());
+    }
+
+    public static <T> ImmutableList<T> toImmutableList(Collection<T> collection) {
+        return Optional.ofNullable(collection)
+            .map(ImmutableList::copyOf)
+            .orElseGet(ImmutableList::of);
     }
 
     public static <K, V> ImmutableMap<K, V> toImmutableMap(Map<K, V> map) {

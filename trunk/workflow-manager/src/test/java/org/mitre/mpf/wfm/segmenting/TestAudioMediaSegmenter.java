@@ -175,7 +175,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		URI mediaUri = URI.create("file:///example.wav");
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
-				Map.of(), List.of(), List.of(), null);
+				Map.of(), List.of(), List.of(), List.of(), null, null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;
@@ -187,13 +187,13 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		Track track1 = new Track(1, 1, 0, 0, 0,
 		                         -1, 5, 10, 0, 5,
 		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
-		                         "", "");
+		                         "", "", null, null);
 
 		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(1, 1, 0, 0, 0,
 		                         -1, 15, 30, 0, 15,
 		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
-		                         "", "");
+		                         "", "", null, null);
 
 		return ImmutableSet.of(track1, track2);
 	}

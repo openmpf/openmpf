@@ -51,6 +51,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,10 +152,26 @@ public class ITWebREST {
 		//a video will be good to test being able to cancel before completion!
 		String mediaPathUrl = ioUtils.findFile("/samples/new_face_video.avi").toString();
 
-		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
-		jobCreationRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
-		//jobCreationRequest.setPriority(priority);
+        var media = new JobCreationMediaData(
+                mediaPathUrl,
+                Map.of(),
+                Map.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                Optional.empty());
+
+		var jobCreationRequest = new JobCreationRequest(
+                List.of(media),
+                Map.of(),
+                Map.of(),
+                null,
+                "OCV FACE DETECTION PIPELINE",
+                null,
+                null,
+                null,
+                null,
+                null);
 
 		//convert params to json string
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
@@ -164,11 +182,11 @@ public class ITWebREST {
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 
 		//null error message and JobId >= 1, could check error code as well
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
-		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
-		Assert.assertNotNull(jobCreationResponse.getJobId());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.mpfResponse().responseCode());
+		Assert.assertNull(jobCreationResponse.mpfResponse().message());
+		Assert.assertNotNull(jobCreationResponse.jobId());
 
-		processedJobId = jobCreationResponse.getJobId();
+		processedJobId = jobCreationResponse.jobId();
 		//use this id for resubmit and cancel testing
 		log.info("processedJobId: " + processedJobId);
 
@@ -203,8 +221,8 @@ public class ITWebREST {
 		MpfResponse mpfResponse = objectMapper.readValue(response, MpfResponse.class);
 
 		//looking for isSuccess to be true and null error message
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
-		Assert.assertNull(mpfResponse.getMessage());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.responseCode());
+		Assert.assertNull(mpfResponse.message());
 
 		singleJobInfo = null;
 		//wait till job is in a terminal state to verify the job has been CANCELLED
@@ -249,9 +267,9 @@ public class ITWebREST {
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 
 		//null error message and verifying the resubmitted job id is equal to the processedJobId
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
-		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
-		Assert.assertEquals(jobCreationResponse.getJobId(), processedJobId);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.mpfResponse().responseCode());
+		Assert.assertNull(jobCreationResponse.mpfResponse().message());
+		Assert.assertEquals(jobCreationResponse.jobId(), processedJobId);
 
 		singleJobInfo = null;
 		//wait till job is complete to prevent logs from this job showing up in other tests...
@@ -389,10 +407,26 @@ public class ITWebREST {
 		String resourcePath = "/samples/new_face_video.avi";
 		String mediaPathUrl = ioUtils.findFile(resourcePath).toString();
 
-		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
-		jobCreationRequest.setPipelineName(detPipeline);
-		jobCreationRequest.setPriority(7); //why not
+        var creationMedia = new JobCreationMediaData(
+                mediaPathUrl,
+                Map.of(),
+                Map.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                Optional.empty());
+
+        var jobCreationRequest = new JobCreationRequest(
+                List.of(creationMedia),
+                Map.of(),
+                Map.of(),
+                null,
+                detPipeline,
+                null,
+                null,
+                7,
+                null,
+                null);
 
 		//convert params to json string
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
@@ -403,11 +437,11 @@ public class ITWebREST {
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 
 		//check message, responseCode, and jobId
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
-		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
-		Assert.assertNotNull(jobCreationResponse.getJobId());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.mpfResponse().responseCode());
+		Assert.assertNull(jobCreationResponse.mpfResponse().message());
+		Assert.assertNotNull(jobCreationResponse.jobId());
 
-		String completeJobId = jobCreationResponse.getJobId();
+		String completeJobId = jobCreationResponse.jobId();
 		//use this id for resubmit and cancel testing
 		log.info("completeJobId: " + completeJobId);
 
@@ -679,8 +713,8 @@ public class ITWebREST {
 		MpfResponse mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 
 		//verify that the config did save
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
-		Assert.assertNull(mpfResponse.getMessage());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.responseCode());
+		Assert.assertNull(mpfResponse.message());
 		log.info("[saveNodeManagerConfigPOST]  Waiting 10 seconds for changes to complete");
 		Thread.sleep(10000);
 
@@ -706,8 +740,8 @@ public class ITWebREST {
 		log.debug("post results:"+JSONstring);
 
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
-		Assert.assertNull(mpfResponse.getMessage());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.responseCode());
+		Assert.assertNull(mpfResponse.message());
 
 		log.info("Waiting 10 seconds for changes to complete");
 		Thread.sleep(10000);
@@ -758,9 +792,9 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		MpfResponse mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//not a success
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_ERROR, mpfResponse.getResponseCode());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_ERROR, mpfResponse.responseCode());
 		//make sure service is in the response message
-		Assert.assertTrue(mpfResponse.getMessage().contains("service"));
+		Assert.assertTrue(mpfResponse.message().contains("service"));
 
 		//requires admin auth
 		url = WebRESTUtils.REST_URL + "nodes/services/" + service_name + "/stop" ;
@@ -769,9 +803,9 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//success
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.responseCode());
 		//make sure service is null on success
-		Assert.assertTrue(mpfResponse.getMessage() == null);
+		Assert.assertTrue(mpfResponse.message() == null);
 		Thread.sleep(3000);// give it some time to shut down
 
 		// verify service is shut down
@@ -808,9 +842,9 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//not a success
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_ERROR, mpfResponse.getResponseCode());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_ERROR, mpfResponse.responseCode());
 		//make sure service is in the response message
-		Assert.assertTrue(mpfResponse.getMessage().contains("service"));
+		Assert.assertTrue(mpfResponse.message().contains("service"));
 
 		url = WebRESTUtils.REST_URL + "nodes/services/" + service_name + "/start" ;
 		log.info("test_NodeManager_shutdown_startService get {}",url);
@@ -820,9 +854,9 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//success
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.responseCode());
 		//make sure service is null on success
-		Assert.assertTrue(mpfResponse.getMessage() == null);
+		Assert.assertTrue(mpfResponse.message() == null);
 		Thread.sleep(3000);// give it some time to shut down
 
 		// verify service is shut down

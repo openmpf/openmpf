@@ -112,7 +112,7 @@ struct JobContext {
                 return it->second;
             }
 
-            return "UNKNOWN_MIME";
+            return "UNKNOWN_MIME_TYPE";
         }, job);
     }
 };

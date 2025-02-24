@@ -24,30 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
+package org.mitre.mpf.wfm.enums;
 
-import org.springframework.stereotype.Service;
-
-import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validator;
-import java.util.Set;
-
-@Service
-public class ComponentDescriptorValidatorImpl implements ComponentDescriptorValidator {
-
-    private final Validator validator;
-
-    @Inject
-    public ComponentDescriptorValidatorImpl(Validator validator) {
-        this.validator = validator;
-    }
-
-    @Override
-    public void validate(JsonComponentDescriptor descriptor) throws InvalidComponentDescriptorException {
-        Set<ConstraintViolation<JsonComponentDescriptor>> result = validator.validate(descriptor);
-        if (!result.isEmpty()) {
-            throw new InvalidComponentDescriptorException(result);
-        }
-    }
+public enum MediaSelectorsDuplicatePolicy {
+    LONGEST,
+    ERROR,
+    JOIN
 }

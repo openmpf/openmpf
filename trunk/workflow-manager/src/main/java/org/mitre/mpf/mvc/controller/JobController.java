@@ -179,7 +179,7 @@ public class JobController {
 
         JobCreationResponse createResponse = createJobInternal(
                 jobCreationRequest, false, session);
-        if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
+        if (createResponse.mpfResponse().isSuccessful()) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating job");
@@ -350,8 +350,7 @@ public class JobController {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobCreationResponse resubmitResponse = resubmitJobInternal(internalJobId, jobPriorityParam);
-            if (resubmitResponse.getMpfResponse()
-                    .getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
+            if (resubmitResponse.mpfResponse().isSuccessful()) {
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
             }
             else {
@@ -394,7 +393,7 @@ public class JobController {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             MpfResponse mpfResponse = cancelJobInternal(internalJobId);
-            if (mpfResponse.getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
+            if (mpfResponse.isSuccessful()) {
                 return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
             } else {
                 log.error("Error cancelling job with id '{}'", internalJobId);
@@ -465,8 +464,8 @@ public class JobController {
 
     private static String createErrorString(JobCreationRequest jobCreationRequest, String message) {
         StringBuilder errBuilder = new StringBuilder("Failure creating job");
-        if (jobCreationRequest.getExternalId() != null) {
-            errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.getExternalId()));
+        if (jobCreationRequest.externalId() != null) {
+            errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.externalId()));
         }
         if (message != null) {
             errBuilder.append(". ").append(message);

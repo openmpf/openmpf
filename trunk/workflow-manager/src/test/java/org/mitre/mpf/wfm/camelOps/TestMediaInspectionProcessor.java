@@ -717,7 +717,7 @@ public class TestMediaInspectionProcessor {
     private MediaImpl initMedia(long mediaId, URI mediaUri, Map<String, String> mediaMetadata) {
         return new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
-                Map.of(), mediaMetadata, List.of(), List.of(), null);
+                Map.of(), mediaMetadata, List.of(), List.of(), List.of(), null, null);
     }
 
     private void inspectMedia(long jobId, MediaImpl media) {

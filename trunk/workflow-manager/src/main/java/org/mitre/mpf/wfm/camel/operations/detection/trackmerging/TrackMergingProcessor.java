@@ -144,7 +144,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                     log.debug("Merging {} tracks down to {} in Media {}.",
                               initialSize, tracks.size(), media.getId());
                 }
-                
+
                 if (pruneRequested) {
                     int initialSize = tracks.size();
                     int minTrackLength = trackMergingPlan.getMinTrackLength();
@@ -295,7 +295,9 @@ public class TrackMergingProcessor extends WfmProcessor {
                 detections,
                 properties,
                 track1.getExemplarPolicy(),
-                track1.getQualitySelectionProperty());
+                track1.getQualitySelectionProperty(),
+                track1.getSelectorId().orElse(null),
+                track1.getSelectedInput().orElse(null));
         return merged;
     }
 

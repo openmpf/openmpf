@@ -161,8 +161,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5*MINUTES, expected = WfmProcessingException.class)
     public void testNonUri() throws Exception {
-        List<JobCreationMediaData> media = new LinkedList<>();
-        media.add(new JobCreationMediaData("/not/a/file.txt"));
+        var media = toMediaObjectList(URI.create("/not/a/file.txt"));
         runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
     }
 
@@ -346,15 +345,20 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
                 File dir = new File(path);
                 for (File file : dir.listFiles()) {
-                    media.add(new JobCreationMediaData(ioUtils.findFile(file.getAbsolutePath()).toString()));
+                    media.add(toMediaObject(ioUtils.findFile(file.getAbsolutePath())));
                 }
 
-                var jobRequest = new JobCreationRequest();
-                jobRequest.setExternalId(UUID.randomUUID().toString());
-                jobRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
-                jobRequest.setMedia(media);
-                jobRequest.setBuildOutput(false);
-                jobRequest.setPriority(priority);
+                var jobRequest = new JobCreationRequest(
+                    media,
+                    Map.of(),
+                    Map.of(),
+                    UUID.randomUUID().toString(),
+                    "OCV FACE DETECTION PIPELINE",
+                    null,
+                    true,
+                    priority,
+                    null,
+                    null);
 
                 jobRequestId = jobRequestService.run(jobRequest).jobId();
                 completed = waitFor(jobRequestId); // blocking

@@ -33,6 +33,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.rest.api.JobCreationMediaRange;
+import org.mitre.mpf.rest.api.JobCreationMediaSelector;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -49,6 +50,8 @@ import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
+import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
@@ -91,6 +94,8 @@ public class JobRequestServiceImpl implements JobRequestService {
 
     private final ProducerTemplate _jobRequestProducerTemplate;
 
+    private final ConstraintValidationService _validator;
+
     @Inject
     public JobRequestServiceImpl(
             PropertiesUtil propertiesUtil,
@@ -102,7 +107,8 @@ public class JobRequestServiceImpl implements JobRequestService {
             JobRequestDao jobRequestDao,
             MarkupResultDao markupResultDao,
             TiesDbBeforeJobCheckService tiesDbBeforeJobCheckService,
-            ProducerTemplate jobRequestProducerTemplate) {
+            ProducerTemplate jobRequestProducerTemplate,
+            ConstraintValidationService validator) {
         _pipelineService = pipelineService;
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
@@ -113,34 +119,39 @@ public class JobRequestServiceImpl implements JobRequestService {
         _markupResultDao = markupResultDao;
         _tiesDbBeforeJobCheckService = tiesDbBeforeJobCheckService;
         _jobRequestProducerTemplate = jobRequestProducerTemplate;
+        _validator = validator;
     }
 
 
 
     @Override
     public CreationResult run(JobCreationRequest jobCreationRequest) {
-        List<Media> media = jobCreationRequest.getMedia()
+        _validator.validate(jobCreationRequest, "JobCreationRequest");
+
+        List<Media> media = jobCreationRequest.media()
                 .stream()
                 .map(m -> _inProgressJobs.initMedia(
-                        m.getMediaUri(),
-                        m.getProperties(),
-                        m.getMetadata(),
-                        convertRanges(m.getFrameRanges()),
-                        convertRanges(m.getTimeRanges())))
+                        m.mediaUri(),
+                        m.properties(),
+                        m.metadata(),
+                        convertRanges(m.frameRanges()),
+                        convertRanges(m.timeRanges()),
+                        convertSelectors(m.mediaSelectors()),
+                        m.mediaSelectorsOutputAction().orElse(null)))
                 .collect(ImmutableList.toImmutableList());
 
-        int priority = Optional.ofNullable(jobCreationRequest.getPriority())
+        int priority = Optional.ofNullable(jobCreationRequest.priority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
         JobPipelineElements pipelineElements;
-        if (jobCreationRequest.getPipelineDefinition() == null) {
+        if (jobCreationRequest.pipelineDefinition() == null) {
             pipelineElements = _pipelineService.getBatchPipelineElements(
-                    jobCreationRequest.getPipelineName());
+                    jobCreationRequest.pipelineName());
         }
-        else if (jobCreationRequest.getPipelineName() == null
-                || jobCreationRequest.getPipelineName().isBlank()) {
+        else if (jobCreationRequest.pipelineName() == null
+                || jobCreationRequest.pipelineName().isBlank()) {
             pipelineElements = _pipelineService.getBatchPipelineElements(
-                    jobCreationRequest.getPipelineDefinition());
+                    jobCreationRequest.pipelineDefinition());
         }
         else {
             throw new WfmProcessingException("Job request must either contain \"pipelineName\" " +
@@ -161,12 +172,12 @@ public class JobRequestServiceImpl implements JobRequestService {
                 new JobRequest(),
                 pipelineElements,
                 media,
-                jobCreationRequest.getJobProperties(),
-                jobCreationRequest.getAlgorithmProperties(),
-                jobCreationRequest.getExternalId(),
+                jobCreationRequest.jobProperties(),
+                jobCreationRequest.algorithmProperties(),
+                jobCreationRequest.externalId(),
                 priority,
-                jobCreationRequest.getCallbackURL(),
-                jobCreationRequest.getCallbackMethod(),
+                jobCreationRequest.callbackURL(),
+                jobCreationRequest.callbackMethod(),
                 systemPropertiesSnapshot,
                 shouldCheckTiesDbAfterMediaInspection);
         _jobRequestDao.newJobCreated();
@@ -216,7 +227,9 @@ public class JobRequestServiceImpl implements JobRequestService {
                         m.getMediaSpecificProperties(),
                         m.getProvidedMetadata(),
                         m.getFrameRanges(),
-                        m.getTimeRanges()))
+                        m.getTimeRanges(),
+                        m.getMediaSelectors(),
+                        m.getMediaSelectorsOutputAction().orElse(null)))
                 .collect(ImmutableList.toImmutableList());
 
 
@@ -248,10 +261,18 @@ public class JobRequestServiceImpl implements JobRequestService {
             Collection<JobCreationMediaRange> ranges) {
         return ranges
                 .stream()
-                .map(r -> new MediaRange(r.getStart(), r.getStop()))
+                .map(r -> new MediaRange(r.start(), r.stop()))
                 .collect(ImmutableSet.toImmutableSet());
     }
 
+    private static ImmutableList<MediaSelector> convertSelectors(
+                Collection<JobCreationMediaSelector> selectors) {
+        return selectors.stream()
+                .map(s -> new MediaSelector(
+                        s.expression(), s.type(),
+                        s.selectionProperties(), s.resultDetectionProperty()))
+                .collect(ImmutableList.toImmutableList());
+    }
 
     private JobRequest initialize(
             JobRequest jobRequestEntity,
@@ -353,6 +374,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
 
         checkProperties(pipeline, media, jobProperties, overriddenAlgoProps, systemPropertiesSnapshot);
+        MediaSelectorsSegmenter.validateSelectors(media, pipeline);
 
         if (media.isEmpty()) {
             throw new WfmProcessingException(

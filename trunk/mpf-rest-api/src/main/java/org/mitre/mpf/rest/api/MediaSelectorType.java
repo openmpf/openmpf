@@ -24,31 +24,9 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
+package org.mitre.mpf.rest.api;
 
-import org.springframework.stereotype.Service;
-
-import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validator;
-import java.util.Set;
-
-@Service
-public class ExtrasDescriptorValidatorImpl implements ExtrasDescriptorValidator {
-
-    private final Validator validator;
-
-    @Inject
-    public ExtrasDescriptorValidatorImpl(Validator validator) {
-        this.validator = validator;
-    }
-
-    @Override
-    public void validate(JsonExtrasDescriptor descriptor) throws InvalidExtrasDescriptorException {
-        Set<ConstraintViolation<JsonExtrasDescriptor>> validationErrors = validator.validate(descriptor);
-
-        if (!validationErrors.isEmpty()) {
-            throw new InvalidExtrasDescriptorException(validationErrors);
-        }
-    }
+public enum MediaSelectorType {
+    JSON_PATH
+    // Will eventually add XPATH and CSV_COLS
 }

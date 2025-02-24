@@ -136,7 +136,7 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
         Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
                                     Paths.get(mediaUri), Map.of(), Map.of(), List.of(), List.of(),
-                                    null);
+                                    List.of(), null, null);
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);

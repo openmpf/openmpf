@@ -24,9 +24,28 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
+package org.mitre.mpf.rest.api;
 
-public interface ExtrasDescriptorValidator {
+import java.util.Map;
 
-    public void validate(JsonExtrasDescriptor descriptor) throws InvalidExtrasDescriptorException;
+import javax.validation.constraints.NotNull;
+
+import org.hibernate.validator.constraints.NotBlank;
+import org.mitre.mpf.rest.api.util.Utils;
+
+public record JobCreationMediaSelector(
+        @NotBlank
+        String expression,
+
+        @NotNull
+        MediaSelectorType type,
+
+        Map<String, String> selectionProperties,
+
+        @NotBlank
+        String resultDetectionProperty) {
+
+    public JobCreationMediaSelector {
+        selectionProperties = Utils.toImmutableMap(selectionProperties);
+    }
 }

@@ -45,6 +45,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.MediaRange;
@@ -110,6 +111,7 @@ public class JobConfigHasher {
             hasher.add(medium.getLinkedHash().orElseThrow());
             hashMediaRanges(medium.getFrameRanges(), hasher);
             hashMediaRanges(medium.getTimeRanges(), hasher);
+            hashMediaSelectors(medium, pipelineElements, hasher);
             var mediaType = medium.getType().orElseThrow();
 
             for (var task : pipelineElements.getTasksInOrder()) {
@@ -120,13 +122,9 @@ public class JobConfigHasher {
                             .ifPresentOrElse(
                                     ov -> hasher.add(String.valueOf(ov)),
                                     () -> hasher.add("none"));
+                    hashProperties(
+                            mediaActionProps.get(medium, action), algorithm, mediaType, hasher);
 
-                    mediaActionProps.get(medium, action)
-                        .entrySet()
-                        .stream()
-                        .filter(createIsRequiredFilter(algorithm, mediaType))
-                        .sorted(Map.Entry.comparingByKey())
-                        .forEach(hasher::add);
                 }
                 // Add separator so actions in the same task get a different value from actions in
                 // different tasks.
@@ -136,6 +134,19 @@ public class JobConfigHasher {
         var hash = hasher.getHash();
         LOG.info("The job config hash is: {}", hash);
         return hash;
+    }
+
+
+    private void hashProperties(
+            Map<String, String> properties,
+            Algorithm algorithm,
+            MediaType mediaType,
+            Hasher hasher) {
+        properties.entrySet()
+                .stream()
+                .filter(createIsRequiredFilter(algorithm, mediaType))
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(hasher::add);
     }
 
 
@@ -172,21 +183,47 @@ public class JobConfigHasher {
     }
 
 
+    private void hashMediaSelectors(
+            Media media,
+            JobPipelineElements pipelineElements,
+            Hasher hasher) {
+        if (media.getMediaSelectors().isEmpty()) {
+            hasher.add("none");
+            return;
+        }
+
+        var algo = pipelineElements.getAlgorithm(0, 0);
+        var mediaType = media.getType().orElseThrow();
+
+        media.getMediaSelectors()
+            .stream()
+            .sorted(MediaSelector.comparator())
+            .forEach(selector -> {
+                hasher.add(selector.expression())
+                    .add(selector.type().toString())
+                    .add(selector.resultDetectionProperty());
+                hashProperties(selector.selectionProperties(), algo, mediaType, hasher);
+            });
+    }
+
+
     private static class Hasher {
         private static final byte SEPARATOR = '/';
 
         private final MessageDigest _digest = DigestUtils.getSha256Digest();
 
-        public void add(String data) {
+        public Hasher add(String data) {
             _digest.update(data.getBytes(StandardCharsets.UTF_8));
             _digest.update(SEPARATOR);
+            return this;
         }
 
-        public void add(Map.Entry<String, String> mapEntry) {
+        public Hasher add(Map.Entry<String, String> mapEntry) {
             add(mapEntry.getKey());
             if (mapEntry.getValue() != null) {
                 add(mapEntry.getValue());
             }
+            return this;
         }
 
         public String getHash() {

@@ -282,6 +282,8 @@ public class TestMovingTrackLabelProcessor {
                 detections, //detections
                 Map.of(), //trackProperties
                 "",
-                "");
+                "",
+                null,
+                null);
     }
 }

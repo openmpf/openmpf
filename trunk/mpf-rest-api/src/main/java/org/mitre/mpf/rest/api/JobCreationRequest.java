@@ -26,83 +26,42 @@
 
 package org.mitre.mpf.rest.api;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import javax.validation.Valid;
+
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.util.Utils;
 
-import java.util.*;
+import com.google.common.collect.ImmutableMap;
 
-public class JobCreationRequest {
-	private List<JobCreationMediaData> media = new LinkedList<>();
-	private Map<String, String> jobProperties = new HashMap<>();
-	private Map<String, Map<String, String>> algorithmProperties = new HashMap<>();
-	private String externalId = null;
-	private String pipelineName = null;
-	private TransientPipelineDefinition pipelineDefinition;
-	private Boolean buildOutput = null; //will use a server side property if null
-	private Integer priority = null; //will be set to 4 (default) on the server side if null
-	private String callbackURL = null; // the URL to send a response after the job completes
-	private String callbackMethod = "POST"; // the method to send the response back after a job completes
+public record JobCreationRequest(
+		@Valid
+		List<JobCreationMediaData> media,
+		Map<String, String> jobProperties,
+		Map<String, Map<String, String>> algorithmProperties,
+		String externalId,
+		String pipelineName,
+		TransientPipelineDefinition pipelineDefinition,
+		Boolean buildOutput, // will use a server side property if null
+		Integer priority, // will be set to default on the server side if null
+		String callbackURL,
+		String callbackMethod
+) {
+	public JobCreationRequest {
+		media = Utils.toImmutableList(media);
+		jobProperties = Utils.toImmutableMap(jobProperties);
 
+		algorithmProperties = Optional.ofNullable(algorithmProperties)
+				.stream()
+				.flatMap(m -> m.entrySet().stream())
+				.collect(ImmutableMap.toImmutableMap(
+						Map.Entry::getKey,
+						e -> Utils.toImmutableMap(e.getValue())));
 
-	public List<JobCreationMediaData> getMedia() {
-		return media;
+		callbackMethod = Objects.requireNonNullElse(callbackMethod, "POST");
 	}
-	public void setMedia(List<JobCreationMediaData> media) {
-		this.media = media;
-	}
-
-	public Map<String, String> getJobProperties() {
-		return jobProperties;
-	}
-	public void setJobProperties(Map<String, String> jobProperties) {
-		this.jobProperties = jobProperties;
-	}
-
-	public Map<String, Map<String, String>> getAlgorithmProperties() {
-		return algorithmProperties;
-	}
-	public void setAlgorithmProperties(Map<String, Map<String, String>> algorithmProperties) {
-		this.algorithmProperties = algorithmProperties;
-	}
-
-	public String getExternalId() {
-		return externalId;
-	}
-	public void setExternalId(String externalId) {
-		this.externalId = externalId;
-	}
-
-	public String getPipelineName() {
-		return pipelineName;
-	}
-	public void setPipelineName(String pipelineName) {
-		this.pipelineName = pipelineName;
-	}
-
-	public TransientPipelineDefinition getPipelineDefinition() {
-		return pipelineDefinition;
-	}
-	public void setPipelineDefinition(TransientPipelineDefinition pipelineDefinition) {
-		this.pipelineDefinition = pipelineDefinition;
-	}
-
-	public Boolean getBuildOutput() {
-		return buildOutput;
-	}
-	public void setBuildOutput(Boolean buildOutput) {
-		this.buildOutput = buildOutput;
-	}
-
-	public Integer getPriority() {
-		return priority;
-	}
-	public void setPriority(Integer priority) {
-		this.priority = priority;
-	}
-
-	public String getCallbackURL() {return callbackURL;	}
-	public void setCallbackURL(String callbackURL) {this.callbackURL = callbackURL;	}
-
-	public String getCallbackMethod() {return callbackMethod;}
-	public void setCallbackMethod(String callbackMethod) {this.callbackMethod = callbackMethod;	}
-
 }

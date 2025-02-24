@@ -27,9 +27,11 @@
 package org.mitre.mpf.wfm.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -40,9 +42,12 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.mvc.controller.TestSubjectJobController;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.Mock;
@@ -72,6 +77,38 @@ public class TestLocalStorageBackendImpl extends MockitoTest.Strict {
                 _mockInProgressJobs);
     }
 
+
+    @Test
+    public void testStoreMediaSelectorsOutput() throws IOException {
+        assertThat(_localStorageBackend.canStoreMediaSelectorsOutput(null, null))
+                .isTrue();
+
+        var mediaSelectorsOutputDir = _tempFolder.newFolder().toPath();
+        when(_mockPropertiesUtil.getMediaSelectorsOutputDir())
+                .thenReturn(mediaSelectorsOutputDir);
+
+        var job = mock(BatchJob.class);
+        when(job.getId())
+                .thenReturn(123L);
+
+        var media = mock(Media.class);
+        when(media.getId())
+                .thenReturn(456L);
+
+        var outputUri = _localStorageBackend.storeMediaSelectorsOutput(
+                job, media, MediaSelectorType.JSON_PATH,
+                os -> os.write("<TEST CONTENT>".getBytes(StandardCharsets.UTF_8)));
+
+        var expectedPath = mediaSelectorsOutputDir.resolve(
+                "123/456/media-selectors-output.json");
+
+        assertThat(outputUri).isEqualTo(expectedPath.toUri());
+
+        var outputPath = Path.of(outputUri);
+        assertThat(outputPath)
+                .content(StandardCharsets.UTF_8)
+                .isEqualTo("<TEST CONTENT>");
+    }
 
     @Test
     public void outputObjectViewUsedWhenStoringSubjectResults() throws IOException {

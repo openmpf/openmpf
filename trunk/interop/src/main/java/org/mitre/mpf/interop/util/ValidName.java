@@ -30,37 +30,64 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.function.BiPredicate;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
-import org.hibernate.validator.constraints.NotBlank;
-
 @Target({ ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE,
         ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = ValidName.Validator.class)
-@NotBlank
 public @interface ValidName {
+
     String message() default "may not contain / or ;";
 
     Class<?>[] groups() default {};
 
     Class<? extends Payload>[] payload() default {};
 
+    boolean required() default true;
+
     public static class Validator implements ConstraintValidator<ValidName, String> {
+
+        private BiPredicate<String, ConstraintValidatorContext> _isValidPred;
 
         @Override
         public void initialize(ValidName constraintAnnotation) {
+            if (constraintAnnotation.required()) {
+                _isValidPred = Validator::isValidRequired;
+            } else {
+                _isValidPred = Validator::isValidNotRequired;
+            }
         }
 
         @Override
-        public boolean isValid(String value, ConstraintValidatorContext context) {
+        public boolean isValid(String value, ConstraintValidatorContext ctx) {
+            return _isValidPred.test(value, ctx);
+        }
+
+        private static boolean isValidRequired(String value, ConstraintValidatorContext ctx) {
             if (value == null) {
-                // Use the error message from @NotBlank when the value is null.
+                ctx.disableDefaultConstraintViolation();
+                ctx.buildConstraintViolationWithTemplate("may not be null")
+                        .addConstraintViolation();
+                return false;
+            }
+            return isValidNotRequired(value, ctx);
+        }
+
+        private static boolean isValidNotRequired(String value, ConstraintValidatorContext ctx) {
+            if (value == null) {
                 return true;
+            }
+            if (value.isBlank()) {
+                ctx.disableDefaultConstraintViolation();
+                ctx.buildConstraintViolationWithTemplate("may not be blank")
+                        .addConstraintViolation();
+                return false;
             }
             return !value.contains("/") && !value.contains(";");
         }

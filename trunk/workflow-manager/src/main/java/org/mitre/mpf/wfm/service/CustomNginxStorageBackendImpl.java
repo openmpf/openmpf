@@ -47,12 +47,14 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -594,6 +596,24 @@ public class CustomNginxStorageBackendImpl implements CustomNginxStorageBackend 
 
         public StatusLine getStatusLine() {
             return _httpResponse.getStatusLine();
+        }
+    }
+
+
+    @Override
+    public boolean canStoreMediaSelectorsOutput(BatchJob job, Media media) throws StorageException {
+        return canStore(job.getId());
+    }
+
+    @Override
+    public URI storeMediaSelectorsOutput(
+            BatchJob job,
+            Media media,
+            MediaSelectorType selectorType,
+            OutputProcessor outputProcessor) throws StorageException, IOException {
+        var serviceUri = getServiceUri(job.getId());
+        try (var inputStream = new PipeStream(outputProcessor::process)) {
+            return store(serviceUri, inputStream);
         }
     }
 }

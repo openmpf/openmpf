@@ -26,26 +26,5 @@
 
 package org.mitre.mpf.rest.api;
 
-
-public class JobCreationMediaRange {
-
-    public JobCreationMediaRange() {}
-    public JobCreationMediaRange(int start, int stop) {
-        this.start = start;
-        this.stop = stop;
-    }
-
-    public int getStart() {
-        return start;
-    }
-    public int getStop() { return stop; }
-
-    public void setStart(int Start) { this.start = Start; }
-    public void setStop(int Stop) {
-        this.stop = Stop;
-    }
-
-    private int start;
-    private int stop;
-
+public record JobCreationMediaRange(int start, int stop) {
 }

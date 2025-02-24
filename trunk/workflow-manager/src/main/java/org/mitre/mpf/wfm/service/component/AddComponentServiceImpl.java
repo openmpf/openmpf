@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.service.StreamingServiceModel;
@@ -75,9 +76,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private final ComponentStateService _componentStateService;
 
-    private final ComponentDescriptorValidator _componentDescriptorValidator;
-
-    private final ExtrasDescriptorValidator _extrasDescriptorValidator;
+    private final ConstraintValidationService _constraintValidator;
 
     private final RemoveComponentService _removeComponentService;
 
@@ -91,8 +90,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             Optional<StreamingServiceManager> streamingServiceManager,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
-            ComponentDescriptorValidator componentDescriptorValidator,
-            ExtrasDescriptorValidator extrasDescriptorValidator,
+            ConstraintValidationService constraintValidator,
             RemoveComponentService removeComponentService,
             ObjectMapper objectMapper)
     {
@@ -102,8 +100,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         _streamingServiceManager = streamingServiceManager.orElse(null);
         _deployService = deployService;
         _componentStateService = componentStateService;
-        _componentDescriptorValidator = componentDescriptorValidator;
-        _extrasDescriptorValidator = extrasDescriptorValidator;
+        _constraintValidator = constraintValidator;
         _removeComponentService = removeComponentService;
         _objectMapper = objectMapper;
     }
@@ -175,9 +172,11 @@ public class AddComponentServiceImpl implements AddComponentService {
         if (descriptor.algorithm() == null) {
             _log.warn("Component descriptor file is missing an Algorithm definition.");
             _log.warn("Treating as an extras descriptor file. Will register Actions, Tasks, and Pipelines only.");
-            _extrasDescriptorValidator.validate(new JsonExtrasDescriptor(descriptor));
+            _constraintValidator.validate(
+                    new JsonExtrasDescriptor(descriptor), InvalidExtrasDescriptorException::new);
         } else {
-            _componentDescriptorValidator.validate(descriptor);
+            _constraintValidator.validate(
+                    descriptor, InvalidComponentDescriptorException::new);
         }
         model.setVersion(descriptor.componentVersion());
 

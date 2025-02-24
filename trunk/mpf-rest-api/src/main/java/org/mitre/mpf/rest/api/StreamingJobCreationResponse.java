@@ -29,24 +29,26 @@ package org.mitre.mpf.rest.api;
 public class StreamingJobCreationResponse {
 	private long jobId = -1L; //will be -1 if there is an error creating the job
 	private String outputObjectDirectory = null;
-	private MpfResponse mpfResponse = new MpfResponse();
+	private MpfResponse mpfResponse;
 
 	/*
 	 * Constructors
 	 */
-	public StreamingJobCreationResponse() { }
+	public StreamingJobCreationResponse() {
+		this.mpfResponse = MpfResponse.success();
+	}
 
 	public StreamingJobCreationResponse(int errorCode, String errorMessage) {
-		this.mpfResponse.setMessage(errorCode, errorMessage);
+		this.mpfResponse = new MpfResponse(errorCode, errorMessage);
 		this.jobId = -1L;
 	}
 
 	public StreamingJobCreationResponse(long jobId, String outputObjectDirectory) {
-		this.mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_SUCCESS, null);
+		this.mpfResponse = MpfResponse.success();
 		this.jobId = jobId;
 		this.outputObjectDirectory = outputObjectDirectory;
 	}
-	
+
 	/*
 	 * Getters
 	 */

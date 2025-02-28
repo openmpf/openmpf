@@ -39,6 +39,7 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
@@ -76,7 +77,7 @@ public class TestMediaInspectionSplitter extends MockitoTest.Strict {
         long testMediaId = 123456;
         URI testURI = TestUtil.findFile("/samples/new_face_video.avi");
         var testMedia = new MediaImpl(
-                testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Map.of(),
+                testMediaId, new MediaUri(testURI), UriScheme.FILE, Paths.get(testURI), Map.of(),
                 Map.of(), List.of(), List.of(), List.of(), null, null);
 
         var testJob = new BatchJobImpl(

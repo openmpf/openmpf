@@ -669,7 +669,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             var newMedia = JsonMediaOutputObject.factory(
                     oldMedia.getMediaId(),
                     oldMedia.getParentMediaId(),
-                    newMediaUri,
+                    newMediaUri.fullString(),
                     oldMedia.getPath(),
                     oldMedia.getType(),
                     oldMedia.getMimeType(),

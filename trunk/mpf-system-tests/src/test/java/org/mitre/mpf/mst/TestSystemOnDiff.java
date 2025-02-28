@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationMediaSelector;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
@@ -46,6 +47,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -1261,7 +1263,52 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runJsonPathTest() throws IOException {
+    public void runJsonPathTest() throws IOException, URISyntaxException {
+        var mediaUrl = getClass().getResource("/samples/text/test-media-selectors.json");
+        runJsonPathTest(mediaUrl.toURI());
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void runJsonPathWithBase64DataUri() throws IOException {
+        // mediaUri is the base 64 encoded version of samples/text/test-media-selectors.json
+        var mediaUri
+                = "data:application/json;base64,eyJvdGhlclN0dWZmS2V5IjpbIm90aGVyIHN0dWZmIHZhbHVlI"
+                + "l0sInNwYW5pc2hNZXNzYWdlcyI6W3sidG8iOiJzcGFuaXNoIHJlY2lwaWVudCAxIiwiZnJvbSI6InN"
+                + "wYW5pc2ggc2VuZGVyIDEiLCJjb250ZW50Ijoiwr9Ib2xhLCBjw7NtbyBlc3TDoXM/In0seyJ0byI6I"
+                + "nNwYW5pc2ggcmVjaXBpZW50IDIiLCJmcm9tIjoic3BhbmlzaCBzZW5kZXIgMiIsImNvbnRlbnQiOiL"
+                + "Cv0RvbmRlIGVzdMOhIGVsIGFlcm9wdWVydG8/In1dLCJjaGluZXNlTWVzc2FnZXMiOlt7InRvIjoiY"
+                + "2hpbmVzZSByZWNpcGllbnQgMSIsImZyb20iOiJjaGluZXNlIHNlbmRlciAxIiwiY29udGVudCI6Iue"
+                + "OsOWcqOaYr+WHoOWljO+8nyJ9LHsidG8iOiJjaGluZXNlIHJlY2lwaWVudCAyIiwiZnJvbSI6ImNoa"
+                + "W5lc2Ugc2VuZGVyIDIiLCJjb250ZW50Ijoi5L2g5Y+r5LuA5LmI5ZCN5a2X77yfIn0seyJ0byI6ImN"
+                + "oaW5lc2UgcmVjaXBpZW50IDMiLCJmcm9tIjoiY2hpbmVzZSBzZW5kZXIgMyIsImNvbnRlbnQiOiLkv"
+                + "aDlnKjlk6rph4zvvJ8ifV19Cg==";
+        runJsonPathTest(URI.create(mediaUri));
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void runJsonPathWithPercentEncodedDataUri() throws IOException {
+        // mediaUri is the percent encoded version of samples/text/test-media-selectors.json
+        var mediaUri
+                = "data:application/json;,%7B%22otherStuffKey%22%3A%5B%22other%20stuff%20value%22"
+                + "%5D%2C%22spanishMessages%22%3A%5B%7B%22to%22%3A%22spanish%20recipient%201%22%2"
+                + "C%22from%22%3A%22spanish%20sender%201%22%2C%22content%22%3A%22%C2%BFHola%2C%20"
+                + "c%C3%B3mo%20est%C3%A1s%3F%22%7D%2C%7B%22to%22%3A%22spanish%20recipient%202%22%"
+                + "2C%22from%22%3A%22spanish%20sender%202%22%2C%22content%22%3A%22%C2%BFDonde%20e"
+                + "st%C3%A1%20el%20aeropuerto%3F%22%7D%5D%2C%22chineseMessages%22%3A%5B%7B%22to%2"
+                + "2%3A%22chinese%20recipient%201%22%2C%22from%22%3A%22chinese%20sender%201%22%2C"
+                + "%22content%22%3A%22%E7%8E%B0%E5%9C%A8%E6%98%AF%E5%87%A0%E5%A5%8C%EF%BC%9F%22%7"
+                + "D%2C%7B%22to%22%3A%22chinese%20recipient%202%22%2C%22from%22%3A%22chinese%20se"
+                + "nder%202%22%2C%22content%22%3A%22%E4%BD%A0%E5%8F%AB%E4%BB%80%E4%B9%88%E5%90%8D"
+                + "%E5%AD%97%EF%BC%9F%22%7D%2C%7B%22to%22%3A%22chinese%20recipient%203%22%2C%22fr"
+                + "om%22%3A%22chinese%20sender%203%22%2C%22content%22%3A%22%E4%BD%A0%E5%9C%A8%E5%"
+                + "93%AA%E9%87%8C%EF%BC%9F%22%7D%5D%7D";
+        runJsonPathTest(URI.create(mediaUri));
+    }
+
+
+    public void runJsonPathTest(URI mediaUri) throws IOException {
         var pipelineName = "TEST JSON PATH";
         addPipeline(
                 pipelineName,
@@ -1280,9 +1327,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 Map.of(),
                 "TRANSLATION");
 
-        var mediaUrl = getClass().getResource("/samples/text/test-media-selectors.json");
         var media = new JobCreationMediaData(
-                mediaUrl.toString(),
+                new MediaUri(mediaUri),
                 Map.of(),
                 Map.of(),
                 List.of(),

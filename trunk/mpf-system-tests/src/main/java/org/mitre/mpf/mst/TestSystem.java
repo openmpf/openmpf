@@ -39,6 +39,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationStreamData;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
@@ -231,7 +232,7 @@ public abstract class TestSystem {
 
     protected JobCreationMediaData toMediaObject(URI uri, Map<String, String> properties) {
         return new JobCreationMediaData(
-                uri.toString(),
+                new MediaUri(uri),
                 properties,
                 Map.of(),
                 List.of(),

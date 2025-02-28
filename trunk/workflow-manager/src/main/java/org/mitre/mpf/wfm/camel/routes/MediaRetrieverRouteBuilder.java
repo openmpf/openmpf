@@ -31,6 +31,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
+import org.mitre.mpf.wfm.camel.operations.mediaretrieval.StoreDataUriContentProcessor;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.springframework.stereotype.Component;
 
@@ -59,6 +60,7 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
         from(entryPoint)
             .routeId(ROUTE_ID)
             .setExchangePattern(ExchangePattern.InOnly)
+            .process(StoreDataUriContentProcessor.REF)
             .split().method(RemoteMediaSplitter.REF, "split")
                 .parallelProcessing()
                 .streaming()

@@ -32,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -99,7 +100,7 @@ public class TestDetectionTaskSplitter {
 
         URI mediaUri = ioUtils.findFile("/samples/new_face_video.avi");
         MediaImpl testMedia = new MediaImpl(
-                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                nextId(), new MediaUri(mediaUri), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
         testMedia.setType(MediaType.VIDEO);
         testMedia.setMimeType("video/avi");
@@ -439,8 +440,9 @@ public class TestDetectionTaskSplitter {
 
         URI fullMediaUri = ioUtils.findFile(mediaUri);
         MediaImpl testMedia = new MediaImpl(
-                nextId(), fullMediaUri.toString(), UriScheme.get(fullMediaUri), Paths.get(fullMediaUri),
-                mediaProperties, Map.of(), List.of(), List.of(), List.of(), null, null);
+                nextId(), new MediaUri(fullMediaUri), UriScheme.get(fullMediaUri),
+                Paths.get(fullMediaUri), mediaProperties, Map.of(), List.of(),
+                List.of(), List.of(), null, null);
         testMedia.setLength(300);
         testMedia.setType(mediaType);
         testMedia.setMimeType(mimeType);
@@ -473,9 +475,9 @@ public class TestDetectionTaskSplitter {
             Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties,
             Map<String,String> mediaProperties) {
 
-        URI mediaUri = URI.create("file:///path/to/dummy/media");
+        var mediaUri = MediaUri.create("file:///path/to/dummy/media");
         MediaImpl testMedia = new MediaImpl(
-                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                nextId(), mediaUri, UriScheme.get(mediaUri), Paths.get(mediaUri.get()),
                 mediaProperties, Map.of(), List.of(), List.of(), List.of(), null, null);
         testMedia.setType(MediaType.VIDEO);
         testMedia.setMimeType("video/dummy");
@@ -873,8 +875,9 @@ public class TestDetectionTaskSplitter {
 
     @Test
     public void testSourceMediaOnlyAndDerivativeMediaOnly() {
-        var parentMedia = new MediaImpl(700, "file:///parent", UriScheme.FILE, Paths.get("/local/path/parent"),
-                Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
+        var parentMedia = new MediaImpl(700, MediaUri.create("file:///parent"), UriScheme.FILE,
+                Paths.get("/local/path/parent"), Map.of(), Map.of(), List.of(),
+                List.of(), List.of(), null, null);
         parentMedia.setType(MediaType.UNKNOWN);
         parentMedia.setMimeType("application/pdf");
 
@@ -925,15 +928,19 @@ public class TestDetectionTaskSplitter {
         Assert.assertEquals(1, responseList.size()); // parent only
 
         // Children will be added after the extraction task in a real job.
-        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", UriScheme.FILE, Paths.get("/local/path/child1"),
-                Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of(), null, null, null);
+        var childMedia1 = new MediaImpl(701, 700, 0,
+                MediaUri.create("file:///child1"), UriScheme.FILE,
+                Paths.get("/local/path/child1"), Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(),
+                List.of(), List.of(), null, null, null);
         childMedia1.setType(MediaType.IMAGE);
         childMedia1.setMimeType("image/png");
 
-        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", UriScheme.FILE, Paths.get("/local/path/child2"),
-                Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of(), null, null, null);
+        var childMedia2 = new MediaImpl(702, 700, 0,
+                MediaUri.create("file:///child2"), UriScheme.FILE,
+                Paths.get("/local/path/child2"), Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(),
+                List.of(), List.of(), null, null, null);
         childMedia2.setType(MediaType.IMAGE);
         childMedia2.setMimeType("image/jpeg");
 

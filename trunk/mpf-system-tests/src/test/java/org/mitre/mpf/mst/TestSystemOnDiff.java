@@ -33,7 +33,6 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationMediaSelector;
-import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
@@ -48,6 +47,9 @@ import java.util.function.Predicate;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -382,9 +384,23 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImageWithAutoOrientation() throws Exception {
-        runSystemTest("OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
-                      "output/face/runFaceOcvDetectImageWithAutoOrientation.json",
-                      "/samples/face/meds-aa-S001-01-exif-rotation.jpg");
+        runFaceOcvDetectImageWithAutoOrientation(ioUtils.findFile(
+                "/samples/face/meds-aa-S001-01-exif-rotation.jpg"));
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void runFaceOcvDetectImageWithAutoOrientationDataUri() throws IOException {
+        var pathToUriFile = Path.of(ioUtils.findFile(
+                "/samples/face/meds-aa-S001-01-exif-rotation.jpg.datauri.txt"));
+        var uriStr = Files.readString(pathToUriFile, StandardCharsets.US_ASCII).strip();
+        runFaceOcvDetectImageWithAutoOrientation(URI.create(uriStr));
+    }
+
+    private void runFaceOcvDetectImageWithAutoOrientation(URI mediaUri) throws IOException {
+        runSystemTest(
+                "OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
+                "output/face/runFaceOcvDetectImageWithAutoOrientation.json",
+                toMediaObject(mediaUri));
     }
 
     @Test(timeout = 15 * MINUTES)
@@ -1270,24 +1286,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runJsonPathWithBase64DataUri() throws IOException {
-        // mediaUri is the base 64 encoded version of samples/text/test-media-selectors.json
-        var mediaUri
-                = "data:application/json;base64,eyJvdGhlclN0dWZmS2V5IjpbIm90aGVyIHN0dWZmIHZhbHVlI"
-                + "l0sInNwYW5pc2hNZXNzYWdlcyI6W3sidG8iOiJzcGFuaXNoIHJlY2lwaWVudCAxIiwiZnJvbSI6InN"
-                + "wYW5pc2ggc2VuZGVyIDEiLCJjb250ZW50Ijoiwr9Ib2xhLCBjw7NtbyBlc3TDoXM/In0seyJ0byI6I"
-                + "nNwYW5pc2ggcmVjaXBpZW50IDIiLCJmcm9tIjoic3BhbmlzaCBzZW5kZXIgMiIsImNvbnRlbnQiOiL"
-                + "Cv0RvbmRlIGVzdMOhIGVsIGFlcm9wdWVydG8/In1dLCJjaGluZXNlTWVzc2FnZXMiOlt7InRvIjoiY"
-                + "2hpbmVzZSByZWNpcGllbnQgMSIsImZyb20iOiJjaGluZXNlIHNlbmRlciAxIiwiY29udGVudCI6Iue"
-                + "OsOWcqOaYr+WHoOWljO+8nyJ9LHsidG8iOiJjaGluZXNlIHJlY2lwaWVudCAyIiwiZnJvbSI6ImNoa"
-                + "W5lc2Ugc2VuZGVyIDIiLCJjb250ZW50Ijoi5L2g5Y+r5LuA5LmI5ZCN5a2X77yfIn0seyJ0byI6ImN"
-                + "oaW5lc2UgcmVjaXBpZW50IDMiLCJmcm9tIjoiY2hpbmVzZSBzZW5kZXIgMyIsImNvbnRlbnQiOiLkv"
-                + "aDlnKjlk6rph4zvvJ8ifV19Cg==";
-        runJsonPathTest(URI.create(mediaUri));
-    }
-
-
-    @Test(timeout = 5 * MINUTES)
     public void runJsonPathWithPercentEncodedDataUri() throws IOException {
         // mediaUri is the percent encoded version of samples/text/test-media-selectors.json
         var mediaUri
@@ -1336,19 +1334,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 List.of(selector1, selector2),
                 Optional.of("ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION"));
 
-        var job = new JobCreationRequest(
-                List.of(media),
-                Map.of(),
-                Map.of(),
-                null,
-                pipelineName,
-                null,
-                true,
-                4,
-                null,
-                null);
-
-        var outputObject = runSystemTest(job, "output/text/runJsonPathTest.json");
+        var outputObject = runSystemTest(pipelineName, "output/text/runJsonPathTest.json", media);
 
         var actualMediaSelectorsUri = URI.create(
                 outputObject.getMedia().first().getMediaSelectorsOutputUri());

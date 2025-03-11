@@ -70,7 +70,7 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
 
         String pythonPathKey = "PYTHONPATH";
         String pythonPathVal = env.get(pythonPathKey);
-        String venvSitePackages = mpfHomeVal + "/plugins/" + serviceDescriptor.getService().name() + "/venv/lib/python3.8/site-packages";
+        String venvSitePackages = mpfHomeVal + "/plugins/" + serviceDescriptor.getService().name() + "/venv/lib/python3.12/site-packages";
         if (pythonPathVal != null) {
             env.put(pythonPathKey, pythonPathVal + System.getProperty("path.separator") + venvSitePackages);
         } else {

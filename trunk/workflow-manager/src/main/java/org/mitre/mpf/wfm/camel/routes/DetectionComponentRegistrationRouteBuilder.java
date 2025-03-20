@@ -26,45 +26,50 @@
 
 package org.mitre.mpf.wfm.camel.routes;
 
+import java.io.IOException;
+
 import javax.inject.Inject;
 
-import org.mitre.mpf.wfm.service.component.subject.SubjectComponentDescriptor;
-import org.mitre.mpf.wfm.service.component.subject.SubjectComponentService;
+import org.mitre.mpf.wfm.service.component.AddComponentService;
+import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
+import org.mitre.mpf.wfm.service.component.ComponentStateService;
+import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
 @Component
-public class SubjectComponentRegistrationRouteBuilder extends
-        BaseComponentRegistrationRouteBuilder<SubjectComponentDescriptor> {
+public class DetectionComponentRegistrationRouteBuilder extends
+        BaseComponentRegistrationRouteBuilder<JsonComponentDescriptor> {
 
     private static final Logger LOG = LoggerFactory.getLogger(
-            SubjectComponentRegistrationRouteBuilder.class);
+            DetectionComponentRegistrationRouteBuilder.class);
 
-    private static final String ENTRY_POINT = "activemq:MPF.SUBJECT_COMPONENT_REGISTRATION";
 
-    private final SubjectComponentService _componentService;
+    private static final String ENTRY_POINT = "activemq:MPF.DETECTION_COMPONENT_REGISTRATION";
+
+    private final AddComponentService _addComponentService;
 
     @Inject
-    SubjectComponentRegistrationRouteBuilder(
-            SubjectComponentService componentService,
-            ObjectMapper objectMapper) {
+    DetectionComponentRegistrationRouteBuilder(
+            ObjectMapper objectMapper,
+            ComponentStateService componentState,
+            AddComponentService addComponentService) {
         super(
             ENTRY_POINT,
-            "Subject Tracking Component Registration",
-            objectMapper.readerFor(SubjectComponentDescriptor.class));
-        _componentService = componentService;
+            "Detection Tracking Component Registration",
+            objectMapper.readerFor(JsonComponentDescriptor.class));
+        _addComponentService = addComponentService;
     }
+
 
     @Override
-    public String registerComponent(SubjectComponentDescriptor descriptor) {
+    public String registerComponent(JsonComponentDescriptor descriptor) throws ComponentRegistrationException {
         LOG.info(
-                "Received subject component registration request for \"{}\".",
+                "Received detection component registration request for \"{}\".",
                 descriptor.componentName());
-        return _componentService.registerComponent(descriptor).getDescription();
+        return _addComponentService.registerUnmanagedComponent(descriptor).getDescription();
     }
-
 }

@@ -126,7 +126,7 @@ public enum BatchJobStatusType {
 
         @Override
         public BatchJobStatusType onComplete() {
-            return COMPLETE_WITH_ERRORS;
+            return ERROR;
         }
 
         @Override
@@ -171,7 +171,7 @@ public enum BatchJobStatusType {
 
         @Override
         public BatchJobStatusType onError() {
-            return COMPLETE_WITH_ERRORS;
+            return ERROR;
         }
 
         @Override
@@ -196,7 +196,7 @@ public enum BatchJobStatusType {
 
         @Override
         public BatchJobStatusType onError() {
-            return this;
+            return ERROR;
         }
 
         @Override
@@ -221,7 +221,7 @@ public enum BatchJobStatusType {
 
         @Override
         public BatchJobStatusType onError() {
-            return COMPLETE_WITH_ERRORS;
+            return ERROR;
         }
 
         @Override

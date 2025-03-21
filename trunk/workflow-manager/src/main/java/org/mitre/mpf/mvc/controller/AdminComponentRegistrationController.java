@@ -58,7 +58,8 @@ import java.util.Set;
 @Profile("!docker")
 public class AdminComponentRegistrationController extends BasicAdminComponentRegistrationController {
 
-    private static final Logger log = LoggerFactory.getLogger(AdminComponentRegistrationController.class);
+    private static final Logger log = LoggerFactory.getLogger(
+            AdminComponentRegistrationController.class);
 
     private final PropertiesUtil _propertiesUtil;
 

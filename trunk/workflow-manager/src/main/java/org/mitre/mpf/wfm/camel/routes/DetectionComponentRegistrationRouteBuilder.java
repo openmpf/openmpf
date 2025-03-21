@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.wfm.camel.routes;
 
-import java.io.IOException;
-
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.service.component.AddComponentService;

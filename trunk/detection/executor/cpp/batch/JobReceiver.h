@@ -27,7 +27,6 @@
 #pragma once
 
 #include <exception>
-#include <string>
 #include <string_view>
 
 #include <MPFDetectionObjects.h>

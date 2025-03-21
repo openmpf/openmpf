@@ -31,7 +31,7 @@ public enum RegistrationResult {
     SAME("The component was already registered."),
     UPDATED("Updated existing component.");
 
-    public final String _description;
+    private final String _description;
 
     public String getDescription() {
         return _description;

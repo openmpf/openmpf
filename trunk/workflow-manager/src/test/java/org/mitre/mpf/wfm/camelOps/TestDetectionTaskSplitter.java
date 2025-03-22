@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Message;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1066,17 +1067,27 @@ public class TestDetectionTaskSplitter {
         Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
     }
 
-    @Test
-    public void testScaleSegmentsByFrameInterval() {
+    private void getMessagesAndCheckSegments(
+            String samplingInterval,
+            String frameRateCap,
+            String targetSegmentLength,
+            String minSegmentLength,
+            String scaleSegmentsBySamplingInterval,
+            String frameCount,
+            String fps,
+            List<Pair<Integer, Integer>> segmentRanges) {
+
         HashMap<String, String> jobProperties = new HashMap<>();
-        jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
-        jobProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "-1");
-        jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "1");
-        jobProperties.put(MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS, "1");
+        jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, samplingInterval);
+        jobProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCap);
+        jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, targetSegmentLength);
+        jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, minSegmentLength);
+        jobProperties.put(MpfConstants.SCALE_SEGMENTS_BY_SAMPLING_INTERVAL, scaleSegmentsBySamplingInterval);
 
         Map<String, String> mediaMetadata = new HashMap<>();
-        mediaMetadata.put("FRAME_COUNT", "120");
-        mediaMetadata.put("FPS", "30");
+        mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
+        mediaMetadata.put("FRAME_COUNT", frameCount);
+        mediaMetadata.put("FPS", fps);
 
         MediaImpl testMedia = createSimpleMediaForTest(
                 "/samples/new_face_video.avi",
@@ -1093,23 +1104,113 @@ public class TestDetectionTaskSplitter {
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
-
         // DEBUG
         int count = 0;
         for (Message message : responseList) {
             DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
             int startFrame = request.getVideoRequest().getStartFrame();
             int stopFrame = request.getVideoRequest().getStopFrame();
-            System.out.println("\n\n>> message[" + count + "]: " + startFrame + "-" + stopFrame + "\n\n");
+            System.out.println(">> message[" + count + "]: " + startFrame + "-" + stopFrame);
             count++;
         }
 
-        Assert.assertEquals(1, responseList.size());
-        Message message = responseList.get(0);
-        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+        Assert.assertEquals(segmentRanges.size(), responseList.size());
 
-        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        Assert.assertEquals(0, request.getVideoRequest().getStartFrame());
-        Assert.assertEquals(119, request.getVideoRequest().getStopFrame());
+        for (int i = 0; i < segmentRanges.size(); i++) {
+            Message message = responseList.get(i);
+            Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+
+            DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
+            Assert.assertEquals((int)segmentRanges.get(i).getLeft(), request.getVideoRequest().getStartFrame());
+            Assert.assertEquals((int)segmentRanges.get(i).getRight(), request.getVideoRequest().getStopFrame());    
+        }
+   }
+
+    @Test
+    public void testScaleSegmentsBySamplingInterval() {
+        getMessagesAndCheckSegments(
+                "1", // no effect
+                "-1",
+                "40",
+                "1",
+                "false",
+                "120",
+                "30",
+                List.of(Pair.of(0, 39),
+                        Pair.of(40, 79),
+                        Pair.of(80, 119)));
+
+        getMessagesAndCheckSegments(
+                "-1",
+                "3", // no effect
+                "40",
+                "1",
+                "false",
+                "120",
+                "30",
+                List.of(Pair.of(0, 39),
+                        Pair.of(40, 79),
+                        Pair.of(80, 119)));
+
+        getMessagesAndCheckSegments(
+                "1",
+                "-1",
+                "40",
+                "1",
+                "true", // no effect since sampling interval is 1
+                "120",
+                "30",
+                List.of(Pair.of(0, 39),
+                        Pair.of(40, 79),
+                        Pair.of(80, 119)));
+
+        getMessagesAndCheckSegments(
+                "2",
+                "-1",
+                "40",
+                "1",
+                "true", // calculated segment size of 2 * 40 = 80
+                "120",
+                "30",
+                List.of(Pair.of(0, 79),
+                        Pair.of(80, 119)));
+
+        getMessagesAndCheckSegments(
+                "-1",
+                "3", // results in calculated sampling interval of 10
+                "40",
+                "1",
+                "true", // calculated segment size of 10 * 40 = 400
+                "1200",
+                "30",
+                List.of(Pair.of(0, 399),
+                        Pair.of(400, 799),
+                        Pair.of(800, 1199)));
+
+        getMessagesAndCheckSegments(
+                "-1",
+                "1", // results in calculated sampling interval of 30
+                "180",
+                "1",
+                "true", // calculated segment size of 30 * 180 = 5,400
+                "20000",
+                "30",
+                List.of(Pair.of(0, 5_399),
+                        Pair.of(5_400, 10_799),
+                        Pair.of(10_800,16_199),
+                        Pair.of(16_200,19_999)));
+
+        getMessagesAndCheckSegments(
+                "-1",
+                "1", // results in calculated sampling interval of 60
+                "180",
+                "1",
+                "true", // calculated segment size of 60 * 180 = 10,800
+                "40000",
+                "60",
+                List.of(Pair.of(0, 10_799),
+                        Pair.of(10_800, 21_599),
+                        Pair.of(21_600,32_399),
+                        Pair.of(32_400,39_999)));
     }
 }

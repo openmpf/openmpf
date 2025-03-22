@@ -291,7 +291,20 @@ public class DetectionTaskSplitter {
                     systemPropertiesSnapshot.getVfrMinSegmentLength());
         }
 
-        return new SegmentingPlan(targetSegmentLength, minSegmentLength, samplingInterval, minGapBetweenSegments);
+        boolean scaleSegmentsBySamplingInterval = tryParseBooleanProperty(
+                MpfConstants.SCALE_SEGMENTS_BY_SAMPLING_INTERVAL, properties,
+                systemPropertiesSnapshot.isScaleSegmentsBySamplingInterval());
+
+        if (scaleSegmentsBySamplingInterval) {
+            targetSegmentLength = targetSegmentLength * samplingInterval;
+            minSegmentLength = minSegmentLength * samplingInterval;
+        }
+
+        return new SegmentingPlan(
+            targetSegmentLength,
+            minSegmentLength,
+            samplingInterval,
+            minGapBetweenSegments);
     }
 
 
@@ -309,6 +322,14 @@ public class DetectionTaskSplitter {
                     exception);
             return defaultValue;
         }
+    }
+
+    private static boolean tryParseBooleanProperty(String propertyName, Map<String, String> properties,
+                                                   boolean defaultValue) { 
+        if (properties.containsKey(propertyName)) {
+            return Boolean.parseBoolean(properties.get(propertyName));
+        }
+        return defaultValue;
     }
 
     public int getLastProcessedTaskIndex(BatchJob job, Media media) {

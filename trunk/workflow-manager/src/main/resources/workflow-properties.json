@@ -168,6 +168,13 @@
         "mediaTypes": ["VIDEO"]
     },
     {
+        "name": "SCALE_SEGMENTS_BY_FRAME_INTERVAL",
+        "description": "In the context of videos, when set to true, the length of segments will be scaled by the internal frame interval (based on FRAME_INTERVAL or FRAME_RATE_CAP). When false, the internal frame interval will have no bearing on segment length.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.scale.segments.by.sampling.interval.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
         "name": "MERGE_TRACKS",
         "description": "In the context of videos, when set to true, attempt to merge tracks spanning segment boundaries.",
         "type": "BOOLEAN",

@@ -1072,7 +1072,7 @@ public class TestDetectionTaskSplitter {
             String frameRateCap,
             String targetSegmentLength,
             String minSegmentLength,
-            String scaleSegmentsBySamplingInterval,
+            String scaleSegmentLengthBySamplingInterval,
             String frameCount,
             String fps,
             List<Pair<Integer, Integer>> segmentRanges) {
@@ -1082,7 +1082,7 @@ public class TestDetectionTaskSplitter {
         jobProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCap);
         jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, targetSegmentLength);
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, minSegmentLength);
-        jobProperties.put(MpfConstants.SCALE_SEGMENTS_BY_SAMPLING_INTERVAL, scaleSegmentsBySamplingInterval);
+        jobProperties.put(MpfConstants.SCALE_SEGMENT_LENGTH_BY_SAMPLING_INTERVAL, scaleSegmentLengthBySamplingInterval);
 
         Map<String, String> mediaMetadata = new HashMap<>();
         mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
@@ -1127,7 +1127,7 @@ public class TestDetectionTaskSplitter {
    }
 
     @Test
-    public void testScaleSegmentsBySamplingInterval() {
+    public void testScaleSegmentLengthBySamplingInterval() {
         getMessagesAndCheckSegments(
                 "1", // no effect
                 "-1",

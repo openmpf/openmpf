@@ -291,11 +291,11 @@ public class DetectionTaskSplitter {
                     systemPropertiesSnapshot.getVfrMinSegmentLength());
         }
 
-        boolean scaleSegmentsBySamplingInterval = tryParseBooleanProperty(
-                MpfConstants.SCALE_SEGMENTS_BY_SAMPLING_INTERVAL, properties,
-                systemPropertiesSnapshot.isScaleSegmentsBySamplingInterval());
+        boolean scaleSegmentLengthBySamplingInterval = tryParseBooleanProperty(
+                MpfConstants.SCALE_SEGMENT_LENGTH_BY_SAMPLING_INTERVAL, properties,
+                systemPropertiesSnapshot.isScaleSegmentLengthBySamplingInterval());
 
-        if (scaleSegmentsBySamplingInterval) {
+        if (scaleSegmentLengthBySamplingInterval) {
             targetSegmentLength = targetSegmentLength * samplingInterval;
             minSegmentLength = minSegmentLength * samplingInterval;
         }

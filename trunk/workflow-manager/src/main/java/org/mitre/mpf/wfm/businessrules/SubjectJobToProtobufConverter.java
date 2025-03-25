@@ -76,10 +76,15 @@ public class SubjectJobToProtobufConverter {
 
     private record ProtobufDetectionResults(
             Collection<SubjectProtobuf.VideoDetectionJobResults> video,
-            Collection<SubjectProtobuf.ImageDetectionJobResults> image) {
+            Collection<SubjectProtobuf.ImageDetectionJobResults> image,
+            Collection<SubjectProtobuf.AudioDetectionJobResults> audio,
+            Collection<SubjectProtobuf.GenericDetectionJobResults> generic) {
 
         private void addTo(SubjectProtobuf.SubjectTrackingJob.Builder builder) {
-            builder.addAllImageJobResults(image).addAllVideoJobResults(video);
+            builder.addAllImageJobResults(image)
+                .addAllVideoJobResults(video)
+                .addAllAudioJobResults(audio)
+                .addAllGenericJobResults(generic);
         }
     }
 
@@ -87,35 +92,40 @@ public class SubjectJobToProtobufConverter {
     private static ProtobufDetectionResults toProtobuf(JsonOutputObject outputObject) {
         var videoJobResults = new ArrayList<SubjectProtobuf.VideoDetectionJobResults>();
         var imageJobResults = new ArrayList<SubjectProtobuf.ImageDetectionJobResults>();
+        var audioJobResults = new ArrayList<SubjectProtobuf.AudioDetectionJobResults>();
+        var genericJobResult = new ArrayList<SubjectProtobuf.GenericDetectionJobResults>();
         for (var media : outputObject.getMedia()) {
             var mediaType = MediaType.valueOf(media.getType());
             for (var entry : media.getTrackTypes().entrySet()) {
                 var trackType = entry.getKey();
                 var actions = entry.getValue();
                 for (var action : actions) {
-                    if (mediaType == MediaType.IMAGE) {
-                        imageJobResults.add(createImageResults(
-                                outputObject, media, trackType, action));
-                    }
-                    else if (mediaType == MediaType.VIDEO) {
-                        videoJobResults.add(createVideoResults(
-                                outputObject, media, trackType, action));
+                    var detectionJob = createDetectionJob(
+                            outputObject, media, trackType, action.getAlgorithm());
+
+                    switch (mediaType) {
+                        case IMAGE -> imageJobResults.add(
+                                createImageResults(action, detectionJob));
+                        case VIDEO -> videoJobResults.add(
+                                createVideoResults(action, detectionJob));
+                        case AUDIO -> audioJobResults.add(
+                                createAudioResults(action, detectionJob));
+                        case UNKNOWN -> genericJobResult.add(
+                                createGenericResults(action, detectionJob));
                     }
                 }
             }
         }
-        return new ProtobufDetectionResults(videoJobResults, imageJobResults);
+        return new ProtobufDetectionResults(
+            videoJobResults, imageJobResults, audioJobResults, genericJobResult);
     }
 
 
     private static SubjectProtobuf.ImageDetectionJobResults createImageResults(
-            JsonOutputObject outputObject,
-            JsonMediaOutputObject media,
-            String trackType,
-            JsonActionOutputObject action) {
+            JsonActionOutputObject action,
+            SubjectProtobuf.DetectionJob detectionJob) {
         var imageJobResults = SubjectProtobuf.ImageDetectionJobResults.newBuilder();
-        imageJobResults.setDetectionJob(
-                createDetectionJob(outputObject, media, trackType, action.getAlgorithm()));
+        imageJobResults.setDetectionJob(detectionJob);
         for (var track : action.getTracks()) {
             var detection = track.getDetections().first();
             imageJobResults.putResults(track.getId(), convertToImageLocation(detection));
@@ -123,18 +133,36 @@ public class SubjectJobToProtobufConverter {
         return imageJobResults.build();
     }
 
+
     private static SubjectProtobuf.VideoDetectionJobResults createVideoResults(
-            JsonOutputObject outputObject,
-            JsonMediaOutputObject media,
-            String trackType,
-            JsonActionOutputObject action) {
+            JsonActionOutputObject action,
+            SubjectProtobuf.DetectionJob detectionJob) {
         var videoJobResults = SubjectProtobuf.VideoDetectionJobResults.newBuilder();
-        videoJobResults.setDetectionJob(createDetectionJob(
-                outputObject, media, trackType, action.getAlgorithm()));
+        videoJobResults.setDetectionJob(detectionJob);
         for (var track : action.getTracks()) {
             videoJobResults.putResults(track.getId(), convertToVideoTrack(track));
         }
         return videoJobResults.build();
+    }
+
+    private static SubjectProtobuf.AudioDetectionJobResults createAudioResults(
+            JsonActionOutputObject action, SubjectProtobuf.DetectionJob detectionJob) {
+        var audioJobResults = SubjectProtobuf.AudioDetectionJobResults.newBuilder();
+        audioJobResults.setDetectionJob(detectionJob);
+        for (var track : action.getTracks()) {
+            audioJobResults.putResults(track.getId(), convertToAudioTrack(track));
+        }
+        return audioJobResults.build();
+    }
+
+    private static SubjectProtobuf.GenericDetectionJobResults createGenericResults(
+            JsonActionOutputObject action, SubjectProtobuf.DetectionJob detectionJob) {
+        var genericJobResults = SubjectProtobuf.GenericDetectionJobResults.newBuilder();
+        genericJobResults.setDetectionJob(detectionJob);
+        for (var track : action.getTracks()) {
+            genericJobResults.putResults(track.getId(), convertToGenericTrack(track));
+        }
+        return genericJobResults.build();
     }
 
 
@@ -178,5 +206,22 @@ public class SubjectJobToProtobufConverter {
                     detection.getOffsetFrame(), convertToImageLocation(detection));
         }
         return videoTrack.build();
+    }
+
+    private static DetectionProtobuf.AudioTrack convertToAudioTrack(JsonTrackOutputObject track) {
+        return DetectionProtobuf.AudioTrack.newBuilder()
+                .setStartTime((int) track.getStartOffsetTime())
+                .setStopTime((int) track.getStopOffsetTime())
+                .setConfidence(track.getConfidence())
+                .putAllDetectionProperties(track.getTrackProperties())
+                .build();
+    }
+
+    private static DetectionProtobuf.GenericTrack convertToGenericTrack(
+            JsonTrackOutputObject track) {
+        return DetectionProtobuf.GenericTrack.newBuilder()
+                .setConfidence(track.getConfidence())
+                .putAllDetectionProperties(track.getTrackProperties())
+                .build();
     }
 }

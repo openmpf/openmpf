@@ -35,6 +35,8 @@ message SubjectTrackingJob {
     map<string, string> job_properties = 3;
     repeated VideoDetectionJobResults video_job_results = 4;
     repeated ImageDetectionJobResults image_job_results = 5;
+    repeated AudioDetectionJobResults audio_job_results = 6;
+    repeated GenericDetectionJobResults generic_job_results = 7;
 }
 
 message DetectionJob {
@@ -55,6 +57,16 @@ message VideoDetectionJobResults {
 message ImageDetectionJobResults {
     DetectionJob detection_job = 1;
     map<string, ImageLocation> results = 2;
+}
+
+message AudioDetectionJobResults {
+    DetectionJob detection_job = 1;
+    map<string, AudioTrack> results = 2;
+}
+
+message GenericDetectionJobResults {
+    DetectionJob detection_job = 1;
+    map<string, GenericTrack> results = 2;
 }
 
 

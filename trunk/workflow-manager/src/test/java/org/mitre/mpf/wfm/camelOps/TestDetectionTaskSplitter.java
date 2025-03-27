@@ -444,7 +444,7 @@ public class TestDetectionTaskSplitter {
             if (testMedia.getMetadata("FRAME_COUNT") != null) {
                 int frameCount = Integer.parseInt(testMedia.getMetadata("FRAME_COUNT"));
                 testMedia.setLength(frameCount);
-            }            
+            }
         }
 
         return testMedia;

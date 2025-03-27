@@ -87,16 +87,16 @@ public class SystemPropertiesSnapshot {
         return Integer.parseInt(_properties.get("detection.vfr.segment.target.length"));
     }
 
-    public boolean isScaleSegmentLengthBySamplingInterval() {
-        return Boolean.parseBoolean(_properties.get("detection.scale.segment.length.by.sampling.interval.enabled"));
-    }
-
     public int getMinSegmentLength() {
         return Integer.parseInt(_properties.get("detection.segment.minimum.length"));
     }
 
     public int getVfrMinSegmentLength() {
         return Integer.parseInt(_properties.get("detection.vfr.segment.minimum.length"));
+    }
+
+    public String getSegmentLengthSpecification() {
+        return _properties.get("detection.segment.length.specification");
     }
 
     public boolean isTrackMerging() {

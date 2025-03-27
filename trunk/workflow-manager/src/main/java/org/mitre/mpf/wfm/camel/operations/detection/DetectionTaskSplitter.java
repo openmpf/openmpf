@@ -61,6 +61,7 @@ import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
 import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -171,7 +172,7 @@ public class DetectionTaskSplitter {
                         combinedProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
                         segmentingPlan = createSegmentingPlan(
-                                job.getSystemPropertiesSnapshot(), combinedProperties, media);
+                                job.getSystemPropertiesSnapshot(), combinedProperties, media, fps);
                     }
 
                     DetectionContext detectionContext = new DetectionContext(
@@ -246,15 +247,10 @@ public class DetectionTaskSplitter {
         };
     }
 
-    /**
-     * Create the segmenting plan using the properties defined for the sub-job.
-     * @param systemPropertiesSnapshot contains detection system properties whose values were in effect when the job was created (will be used as system property default values)
-     * @param properties properties defined for the sub-job
-     * @return segmenting plan for this sub-job
-     */
+
     private static SegmentingPlan createSegmentingPlan(
             SystemPropertiesSnapshot systemPropertiesSnapshot, Map<String, String> properties,
-            Media media) {
+            Media media, double mediaFPS) {
         int samplingInterval = tryParseIntProperty(
                 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, properties,
                 systemPropertiesSnapshot.getSamplingInterval());
@@ -291,13 +287,14 @@ public class DetectionTaskSplitter {
                     systemPropertiesSnapshot.getVfrMinSegmentLength());
         }
 
-        boolean scaleSegmentLengthBySamplingInterval = tryParseBooleanProperty(
-                MpfConstants.SCALE_SEGMENT_LENGTH_BY_SAMPLING_INTERVAL, properties,
-                systemPropertiesSnapshot.isScaleSegmentLengthBySamplingInterval());
-
-        if (scaleSegmentLengthBySamplingInterval) {
-            targetSegmentLength = targetSegmentLength * samplingInterval;
-            minSegmentLength = minSegmentLength * samplingInterval;
+        String segmentLengthSpecification =
+                TextUtils.trimAndUpper(properties.get(MpfConstants.SEGMENT_LENGTH_SPECIFICATION));
+        if (segmentLengthSpecification.isBlank()) {
+            segmentLengthSpecification = systemPropertiesSnapshot.getSegmentLengthSpecification();
+        }
+        if (segmentLengthSpecification.equals("SECONDS")) {
+            targetSegmentLength = (int) Math.floor(targetSegmentLength * mediaFPS);
+            minSegmentLength = (int) Math.floor(minSegmentLength * mediaFPS);
         }
 
         return new SegmentingPlan(
@@ -324,13 +321,6 @@ public class DetectionTaskSplitter {
         }
     }
 
-    private static boolean tryParseBooleanProperty(String propertyName, Map<String, String> properties,
-                                                   boolean defaultValue) { 
-        if (properties.containsKey(propertyName)) {
-            return Boolean.parseBoolean(properties.get(propertyName));
-        }
-        return defaultValue;
-    }
 
     public int getLastProcessedTaskIndex(BatchJob job, Media media) {
         for (int taskIdx = job.getCurrentTaskIndex() - 1;

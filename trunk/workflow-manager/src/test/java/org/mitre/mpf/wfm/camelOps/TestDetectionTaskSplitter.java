@@ -1072,7 +1072,7 @@ public class TestDetectionTaskSplitter {
             String frameRateCap,
             String targetSegmentLength,
             String minSegmentLength,
-            String scaleSegmentLengthBySamplingInterval,
+            String segmentLengthSpecification,
             String frameCount,
             String fps,
             List<Pair<Integer, Integer>> segmentRanges) {
@@ -1082,7 +1082,7 @@ public class TestDetectionTaskSplitter {
         jobProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCap);
         jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, targetSegmentLength);
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, minSegmentLength);
-        jobProperties.put(MpfConstants.SCALE_SEGMENT_LENGTH_BY_SAMPLING_INTERVAL, scaleSegmentLengthBySamplingInterval);
+        jobProperties.put(MpfConstants.SEGMENT_LENGTH_SPECIFICATION, segmentLengthSpecification);
 
         Map<String, String> mediaMetadata = new HashMap<>();
         mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
@@ -1127,72 +1127,37 @@ public class TestDetectionTaskSplitter {
    }
 
     @Test
-    public void testScaleSegmentLengthBySamplingInterval() {
-        getMessagesAndCheckSegments(
+    public void testSegmentLengthSpecification() {
+        getMessagesAndCheckSegments( // no effect
                 "1", // no effect
                 "-1",
                 "40",
                 "1",
-                "false",
+                "FRAME",
                 "120",
-                "30",
+                "30", // no effect
                 List.of(Pair.of(0, 39),
                         Pair.of(40, 79),
                         Pair.of(80, 119)));
 
         getMessagesAndCheckSegments(
-                "-1",
+                "-1", // no effect
                 "3", // no effect
                 "40",
                 "1",
-                "false",
+                "FRAME",
                 "120",
-                "30",
+                "60", // no effect
                 List.of(Pair.of(0, 39),
                         Pair.of(40, 79),
                         Pair.of(80, 119)));
 
         getMessagesAndCheckSegments(
-                "1",
-                "-1",
-                "40",
-                "1",
-                "true", // no effect since sampling interval is 1
-                "120",
-                "30",
-                List.of(Pair.of(0, 39),
-                        Pair.of(40, 79),
-                        Pair.of(80, 119)));
-
-        getMessagesAndCheckSegments(
-                "2",
-                "-1",
-                "40",
-                "1",
-                "true", // calculated segment size of 2 * 40 = 80
-                "120",
-                "30",
-                List.of(Pair.of(0, 79),
-                        Pair.of(80, 119)));
-
-        getMessagesAndCheckSegments(
-                "-1",
-                "3", // results in calculated sampling interval of 10
-                "40",
-                "1",
-                "true", // calculated segment size of 10 * 40 = 400
-                "1200",
-                "30",
-                List.of(Pair.of(0, 399),
-                        Pair.of(400, 799),
-                        Pair.of(800, 1199)));
-
-        getMessagesAndCheckSegments(
-                "-1",
-                "1", // results in calculated sampling interval of 30
+                "5", // no effect
+                "1", // no effect
                 "180",
                 "1",
-                "true", // calculated segment size of 30 * 180 = 5,400
+                "SECONDS", // calculated segment size of 30 * 180 = 5,400
                 "20000",
                 "30",
                 List.of(Pair.of(0, 5_399),
@@ -1201,16 +1166,28 @@ public class TestDetectionTaskSplitter {
                         Pair.of(16_200,19_999)));
 
         getMessagesAndCheckSegments(
-                "-1",
-                "1", // results in calculated sampling interval of 60
+                "-1", // no effect
+                "10", // no effect
                 "180",
                 "1",
-                "true", // calculated segment size of 60 * 180 = 10,800
+                "SECONDS", // calculated segment size of 60 * 180 = 10,800
                 "40000",
                 "60",
                 List.of(Pair.of(0, 10_799),
                         Pair.of(10_800, 21_599),
                         Pair.of(21_600,32_399),
                         Pair.of(32_400,39_999)));
+
+        getMessagesAndCheckSegments(
+                "-1", // no effect
+                "10", // no effect
+                "180",
+                "60",
+                "SECONDS", // calculated segment size of 60 * 180 = 10,800
+                "35000",
+                "60",
+                List.of(Pair.of(0, 10_799),
+                        Pair.of(10_800, 21_599),
+                        Pair.of(21_600, 34_999))); // longer segment due to min segment length
     }
 }

@@ -196,7 +196,7 @@ public enum BatchJobStatusType {
 
         @Override
         public BatchJobStatusType onError() {
-            return ERROR;
+            return this;
         }
 
         @Override

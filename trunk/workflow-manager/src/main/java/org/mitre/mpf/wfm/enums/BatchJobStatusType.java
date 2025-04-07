@@ -186,31 +186,6 @@ public enum BatchJobStatusType {
     },
 
     /**
-     * Indicates the job has completed, but with processing errors.
-     */
-    COMPLETE_WITH_ERRORS(true) {
-        @Override
-        public BatchJobStatusType onWarning() {
-            return this;
-        }
-
-        @Override
-        public BatchJobStatusType onError() {
-            return this;
-        }
-
-        @Override
-        public BatchJobStatusType onComplete() {
-            return this;
-        }
-
-        @Override
-        public BatchJobStatusType onCancel() {
-            return this;
-        }
-    },
-
-    /**
      * Indicates the job has completed, but with warnings.
      */
     COMPLETE_WITH_WARNINGS(true) {

@@ -342,9 +342,6 @@ AppServices.service('JobStatusNotifier', [
         if (jobStatus == 'COMPLETE') {
             NotificationSvc.success(`Job ${id} is now complete!`);
         }
-        else if (jobStatus == 'COMPLETE_WITH_ERRORS') {
-            NotificationSvc.error(`Job ${id} is now complete (with errors).`);
-        }
         else if (jobStatus == 'COMPLETE_WITH_WARNINGS') {
             NotificationSvc.warning(`Job ${id} is now complete (with warnings).`);
         }
@@ -364,7 +361,6 @@ AppServices.service('JobStatusNotifier', [
     const isTerminalState = jobStatus => {
         switch (jobStatus) {
             case 'COMPLETE':
-            case 'COMPLETE_WITH_ERRORS':
             case 'COMPLETE_WITH_WARNINGS':
             case 'ERROR':
             case 'UNKNOWN':

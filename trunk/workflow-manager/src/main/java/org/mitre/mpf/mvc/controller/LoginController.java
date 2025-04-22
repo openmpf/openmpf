@@ -33,6 +33,7 @@ import javax.servlet.http.HttpSession;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
+import org.mitre.mpf.wfm.util.JsonLogger;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,11 +62,15 @@ import org.springframework.web.servlet.ModelAndView;
 public class LoginController {
 
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
+    private final JsonLogger jsonLogger;
 
     @Autowired
     private PropertiesUtil propertiesUtil;
-
-
+    
+    public LoginController(JsonLogger jsonLogger) {
+        this.jsonLogger = jsonLogger;
+    }
+    
     public static AuthenticationModel getAuthenticationModel(HttpServletRequest request) {
         // get security context from thread local
         SecurityContext context = SecurityContextHolder.getContext();
@@ -129,8 +134,10 @@ public class LoginController {
             @SessionAttribute(name = WebAttributes.AUTHENTICATION_EXCEPTION, required = false)
             Exception authException,
             Authentication authentication) {
-
+        
         if (authentication != null && authentication.isAuthenticated()) {
+            log.info("user is authenticated and is logged in. So redirecting.");
+            jsonLogger.log(jsonLogger.createEvent());
             return "redirect:/";
         }
 
@@ -138,6 +145,8 @@ public class LoginController {
         model.addObject("version", propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
+            jsonLogger.log(jsonLogger.createEvent());
+            log.warn("Failed login attempt: Bad credentials.");
             model.addObject("error", "Invalid username and password!");
         }
 

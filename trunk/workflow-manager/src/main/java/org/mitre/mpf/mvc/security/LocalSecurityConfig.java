@@ -28,6 +28,7 @@
 package org.mitre.mpf.mvc.security;
 
 import org.mitre.mpf.wfm.enums.UserRole;
+import org.mitre.mpf.wfm.util.JsonLogger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -35,11 +36,30 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 @Profile("(!oidc & !jenkins) | test-with-security")
 public class LocalSecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(LocalSecurityConfig.class);
+    private final JsonLogger jsonLogger;
+
+    public LocalSecurityConfig(JsonLogger jsonLogger) {
+        this.jsonLogger = jsonLogger;
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return (request, response, authentication) -> {
+            log.info("User '{}' logged in.", authentication.getName());
+            jsonLogger.log(jsonLogger.createEvent());
+            response.sendRedirect("/");
+        };
+    }
 
     @Bean
     @Order(1)
@@ -59,7 +79,8 @@ public class LocalSecurityConfig {
     public SecurityFilterChain formSecurityFilterChain(
             HttpSecurity http,
             CustomAccessDeniedHandler customAccessDeniedHandler,
-            AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint) throws Exception {
+            AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint,
+            AuthenticationSuccessHandler authenticationSuccessHandler) throws Exception {
 
         return http.authorizeHttpRequests(x ->
                 x.antMatchers("/login/**", "/resources/**").permitAll()
@@ -67,7 +88,7 @@ public class LocalSecurityConfig {
                 .anyRequest().authenticated())
             .formLogin(x ->
                 x.loginPage("/login")
-                .defaultSuccessUrl("/", true)
+                .successHandler(authenticationSuccessHandler)
                 .failureUrl("/login?reason=error"))
             .exceptionHandling(x ->
                 x.accessDeniedHandler(customAccessDeniedHandler)

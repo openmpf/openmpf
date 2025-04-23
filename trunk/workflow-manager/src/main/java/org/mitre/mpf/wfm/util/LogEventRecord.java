@@ -1,7 +1,6 @@
 package org.mitre.mpf.wfm.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.time.Instant;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record LogEventRecord(
@@ -14,10 +13,10 @@ public record LogEventRecord(
     String msg
 ) {
     public enum TagType {
-        SECURITY("&B1E7-FFFF&"),
-        OPERATIONAL("&A29B-FFFF&"),
-        SECURITY_SENSITIVE("&C254-FFFF&"),
-        OPERATIONAL_SENSITIVE("&E58A-FFFF&");
+        SECURITY("sec"),
+        OPERATIONAL("oper"),
+        SECURITY_SENSITIVE("sec_sec"),
+        OPERATIONAL_SENSITIVE("op_sen");
         
         private final String value;
         TagType( String value) {
@@ -50,24 +49,4 @@ public record LogEventRecord(
         }
 
     }
-
-    public LogEventRecord {
-        if (time == null) {
-            time = Instant.now().toString();
-        }
-    }
-    
-    public static LogEventRecord create() {
-        return new LogEventRecord(
-            Instant.now().toString(),
-            TagType.SECURITY,
-            "ApplicationName",
-            "Logged In User", 
-            OpType.LOGIN,
-            ResType.ACCESS, 
-            "The full error log message"
-        );
-    }
-    
-    
 }

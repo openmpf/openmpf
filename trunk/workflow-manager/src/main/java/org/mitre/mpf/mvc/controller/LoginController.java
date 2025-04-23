@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.util.JsonLogger;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.mitre.mpf.wfm.util.LogEventRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.access.AccessDeniedException;
@@ -136,8 +137,7 @@ public class LoginController {
             Authentication authentication) {
         
         if (authentication != null && authentication.isAuthenticated()) {
-            log.info("user is authenticated and is logged in. So redirecting.");
-            jsonLogger.log(jsonLogger.createEvent());
+            jsonLogger.log(LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.ACCESS, "User is has already authenticated.");
             return "redirect:/";
         }
 
@@ -145,8 +145,8 @@ public class LoginController {
         model.addObject("version", propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
-            jsonLogger.log(jsonLogger.createEvent());
             log.warn("Failed login attempt: Bad credentials.");
+            jsonLogger.log(LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
             model.addObject("error", "Invalid username and password!");
         }
 
@@ -172,6 +172,7 @@ public class LoginController {
                 "A user successfully authenticated with an OIDC provider, but was not" +
                             " authorized to access Workflow Manager.",
                     accessDeniedException);
+            jsonLogger.log(LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(

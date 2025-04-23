@@ -137,7 +137,7 @@ public class LoginController {
             Authentication authentication) {
         
         if (authentication != null && authentication.isAuthenticated()) {
-            jsonLogger.log(LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.ACCESS, "User is has already authenticated.");
+            jsonLogger.log(this.getClass().getName(), LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.ACCESS, "User is already authenticated.");
             return "redirect:/";
         }
 
@@ -145,8 +145,7 @@ public class LoginController {
         model.addObject("version", propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
-            log.warn("Failed login attempt: Bad credentials.");
-            jsonLogger.log(LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
+            jsonLogger.log(this.getClass().getName(), LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
             model.addObject("error", "Invalid username and password!");
         }
 
@@ -172,7 +171,7 @@ public class LoginController {
                 "A user successfully authenticated with an OIDC provider, but was not" +
                             " authorized to access Workflow Manager.",
                     accessDeniedException);
-            jsonLogger.log(LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
+            jsonLogger.log(this.getClass().getName(), LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(

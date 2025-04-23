@@ -34,8 +34,8 @@ public class JsonLogger {
         return auth != null ? auth.getName() : "system";
     }
 
-    public JsonLogger log (LogEventRecord.TagType tag, LogEventRecord.OpType op, LogEventRecord.ResType res, String msg) {
-        writeToLogger(new LogEventRecord(Instant.now().toString(), tag, "workflow-manager", getCurrentLoggedInUser(), op, res, msg));
+    public JsonLogger log (String app, LogEventRecord.TagType tag, LogEventRecord.OpType op, LogEventRecord.ResType res, String msg) {
+        writeToLogger(new LogEventRecord(Instant.now().toString(), tag, app, getCurrentLoggedInUser(), op, res, msg));
         return this;
     }
     

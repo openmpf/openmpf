@@ -53,7 +53,7 @@ public class LocalSecurityConfig {
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
-            jsonLogger.log(LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.ACCESS, "User successfully logged in.");
+            jsonLogger.log(this.getClass().getName() , LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.ACCESS, "User successfully logged in.");
             response.sendRedirect("/");
         };
     }

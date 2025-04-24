@@ -28,7 +28,7 @@
 
     <Properties>
         <Property name="wfmLogFile">${env:MPF_LOG_PATH}/${env:THIS_MPF_NODE}/log/workflow-manager.log</Property>
-        <Property name="layoutPattern">%date{ISO8601}{UTC}Z %level [%thread] %logger{1.} - %notEmpty{[Job %X{jobId}] }%msg%n</Property>
+        <Property name="layoutPattern">%date{ISO8601}{Z}{en-US} %level [%thread] %logger{1.} - %notEmpty{[Job %X{jobId}] }%msg%n</Property>
     </Properties>
 
     <Appenders>
@@ -49,6 +49,7 @@
     </Appenders>
 
     <Loggers>
+        <!-- To change the verbosity of MPF's own logging, change the level in the XML element below. -->
         <Logger name="org.mitre" level="INFO" />
 
         <Root level="INFO">

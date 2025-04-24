@@ -33,11 +33,11 @@ import javax.servlet.http.HttpSession;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
-import org.mitre.mpf.wfm.util.JsonLogger;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.mitre.mpf.wfm.util.LogEventRecord;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.access.AccessDeniedException;
@@ -63,13 +63,13 @@ import org.springframework.web.servlet.ModelAndView;
 public class LoginController {
 
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
-    private final JsonLogger jsonLogger;
+    private final AuditEventLogger auditEventLogger;
 
     @Autowired
     private PropertiesUtil propertiesUtil;
     
-    public LoginController(JsonLogger jsonLogger) {
-        this.jsonLogger = jsonLogger;
+    public LoginController(AuditEventLogger auditEventLogger) {
+        this.auditEventLogger = auditEventLogger;
     }
     
     public static AuthenticationModel getAuthenticationModel(HttpServletRequest request) {
@@ -137,7 +137,7 @@ public class LoginController {
             Authentication authentication) {
         
         if (authentication != null && authentication.isAuthenticated()) {
-            jsonLogger.log(this.getClass().getName(), LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.ACCESS, "User is already authenticated.");
+            auditEventLogger.log(this.getClass().getName(), LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ACCESS, "User is already authenticated.");
             return "redirect:/";
         }
 
@@ -145,7 +145,7 @@ public class LoginController {
         model.addObject("version", propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
-            jsonLogger.log(this.getClass().getName(), LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
+            auditEventLogger.log(this.getClass().getName(), LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
             model.addObject("error", "Invalid username and password!");
         }
 
@@ -171,7 +171,7 @@ public class LoginController {
                 "A user successfully authenticated with an OIDC provider, but was not" +
                             " authorized to access Workflow Manager.",
                     accessDeniedException);
-            jsonLogger.log(this.getClass().getName(), LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
+            auditEventLogger.log(this.getClass().getName(), LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(

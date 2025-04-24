@@ -28,8 +28,8 @@
 package org.mitre.mpf.mvc.security;
 
 import org.mitre.mpf.wfm.enums.UserRole;
-import org.mitre.mpf.wfm.util.JsonLogger;
-import org.mitre.mpf.wfm.util.LogEventRecord;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -44,16 +44,16 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 @Profile("(!oidc & !jenkins) | test-with-security")
 public class LocalSecurityConfig {
 
-    private final JsonLogger jsonLogger;
+    private final AuditEventLogger auditEventLogger;
 
-    public LocalSecurityConfig(JsonLogger jsonLogger) {
-        this.jsonLogger = jsonLogger;
+    public LocalSecurityConfig(AuditEventLogger auditEventLogger) {
+        this.auditEventLogger = auditEventLogger;
     }
 
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
-            jsonLogger.log(this.getClass().getName() , LogEventRecord.TagType.SECURITY, LogEventRecord.OpType.LOGIN, LogEventRecord.ResType.ACCESS, "User successfully logged in.");
+            auditEventLogger.log(this.getClass().getName() , LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ACCESS, "User successfully logged in.");
             response.sendRedirect("/");
         };
     }

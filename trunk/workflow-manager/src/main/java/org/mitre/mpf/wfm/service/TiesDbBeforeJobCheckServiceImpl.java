@@ -446,7 +446,6 @@ public class TiesDbBeforeJobCheckServiceImpl
         ToIntFunction<TiesDbCheckResult.CheckInfo> statusToInt = ci -> switch (ci.jobStatus()) {
             case COMPLETE -> 3;
             case COMPLETE_WITH_WARNINGS -> 2;
-            case COMPLETE_WITH_ERRORS -> 1;
             default -> 0;
         };
         return Comparator.comparingInt(statusToInt)

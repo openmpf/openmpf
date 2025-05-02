@@ -37,11 +37,11 @@ import java.util.OptionalInt;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
-import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaRange;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -72,9 +72,9 @@ public class MediaImpl implements Media {
     @JsonIgnore
     public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get(MpfConstants.IS_DERIVATIVE_MEDIA)); }
 
-    private final String _uri;
+    private final MediaUri _uri;
     @Override
-    public String getUri() { return _uri; }
+    public MediaUri getUri() { return _uri; }
 
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
@@ -99,8 +99,10 @@ public class MediaImpl implements Media {
     /** The path to the media that the JSON output object should use. */
     @Override
     @JsonIgnore
-    public String getPersistentUri() {
-        return getStorageUri().orElse(_uri);
+    public MediaUri getPersistentUri() {
+        return getStorageUri()
+            .map(MediaUri::create)
+            .orElse(_uri);
     }
 
 
@@ -265,7 +267,7 @@ public class MediaImpl implements Media {
             long id,
             long parentId,
             int creationTaskIndex,
-            String uri,
+            MediaUri uri,
             UriScheme uriScheme,
             Path localPath,
             Map<String, String> mediaSpecificProperties,
@@ -278,7 +280,7 @@ public class MediaImpl implements Media {
         _id = id;
         _parentId = parentId;
         _creationTaskIndex = creationTaskIndex;
-        _uri = IoUtils.normalizeUri(uri);
+        _uri = uri;
         _uriScheme = uriScheme;
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
@@ -296,7 +298,7 @@ public class MediaImpl implements Media {
 
     public MediaImpl(
             long id,
-            String uri,
+            MediaUri uri,
             UriScheme uriScheme,
             Path localPath,
             Map<String, String> mediaSpecificProperties,
@@ -328,7 +330,7 @@ public class MediaImpl implements Media {
             @JsonProperty("id") long id,
             @JsonProperty("parentId") long parentId,
             @JsonProperty("creationTaskIndex") int creationTaskIndex,
-            @JsonProperty("uri") String uri,
+            @JsonProperty("uri") MediaUri uri,
             @JsonProperty("uriScheme") UriScheme uriScheme,
             @JsonProperty("localPath") Path localPath,
             @JsonProperty("mediaSpecificProperties") Map<String, String> mediaSpecificProperties,
@@ -396,7 +398,7 @@ public class MediaImpl implements Media {
     }
 
 
-    private static String createErrorMessage(long id, String uri, String genericError) {
+    private static String createErrorMessage(long id, MediaUri uri, String genericError) {
         return String.format("An error occurred while processing media with id %s and uri %s : %s", id, uri,
                              genericError);
     }

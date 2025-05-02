@@ -39,6 +39,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationStreamData;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
@@ -231,7 +232,7 @@ public abstract class TestSystem {
 
     protected JobCreationMediaData toMediaObject(URI uri, Map<String, String> properties) {
         return new JobCreationMediaData(
-                uri.toString(),
+                new MediaUri(uri),
                 properties,
                 Map.of(),
                 List.of(),
@@ -361,6 +362,18 @@ public abstract class TestSystem {
                 testMediaFiles);
     }
 
+    protected JsonOutputObject runSystemTest(
+            String pipelineName,
+            String expectedOutputJsonPath,
+            JobCreationMediaData... testMediaFiles) throws IOException {
+        return runSystemTest(
+                pipelineName,
+                expectedOutputJsonPath,
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                testMediaFiles);
+    }
+
     protected JsonOutputObject runSystemTest(String pipelineName,
                                  String expectedOutputJsonPath,
                                  Map<String, Map<String, String>> algorithmProperties,
@@ -368,10 +381,19 @@ public abstract class TestSystem {
                                  String... testMediaFiles) throws IOException {
         var media = Stream.of(testMediaFiles)
             .map(f -> toMediaObject(ioUtils.findFile(f)))
-            .toList();
+            .toArray(JobCreationMediaData[]::new);
+        return runSystemTest(
+                pipelineName, expectedOutputJsonPath, algorithmProperties, jobProperties, media);
+    }
 
+    protected JsonOutputObject runSystemTest(
+            String pipelineName,
+            String expectedOutputJsonPath,
+            Map<String, Map<String, String>> algorithmProperties,
+            Map<String, String> jobProperties,
+            JobCreationMediaData... testMedia) throws IOException {
         var jobRequest = new JobCreationRequest(
-                media,
+                List.of(testMedia),
                 jobProperties,
                 algorithmProperties,
                 UUID.randomUUID().toString(),
@@ -385,7 +407,7 @@ public abstract class TestSystem {
     }
 
     protected JsonOutputObject runSystemTest(
-            JobCreationRequest jobRequest, String expectedOutputJsonPath) throws  IOException {
+            JobCreationRequest jobRequest, String expectedOutputJsonPath) throws IOException {
         long jobId = runJob(jobRequest);
         if (DISABLE_OUTPUT_CHECKING) {
             return getJobOutputObject(jobId);

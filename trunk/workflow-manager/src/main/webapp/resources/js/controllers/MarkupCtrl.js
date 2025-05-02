@@ -31,8 +31,8 @@ angular.module('mpf.wfm.controller.MarkupCtrl', [
     'ui.bootstrap'
 ])
 .controller('MarkupCtrl', [
-'job', '$scope', '$http',
-(job, $scope, $http) => {
+'job', '$scope', '$http', '$sce',
+(job, $scope, $http, $sce) => {
 
     Object.assign($scope, {
         job,
@@ -53,6 +53,12 @@ angular.module('mpf.wfm.controller.MarkupCtrl', [
         goToPage(page) {
             $scope.currentPage = page;
             updateMarkup();
+        },
+        sourceIsDataUri(media) {
+            return media.sourceUri.startsWith('data:');
+        },
+        getVideoUrl(media) {
+            return $sce.trustAsResourceUrl(media.sourceDownloadUrl);
         }
     });
 
@@ -68,12 +74,19 @@ angular.module('mpf.wfm.controller.MarkupCtrl', [
             search: $scope.search
         };
         $http.get('markup/get-markup-results-filtered', {params}).then(({data: resp}) => {
-            if (thisRequest > lastResponseReceived) {
-                lastResponseReceived = thisRequest;
-                $scope.recordsTotal = resp.recordsTotal
-                $scope.mediaList = resp.media;
-                $scope.recordsFiltered = resp.recordsFiltered;
-                $scope.hasMorePages = $scope.recordsFiltered > $scope.currentPage * $scope.pageLen;
+            if (thisRequest < lastResponseReceived) {
+                return;
+            }
+            lastResponseReceived = thisRequest;
+            $scope.recordsTotal = resp.recordsTotal
+            $scope.recordsFiltered = resp.recordsFiltered;
+            $scope.hasMorePages = $scope.recordsFiltered > $scope.currentPage * $scope.pageLen;
+
+            $scope.mediaList = resp.media;
+            for (let media of $scope.mediaList) {
+                if (!media.sourceDownloadUrl && media.sourceUri.startsWith('data:')) {
+                    media.sourceDownloadUrl = media.sourceUri;
+                }
             }
         });
     }

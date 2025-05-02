@@ -72,6 +72,7 @@ import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationMediaSelector;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
@@ -163,7 +164,7 @@ public class TestJobRequestService {
 
     private static JobCreationRequest createTestJobCreationRequest(Integer priority) {
         var jobCreationMedia1 = new JobCreationMediaData(
-                "http://my_media1.mp4",
+                MediaUri.create("http://my_media1.mp4"),
                 Map.of("media_prop1", "media_val1"),
                 Map.of(),
                 List.of(new JobCreationMediaRange(0, 50), new JobCreationMediaRange(100, 300)),
@@ -172,7 +173,7 @@ public class TestJobRequestService {
                 Optional.empty());
 
         var jobCreationMedia2 = new JobCreationMediaData(
-                "http://my_media2.mp4",
+                MediaUri.create("http://my_media2.mp4"),
                 Map.of("media_prop2", "media_val2"),
                 Map.of(),
                 List.of(),
@@ -294,14 +295,14 @@ public class TestJobRequestService {
         assertEquals(2, job.getMedia().size());
         Media media1 = job.getMedia()
                 .stream()
-                .filter(m -> m.getUri().equals("http://my_media1.mp4"))
+                .filter(m -> m.getUri().fullString().equals("http://my_media1.mp4"))
                 .findAny()
                 .get();
         assertEquals("media_val1", media1.getMediaSpecificProperty("media_prop1"));
 
         Media media2 = job.getMedia()
                 .stream()
-                .filter(m -> m.getUri().equals("http://my_media2.mp4"))
+                .filter(m -> m.getUri().fullString().equals("http://my_media2.mp4"))
                 .findAny()
                 .get();
         assertEquals("media_val2", media2.getMediaSpecificProperty("media_prop2"));
@@ -317,7 +318,7 @@ public class TestJobRequestService {
 
         var jobCreationMedia1 = jobCreationRequest.media()
                 .stream()
-                .filter(m -> m.mediaUri().equals("http://my_media1.mp4"))
+                .filter(m -> m.mediaUri().fullString().equals("http://my_media1.mp4"))
                 .findAny()
                 .orElseThrow();
 
@@ -337,8 +338,8 @@ public class TestJobRequestService {
                 3,
                 "http://callback",
                 "POST",
-                List.of(new MediaImpl(567, "http://media.mp4", UriScheme.HTTP, Paths.get("temp"),
-                                      Map.of("media_prop1", "media_val1"), Map.of(),
+                List.of(new MediaImpl(567, MediaUri.create("http://media.mp4"), UriScheme.HTTP,
+                                      Paths.get("temp"), Map.of("media_prop1", "media_val1"), Map.of(),
                                       List.of(), List.of(), List.of(), null, "error")),
                 Map.of("job_prop1", "job_val1"),
                 Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")),
@@ -451,7 +452,7 @@ public class TestJobRequestService {
         _inProgressJobs.addJob(
                 jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineElements(),
                 3, null, null,
-                List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"),
+                List.of(new MediaImpl(323, MediaUri.create("http://example.mp4"), UriScheme.HTTP, Path.of("temp"),
                                       Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null)),
                 Map.of(), Map.of(), false);
 
@@ -619,15 +620,15 @@ public class TestJobRequestService {
             JobPipelineElements pipeline,
             List<JobCreationMediaSelector> mediaSelectors,
             String outputAction) {
-        URI mediaUri;
+        MediaUri mediaUri;
         try {
-            mediaUri = _temporaryFolder.newFile().toURI();
+            mediaUri = new MediaUri(_temporaryFolder.newFile().toURI());
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
         var media = new JobCreationMediaData(
-                mediaUri.toString(), null, null, null, null,
+                mediaUri, null, null, null, null,
                 mediaSelectors,
                 Optional.ofNullable(outputAction));
 

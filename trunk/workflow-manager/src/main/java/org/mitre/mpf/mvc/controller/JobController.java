@@ -42,6 +42,7 @@ import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationResponse;
 import org.mitre.mpf.rest.api.JobPageListModel;
 import org.mitre.mpf.rest.api.JobPageModel;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.MessageModel;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.SingleJobInfo;
@@ -475,9 +476,9 @@ public class JobController {
         return errBuilder.toString();
     }
 
-    private List<String> getMediaUris(JobRequest job) {
+    private List<MediaUri> getMediaUris(JobRequest job) {
 
-        List<String> mediaUris;
+        List<MediaUri> mediaUris;
         try {
             // Currently, it is not possible for job.getJob() to be null, but in previous
             // versions it was possible. We don't want the jobs page to become unusable if a
@@ -507,7 +508,7 @@ public class JobController {
             float jobProgressVal = jobProgress.getJobProgress(job.getId())
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
-            List<String> mediaUris = getMediaUris(job);
+            var mediaUris = getMediaUris(job);
 
             return new SingleJobInfo(
                     propertiesUtil.getExportedJobId(job.getId()),

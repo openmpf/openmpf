@@ -51,6 +51,7 @@ import org.apache.camel.impl.DefaultExchange;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
@@ -154,7 +155,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
 
         MediaImpl media = new MediaImpl(
-                MEDIA_ID, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                MEDIA_ID, new MediaUri(mediaUri), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));

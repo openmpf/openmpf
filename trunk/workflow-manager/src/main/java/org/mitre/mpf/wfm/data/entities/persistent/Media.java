@@ -30,6 +30,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
@@ -55,7 +57,7 @@ public interface Media {
 
     public boolean isDerivative();
 
-    public String getUri();
+    public MediaUri getUri();
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
     public UriScheme getUriScheme();
@@ -67,7 +69,7 @@ public interface Media {
     public Path getLocalPath();
 
     /** The path to the media that the JSON output object should use. */
-    public String getPersistentUri();
+    public MediaUri getPersistentUri();
 
     /** If the media needed to be converted to another format, this will contain the path to converted media. */
     public Optional<Path> getConvertedMediaPath();

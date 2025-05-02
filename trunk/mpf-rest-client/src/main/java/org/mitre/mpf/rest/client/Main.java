@@ -31,6 +31,7 @@ import org.mitre.mpf.interop.util.MpfObjectMapper;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationResponse;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.springframework.core.ParameterizedTypeReference;
@@ -150,7 +151,7 @@ public class Main {
         System.out.println("Using FACE pipeline: " + firstFacePipeline.get());
 
         var mediaData = new JobCreationMediaData(
-                        mediaPath.toUri().toString(),
+                        new MediaUri(mediaPath.toUri()),
                         Map.of(),
                         Map.of(),
                         List.of(),

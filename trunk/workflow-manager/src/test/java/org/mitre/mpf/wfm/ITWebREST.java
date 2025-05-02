@@ -153,7 +153,7 @@ public class ITWebREST {
 		String mediaPathUrl = ioUtils.findFile("/samples/new_face_video.avi").toString();
 
         var media = new JobCreationMediaData(
-                mediaPathUrl,
+                MediaUri.create(mediaPathUrl),
                 Map.of(),
                 Map.of(),
                 List.of(),
@@ -408,7 +408,7 @@ public class ITWebREST {
 		String mediaPathUrl = ioUtils.findFile(resourcePath).toString();
 
         var creationMedia = new JobCreationMediaData(
-                mediaPathUrl,
+                MediaUri.create(mediaPathUrl),
                 Map.of(),
                 Map.of(),
                 List.of(),

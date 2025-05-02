@@ -129,7 +129,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
             String errorMessage;
             try {
                 localFile = media.getLocalPath().toFile();
-                FileUtils.copyURLToFile(new URL(media.getUri()), localFile);
+                FileUtils.copyURLToFile(media.getUri().get().toURL(), localFile);
                 log.debug("Successfully retrieved {} and saved it to '{}'.", media.getUri(), media.getLocalPath());
                 break;
             } catch (IOException e) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.

@@ -35,6 +35,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
@@ -190,8 +191,8 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile(filePath);
-        Media media = inProgressJobs.initMedia(mediaUri.toString(), Map.of(), Map.of(), List.of(),
-                                               List.of(), List.of(), null);
+        Media media = inProgressJobs.initMedia(new MediaUri(mediaUri), Map.of(), Map.of(),
+                                               List.of(), List.of(), List.of(), null);
         long mediaId = media.getId();
 
         inProgressJobs.addJob(
@@ -277,7 +278,7 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
         Media media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                mediaId, new MediaUri(mediaUri), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
 
         inProgressJobs.addJob(

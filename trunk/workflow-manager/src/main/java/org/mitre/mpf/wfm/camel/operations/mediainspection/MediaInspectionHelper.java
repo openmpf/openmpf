@@ -153,7 +153,7 @@ public class MediaInspectionHelper {
                 LOG.error(errorMessage, ioe);
             }
 
-            mimeType = _ioUtils.getMimeType(localPath);
+            mimeType = media.getMimeType().orElseGet(() -> _ioUtils.getMimeType(localPath));
 
             mediaMetadata.put("MIME_TYPE", mimeType);
             mediaType = _mediaTypeUtils.parse(mimeType);

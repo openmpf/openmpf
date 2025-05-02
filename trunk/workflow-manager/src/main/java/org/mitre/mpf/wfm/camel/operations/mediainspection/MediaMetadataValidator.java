@@ -180,7 +180,7 @@ public class MediaMetadataValidator {
         if (mimeType.equalsIgnoreCase("image/heic") || mimeType.equalsIgnoreCase("image/avif")) {
             _inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.MEDIA_INSPECTION,
                                        String.format("Cannot skip media inspection for media id %s because it is a " +
-                                  "HEIC image and requires conversion before further processing.",
+                                  "HEIF image and requires conversion before further processing.",
                                   media.getId()));
             return true;
         }

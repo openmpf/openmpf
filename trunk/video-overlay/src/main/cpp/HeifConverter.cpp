@@ -24,37 +24,47 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <jni.h>
+#include <libheif/heif_cxx.h>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 
-package org.mitre.mpf.heic;
+#include "JniHelper.h"
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+extern "C" {
 
-import org.mitre.mpf.videooverlay.JniLoader;
+JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
+        JNIEnv *env, jclass clz, jstring inputFile, jstring outputFile) {
 
-public class HeicConverter {
-    static {
-        JniLoader.ensureLoaded();
+    JniHelper jni(env);
+    try {
+        heif::Context ctx;
+        ctx.read_from_file(jni.ToStdString(inputFile));
+
+        heif::ImageHandle handle = ctx.get_primary_image_handle();
+        heif::Image img = handle.decode_image(heif_colorspace_RGB,
+                                              heif_chroma_interleaved_RGB);
+
+        int stride = cv::Mat::AUTO_STEP;
+        uint8_t* data = img.get_plane(heif_channel_interleaved, &stride);
+        int width = handle.get_width();
+        int height = handle.get_height();
+
+        cv::Mat cv_img(height, width, CV_8UC3, data, stride);
+        cv::cvtColor(cv_img, cv_img, cv::COLOR_RGB2BGR);
+        cv::imwrite(jni.ToStdString(outputFile), cv_img);
     }
-
-    /**
-     * Converts a HEIC image to another format.
-     * @param inputPath Path to the HEIC file
-     * @param outputPath Path to output file. The image format is determined by the file extension.
-     */
-    public static void convert(Path inputPath, Path outputPath) throws IOException {
-        if (!Files.exists(inputPath)) {
-            throw new FileNotFoundException(inputPath.toAbsolutePath() + " does not exist.");
-        }
-        Files.createDirectories(outputPath.getParent());
-        convertNative(inputPath.toString(), outputPath.toString());
+    catch (const std::exception &e) {
+        jni.ReportCppException(e.what());
     }
-
-    private static native void convertNative(String inputFile, String outputFile);
-
-
-    private HeicConverter() {
+    catch (const heif::Error &e) {
+        jni.ReportCppException("An error occurred in libheif: " + e.get_message());
+    }
+    catch (...) {
+        jni.ReportCppException();
     }
 }
+
+}  // extern "C"
+

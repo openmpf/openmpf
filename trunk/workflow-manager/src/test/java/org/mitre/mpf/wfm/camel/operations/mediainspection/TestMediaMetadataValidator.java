@@ -158,9 +158,14 @@ public class TestMediaMetadataValidator extends MockitoTest.Strict {
     }
 
     @Test
-    public void doesNotSkipInspectForHeicMedia() {
+    public void doesNotSkipInspectForHeifMedia() {
         assertInspectionNotSkipped(Map.of(
                 "MIME_TYPE", "image/heic",
+                "MEDIA_HASH", "SOME_HASH",
+                "FRAME_WIDTH", "10",
+                "FRAME_HEIGHT", "10"));
+        assertInspectionNotSkipped(Map.of(
+                "MIME_TYPE", "image/avif",
                 "MEDIA_HASH", "SOME_HASH",
                 "FRAME_WIDTH", "10",
                 "FRAME_HEIGHT", "10"));

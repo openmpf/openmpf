@@ -40,6 +40,7 @@
 
 #include "BatchExecutorUtil.h"
 #include "ComponentLoadError.h"
+#include "ComponentRegistration.h"
 #include "CppComponentHandle.h"
 #include "HealthCheck.h"
 #include "JobReceiver.h"
@@ -57,7 +58,7 @@ std::string get_log_level_and_set_env_var();
 bool is_python(int argc, const char * argv[]);
 
 template <typename ComponentHandle>
-int run_jobs(LoggerWrapper& logger, std::string_view broker_uri, std::string_view request_queue,
+int run_jobs(LoggerWrapper& logger, Messenger messenger,
              std::string_view app_dir, ComponentHandle& component);
 
 
@@ -93,13 +94,15 @@ int main(int argc, const char* argv[]) {
     }
 
     try {
+        Messenger messenger{*logger, broker_uri, request_queue};
+        RegisterComponent(*logger, messenger);
         if (is_python_component) {
             PythonComponentHandle component_handle{*logger, lib_path};
-            return run_jobs(*logger, broker_uri, request_queue, app_dir, component_handle);
+            return run_jobs(*logger, std::move(messenger), app_dir, component_handle);
         }
         else {
             CppComponentHandle component_handle{lib_path};
-            return run_jobs(*logger, broker_uri, request_queue, app_dir, component_handle);
+            return run_jobs(*logger, std::move(messenger), app_dir, component_handle);
         }
     }
     catch (const AmqConnectionInitializationException& e) {
@@ -226,7 +229,7 @@ std::string get_service_name() {
 
 
 template <typename ComponentHandle>
-int run_jobs(LoggerWrapper& logger, std::string_view broker_uri, std::string_view request_queue,
+int run_jobs(LoggerWrapper& logger, Messenger messenger,
              std::string_view app_dir, ComponentHandle& component) {
     component.SetRunDirectory(std::string{app_dir} + "/../plugins");
     if (!component.Init()) {
@@ -234,7 +237,7 @@ int run_jobs(LoggerWrapper& logger, std::string_view broker_uri, std::string_vie
         return 1;
     }
 
-    JobReceiver job_receiver{logger, broker_uri, request_queue};
+    JobReceiver job_receiver{logger, std::move(messenger)};
     HealthCheck health_check{logger};
     auto service_name = get_service_name();
     logger.Info("Completed initialization of ", service_name, '.');

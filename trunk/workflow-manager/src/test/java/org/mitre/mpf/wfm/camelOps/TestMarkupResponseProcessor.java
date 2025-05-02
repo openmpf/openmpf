@@ -36,13 +36,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.camel.Exchange;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
@@ -133,10 +133,10 @@ public class TestMarkupResponseProcessor extends MockitoTest.Lenient {
         when(dummyPipeline.getAction(taskIndex, 0))
                 .thenReturn(markupAction);
 
-        URI mediaUri = URI.create("file:///samples/meds1.jpg");
-        Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
-                                    Paths.get(mediaUri), Map.of(), Map.of(), List.of(), List.of(),
-                                    List.of(), null, null);
+        var mediaUri = MediaUri.create("file:///samples/meds1.jpg");
+        Media media = new MediaImpl(mediaId, mediaUri, UriScheme.get(mediaUri),
+                                    Paths.get(mediaUri.get()), Map.of(), Map.of(), List.of(),
+                                    List.of(), List.of(), null, null);
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);

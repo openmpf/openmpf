@@ -293,7 +293,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
     public void downloadFromS3(Media media, UnaryOperator<String> combinedProperties)
             throws StorageException {
         getFromS3(
-                media.getUri(),
+                media.getUri().fullString(),
                 combinedProperties,
                 ResponseTransformer.toFile(media.getLocalPath()));
     }

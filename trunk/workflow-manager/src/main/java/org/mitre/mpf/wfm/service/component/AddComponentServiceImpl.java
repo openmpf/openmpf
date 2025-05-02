@@ -224,8 +224,8 @@ public class AddComponentServiceImpl implements AddComponentService {
 
 
     @Override
-    public boolean registerUnmanagedComponent(JsonComponentDescriptor descriptor)
-            throws ComponentRegistrationException {
+    public synchronized RegistrationResult registerUnmanagedComponent(
+                JsonComponentDescriptor descriptor) throws ComponentRegistrationException {
 
         RegisterComponentModel existingComponent
                 = _componentStateService.getByComponentName(descriptor.componentName()).orElse(null);
@@ -239,7 +239,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             try {
                 JsonComponentDescriptor existingDescriptor = loadDescriptor(existingComponent.getJsonDescriptorPath());
                 if (existingDescriptor.equals(descriptor)) {
-                    return false;
+                    return RegistrationResult.SAME;
                 }
             }
             catch (FailedToParseDescriptorException e) {
@@ -275,7 +275,9 @@ public class AddComponentServiceImpl implements AddComponentService {
             registrationModel.setComponentState(ComponentState.REGISTERED);
             registrationModel.setDateRegistered(Instant.now());
             _componentStateService.update(registrationModel);
-            return true;
+            return existingComponent == null
+                    ? RegistrationResult.NEW
+                    : RegistrationResult.UPDATED;
         }
         catch (IOException e) {
             _removeComponentService.deleteCustomPipelines(registrationModel);

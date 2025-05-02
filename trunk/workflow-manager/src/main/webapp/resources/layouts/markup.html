@@ -101,15 +101,21 @@
                             Source file not available
                         </span>
                         <div ng-if="media.sourceFileAvailable" ng-switch on="media.sourceMediaType">
-                            <a ng-switch-when="IMAGE" ng-href="{{media.sourceDownloadUrl}}"
-                               target="_blank">
-                                <img ng-src="{{media.sourceDownloadUrl}}" class="full-width" />
-                            </a>
+                            <span ng-switch-when="IMAGE">
+                                <img ng-if="sourceIsDataUri(media)"
+                                        ng-src="{{media.sourceDownloadUrl}}"
+                                        class="full-width" />
+
+                                <a ng-if="!sourceIsDataUri(media)"
+                                        ng-href="{{media.sourceDownloadUrl}}" target="_blank">
+                                    <img ng-src="{{media.sourceDownloadUrl}}" class="full-width" />
+                                </a>
+                            </span>
 
                             <span ng-switch-when="AUDIO" class="glyphicon glyphicon-music"></span>
 
                             <video ng-switch-when="VIDEO" controls preload="none"
-                                   ng-src="{{media.sourceDownloadUrl}}"
+                                   ng-src="{{getVideoUrl(media)}}"
                                    class="full-width">
                                 Your browser does not support the video tag.
                             </video>
@@ -118,11 +124,11 @@
                         </div>
                     </td>
                     <td class="smart-wrap">
-                        {{media.sourceUri}}
+                        {{media.sourceUri | limitLength}}
                     </td>
                     <td>
                         <a ng-if="media.sourceDownloadUrl" ng-href="{{media.sourceDownloadUrl}}"
-                           download="{{media.sourceUri}}" class="btn btn-default" role="button"
+                           download class="btn btn-default" role="button"
                            title="Download">
                             <i class="fa fa-download"></i>
                         </a>

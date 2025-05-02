@@ -27,6 +27,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -40,5 +41,11 @@ namespace BatchExecutorUtil {
     std::string ExpandFileName(std::string_view file_name);
 
     /** Gets the specified environment variable if it exists and is not the empty string. */
-    std::optional<std::string> GetEnv(std::string_view name);
+    std::optional<std::string> GetEnv(const char* name);
+
+    /** Wrapper around std::unique_ptr constructor that adds template type inference.  */
+    template <typename T>
+    auto AsUniquePtr(T* ptr) {
+        return std::unique_ptr<T>{ptr};
+    }
 };

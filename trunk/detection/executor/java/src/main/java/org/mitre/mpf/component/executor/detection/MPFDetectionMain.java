@@ -54,7 +54,7 @@ public class MPFDetectionMain {
     }
 
 
-    public static void main(String[] args) throws JMSException {
+    public static void main(String[] args) throws JMSException, IOException {
         if (args.length < 1) {
             IllegalArgumentException exception = new IllegalArgumentException(
                      "Must provide message queue name as the first command line argument.");
@@ -100,8 +100,9 @@ public class MPFDetectionMain {
 
 
     private static void processMessages(Connection connection, String queueName, MPFDetectionComponentBase component)
-            throws JMSException {
+            throws JMSException, IOException {
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        ComponentRegistration.register(session);
 
         Optional<String> mediaTypeSelector = getMediaTypeSelector();
         MessageConsumer requestConsumer;

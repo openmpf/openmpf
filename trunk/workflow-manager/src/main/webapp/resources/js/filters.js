@@ -44,3 +44,10 @@ AppFilters.filter('formatDate', () => {
 		}
 	}
 });
+
+
+AppFilters.filter('limitLength', () => {
+	return (str, len = 500) => str && str.length > len
+			? str.substring(0, len) + '...'
+			: str
+});

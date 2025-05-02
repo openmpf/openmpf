@@ -42,7 +42,7 @@ public class SingleJobInfo {
     private boolean terminal;
     private String tiesDbStatus;
     private String callbackStatus;
-    private List<String> mediaUris;
+    private List<MediaUri> mediaUris;
 
     public SingleJobInfo() { }
 
@@ -58,7 +58,7 @@ public class SingleJobInfo {
             boolean terminal,
             String tiesDbStatus,
             String callbackStatus,
-            Collection<String> mediaUris) {
+            Collection<MediaUri> mediaUris) {
         this.jobId = jobId;
         this.pipelineName = pipelineName;
         this.jobPriority = jobPriority;
@@ -117,7 +117,7 @@ public class SingleJobInfo {
         return callbackStatus;
     }
 
-    public List<String> getMediaUris() {
+    public List<MediaUri> getMediaUris() {
         return mediaUris;
     }
 }

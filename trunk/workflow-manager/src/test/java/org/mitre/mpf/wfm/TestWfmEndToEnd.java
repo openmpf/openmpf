@@ -36,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
@@ -133,7 +134,7 @@ public class TestWfmEndToEnd {
 		List<JobCreationMediaData> media = new ArrayList<>(uris.length);
 		for (URI uri : uris) {
 			media.add(new JobCreationMediaData(
-                    uri.toString(),
+                    new MediaUri(uri),
                     Map.of(),
                     Map.of(),
                     List.of(),

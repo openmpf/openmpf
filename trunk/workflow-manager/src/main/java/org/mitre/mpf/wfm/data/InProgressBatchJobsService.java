@@ -31,7 +31,6 @@ import static java.util.stream.Collectors.joining;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +41,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -55,6 +53,7 @@ import javax.inject.Singleton;
 
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -213,7 +212,7 @@ public class InProgressBatchJobsService {
         }
 
         for (Media media : job.getMedia()) {
-            if (media.getUriScheme().isRemote()) {
+            if (media.getUriScheme().usesTempFile()) {
                 try {
                     Files.deleteIfExists(media.getLocalPath());
                 }
@@ -401,8 +400,8 @@ public class InProgressBatchJobsService {
 
 
 
-    private static final Set<UriScheme> SUPPORTED_URI_SCHEMES = EnumSet.of(UriScheme.FILE, UriScheme.HTTP,
-                                                                           UriScheme.HTTPS);
+    private static final Set<UriScheme> SUPPORTED_URI_SCHEMES = EnumSet.of(
+            UriScheme.FILE, UriScheme.HTTP, UriScheme.HTTPS, UriScheme.DATA);
     private static final String NOT_DEFINED_URI_SCHEME = "URI scheme not defined";
     private static final String NOT_SUPPORTED_URI_SCHEME = "Unsupported URI scheme";
     private static final String LOCAL_FILE_DOES_NOT_EXIST = "File does not exist";
@@ -410,7 +409,7 @@ public class InProgressBatchJobsService {
 
 
     public synchronized Media initMedia(
-            String uriStr,
+            MediaUri uri,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadataProperties,
             Collection<MediaRange> frameRanges,
@@ -418,11 +417,10 @@ public class InProgressBatchJobsService {
             Collection<MediaSelector> mediaSelectors,
             String mediaSelectorsOutputAction) {
         long mediaId = IdGenerator.next();
-        LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
+        LOG.info("Initializing media from {} with id {}", uri, mediaId);
 
         try {
-            URI uri = new URI(uriStr);
-            UriScheme uriScheme = UriScheme.parse(uri.getScheme());
+            UriScheme uriScheme = UriScheme.get(uri);
             String errorMessage = null;
             Path localPath = null;
 
@@ -433,7 +431,7 @@ public class InProgressBatchJobsService {
                 errorMessage = NOT_SUPPORTED_URI_SCHEME;
             }
             else if (uriScheme == UriScheme.FILE) {
-                localPath = Paths.get(uri).toAbsolutePath();
+                localPath = Paths.get(uri.get()).toAbsolutePath();
                 errorMessage = checkForLocalFileError(localPath);
             }
             else {
@@ -445,7 +443,7 @@ public class InProgressBatchJobsService {
 
             var media = new MediaImpl(
                     mediaId,
-                    uriStr,
+                    uri,
                     uriScheme,
                     localPath,
                     mediaSpecificProperties,
@@ -463,10 +461,10 @@ public class InProgressBatchJobsService {
             }
             return media;
         }
-        catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
+        catch (IllegalArgumentException | FileSystemNotFoundException e) {
             return new MediaImpl(
                     mediaId,
-                    uriStr,
+                    uri,
                     UriScheme.UNDEFINED,
                     null,
                     mediaSpecificProperties,
@@ -498,7 +496,7 @@ public class InProgressBatchJobsService {
                 mediaId,
                 parentMediaId,
                 taskIndex,
-                localPath.toUri().toString(),
+                new MediaUri(localPath.toUri()),
                 UriScheme.FILE,
                 localPath,
                 // Derivative media do not inherit parent media properties. For example, specifying
@@ -540,6 +538,11 @@ public class InProgressBatchJobsService {
         media.setLength(length);
         media.addMetadata(metadata);
     }
+
+    public synchronized void setMimeType(long jobId, long mediaId, String mimeType) {
+        getMediaImpl(jobId, mediaId).setMimeType(mimeType);
+    }
+
 
     public synchronized void addConvertedMediaPath(long jobId, long mediaId,
                                                    Path convertedMediaPath) {

@@ -28,6 +28,9 @@ package org.mitre.mpf.mvc;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
@@ -62,6 +65,7 @@ public class TestControllerExceptionHandler extends MockitoTest.Strict {
 
     @Test
     public void returnsHtmlWhenNoAcceptHeader() {
+        setNonRestServletPath();
         when(_mockRequest.getHeaders("Accept"))
                 .thenReturn(Collections.emptyEnumeration());
 
@@ -70,6 +74,7 @@ public class TestControllerExceptionHandler extends MockitoTest.Strict {
 
     @Test
     public void returnsHtmlWhenWrongRequestedWithHeader() {
+        setNonRestServletPath();
         when(_mockRequest.getHeaders("Accept"))
                 .thenReturn(Collections.emptyEnumeration());
 
@@ -80,6 +85,7 @@ public class TestControllerExceptionHandler extends MockitoTest.Strict {
 
     @Test
     public void returnsModelWhenAjaxHeaderIsSet() {
+        setNonRestServletPath();
         setRequestedWithHeader("XMLHttpRequest");
         assertReceivedModel();
     }
@@ -87,18 +93,33 @@ public class TestControllerExceptionHandler extends MockitoTest.Strict {
 
     @Test
     public void returnsHtmlWhenHtmlHasHigherPriority() {
+        setNonRestServletPath();
         setAcceptHeader("application/foo,text/html,application/json");
         assertReceivedHtml();
     }
 
+
+    @Test
+    public void returnsModelWhenAccessingRestUrl() {
+        when(_mockRequest.getServletPath())
+            .thenReturn("/rest/example");
+        assertReceivedModel();
+        // We don't check any headers when the URL starts with "/rest/"".
+        verify(_mockRequest, never())
+            .getHeader(any());
+    }
+
+
     @Test
     public void returnsModelJsonHasHigherPriority() {
+        setNonRestServletPath();
         setAcceptHeader("application/foo,application/json,text/html");
         assertReceivedModel();
     }
 
     @Test
     public void returnsHtmlWhenInvalidAcceptHeader() {
+        setNonRestServletPath();
         setAcceptHeader("asdf");
         assertReceivedHtml();
     }
@@ -132,5 +153,9 @@ public class TestControllerExceptionHandler extends MockitoTest.Strict {
     private void setRequestedWithHeader(String headerValue) {
         when(_mockRequest.getHeader("X-Requested-With"))
                 .thenReturn(headerValue);
+    }
+
+    private void setNonRestServletPath() {
+        when(_mockRequest.getServletPath()).thenReturn("/test/example");
     }
 }

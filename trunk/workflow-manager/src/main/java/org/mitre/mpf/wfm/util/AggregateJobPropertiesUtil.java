@@ -401,18 +401,10 @@ public class AggregateJobPropertiesUtil {
 
 
     public UnaryOperator<String> getCombinedProperties(BatchJob job, URI mediaUri) {
-        var matchingMedia = Optional.<Media>empty();
-        for (var media : job.getMedia()) {
-            try {
-                if (mediaUri.equals(new URI(media.getUri()))) {
-                    matchingMedia = Optional.of(media);
-                    break;
-                }
-            }
-            catch (URISyntaxException ignored) {
-                // Continue searching for matching media since a job could have a combination of good and bad media.
-            }
-        }
+        var matchingMedia = job.getMedia()
+                .stream()
+                .filter(m -> mediaUri.equals(m.getUri().get()))
+                .findAny();
 
         var mediaProperties = matchingMedia
                 .map(Media::getMediaSpecificProperties)

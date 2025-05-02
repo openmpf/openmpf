@@ -53,6 +53,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
@@ -79,7 +80,7 @@ import spark.Spark;
 public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
     private static final Logger LOG = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
     private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
-    private static final String EXT_IMG = "http://localhost:4587/test-image.jpg";
+    private static final MediaUri EXT_IMG = MediaUri.create("http://localhost:4587/test-image.jpg");
 
     private RemoteMediaProcessor _remoteMediaProcessor;
 
@@ -151,7 +152,7 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
         long mediaId = 456;
 
         MediaImpl media = new MediaImpl(
-                mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), _tempFolder.newFile().toPath(),
+                mediaId, EXT_IMG, UriScheme.get(EXT_IMG), _tempFolder.newFile().toPath(),
                 Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
 
         Exchange exchange = setupExchange(jobId, media);
@@ -175,9 +176,9 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
         long mediaId = 321;
 
         MediaImpl media = new MediaImpl(
-                mediaId, "https://www.mitre.org/" + UUID.randomUUID(), UriScheme.HTTPS,
-                _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(), List.of(), List.of(),
-                null, null);
+                mediaId, MediaUri.create("https://www.mitre.org/" + UUID.randomUUID()),
+                UriScheme.HTTPS, _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(),
+                List.of(), List.of(), null, null);
 
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
@@ -199,10 +200,10 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
         long mediaId1 = 634;
         long mediaId2 = 458;
         ImmutableCollection<MediaImpl> media = ImmutableList.of(
-                new MediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
+                new MediaImpl(mediaId1, MediaUri.create("/some/local/path.jpg"), UriScheme.FILE,
                               Paths.get("/some/local/path.jpg"), Map.of(), Map.of(), List.of(),
                               List.of(), List.of(), null, null),
-                new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
+                new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(EXT_IMG),
                               _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(),
                               List.of(), List.of(), null, null));
 

@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
-#include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
@@ -98,12 +97,11 @@ std::string BatchExecutorUtil::ExpandFileName(std::string_view file_name) {
 }
 
 
-std::optional<std::string> BatchExecutorUtil::GetEnv(std::string_view name) {
-    auto env_val = std::getenv(name.data());
-    if (env_val == nullptr || std::strlen(env_val) == 0) {
-        return {};
+std::optional<std::string> BatchExecutorUtil::GetEnv(const char* name) {
+    if (const auto* env_val = std::getenv(name); env_val && env_val[0] != '\0') {
+        return std::string{env_val};
     }
     else {
-        return std::string{env_val};
+        return {};
     }
 }

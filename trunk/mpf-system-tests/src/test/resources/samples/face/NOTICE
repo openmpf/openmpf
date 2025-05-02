@@ -11,6 +11,10 @@ biometric research."
 Based on meds-aa-S001-01.jpg from the MEDS-II dataset.
 Rotated 90 degrees clockwise and horizontally flipped. Added EXIF metadata.
 
+# meds-aa-S001-01-exif-rotation.jpg.datauri.txt
+Plain text file containing meds-aa-S001-01-exif-rotation.jpg encoded as a data URI.
+
+
 # meds-af-S419-01_40deg.jpg
 meds-af-S419-01 next to itself rotated 40 degrees
 

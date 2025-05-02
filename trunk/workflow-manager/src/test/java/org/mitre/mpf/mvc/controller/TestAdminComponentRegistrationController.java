@@ -50,18 +50,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.service.component.AddComponentService;
-import org.mitre.mpf.wfm.service.component.ComponentLanguage;
 import org.mitre.mpf.wfm.service.component.ComponentReRegisterService;
 import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
 import org.mitre.mpf.wfm.service.component.ComponentRegistrationStatusException;
 import org.mitre.mpf.wfm.service.component.ComponentStateService;
 import org.mitre.mpf.wfm.service.component.DuplicateComponentException;
-import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.ManagedComponentsUnsupportedException;
 import org.mitre.mpf.wfm.service.component.RemoveComponentService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -173,49 +170,6 @@ public class TestAdminComponentRegistrationController extends MockitoTest.Lenien
 
         verify(_mockAddComponentService)
                 .registerComponent(_testPackageName);
-    }
-
-
-    @Test
-    public void canRegisterNewUnmanagedComponent() throws ComponentRegistrationException {
-        verifyUnmanagedComponentRegistered(null, true,
-                                           HttpStatus.CREATED, "New component registered.");
-    }
-
-
-    @Test
-    public void canRegisterDuplicateUnmanagedComponent() throws ComponentRegistrationException {
-        verifyUnmanagedComponentRegistered(new RegisterComponentModel(), false,
-                                           HttpStatus.OK, "Component already registered.");
-    }
-
-    @Test
-    public void canModifyExistingUnmanagedComponent() throws ComponentRegistrationException {
-        verifyUnmanagedComponentRegistered(new RegisterComponentModel(), true,
-                                           HttpStatus.OK, "Modified existing component.");
-    }
-
-    private void verifyUnmanagedComponentRegistered(
-            RegisterComponentModel rcm, boolean wasReregistered,
-            HttpStatus expectedStatus, String expectedResponseMessage) throws ComponentRegistrationException {
-
-        when(_mockStateService.getByComponentName(_testComponentName))
-                .thenReturn(Optional.ofNullable(rcm));
-
-        var descriptor = new JsonComponentDescriptor(
-            _testComponentName, "", "", null, null, ComponentLanguage.CPP, "", "",
-            List.of(), null, List.of(), List.of(), List.of());
-
-        when(_mockAddComponentService.registerUnmanagedComponent(descriptor))
-                .thenReturn(wasReregistered);
-
-        ResponseMessage response = _controller.registerUnmanagedComponent(descriptor);
-        assertEquals(expectedStatus, response.getStatusCode());
-        assertEquals(expectedResponseMessage, response.getBody().getMessage());
-
-        verify(_mockAddComponentService)
-                .registerUnmanagedComponent(descriptor);
-
     }
 
 

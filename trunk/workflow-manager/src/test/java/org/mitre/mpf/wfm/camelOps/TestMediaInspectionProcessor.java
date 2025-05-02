@@ -551,7 +551,7 @@ public class TestMediaInspectionProcessor {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testHeicInspection() {
+    public void testHeifInspection() {
         when(_mockPropertiesUtil.getTemporaryMediaDirectory())
                 .thenReturn(_tempFolder.getRoot());
 

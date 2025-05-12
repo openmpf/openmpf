@@ -912,11 +912,15 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 24, "24", 25, 26, 27, 28, "type2", 1,
                 Map.of("prop3", "prop4"), detection3, List.of(detection3));
 
+        var annotator1 = ImmutableSortedSet.of("KEYWORD TAGGING");
+        
+        var annotator2 = ImmutableSortedSet.of("KEYWORD TAGGING");
+
         var action1 = JsonActionOutputObject.factory(
-                "action1", "algo1", ImmutableSortedSet.of(track1));
+                "action1", "algo1", annotator1, ImmutableSortedSet.of(track1));
 
         var action2 = JsonActionOutputObject.factory(
-                "action2", "algo2", ImmutableSortedSet.of(track2));
+                "action2", "algo2", annotator2, ImmutableSortedSet.of(track2));
 
         var trackTypeMap = ImmutableSortedMap.<String, SortedSet<JsonActionOutputObject>>of(
                 "type1", ImmutableSortedSet.of(action1),

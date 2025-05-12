@@ -280,25 +280,8 @@ public class TiesDbService {
 
     private SortedSet<String> getTrackTypes(BatchJob job, Media media) {
         var pipelineElements = job.getPipelineElements();
-        Stream<Task> tasks;
-        if (_aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)) {
-            int lastDetectionTaskIdx = pipelineElements.getLastDetectionTaskIdx();
-            var endingTaskIdxs = IntStream.of(
-                    lastDetectionTaskIdx, pipelineElements.getTaskCount() - 1);
+        Stream<Task> tasks = pipelineElements.getTaskStreamInOrder();
 
-            var lastDetectionTask = pipelineElements.getTask(lastDetectionTaskIdx);
-            // Include the track types that were merged away.
-            var mergedTaskIdxs = IntStream.range(0, lastDetectionTask.actions().size())
-                    .flatMap(ai -> _taskMergingManager.getTransitiveMergeTargets(
-                            job, media, lastDetectionTaskIdx, ai));
-
-            tasks = IntStream.concat(endingTaskIdxs, mergedTaskIdxs)
-                    .distinct()
-                    .mapToObj(pipelineElements::getTask);
-        }
-        else {
-            tasks = pipelineElements.getTaskStreamInOrder();
-        }
         return tasks
                 .flatMap(pipelineElements::getActionStreamInOrder)
                 .map(a -> pipelineElements.getAlgorithm(a.algorithm()).trackType())

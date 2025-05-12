@@ -553,11 +553,14 @@ public class AggregateJobPropertiesUtil {
         }
     }
 
-    public boolean isOutputLastTaskOnly(Media media, BatchJob job) {
-        // Action properties and algorithm properties are not checked because it doesn't make sense
-        // to apply OUTPUT_LAST_TASK_ONLY to a single task.
+    public boolean isSuppressTrack(Media media, BatchJob job) {
         return Boolean.parseBoolean(
-                getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
+                getValue(MpfConstants.SUPPRESS_TRACKS_PROPERTY, job, media));
+    }
+
+    public boolean isSuppressTrack(Media media, BatchJob job, Action action) {
+        return Boolean.parseBoolean(
+                getValue(MpfConstants.SUPPRESS_TRACKS_PROPERTY, job, media, action));
     }
 
     public boolean isNonVisualObjectType(String type) {

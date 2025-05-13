@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,7 +35,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 
 public record DetectionRequest(
         DetectionProtobuf.DetectionRequest protobuf,
-        Optional<Track> feedForwardTrack,
+        Optional<List<Track>> feedForwardTracks,
         Map<String, String> headers) {
 
     public DetectionRequest(DetectionProtobuf.DetectionRequest protobuf) {
@@ -43,7 +44,12 @@ public record DetectionRequest(
 
     public DetectionRequest(
             DetectionProtobuf.DetectionRequest protobuf, Track feedForwardTrack) {
-        this(protobuf, Optional.of(feedForwardTrack), Map.of());
+        this(protobuf, Optional.of(List.of(feedForwardTrack)), Map.of());
+    }
+
+    public DetectionRequest(
+            DetectionProtobuf.DetectionRequest protobuf, List<Track> feedForwardTracks) {
+        this(protobuf, Optional.of(feedForwardTracks), Map.of());
     }
 
     public DetectionRequest(

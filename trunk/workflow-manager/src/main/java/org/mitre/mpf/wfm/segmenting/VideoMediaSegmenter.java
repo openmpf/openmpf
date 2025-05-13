@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.MultiTrackVideoRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -78,6 +79,9 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     .collect(toList());
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {
+            if (MediaSegmenter.feedForwardAllTracksIsEnabled(context)) {
+                return List.of(createFeedForwardAllTracksRequest(media, context));
+            }
             return createFeedForwardRequests(media, context);
         }
         else {
@@ -126,6 +130,55 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .build();
     }
 
+    private static DetectionProtobuf.DetectionRequest createProtobuf(
+            Media media,
+            DetectionContext context,
+            MultiTrackVideoRequest multiTrackVideoRequest) {
+        return MediaSegmenter.initializeRequest(media, context)
+                .setMultiTrackVideoRequest(multiTrackVideoRequest)
+                .build();
+    }
+
+
+    private DetectionRequest createFeedForwardAllTracksRequest(Media media, DetectionContext context) {
+        int topQualityCount = getTopQualityCount(context);
+        String topQualitySelectionProp = context.getQualitySelectionProperty();
+        var tracks = _triggerProcessor.getTriggeredTracks(media, context)
+                .filter(t -> {
+                    if (t.getDetections().isEmpty()) {
+                        log.warn("Found track with no detections. "
+                                    + "No feed forward request will be created for: {}", t);
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        var multiTrackVideoRequestBuilder = MultiTrackVideoRequest.newBuilder();
+        for (Track track : tracks) {
+            var protobufTrackBuilder = 
+                createFeedForwardTrackBuilder(track, topQualityCount, topQualitySelectionProp, media, context);
+            multiTrackVideoRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
+        }
+
+        var startFrame = tracks.stream()
+                .mapToInt(Track::getStartOffsetFrameInclusive)
+                .min();
+
+        var stopFrame = tracks.stream()
+                .mapToInt(Track::getEndOffsetFrameInclusive)
+                .max();
+
+        MultiTrackVideoRequest multiTrackVideoRequest = multiTrackVideoRequestBuilder
+                .setStartFrame(startFrame.getAsInt())
+                .setStopFrame(stopFrame.getAsInt())
+                .build();
+
+        var protobuf = createProtobuf(media, context, multiTrackVideoRequest);
+
+        return new DetectionRequest(protobuf, tracks);
+    }
+
 
     private List<DetectionRequest> createFeedForwardRequests(Media media, DetectionContext context) {
         int topQualityCount = getTopQualityCount(context);
@@ -146,6 +199,24 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private DetectionRequest createFeedForwardRequest(
             Track track, int topQualityCount, String topQualitySelectionProp, Media media, DetectionContext context) {
+
+        var protobufTrackBuilder = 
+            createFeedForwardTrackBuilder(track, topQualityCount, topQualitySelectionProp, media, context);
+
+        var videoRequest = VideoRequest.newBuilder()
+                .setStartFrame(protobufTrackBuilder.getStartFrame())
+                .setStopFrame(protobufTrackBuilder.getStopFrame())
+                .setFeedForwardTrack(protobufTrackBuilder)
+                .build();
+        var protobuf = createProtobuf(media, context, videoRequest);
+
+        return new DetectionRequest(protobuf, track);
+    }
+
+
+    private static DetectionProtobuf.VideoTrack.Builder createFeedForwardTrackBuilder(
+        Track track, int topQualityCount, String topQualitySelectionProp, Media media, DetectionContext context) {
+
         Set<Detection> includedDetections;
         int startFrame;
         int stopFrame;
@@ -191,14 +262,9 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     MediaSegmenter.createImageLocation(detection));
         }
 
-        var videoRequest = VideoRequest.newBuilder()
-                .setStartFrame(startFrame)
-                .setStopFrame(stopFrame)
-                .setFeedForwardTrack(protobufTrackBuilder)
-                .build();
-        var protobuf = createProtobuf(media, context, videoRequest);
-        return new DetectionRequest(protobuf, track);
+        return protobufTrackBuilder;
     }
+
 
     private static int getTopQualityCount(DetectionContext context) {
         return Optional.ofNullable(
@@ -206,6 +272,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .map(Integer::parseInt)
                 .orElse(0);
     }
+
+
     private static Optional<String> getBestDetectionPropertyList(DetectionContext context) {
         return Optional.ofNullable(
             context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST));

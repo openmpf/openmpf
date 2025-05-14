@@ -43,12 +43,21 @@ public record DetectionRequest(
     }
 
     public DetectionRequest(
-            DetectionProtobuf.DetectionRequest protobuf, Track feedForwardTrack) {
+            DetectionProtobuf.DetectionRequest protobuf,
+            Track feedForwardTrack) {
         this(protobuf, Optional.of(List.of(feedForwardTrack)), Map.of());
     }
 
     public DetectionRequest(
-            DetectionProtobuf.DetectionRequest protobuf, List<Track> feedForwardTracks) {
+            DetectionProtobuf.DetectionRequest protobuf,
+            Track feedForwardTrack,
+            Map<String, String> headers) {
+        this(protobuf, Optional.of(List.of(feedForwardTrack)), headers);
+    }
+
+    public DetectionRequest(
+            DetectionProtobuf.DetectionRequest protobuf,
+            List<Track> feedForwardTracks) {
         this(protobuf, Optional.of(feedForwardTracks), Map.of());
     }
 

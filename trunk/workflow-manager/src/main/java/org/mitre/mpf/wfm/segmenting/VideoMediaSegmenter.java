@@ -80,7 +80,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {
             if (MediaSegmenter.feedForwardAllTracksIsEnabled(context)) {
-                return List.of(createFeedForwardAllTracksRequest(media, context));
+                var feedForwardAllTracksRequest = createFeedForwardAllTracksRequest(media, context);
+                return feedForwardAllTracksRequest.isPresent() ? List.of(feedForwardAllTracksRequest.get()) : List.of();
             }
             return createFeedForwardRequests(media, context);
         }
@@ -140,7 +141,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     }
 
 
-    private DetectionRequest createFeedForwardAllTracksRequest(Media media, DetectionContext context) {
+    private Optional<DetectionRequest> createFeedForwardAllTracksRequest(Media media, DetectionContext context) {
         int topQualityCount = getTopQualityCount(context);
         String topQualitySelectionProp = context.getQualitySelectionProperty();
         var tracks = _triggerProcessor.getTriggeredTracks(media, context)
@@ -153,6 +154,10 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     return true;
                 })
                 .collect(Collectors.toList());
+
+        if (tracks.isEmpty()) {
+            return Optional.empty();
+        }
 
         var multiTrackVideoRequestBuilder = MultiTrackVideoRequest.newBuilder();
         for (Track track : tracks) {
@@ -176,7 +181,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
         var protobuf = createProtobuf(media, context, multiTrackVideoRequest);
 
-        return new DetectionRequest(protobuf, tracks);
+        return Optional.of(new DetectionRequest(protobuf, tracks));
     }
 
 

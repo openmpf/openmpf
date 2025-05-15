@@ -11,7 +11,7 @@
         "description": "When true all feed-forward tracks will be passed to this algorithm in one sub-job. When false each feed-forward track will be passed in a separate sub-job.",
         "type": "BOOLEAN",
         "defaultValue": "false",
-        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+        "mediaTypes": ["VIDEO"]
     },
     {
         "name": "FEED_FORWARD_TOP_QUALITY_COUNT",

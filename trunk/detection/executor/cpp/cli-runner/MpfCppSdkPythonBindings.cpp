@@ -186,7 +186,7 @@ PYBIND11_MODULE(mpf_cpp_sdk, m) {
                  "job"_a,
                  call_guard_t())
             .def("GetDetections",
-                 [](CppComponent& c, const MPFMultiTrackVideoJob &job) { return c->GetDetections(job); },
+                 [](CppComponent& c, const MPFAllVideoTracksJob &job) { return c->GetDetections(job); },
                  "job"_a,
                  call_guard_t())
             .def("GetDetections",

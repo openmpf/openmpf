@@ -118,7 +118,7 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             video_response->set_start_frame(video_job.start_frame);
             video_response->set_stop_frame(video_job.stop_frame);
         } else {
-            const auto& video_job = std::get<MPFMultiTrackVideoJob>(context.job);
+            const auto& video_job = std::get<MPFAllVideoTracksJob>(context.job);
             video_response->set_start_frame(video_job.start_frame);
             video_response->set_stop_frame(video_job.stop_frame);
         }

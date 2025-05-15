@@ -101,7 +101,7 @@ message DetectionRequest {
         VideoRequest video_request = 8;
         AudioRequest audio_request = 9;
         ImageRequest image_request = 10;
-        MultiTrackVideoRequest multi_track_video_request = 11;
+        AllVideoTracksRequest all_video_tracks_request = 11;
     }
 
     message GenericRequest {
@@ -120,7 +120,7 @@ message DetectionRequest {
         VideoTrack feed_forward_track = 3;
     }
 
-    message MultiTrackVideoRequest {
+    message AllVideoTracksRequest {
         // The zero-based start frame in the video.
         int32 start_frame = 1;
 

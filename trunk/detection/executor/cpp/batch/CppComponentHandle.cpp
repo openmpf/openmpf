@@ -59,7 +59,7 @@ namespace MPF::COMPONENT {
         return component_->GetDetections(job);
     }
 
-    std::vector<MPFVideoTrack> CppComponentHandle::GetDetections(const MPFMultiTrackVideoJob &job) {
+    std::vector<MPFVideoTrack> CppComponentHandle::GetDetections(const MPFAllVideoTracksJob &job) {
         return component_->GetDetections(job);
     }
 

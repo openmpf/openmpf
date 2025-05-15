@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.MultiTrackVideoRequest;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AllVideoTracksRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -134,9 +134,9 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     private static DetectionProtobuf.DetectionRequest createProtobuf(
             Media media,
             DetectionContext context,
-            MultiTrackVideoRequest multiTrackVideoRequest) {
+            AllVideoTracksRequest AllVideoTracksRequest) {
         return MediaSegmenter.initializeRequest(media, context)
-                .setMultiTrackVideoRequest(multiTrackVideoRequest)
+                .setAllVideoTracksRequest(AllVideoTracksRequest)
                 .build();
     }
 
@@ -159,11 +159,11 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             return Optional.empty();
         }
 
-        var multiTrackVideoRequestBuilder = MultiTrackVideoRequest.newBuilder();
+        var AllVideoTracksRequestBuilder = AllVideoTracksRequest.newBuilder();
         for (Track track : tracks) {
             var protobufTrackBuilder = 
                 createFeedForwardTrackBuilder(track, topQualityCount, topQualitySelectionProp, media, context);
-            multiTrackVideoRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
+            AllVideoTracksRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
         }
 
         var startFrame = tracks.stream()
@@ -174,12 +174,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .mapToInt(Track::getEndOffsetFrameInclusive)
                 .max();
 
-        MultiTrackVideoRequest multiTrackVideoRequest = multiTrackVideoRequestBuilder
+        AllVideoTracksRequest allVideoTracksRequest = AllVideoTracksRequestBuilder
                 .setStartFrame(startFrame.getAsInt())
                 .setStopFrame(stopFrame.getAsInt())
                 .build();
 
-        var protobuf = createProtobuf(media, context, multiTrackVideoRequest);
+        var protobuf = createProtobuf(media, context, allVideoTracksRequest);
 
         return Optional.of(new DetectionRequest(protobuf, tracks));
     }

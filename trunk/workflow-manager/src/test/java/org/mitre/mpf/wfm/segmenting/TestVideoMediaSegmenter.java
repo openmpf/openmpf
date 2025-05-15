@@ -411,7 +411,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         assertEquals(1, detectionRequests.size());
 
-        var request = detectionRequests.get(0).protobuf().getMultiTrackVideoRequest();
+        var request = detectionRequests.get(0).protobuf().getAllVideoTracksRequest();
         assertEquals(2, request.getStartFrame());
         assertEquals(50, request.getStopFrame());
 

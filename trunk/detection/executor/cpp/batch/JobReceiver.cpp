@@ -44,7 +44,7 @@ namespace {
     constexpr job_type_info_t job_type_info<MPFVideoJob>{MPFDetectionDataType::VIDEO, "VIDEO"};
 
     template <>
-    constexpr job_type_info_t job_type_info<MPFMultiTrackVideoJob>{MPFDetectionDataType::VIDEO, "VIDEO"};
+    constexpr job_type_info_t job_type_info<MPFAllVideoTracksJob>{MPFDetectionDataType::VIDEO, "VIDEO"};
 
     template <>
     constexpr job_type_info_t job_type_info<MPFImageJob>{MPFDetectionDataType::IMAGE, "IMAGE"};

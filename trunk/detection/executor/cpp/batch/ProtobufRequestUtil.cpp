@@ -107,11 +107,11 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
         }
 
 
-        MPFMultiTrackVideoJob CreateMultiTrackVideoJob(
+        MPFAllVideoTracksJob CreateAllVideoTracksJob(
                 const mpf_buffers::DetectionRequest& detection_request,
                 std::string_view job_name,
                 const Properties& environment_properties) {
-            const auto& video_request = detection_request.multi_track_video_request();
+            const auto& video_request = detection_request.all_video_tracks_request();
             if (video_request.feed_forward_tracks_size() > 0) {
                 const auto& pb_ff_tracks = video_request.feed_forward_tracks();
                 std::vector<MPFVideoTrack> ff_tracks;
@@ -281,8 +281,8 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
         if (detection_request.has_video_request()) {
             return CreateVideoJob(detection_request, job_name, environment_job_properties);
         }
-        else if (detection_request.has_multi_track_video_request()) {
-            return CreateMultiTrackVideoJob(detection_request, job_name, environment_job_properties);
+        else if (detection_request.has_all_video_tracks_request()) {
+            return CreateAllVideoTracksJob(detection_request, job_name, environment_job_properties);
         }
         else if (detection_request.has_image_request()) {
             return CreateImageJob(detection_request, job_name, environment_job_properties);

@@ -298,7 +298,7 @@ namespace MPF::COMPONENT {
         private:
             py::object image_job_ctor_;
             py::object video_job_ctor_;
-            py::object multi_track_video_job_ctor_;
+            py::object all_video_tracks_job_ctor_;
             py::object audio_job_ctor_;
             py::object generic_job_ctor_;
 
@@ -318,7 +318,7 @@ namespace MPF::COMPONENT {
             explicit ComponentApi(py::module_ &&component_api_module)
                     : image_job_ctor_(component_api_module.attr("ImageJob"))
                     , video_job_ctor_(component_api_module.attr("VideoJob"))
-                    , multi_track_video_job_ctor_(component_api_module.attr("MultiTrackVideoJob"))
+                    , all_video_tracks_job_ctor_(component_api_module.attr("AllVideoTracksJob"))
                     , audio_job_ctor_(component_api_module.attr("AudioJob"))
                     , generic_job_ctor_(component_api_module.attr("GenericJob"))
                     , image_location_ctor_(component_api_module.attr("ImageLocation"))
@@ -395,7 +395,7 @@ namespace MPF::COMPONENT {
                         feed_forward_track);
             }
 
-            py::object to_python(const MPFMultiTrackVideoJob &job) {
+            py::object to_python(const MPFAllVideoTracksJob &job) {
                 py::list feed_forward_tracks;
                 if (job.has_feed_forward_tracks) {
                     for (const auto& feed_forward_track : job.feed_forward_tracks) {
@@ -403,7 +403,7 @@ namespace MPF::COMPONENT {
                     }
                 }
 
-                return multi_track_video_job_ctor_(
+                return all_video_tracks_job_ctor_(
                         job.job_name,
                         job.data_uri,
                         job.start_frame,
@@ -467,7 +467,7 @@ namespace MPF::COMPONENT {
         struct ComponentAttrs {
             std::optional<py::function> get_detections_from_image_method;
             std::optional<py::function> get_detections_from_video_method;
-            std::optional<py::function> get_detections_from_multi_track_video_method;
+            std::optional<py::function> get_detections_from_all_video_tracks_method;
             std::optional<py::function> get_detections_from_audio_method;
             std::optional<py::function> get_detections_from_generic_method;
 
@@ -480,7 +480,7 @@ namespace MPF::COMPONENT {
             explicit ComponentAttrs(py::object &&component_instance)
                 : get_detections_from_image_method(get_method(component_instance, "get_detections_from_image"))
                 , get_detections_from_video_method(get_method(component_instance, "get_detections_from_video"))
-                , get_detections_from_multi_track_video_method(get_method(component_instance, "get_detections_from_multi_track_video"))
+                , get_detections_from_all_video_tracks_method(get_method(component_instance, "get_detections_from_all_video_tracks"))
                 , get_detections_from_audio_method(get_method(component_instance, "get_detections_from_audio"))
                 , get_detections_from_generic_method(get_method(component_instance, "get_detections_from_generic"))
             {
@@ -492,7 +492,7 @@ namespace MPF::COMPONENT {
                             "The component does contain any of the component API methods. "
                             "Components must implement one or more of the following methods: "
                             "get_detections_from_image, get_detections_from_video, "
-                            "get_detections_from_multi_track_video, get_detections_from_audio, "
+                            "get_detections_from_all_video_tracks, get_detections_from_audio, "
                             "or get_detections_from_generic.");
                 }
             }
@@ -569,7 +569,7 @@ namespace MPF::COMPONENT {
                     return component_.get_detections_from_generic_method.has_value();
                 case VIDEO:
                     return component_.get_detections_from_video_method.has_value()
-                           || component_.get_detections_from_multi_track_video_method.has_value();
+                           || component_.get_detections_from_all_video_tracks_method.has_value();
                 case IMAGE:
                     return component_.get_detections_from_image_method.has_value();
                 case AUDIO:
@@ -599,9 +599,9 @@ namespace MPF::COMPONENT {
         }
 
 
-        std::vector<MPFVideoTrack> GetDetections(const MPFMultiTrackVideoJob &job) {
+        std::vector<MPFVideoTrack> GetDetections(const MPFAllVideoTracksJob &job) {
             try {
-                if (!component_.get_detections_from_multi_track_video_method.has_value()) {
+                if (!component_.get_detections_from_all_video_tracks_method.has_value()) {
                     throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
                                                 "Unsupported data type.");
                 }
@@ -609,12 +609,12 @@ namespace MPF::COMPONENT {
                 py::object py_video_job = component_api_.to_python(job);
 
                 py::iterable py_results
-                        = (*component_.get_detections_from_multi_track_video_method)(py_video_job);
+                        = (*component_.get_detections_from_all_video_tracks_method)(py_video_job);
 
                 return ToVideoTracks(py_results);
             }
             catch (...) {
-                HandleComponentException("get_detections_from_multi_track_video");
+                HandleComponentException("get_detections_from_all_video_tracks");
             }
         }
 
@@ -781,7 +781,7 @@ namespace MPF::COMPONENT {
         return impl_->GetDetections(job);
     }
 
-    std::vector<MPFVideoTrack> PythonComponentHandle::GetDetections(const MPFMultiTrackVideoJob &job) {
+    std::vector<MPFVideoTrack> PythonComponentHandle::GetDetections(const MPFAllVideoTracksJob &job) {
         return impl_->GetDetections(job);
     }
 

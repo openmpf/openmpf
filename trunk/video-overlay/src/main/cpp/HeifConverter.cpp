@@ -34,7 +34,7 @@
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_org_mitre_mpf_heic_HeicConverter_convertNative (
+JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
         JNIEnv *env, jclass clz, jstring inputFile, jstring outputFile) {
 
     JniHelper jni(env);

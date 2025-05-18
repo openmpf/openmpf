@@ -60,6 +60,7 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,9 +223,12 @@ public class MarkupController {
             response.flushBuffer();
             return;
         }
-        
+
         // Add audit logging
-        auditEventLogger.logFileDownload(markupResult.getMarkupUri(), "markup");
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                            LogAuditEventRecord.OpType.READ, 
+                            LogAuditEventRecord.ResType.ACCESS, 
+                            "Downloaded markup file: id=" + id + ", uri=" + markupResult.getMarkupUri());
         
         Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
         if (localPath != null) {

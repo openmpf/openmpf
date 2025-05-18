@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,6 +191,12 @@ public class ServerMediaController {
             throws IOException {
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
+            // Add audit logging for viewing node images
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.READ, 
+                                LogAuditEventRecord.ResType.ACCESS, 
+                                "Viewed server node image: path=" + nodeFullPath);
+            
             var contentType= Optional.ofNullable(Files.probeContentType(path))
                     .map(MediaType::parseMediaType)
                     .orElse(MediaType.APPLICATION_OCTET_STREAM);
@@ -212,7 +219,10 @@ public class ServerMediaController {
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
         
         // Add audit logging before sending the response
-        auditEventLogger.logFileDownload(sourceUri.toString(), "media");
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                            LogAuditEventRecord.OpType.READ, 
+                            LogAuditEventRecord.ResType.ACCESS, 
+                            "Downloaded media file: jobId=" + jobId + ", uri=" + sourceUri);
         
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
             ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);

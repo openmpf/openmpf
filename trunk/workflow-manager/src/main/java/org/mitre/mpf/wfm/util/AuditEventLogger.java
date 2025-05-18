@@ -67,4 +67,10 @@ public class AuditEventLogger {
         return this;
     }
     
+    public void logFileDownload(String fileUri, String fileType) {
+        log(LogAuditEventRecord.TagType.SECURITY, 
+            LogAuditEventRecord.OpType.READ, 
+            LogAuditEventRecord.ResType.ACCESS, 
+            "Downloaded " + fileType + ": " + fileUri);
+    }
 }

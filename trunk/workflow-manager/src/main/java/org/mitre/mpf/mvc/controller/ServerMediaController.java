@@ -27,6 +27,7 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.Api;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
@@ -95,6 +96,8 @@ public class ServerMediaController {
     @Autowired
     private S3StorageBackend s3StorageBackend;
 
+    @Autowired
+    private AuditEventLogger auditEventLogger;
 
     private static class SortAlphabeticalCaseInsensitive implements Comparator<ServerMediaFile> {
         @Override
@@ -207,7 +210,10 @@ public class ServerMediaController {
     public void download(HttpServletResponse response,
                          @RequestParam("jobId") String jobId,
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
-
+        
+        // Add audit logging before sending the response
+        auditEventLogger.logFileDownload(sourceUri.toString(), "media");
+        
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
             ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
         }

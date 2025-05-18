@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
@@ -105,6 +106,8 @@ public class MarkupController {
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
 
+    @Autowired
+    private AuditEventLogger auditEventLogger;
 
     @GetMapping("/markup/get-markup-results-filtered")
     @ResponseBody
@@ -219,7 +222,10 @@ public class MarkupController {
             response.flushBuffer();
             return;
         }
-
+        
+        // Add audit logging
+        auditEventLogger.logFileDownload(markupResult.getMarkupUri(), "markup");
+        
         Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
         if (localPath != null) {
             if (!Files.exists(localPath)) {

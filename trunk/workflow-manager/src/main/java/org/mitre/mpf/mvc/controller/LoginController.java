@@ -137,7 +137,7 @@ public class LoginController {
             Authentication authentication) {
         
         if (authentication != null && authentication.isAuthenticated()) {
-            auditEventLogger.log(this.getClass().getName(), LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ACCESS, "User is already authenticated.");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ACCESS, "User is already authenticated.");
             return "redirect:/";
         }
 
@@ -145,7 +145,7 @@ public class LoginController {
         model.addObject("version", propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
-            auditEventLogger.log(this.getClass().getName(), LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
             model.addObject("error", "Invalid username and password!");
         }
 
@@ -171,7 +171,7 @@ public class LoginController {
                 "A user successfully authenticated with an OIDC provider, but was not" +
                             " authorized to access Workflow Manager.",
                     accessDeniedException);
-            auditEventLogger.log(this.getClass().getName(), LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(

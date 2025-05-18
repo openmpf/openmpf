@@ -62,8 +62,8 @@ public class AuditEventLogger {
         return auth != null ? auth.getName() : "system";
     }
 
-    public AuditEventLogger log (String app, LogAuditEventRecord.TagType tag, LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String msg) {
-        writeToLogger(new LogAuditEventRecord(TimeUtils.toIsoString(Instant.now()), tag, app, getCurrentLoggedInUser(), op, res, msg));
+    public AuditEventLogger log (LogAuditEventRecord.TagType tag, LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String msg) {
+        writeToLogger(new LogAuditEventRecord(TimeUtils.toIsoString(Instant.now()), tag, "openmpf", getCurrentLoggedInUser(), op, res, msg));
         return this;
     }
     

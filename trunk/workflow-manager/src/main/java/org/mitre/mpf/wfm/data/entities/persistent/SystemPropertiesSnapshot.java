@@ -95,6 +95,10 @@ public class SystemPropertiesSnapshot {
         return Integer.parseInt(_properties.get("detection.vfr.segment.minimum.length"));
     }
 
+    public String getSegmentLengthSpecification() {
+        return _properties.get("detection.segment.length.specification");
+    }
+
     public boolean isTrackMerging() {
         return Boolean.parseBoolean(_properties.get("detection.video.track.merging.enabled"));
     }

@@ -87,6 +87,10 @@ public class SystemPropertiesSnapshot {
         return Integer.parseInt(_properties.get("detection.vfr.segment.target.length"));
     }
 
+    public boolean isScaleSegmentsBySamplingInterval() {
+        return Boolean.parseBoolean(_properties.get("detection.scale.segments.by.sampling.interval.enabled"));
+    }
+
     public int getMinSegmentLength() {
         return Integer.parseInt(_properties.get("detection.segment.minimum.length"));
     }

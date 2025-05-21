@@ -162,8 +162,13 @@ public class TestDetectionTaskSplitter {
 
     private void assertMediaTypeHeaderSet(MediaType mediaType, String mimeType) {
 
-        BatchJob testJob = createSimpleJobForTest(Map.of(), Map.of(), Map.of(),
-                                                  "/samples/new_face_video.avi", mediaType, mimeType);
+        BatchJob testJob = createSimpleJobForTest(
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                "/samples/new_face_video.avi",
+                mediaType,
+                mimeType);
 
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
@@ -183,13 +188,21 @@ public class TestDetectionTaskSplitter {
         String propertyValue = "VALUE";
         jobProperties.put(propertyName, propertyValue);
         jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+
         Map<String, String> actionProperties = new HashMap<>();
         actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         actionProperties.put(MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        BatchJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
-                                                      "/samples/new_face_video.avi", MediaType.VIDEO, "video/avi");
+
+        BatchJob testJob = createSimpleJobForTest(
+                actionProperties,
+                jobProperties,
+                Collections.emptyMap(),
+                "/samples/new_face_video.avi",
+                MediaType.VIDEO,
+                "video/avi");
+        
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
@@ -212,14 +225,21 @@ public class TestDetectionTaskSplitter {
         String propertyValue = "VALUE";
         mediaProperties.put(propertyName, propertyValue);
         mediaProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         jobProperties.put(MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+
         BatchJob testJob = createSimpleJobForTest(
-                Collections.emptyMap(), jobProperties, mediaProperties,
-                "/samples/new_face_video.avi", MediaType.VIDEO, "video/avi");
+                Collections.emptyMap(),
+                jobProperties,
+                mediaProperties,
+                "/samples/new_face_video.avi",
+                MediaType.VIDEO,
+                "video/avi");
+        
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
@@ -295,8 +315,13 @@ public class TestDetectionTaskSplitter {
         expectedProperties.putAll(mediaProperties);
 
         BatchJob testJob = createSimpleJobForTest(
-                Collections.emptyMap(), jobProperties, mediaProperties,
-                "/samples/meds-aa-S001-01-exif-rotation.jpg", MediaType.IMAGE, "image/jpeg");
+                Collections.emptyMap(),
+                jobProperties,
+                mediaProperties,
+                "/samples/meds-aa-S001-01-exif-rotation.jpg",
+                MediaType.IMAGE,
+                "image/jpeg");
+        
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
 
@@ -318,8 +343,12 @@ public class TestDetectionTaskSplitter {
         expectedProperties.putAll(jobProperties);
 
         BatchJob testJob = createSimpleJobForTest(
-                actionProperties, jobProperties, Collections.emptyMap(),
-                "/samples/meds-aa-S001-01-exif-rotation.jpg", MediaType.IMAGE, "image/jpeg");
+                actionProperties,
+                jobProperties,
+                Collections.emptyMap(),
+                "/samples/meds-aa-S001-01-exif-rotation.jpg",
+                MediaType.IMAGE,
+                "image/jpeg");
 
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
@@ -342,8 +371,12 @@ public class TestDetectionTaskSplitter {
         expectedProperties.putAll(mediaProperties);
 
         BatchJob testJob = createSimpleJobForTest(
-                actionProperties, Collections.emptyMap(), mediaProperties,
-                "/samples/meds-aa-S001-01-exif-rotation.jpg", MediaType.IMAGE, "image/jpeg");
+                actionProperties,
+                Collections.emptyMap(),
+                mediaProperties,
+                "/samples/meds-aa-S001-01-exif-rotation.jpg",
+                MediaType.IMAGE,
+                "image/jpeg");
 
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
@@ -379,6 +412,42 @@ public class TestDetectionTaskSplitter {
         }
     }
 
+    private MediaImpl createSimpleMediaForTest(
+        String mediaUri,
+        MediaType mediaType,
+        String mimeType,
+        Map<String, String> mediaProperties,
+        Map<String, String> mediaMetadata) {
+
+        URI fullMediaUri = ioUtils.findFile(mediaUri);
+        MediaImpl testMedia = new MediaImpl(
+                nextId(),
+                fullMediaUri.toString(),
+                UriScheme.get(fullMediaUri),
+                Paths.get(fullMediaUri),
+                mediaProperties,
+                Map.of(),
+                List.of(),
+                List.of(),
+                null);
+        testMedia.setLength(300);
+        testMedia.setType(mediaType);
+        testMedia.setMimeType(mimeType);
+        testMedia.addMetadata(mediaMetadata);
+
+        if (testMedia.matchesType(MediaType.VIDEO)) {
+            // Video media must have FPS in metadata to support adaptive frame interval processing.
+            if (testMedia.getMetadata("FPS") == null) {
+                testMedia.addMetadata("FPS", "30");
+            }
+            if (testMedia.getMetadata("FRAME_COUNT") != null) {
+                int frameCount = Integer.parseInt(testMedia.getMetadata("FRAME_COUNT"));
+                testMedia.setLength(frameCount);
+            }            
+        }
+
+        return testMedia;
+    }
 
     private BatchJob createSimpleJobForTest(
             Map<String, String> actionProperties,
@@ -386,7 +455,27 @@ public class TestDetectionTaskSplitter {
             Map<String, String>  mediaProperties,
             String mediaUri,
             MediaType mediaType,
-            String mimeType) throws WfmProcessingException {
+            String mimeType,
+            Map<String, String> mediaMetadata) throws WfmProcessingException {
+        
+        MediaImpl testMedia = createSimpleMediaForTest(
+                mediaUri,
+                mediaType,
+                mimeType,
+                mediaProperties,
+                mediaMetadata);
+
+        return createSimpleJobForTest(
+                actionProperties,
+                jobProperties,
+                testMedia);
+    }
+
+    private BatchJob createSimpleJobForTest(
+            Map<String, String> actionProperties,
+            Map<String, String> jobProperties,
+            MediaImpl testMedia) throws WfmProcessingException {
+        
         long testId = 12345;
         String testExternalId = "externID";
 
@@ -418,36 +507,25 @@ public class TestDetectionTaskSplitter {
                 Collections.singletonList(action),
                 Collections.singletonList(algorithm));
 
-        return createSimpleJobForTest(testId, testExternalId, pipelineElements, jobProperties, mediaProperties,
-                                      mediaUri, mediaType, mimeType);
+        return createSimpleJobForTest(
+                testId,
+                testExternalId,
+                pipelineElements,
+                jobProperties,
+                testMedia);
     }
-
 
     private BatchJob createSimpleJobForTest(
             long testJobId,
             String testExternalId,
             JobPipelineElements testPipe,
             Map<String, String> jobProperties,
-            Map<String, String> mediaProperties,
-            String mediaUri,
-            MediaType mediaType,
-            String mimeType) {
+            MediaImpl testMedia) {
+
         final int testPriority = 4;
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
-
-        URI fullMediaUri = ioUtils.findFile(mediaUri);
-        MediaImpl testMedia = new MediaImpl(
-                nextId(), fullMediaUri.toString(), UriScheme.get(fullMediaUri), Paths.get(fullMediaUri),
-                mediaProperties, Map.of(), List.of(), List.of(), null);
-        testMedia.setLength(300);
-        testMedia.setType(mediaType);
-        testMedia.setMimeType(mimeType);
-        // Video media must have FPS in metadata to support adaptive frame interval processing.
-        if (testMedia.matchesType(MediaType.VIDEO)) {
-            testMedia.addMetadata("FPS", "30");
-        }
 
         var testJob = new BatchJobImpl(
                 testJobId,
@@ -978,5 +1056,41 @@ public class TestDetectionTaskSplitter {
         Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
         Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
         Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+    }
+
+    @Test
+    public void testScaleSegmentsByFrameInterval() {
+        HashMap<String, String> jobProperties = new HashMap<>();
+        jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
+        jobProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "-1");
+        jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "1");
+        jobProperties.put(MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS, "1");
+
+        Map<String, String> mediaMetadata = new HashMap<>();
+        mediaMetadata.put("FRAME_COUNT", "120");
+        mediaMetadata.put("FPS", "30");
+
+        MediaImpl testMedia = createSimpleMediaForTest(
+                "/samples/new_face_video.avi",
+                MediaType.VIDEO,
+                "video/avi",
+                Collections.emptyMap(),
+                mediaMetadata);
+
+        BatchJob testJob = createSimpleJobForTest(
+                Collections.emptyMap(),
+                jobProperties,
+                testMedia);
+        
+        List<Message> responseList = detectionSplitter.performSplit(
+                testJob, testJob.getPipelineElements().getTask(0));
+
+        Assert.assertEquals(1, responseList.size());
+        Message message = responseList.get(0);
+        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+
+        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
+        Assert.assertEquals(0, request.getVideoRequest().getStartFrame());
+        Assert.assertEquals(119, request.getVideoRequest().getStopFrame());
     }
 }

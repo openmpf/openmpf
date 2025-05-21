@@ -114,8 +114,8 @@ public class TestDetectionTaskSplitter {
                 ActionType.DETECTION,
                 "TEST",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()),
                 true,
                 true);
         Action action = new Action(
@@ -127,13 +127,13 @@ public class TestDetectionTaskSplitter {
 
 
         Task task = new Task("taskName", "task description",
-                             Collections.singletonList(action.name()));
+                             List.of(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.name()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
-                pipeline, Collections.singletonList(task), Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+                pipeline, List.of(task), List.of(action),
+                List.of(algorithm));
 
         BatchJob testJob = new BatchJobImpl(
                 testId,
@@ -143,9 +143,9 @@ public class TestDetectionTaskSplitter {
                 testPriority,
                 null,
                 null,
-                Collections.singletonList(testMedia),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
+                List.of(testMedia),
+                Map.of(),
+                Map.of(),
                 false);
 
         TestUtil.assertThrows(NoSuchElementException.class,
@@ -169,7 +169,8 @@ public class TestDetectionTaskSplitter {
                 Map.of(),
                 "/samples/new_face_video.avi",
                 mediaType,
-                mimeType);
+                mimeType,
+                Map.of());
 
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
@@ -199,10 +200,11 @@ public class TestDetectionTaskSplitter {
         BatchJob testJob = createSimpleJobForTest(
                 actionProperties,
                 jobProperties,
-                Collections.emptyMap(),
+                Map.of(),
                 "/samples/new_face_video.avi",
                 MediaType.VIDEO,
-                "video/avi");
+                "video/avi",
+                Map.of());
         
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
@@ -234,12 +236,13 @@ public class TestDetectionTaskSplitter {
         jobProperties.put(MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, "25");
 
         BatchJob testJob = createSimpleJobForTest(
-                Collections.emptyMap(),
+                Map.of(),
                 jobProperties,
                 mediaProperties,
                 "/samples/new_face_video.avi",
                 MediaType.VIDEO,
-                "video/avi");
+                "video/avi",
+                Map.of());
         
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
@@ -316,12 +319,13 @@ public class TestDetectionTaskSplitter {
         expectedProperties.putAll(mediaProperties);
 
         BatchJob testJob = createSimpleJobForTest(
-                Collections.emptyMap(),
+                Map.of(),
                 jobProperties,
                 mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg",
                 MediaType.IMAGE,
-                "image/jpeg");
+                "image/jpeg",
+                Map.of());
         
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
@@ -346,10 +350,11 @@ public class TestDetectionTaskSplitter {
         BatchJob testJob = createSimpleJobForTest(
                 actionProperties,
                 jobProperties,
-                Collections.emptyMap(),
+                Map.of(),
                 "/samples/meds-aa-S001-01-exif-rotation.jpg",
                 MediaType.IMAGE,
-                "image/jpeg");
+                "image/jpeg",
+                Map.of());
 
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
@@ -373,11 +378,12 @@ public class TestDetectionTaskSplitter {
 
         BatchJob testJob = createSimpleJobForTest(
                 actionProperties,
-                Collections.emptyMap(),
+                Map.of(),
                 mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg",
                 MediaType.IMAGE,
-                "image/jpeg");
+                "image/jpeg",
+                Map.of());
 
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
@@ -486,8 +492,8 @@ public class TestDetectionTaskSplitter {
                 ActionType.DETECTION,
                 "TEST",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()),
                 true,
                 true);
 
@@ -498,15 +504,15 @@ public class TestDetectionTaskSplitter {
         Action action = new Action("detectionAction", "detectionDescription",
                                    algorithm.name(), actionPropList);
 
-        Task task = new Task("taskName", "taskDescr", Collections.singletonList(action.name()));
+        Task task = new Task("taskName", "taskDescr", List.of(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.name()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline,
-                Collections.singletonList(task),
-                Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+                List.of(task),
+                List.of(action),
+                List.of(algorithm));
 
         return createSimpleJobForTest(
                 testId,
@@ -536,9 +542,9 @@ public class TestDetectionTaskSplitter {
                 testPriority,
                 null,
                 null,
-                Collections.singletonList(testMedia),
+                List.of(testMedia),
                 jobProperties,
-                Collections.emptyMap(),
+                Map.of(),
                 false);
         testJob.setCurrentTaskIndex(0);
         return testJob;
@@ -561,8 +567,8 @@ public class TestDetectionTaskSplitter {
 
         Algorithm algorithm = new Algorithm(
                 "FACECV", "description", ActionType.DETECTION, "FACE", OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()),
                 true, true);
 
         List<ActionProperty> actionPropertyList = actionProperties.entrySet()
@@ -573,13 +579,13 @@ public class TestDetectionTaskSplitter {
         Action action = new Action("FACECV", "dummyDescriptionFACECV", algorithm.name(),
                                    actionPropertyList);
         Task task = new Task("Test task", "task description",
-                             Collections.singletonList(action.name()));
+                             List.of(action.name()));
         Pipeline pipeline = new Pipeline("OCV FACE DETECTION PIPELINE",
                                          "TestDetectionSplitter Pipeline",
-                                         Collections.singletonList(task.name()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
-                pipeline, Collections.singletonList(task), Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+                pipeline, List.of(task), List.of(action),
+                List.of(algorithm));
 
         // Capture a snapshot of the detection system property settings when the job is created.
         Map<String, String> allSystemProperties =
@@ -595,7 +601,7 @@ public class TestDetectionTaskSplitter {
                 0,
                 null,
                 null,
-                Collections.singletonList(testMedia),
+                List.of(testMedia),
                 jobProperties,
                 algorithmProperties,
                 false);
@@ -959,20 +965,20 @@ public class TestDetectionTaskSplitter {
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION, "MEDIA",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
         var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION, "PARENT",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
         var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION, "CHILD",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
         var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION, "SHARED",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
 
         var action1 = new Action("EXTRACT_ACTION", null, algo1.name(), List.of());
         var action2 = new Action("PARENT_ACTION", null, algo2.name(),
@@ -1085,11 +1091,11 @@ public class TestDetectionTaskSplitter {
                 "/samples/new_face_video.avi",
                 MediaType.VIDEO,
                 "video/avi",
-                Collections.emptyMap(),
+                Map.of(),
                 mediaMetadata);
 
         BatchJob testJob = createSimpleJobForTest(
-                Collections.emptyMap(),
+                Map.of(),
                 jobProperties,
                 testMedia);
         

@@ -66,7 +66,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>python3</executable>
+                            <executable>python3.12</executable>
                             <arguments>
                                 <argument>${components.build.script}</argument>
                                 <argument>--build-dir=${components.build.dir}</argument>
@@ -88,7 +88,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>python3</executable>
+                            <executable>python3.12</executable>
                             <arguments>
                                 <argument>${components.build.script}</argument>
                                 <argument>--build-dir=${components.build.dir}</argument>
@@ -205,7 +205,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>python3</executable>
+                            <executable>python3.12</executable>
                             <arguments>
                                 <argument>-m</argument>
                                 <argument>unittest</argument>
@@ -219,7 +219,7 @@
                             </arguments>
                             <environmentVariables>
                                 <PYTHONPATH>
-                                    ${env.MPF_SDK_INSTALL_PATH}/python/site-packages:${user.home}/mpf-sdk-install/python/site-packages
+                                    ${env.MPF_SDK_INSTALL_PATH}/python/venv/lib/python3.12/site-packages:${user.home}/mpf-sdk-install/python/venv/lib/python3.12/site-packages
                                 </PYTHONPATH>
                             </environmentVariables>
                         </configuration>

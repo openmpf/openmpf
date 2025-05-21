@@ -46,6 +46,7 @@ trunk/workflow-manager/src/test/resources/CplusplusHelloWorldComponent.json
 trunk/audio-video-utils/target/
 trunk/audio-video-utils/target/
 trunk/bin/mpf-scripts/dist/
+trunk/bin/mpf-scripts/build
 
 # IDE Files
 cmake-build-debug

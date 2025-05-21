@@ -58,7 +58,7 @@ class PythonComponent:
         try:
             distribution = importlib.metadata.distribution(distribution_name)
             if len(distribution.entry_points) == 1:
-                return distribution.entry_points[0].load()
+                return next(iter(distribution.entry_points)).load()
             group_matches = None
             for entry_point in distribution.entry_points:
                 if entry_point.group != 'mpf.exported_component':
@@ -88,13 +88,15 @@ class ProtobufToSubjectJobConverter:
     def convert(cls, pb_job: pb_sub.SubjectTrackingJob) -> mpf_sub.SubjectTrackingJob:
         video_jobs = [cls._convert_video_job(j) for j in pb_job.video_job_results]
         image_jobs = [cls._convert_image_job(j) for j in pb_job.image_job_results]
+        audio_jobs = [cls._convert_audio_job(j) for j in pb_job.audio_job_results]
+        generic_jobs = [cls._convert_generic_job(j) for j in pb_job.generic_job_results]
         return mpf_sub.SubjectTrackingJob(
             pb_job.job_name,
             dict(pb_job.job_properties),
             video_jobs,
             image_jobs,
-            (),
-            ())
+            audio_jobs,
+            generic_jobs)
 
 
     @classmethod
@@ -153,6 +155,54 @@ class ProtobufToSubjectJobConverter:
             pb_img_detection.confidence,
             dict(pb_img_detection.detection_properties))
 
+
+    @classmethod
+    def _convert_audio_job(
+            cls, pb_job: pb_sub.AudioDetectionJobResults) -> mpf_sub.AudioDetectionJobResults:
+        detection_results = {
+            mpf_sub.TrackId(t_id): cls._convert_audio_track(track)
+            for t_id, track in pb_job.results.items()
+        }
+        detection_job = pb_job.detection_job
+        return mpf_sub.AudioDetectionJobResults(
+            detection_job.data_uri,
+            mpf_sub.MediaId(detection_job.media_id),
+            detection_job.algorithm,
+            mpf_sub.DetectionComponentType(detection_job.track_type),
+            dict(detection_job.job_properties),
+            dict(detection_job.media_properties),
+            detection_results)
+
+    @staticmethod
+    def _convert_audio_track(pb_track: pb_det.AudioTrack) -> mpf.AudioTrack:
+        return mpf.AudioTrack(
+            pb_track.start_time,
+            pb_track.stop_time,
+            pb_track.confidence,
+            dict(pb_track.detection_properties))
+
+
+    @classmethod
+    def _convert_generic_job(
+            cls, pb_job: pb_sub.GenericDetectionJobResults) -> mpf_sub.GenericDetectionJobResults:
+        detection_results = {
+            mpf_sub.TrackId(t_id): cls._convert_generic_track(track)
+            for t_id, track in pb_job.results.items()
+        }
+        detection_job = pb_job.detection_job
+        return mpf_sub.GenericDetectionJobResults(
+            detection_job.data_uri,
+            mpf_sub.MediaId(detection_job.media_id),
+            detection_job.algorithm,
+            mpf_sub.DetectionComponentType(detection_job.track_type),
+            dict(detection_job.job_properties),
+            dict(detection_job.media_properties),
+            detection_results)
+
+
+    @staticmethod
+    def _convert_generic_track(pb_track: pb_det.GenericTrack) -> mpf.GenericTrack:
+        return mpf.GenericTrack(pb_track.confidence, dict(pb_track.detection_properties))
 
 
 

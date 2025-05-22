@@ -51,14 +51,14 @@ public class AuditEventLogger {
 
     private void writeToLogger(LogAuditEventRecord event) {
         try {
-            log.info("{}", mapper.writeValueAsString(event));
+            log.info("\n{}", mapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("Failed to log event: {}", event, e);
         }
     }
 
     private String getCurrentLoggedInUser() {
-        Authentication auth= SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth != null ? auth.getName() : "system";
     }
 

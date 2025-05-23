@@ -27,6 +27,7 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.Api;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
@@ -41,6 +42,7 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +97,8 @@ public class ServerMediaController {
     @Autowired
     private S3StorageBackend s3StorageBackend;
 
+    @Autowired
+    private AuditEventLogger auditEventLogger;
 
     private static class SortAlphabeticalCaseInsensitive implements Comparator<ServerMediaFile> {
         @Override
@@ -187,6 +191,12 @@ public class ServerMediaController {
             throws IOException {
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
+            // Add audit logging for viewing node images
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.READ, 
+                                LogAuditEventRecord.ResType.ACCESS, 
+                                "Viewed server node image: path=" + nodeFullPath);
+            
             var contentType= Optional.ofNullable(Files.probeContentType(path))
                     .map(MediaType::parseMediaType)
                     .orElse(MediaType.APPLICATION_OCTET_STREAM);
@@ -207,7 +217,13 @@ public class ServerMediaController {
     public void download(HttpServletResponse response,
                          @RequestParam("jobId") String jobId,
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
-
+        
+        // Add audit logging before sending the response
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                            LogAuditEventRecord.OpType.READ, 
+                            LogAuditEventRecord.ResType.ACCESS, 
+                            "Downloaded media file: jobId=" + jobId + ", uri=" + sourceUri);
+        
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
             ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
         }

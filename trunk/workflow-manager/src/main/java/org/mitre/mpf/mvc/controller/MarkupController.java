@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
@@ -59,6 +60,7 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +107,8 @@ public class MarkupController {
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
 
+    @Autowired
+    private AuditEventLogger auditEventLogger;
 
     @GetMapping("/markup/get-markup-results-filtered")
     @ResponseBody
@@ -220,6 +224,12 @@ public class MarkupController {
             return;
         }
 
+        // Add audit logging
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                            LogAuditEventRecord.OpType.READ, 
+                            LogAuditEventRecord.ResType.ACCESS, 
+                            "Downloaded markup file: id=" + id + ", uri=" + markupResult.getMarkupUri());
+        
         Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
         if (localPath != null) {
             if (!Files.exists(localPath)) {

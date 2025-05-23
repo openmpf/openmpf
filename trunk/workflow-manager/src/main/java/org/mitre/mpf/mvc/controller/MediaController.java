@@ -55,6 +55,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.mitre.mpf.audit.AuditEventLogger;
+import org.mitre.mpf.audit.LogAuditEventRecord;
 
 @Api( value = "Media",
     description = "Media processing")
@@ -71,6 +73,9 @@ public class MediaController {
 
     @Autowired
     private ServerMediaService serverMediaService;
+
+    @Autowired
+    private AuditEventLogger auditEventLogger;
 
     @RequestMapping(value = "/upload/max-file-upload-cnt", method = RequestMethod.GET)
     @ResponseBody
@@ -152,6 +157,15 @@ public class MediaController {
 
                 //save the file
                 FileUtils.copyURLToFile(url, newFile);
+                
+                // Log the URL upload
+                auditEventLogger.log(
+                    LogAuditEventRecord.TagType.OPERATIONAL,
+                    LogAuditEventRecord.OpType.CREATE,
+                    LogAuditEventRecord.ResType.ACCESS,
+                    String.format("URL uploaded to file: url=%s, destination=%s", url, newFile.getAbsolutePath())
+                );
+                
                 log.info("Completed write of {} to {}", uri.getPath(), newFile.getAbsolutePath());
                 urlResultMap.put(enteredURL, "successful write to: " + newFile.getAbsolutePath());
                 successFiles.add(newFile);
@@ -215,6 +229,14 @@ public class MediaController {
         var targetFile = ioUtils.getNewFileName(
                 desiredPath.getAbsolutePath(), uploadedFile.getOriginalFilename());
         uploadedFile.transferTo(targetFile);
+
+        // Log the file upload
+        auditEventLogger.log(
+            LogAuditEventRecord.TagType.OPERATIONAL,
+            LogAuditEventRecord.OpType.CREATE,
+            LogAuditEventRecord.ResType.ACCESS,
+            String.format("Media file uploaded: filename=%s, destination=%s", originalFileName, targetFile.getAbsolutePath())
+        );
 
         log.info("Completed upload and write of {} to {}", originalFileName,
                  targetFile.getAbsolutePath());

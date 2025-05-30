@@ -88,6 +88,7 @@ import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobCompleteCallbackService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -158,6 +159,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private JobCompleteCallbackService jobCompleteCallbackService;
+
+    @Autowired
+    private TaskMergingManager _taskMergingManager;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -468,10 +472,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 else if (trackInfo.isSuppressed()) {
                     noOutputActions.put(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, action);
                 }
-                else if (trackInfo.isMergeTarget()) {
-                    // This task will be merged with one that follows.
-                    noOutputActions.put(JsonActionOutputObject.TRACKS_MERGED_TYPE, action);
-                }
                 else {
                     trackCounter.add(media, trackInfo.tracksGroupedByAction().size());
                     addJsonTracks(
@@ -490,33 +490,23 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         addMissingTrackInfo(noOutputActions, mediaOutputObject);
     }
 
-
     private List<String> getAnnotators(BatchJob job, Media media, int taskIndex) {
         List<String> annotators = new ArrayList<>();
 
-        // flag to determine when the first annotator has been found
-        boolean foundAnnotator = false;
+        if(_taskMergingManager.isMergeTarget(job, media, taskIndex)) {
+            // search subsequent tasks to determine if they are annotators for this task if it's a merge target
+            for (int nextTaskIndex = (taskIndex + 1); nextTaskIndex < job.getPipelineElements().getTaskCount(); nextTaskIndex++) {
+                Task task = job.getPipelineElements().getTask(nextTaskIndex);
 
-        // search subsequent tasks to determine if they are annotators
-        for (int nextTaskIndex = (taskIndex + 1); nextTaskIndex < job.getPipelineElements().getTaskCount(); nextTaskIndex++) {
-            Task task = job.getPipelineElements().getTask(nextTaskIndex);
+                // for each task, iterate though the actions list and check to see if the action is an annotator
+                for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
+                    String actionName = task.actions().get(actionIndex);
+                    Action action = job.getPipelineElements().getAction(actionName);
 
-            // for each task, iterate though the actions list and check to see if the action is an annotator
-            for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
-                String actionName = task.actions().get(actionIndex);
-                Action action = job.getPipelineElements().getAction(actionName);
-
-                // add the action to the list if it's an annotator
-                if (isAnnotator(job, media, action)) {
-                    // set the found flag
-                    foundAnnotator = true;
-
-                    annotators.add(actionName);
-                } else {
-                    // if we found an annotator in the past and this one is not an annotator,
-                    // then break out of the chain and return the annotators list
-                    if(foundAnnotator) {
-                        return annotators;
+                    // add the action to the list if it's an annotator amd a merge source
+                    if (_taskMergingManager.isMergeSource(job, media, nextTaskIndex, actionIndex) 
+                        && isAnnotator(job, media, action)) {
+                        annotators.add(actionName);
                     }
                 }
             }

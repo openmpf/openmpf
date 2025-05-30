@@ -230,7 +230,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         var media = ImmutableList.of(
                 toMediaObject(
                         ioUtils.findFile("/samples/face/ff-region-motion-face.avi"),
-                        ImmutableMap.of("SUPRESS_TRACKS", "true")),
+                        ImmutableMap.of("SUPPRESS_TRACKS", "true")),
                 toMediaObject(ioUtils.findFile("/samples/face/ff-region-motion-face.avi")));
 
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";

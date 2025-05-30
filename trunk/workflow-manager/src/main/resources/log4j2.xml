@@ -28,12 +28,17 @@
 
     <Properties>
         <Property name="wfmLogFile">${env:MPF_LOG_PATH}/${env:THIS_MPF_NODE}/log/workflow-manager.log</Property>
-        <Property name="layoutPattern">%date{ISO8601}{Z}{en-US} %level [%thread] %logger{1.} - %notEmpty{[Job %X{jobId}] }%msg%n</Property>
+        <Property name="layoutPattern">%date %level [%thread] %logger{1.} - %notEmpty{[Job %X{jobId}] }%msg%n</Property>
     </Properties>
 
     <Appenders>
         <Console name="STDOUT">
             <PatternLayout pattern="${layoutPattern}"/>
+        </Console>
+
+        <!-- Separate appender for JSON Audit Events -->
+        <Console name="JSON_STDOUT">
+            <PatternLayout pattern="%msg%n"/>
         </Console>
 
         <RollingRandomAccessFile name="WFM_FILE" fileName="${wfmLogFile}" filePattern="${wfmLogFile}.%date{yyyy-MM-dd}.%i">
@@ -45,12 +50,26 @@
                 <SizeBasedTriggeringPolicy size="50MB"/>
             </Policies>
         </RollingRandomAccessFile>
-
+        
+        <!-- Separate appender for JSON Audit Events-->
+        <RollingRandomAccessFile name="JSON_FILE" fileName="${wfmLogFile}" filePattern="${wfmLogFile}.%date{yyyy-MM-dd}.%i">
+            <PatternLayout pattern="%msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="50MB"/>
+            </Policies>
+        </RollingRandomAccessFile>
     </Appenders>
 
     <Loggers>
         <!-- To change the verbosity of MPF's own logging, change the level in the XML element below. -->
         <Logger name="org.mitre" level="INFO" />
+        
+        <!-- Logger for Audit Events -->
+        <Logger name="json.AuditEventLogger" level="INFO" additivity="false">
+            <AppenderRef ref="JSON_FILE"/>
+            <AppenderRef ref="JSON_STDOUT"/>
+        </Logger>
 
         <Root level="INFO">
             <AppenderRef ref="STDOUT"/>

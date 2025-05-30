@@ -191,10 +191,10 @@ public class ServerMediaController {
             throws IOException {
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
-            // Add audit logging for viewing node images
+
             auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
-                                LogAuditEventRecord.OpType.READ, 
-                                LogAuditEventRecord.ResType.ACCESS, 
+                                LogAuditEventRecord.OpType.READ,
+                                LogAuditEventRecord.ResType.ALLOW, 
                                 "Viewed server node image: path=" + nodeFullPath);
             
             var contentType= Optional.ofNullable(Files.probeContentType(path))
@@ -218,14 +218,14 @@ public class ServerMediaController {
                          @RequestParam("jobId") String jobId,
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
         
-        // Add audit logging before sending the response
-        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
-                            LogAuditEventRecord.OpType.READ, 
-                            LogAuditEventRecord.ResType.ACCESS, 
-                            "Downloaded media file: jobId=" + jobId + ", uri=" + sourceUri);
+
         
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
             ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                            LogAuditEventRecord.OpType.EXTRACT, 
+                            LogAuditEventRecord.ResType.ALLOW, 
+                            "Downloaded media file: jobId=" + jobId + ", uri=" + sourceUri);
         }
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         JobRequest jobRequest = jobRequestDao.findById(internalJobId);
@@ -235,6 +235,8 @@ public class ServerMediaController {
             response.flushBuffer();
             return;
         }
+
+        
 
         // If any of the code below throws an uncaught exception it will result in printing a stack trace
         // to the log and a status code of 500. An image preview in the UI will appear as a broken image link.
@@ -249,6 +251,10 @@ public class ServerMediaController {
                 var s3Response = s3Stream.response();
                 IoUtils.sendBinaryResponse(s3Stream, response, s3Response.contentType(),
                                            s3Response.contentLength());
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                            LogAuditEventRecord.OpType.EXTRACT, 
+                            LogAuditEventRecord.ResType.ALLOW, 
+                            "Downloaded media file: uri=" + sourceUri);
             }
             return;
         }

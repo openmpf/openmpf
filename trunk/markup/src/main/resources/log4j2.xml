@@ -28,7 +28,7 @@
 
     <Properties>
         <Property name="markupLogFile">${env:MPF_LOG_PATH}/${env:THIS_MPF_NODE}/log/markup.log</Property>
-        <Property name="layoutPattern">%date{ISO8601}{UTC}Z %level [%thread] %logger{1.} - %notEmpty{[Job %X{jobId}] }%msg%n</Property>
+        <Property name="layoutPattern">%date %level [%thread] %logger{1.} - %notEmpty{[Job %X{jobId}] }%msg%n</Property>
     </Properties>
 
     <Appenders>

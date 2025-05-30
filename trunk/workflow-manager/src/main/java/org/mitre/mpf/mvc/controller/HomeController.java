@@ -62,9 +62,9 @@ public class HomeController
 	public String getIndexPage() {
 		
 		auditEventLogger.log(
-			LogAuditEventRecord.TagType.OPERATIONAL,
+			LogAuditEventRecord.TagType.SECURITY,
 			LogAuditEventRecord.OpType.READ,
-			LogAuditEventRecord.ResType.ACCESS,
+			LogAuditEventRecord.ResType.ALLOW,
 			"Homepage accessed"
 		);
 		

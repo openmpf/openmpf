@@ -137,7 +137,7 @@ public class LoginController {
             Authentication authentication) {
         
         if (authentication != null && authentication.isAuthenticated()) {
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ACCESS, "User is already authenticated.");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User is already authenticated.");
             return "redirect:/";
         }
 

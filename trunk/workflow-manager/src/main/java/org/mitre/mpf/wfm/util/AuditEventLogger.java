@@ -41,7 +41,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 @Component
 public class AuditEventLogger {
-    private static final Logger log = LoggerFactory.getLogger(AuditEventLogger.class);
+    private static final Logger log = LoggerFactory.getLogger("json.AuditEventLogger");
     private final ObjectMapper mapper;
 
     @Autowired
@@ -51,7 +51,7 @@ public class AuditEventLogger {
 
     private void writeToLogger(LogAuditEventRecord event) {
         try {
-            log.info("\n{}", mapper.writeValueAsString(event));
+            log.info("{}", mapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("Failed to log event: {}", event, e);
         }
@@ -67,10 +67,4 @@ public class AuditEventLogger {
         return this;
     }
     
-    public void logFileDownload(String fileUri, String fileType) {
-        log(LogAuditEventRecord.TagType.SECURITY, 
-            LogAuditEventRecord.OpType.READ, 
-            LogAuditEventRecord.ResType.ACCESS, 
-            "Downloaded " + fileType + ": " + fileUri);
-    }
 }

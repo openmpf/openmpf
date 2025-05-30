@@ -76,7 +76,7 @@ public record LogAuditEventRecord(
     }
 
     public enum ResType {
-        ACCESS("a"),
+        ALLOW("a"),
         DENY("d"),
         ERROR("e");
         

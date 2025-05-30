@@ -55,8 +55,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mitre.mpf.audit.AuditEventLogger;
-import org.mitre.mpf.audit.LogAuditEventRecord;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 
 @Api( value = "Media",
     description = "Media processing")
@@ -160,9 +160,9 @@ public class MediaController {
                 
                 // Log the URL upload
                 auditEventLogger.log(
-                    LogAuditEventRecord.TagType.OPERATIONAL,
+                    LogAuditEventRecord.TagType.SECURITY,
                     LogAuditEventRecord.OpType.CREATE,
-                    LogAuditEventRecord.ResType.ACCESS,
+                    LogAuditEventRecord.ResType.ALLOW,
                     String.format("URL uploaded to file: url=%s, destination=%s", url, newFile.getAbsolutePath())
                 );
                 
@@ -232,9 +232,9 @@ public class MediaController {
 
         // Log the file upload
         auditEventLogger.log(
-            LogAuditEventRecord.TagType.OPERATIONAL,
+            LogAuditEventRecord.TagType.SECURITY,
             LogAuditEventRecord.OpType.CREATE,
-            LogAuditEventRecord.ResType.ACCESS,
+            LogAuditEventRecord.ResType.ALLOW,
             String.format("Media file uploaded: filename=%s, destination=%s", originalFileName, targetFile.getAbsolutePath())
         );
 

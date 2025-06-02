@@ -175,6 +175,13 @@
         "mediaTypes": ["VIDEO"]
     },
     {
+        "name": "SEGMENT_LENGTH_SPECIFICATION",
+        "description": "In the context of videos, the value for determining how to interpret TARGET_SEGMENT_LENGTH, VFR_TARGET_SEGMENT_LENGTH, MIN_SEGMENT_LENGTH, and VFR_MIN_SEGMENT_LENGTH. The value of this property MUST be one of the following choices. FRAME: Segment lengths are specified in number of frames. SECONDS: Segment lengths are specified in number of seconds. When set to SECONDS, the VFR segment lengths use the average video frame rate, not the video PTS values.",
+        "type": "STRING",
+        "propertiesKey": "detection.segment.length.specification",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
         "name": "MERGE_TRACKS",
         "description": "In the context of videos, when set to true, attempt to merge tracks spanning segment boundaries.",
         "type": "BOOLEAN",

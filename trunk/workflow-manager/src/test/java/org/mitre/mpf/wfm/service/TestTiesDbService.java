@@ -579,7 +579,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",
-                ImmutableSortedSet.of(
+                ImmutableSortedSet.of("PARENT_SUPPRESSED",
                         "MERGE_SOURCE", "MERGE_SOURCE_AND_TARGET", "MERGE_SOURCE0",
                         "MERGE_SOURCE1"),
                 "host-123",

@@ -44,11 +44,15 @@ public record TransientPipelineDefinition(
     List<TransientTask> tasks,
 
     @Valid
-    List<TransientAction> actions
+    List<TransientAction> actions,
+
+    @Valid
+    String name
 ) {
     public TransientPipelineDefinition {
         pipeline = Utils.trimAndUpper(pipeline);
         tasks = Utils.toImmutableList(tasks);
         actions = Utils.toImmutableList(actions);
+        name = Utils.trim(name);
     }
 }

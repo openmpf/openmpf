@@ -38,5 +38,6 @@
             "name": "action3",
             "algorithm": "algo2"
         }
-    ]
+    ],
+    "name": "transient"
 }

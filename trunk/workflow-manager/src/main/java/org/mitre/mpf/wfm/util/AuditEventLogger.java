@@ -43,13 +43,20 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class AuditEventLogger {
     private static final Logger log = LoggerFactory.getLogger("json.AuditEventLogger");
     private final ObjectMapper mapper;
+    private final PropertiesUtil propertiesUtil;
 
     @Autowired
-    public AuditEventLogger() {
+    public AuditEventLogger(PropertiesUtil propertiesUtil) {
         this.mapper = new ObjectMapper();
+        this.propertiesUtil = propertiesUtil;
     }
 
     private void writeToLogger(LogAuditEventRecord event) {
+        // Only log if audit logging is enabled
+        if (!propertiesUtil.isAuditLoggingEnabled()) {
+            return;
+        }
+        
         try {
             log.info("{}", mapper.writeValueAsString(event));
         } catch (Exception e) {

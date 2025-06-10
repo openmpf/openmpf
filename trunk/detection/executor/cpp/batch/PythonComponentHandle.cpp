@@ -486,10 +486,11 @@ namespace MPF::COMPONENT {
             {
                 if (!get_detections_from_image_method
                         && !get_detections_from_video_method
+                        && !get_detections_from_all_video_tracks_method
                         && !get_detections_from_audio_method
                         && !get_detections_from_generic_method) {
                     throw ComponentLoadError(
-                            "The component does contain any of the component API methods. "
+                            "The component doesn't contain any of the component API methods. "
                             "Components must implement one or more of the following methods: "
                             "get_detections_from_image, get_detections_from_video, "
                             "get_detections_from_all_video_tracks, get_detections_from_audio, "

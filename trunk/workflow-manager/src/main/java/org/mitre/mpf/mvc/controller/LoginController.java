@@ -123,7 +123,6 @@ public class LoginController {
             HttpSession session) {
         session.invalidate();
         SecurityContextHolder.clearContext(); // prevent a user from recovering a session
-        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User has logged out.");
         String redirect = "redirect:/login";
         if (reason != null) {
             redirect += "?reason=" + reason;
@@ -168,11 +167,9 @@ public class LoginController {
             AccessDeniedException accessDeniedException) {
 
         if (accessDeniedException != null) {
-            log.error(
-                "A user successfully authenticated with an OIDC provider, but was not" +
-                            " authorized to access Workflow Manager.",
-                    accessDeniedException);
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "User successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.");
+            String errorMessage = "A user successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.";
+            log.error(errorMessage, accessDeniedException);
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, errorMessage);
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(

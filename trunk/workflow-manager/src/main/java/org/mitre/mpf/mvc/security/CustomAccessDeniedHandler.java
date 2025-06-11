@@ -69,7 +69,7 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
                 LogAuditEventRecord.TagType.SECURITY,
                 LogAuditEventRecord.OpType.LOGIN,
                 LogAuditEventRecord.ResType.DENY,
-                "Login attempt failed: Invalid CSRF token"
+                "Login attempt failed: Invalid XSRF token"
             );
             
             response.sendRedirect("/");

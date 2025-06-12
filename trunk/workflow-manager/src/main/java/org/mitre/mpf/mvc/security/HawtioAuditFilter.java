@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Component
+@Order(1)
 public class HawtioAuditFilter extends OncePerRequestFilter {
     
     private final AuditEventLogger auditEventLogger;
@@ -23,7 +25,7 @@ public class HawtioAuditFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
-        if (request.getRequestURI().startsWith("/actuator/hawtio")) {
+        if (request.getRequestURI().equals("/actuator/hawtio")) {
             auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
                 LogAuditEventRecord.OpType.LOGIN, // Or ACCESS if you have that
                 LogAuditEventRecord.ResType.ALLOW, 

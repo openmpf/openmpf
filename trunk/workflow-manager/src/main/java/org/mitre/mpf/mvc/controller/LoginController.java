@@ -29,7 +29,6 @@ package org.mitre.mpf.mvc.controller;
 import java.util.Collection;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
@@ -50,9 +49,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.servlet.ModelAndView;
@@ -115,20 +112,6 @@ public class LoginController {
         mv.addObject("UserPrincipalName", authenticationModel.getUserPrincipalName());
 
         return mv;
-    }
-
-    @PostMapping("/logout")
-    public String logout(
-            @RequestParam(value = "reason", required = false) String reason,
-            HttpSession session) {
-        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Login page accessed");
-        session.invalidate();
-        SecurityContextHolder.clearContext(); // prevent a user from recovering a session
-        String redirect = "redirect:/login";
-        if (reason != null) {
-            redirect += "?reason=" + reason;
-        }
-        return redirect;
     }
 
     @GetMapping("/login")

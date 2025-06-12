@@ -121,6 +121,7 @@ public class LoginController {
     public String logout(
             @RequestParam(value = "reason", required = false) String reason,
             HttpSession session) {
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Login page accessed");
         session.invalidate();
         SecurityContextHolder.clearContext(); // prevent a user from recovering a session
         String redirect = "redirect:/login";

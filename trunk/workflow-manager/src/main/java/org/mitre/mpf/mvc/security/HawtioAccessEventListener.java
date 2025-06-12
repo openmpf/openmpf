@@ -21,7 +21,7 @@ public class HawtioAccessEventListener {
     public void handleAuthorizationSuccess(AuthorizedEvent event) {
         if (event.getSource() instanceof FilterInvocation) {
             FilterInvocation filterInvocation = (FilterInvocation) event.getSource();
-            if (filterInvocation.getRequestUrl().contains("/actuator/hawtio")) {
+            if (filterInvocation.getRequest().getRequestURI().contains("/actuator/hawtio")) {
                 auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
                 LogAuditEventRecord.OpType.LOGIN, 
                 LogAuditEventRecord.ResType.ALLOW, 

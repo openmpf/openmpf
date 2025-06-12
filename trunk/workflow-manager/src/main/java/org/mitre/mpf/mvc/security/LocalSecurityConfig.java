@@ -41,6 +41,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
@@ -57,6 +58,13 @@ public class LocalSecurityConfig {
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
             auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User successfully logged in.");
+            response.sendRedirect("/");
+        };
+    }
+
+    @Bean public LogoutSuccessHandler logoutSuccessHandler() {
+        return (request, response, authentication) -> {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User logged out.");
             response.sendRedirect("/");
         };
     }
@@ -85,6 +93,7 @@ public class LocalSecurityConfig {
             HttpSecurity http,
             CustomAccessDeniedHandler customAccessDeniedHandler,
             AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint,
+            LogoutSuccessHandler logoutSuccessHandler,
             AuthenticationSuccessHandler authenticationSuccessHandler) throws Exception {
 
         return http.authorizeHttpRequests(x ->
@@ -95,6 +104,7 @@ public class LocalSecurityConfig {
                 x.loginPage("/login")
                 .successHandler(authenticationSuccessHandler)
                 .failureUrl("/login?reason=error"))
+            .logout(x -> x.logoutSuccessHandler(logoutSuccessHandler))
             .exceptionHandling(x ->
                 x.accessDeniedHandler(customAccessDeniedHandler)
                 .defaultAuthenticationEntryPointFor(

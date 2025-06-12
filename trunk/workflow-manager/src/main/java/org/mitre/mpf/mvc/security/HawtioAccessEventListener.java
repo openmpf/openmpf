@@ -6,7 +6,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.security.access.event.AuthorizationFailureEvent;
 import org.springframework.security.access.event.AuthorizedEvent;
 import org.springframework.security.web.FilterInvocation;
+import org.springframework.stereotype.Component;
 
+@Component
 public class HawtioAccessEventListener {
 
     private final AuditEventLogger auditEventLogger;

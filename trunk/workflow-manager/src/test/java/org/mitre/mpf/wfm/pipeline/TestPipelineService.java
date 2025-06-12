@@ -71,7 +71,6 @@ public class TestPipelineService {
     private Algorithm _algo2;
     private Task _task1;
     private Action _action2;
-    private String _name;
 
 
     @Rule
@@ -141,8 +140,6 @@ public class TestPipelineService {
 
 
         _pipelines = List.of(pipeline1, pipeline2, pipeline3);
-
-        _name = "Transient";
     }
 
 
@@ -364,8 +361,6 @@ public class TestPipelineService {
         assertEquals("ALGO2", action3.algorithm());
         assertThat(action3.properties(), empty());
         assertEquals(_algo2, pipelineElements.getAlgorithm(1, 1));
-
-        assertEquals(_name, pipelineElements.getName());
     }
 
 

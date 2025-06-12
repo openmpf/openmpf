@@ -43,6 +43,8 @@ public interface PipelineService {
 
     public JobPipelineElements getBatchPipelineElements(TransientPipelineDefinition tempPipeline);
 
+    public JobPipelineElements getBatchPipelineElements(String pipelineName, TransientPipelineDefinition tempPipeline);
+
     public Algorithm getAlgorithm(String name);
 
     public ImmutableList<Algorithm> getAlgorithms();

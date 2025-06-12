@@ -27,32 +27,57 @@
 
 package org.mitre.mpf.rest.api.pipelines.transients;
 
-import java.util.List;
-
-import javax.validation.Valid;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
 
-public record TransientPipelineDefinition(
+import javax.validation.Valid;
+import java.util.List;
+
+public class TransientPipelineDefinition {
+
+    private final ImmutableList<String> _pipeline;
     @NotEmpty
     @Valid
-    List<@AllNotBlank String> pipeline,
+    public ImmutableList<@AllNotBlank String> getPipeline() {
+        return _pipeline;
+    }
 
+    private final ImmutableList<TransientTask> _tasks;
     @Valid
-    List<TransientTask> tasks,
+    public ImmutableList<TransientTask> getTasks() {
+        return _tasks;
+    }
 
+    private final ImmutableList<TransientAction> _actions;
     @Valid
-    List<TransientAction> actions,
+    public ImmutableList<TransientAction> getActions() {
+        return _actions;
+    }
 
-    @Valid
-    String name
-) {
-    public TransientPipelineDefinition {
-        pipeline = Utils.trimAndUpper(pipeline);
-        tasks = Utils.toImmutableList(tasks);
-        actions = Utils.toImmutableList(actions);
-        name = Utils.trim(name);
+    private final String _displayName;
+
+    public String getDisplayName() {
+        return _displayName;
+    }
+
+    public TransientPipelineDefinition(
+            @JsonProperty("pipeline") List<String> pipeline,
+            @JsonProperty("tasks") List<TransientTask> tasks,
+            @JsonProperty("actions") List<TransientAction> actions, 
+            @JsonProperty("displayName") String displayName) {
+        
+        _displayName = displayName.isBlank() 
+                ? "Job specified transient pipeline" 
+                : displayName;
+        _pipeline = Utils.trimAndUpper(pipeline, ImmutableList.toImmutableList());
+        _tasks = tasks == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(tasks);
+        _actions = actions == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(actions);
     }
 }

@@ -54,20 +54,16 @@ public class TransientPipelinePartLookup implements PipelinePartLookup {
     public TransientPipelinePartLookup(TransientPipelineDefinition transientPipeline,
                                        PipelinePartLookup existingPipelineParts) {
 
-        var pipelineName = transientPipeline.name();
+        var pipelineName = transientPipeline.getDisplayName();
 
-        if (pipelineName == null || pipelineName.isBlank()) {
-            pipelineName = "Job specified transient pipeline";
-        }
+        _pipeline = new Pipeline(pipelineName, pipelineName, transientPipeline.getPipeline());
 
-        _pipeline = new Pipeline(pipelineName, pipelineName, transientPipeline.pipeline());
-
-        _tasks = transientPipeline.tasks()
+        _tasks = transientPipeline.getTasks()
                 .stream()
                 .map(TransientPipelinePartLookup::convertTask)
                 .collect(toMap(Task::name, Function.identity(), (t1, t2) -> t1));
 
-        _actions = transientPipeline.actions()
+        _actions = transientPipeline.getActions()
                 .stream()
                 .map(TransientPipelinePartLookup::convertAction)
                 .collect(toMap(Action::name, Function.identity(), (a1, a2) -> a1));
@@ -111,16 +107,16 @@ public class TransientPipelinePartLookup implements PipelinePartLookup {
 
     private static Task convertTask(TransientTask task) {
         return new Task(
-                task.name(),
-                "Job specified transient task: " + task.name(),
-                task.actions());
+                task.getName(),
+                "Job specified transient task: " + task.getName(),
+                task.getActions());
     }
 
     private static Action convertAction(TransientAction action) {
         return new Action(
-                action.name(),
-                "Job specified transient action: " + action.name(),
-                action.algorithm(),
-                action.properties());
+                action.getName(),
+                "Job specified transient action: " + action.getName(),
+                action.getAlgorithm(),
+                action.getProperties());
     }
 }

@@ -158,6 +158,19 @@ public class PipelineServiceImpl implements PipelineService, PipelinePartLookup 
                                    transientPipelineLookup);
     }
 
+    @Override
+    public synchronized JobPipelineElements getBatchPipelineElements(String pipelineName, 
+            TransientPipelineDefinition transientPipeline) {
+        pipelineName = fixName(pipelineName);
+        
+        transientPipeline = new TransientPipelineDefinition(transientPipeline.getPipeline(), 
+            transientPipeline.getTasks(), transientPipeline.getActions(), pipelineName);
+
+        var transientPipelineLookup = new TransientPipelinePartLookup(transientPipeline, this);
+        _validator.validateTransientPipeline(transientPipeline, transientPipelineLookup);
+        return getPipelineElements(pipelineName, transientPipelineLookup);
+    }
+
 
     private static JobPipelineElements getPipelineElements(String pipelineName,
                                                            PipelinePartLookup partLookup) {

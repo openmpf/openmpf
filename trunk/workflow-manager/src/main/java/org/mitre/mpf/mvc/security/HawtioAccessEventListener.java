@@ -3,35 +3,35 @@ package org.mitre.mpf.mvc.security;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.context.event.EventListener;
-import org.springframework.security.access.event.AuthorizationFailureEvent;
-import org.springframework.security.access.event.AuthorizedEvent;
+import org.springframework.security.authorization.event.AuthorizationGrantedEvent;
+import org.springframework.security.authorization.event.AuthorizationDeniedEvent;
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.stereotype.Component;
 
 @Component
 public class HawtioAccessEventListener {
-
+    
     private final AuditEventLogger auditEventLogger;
-
+    
     public HawtioAccessEventListener(AuditEventLogger auditEventLogger) {
         this.auditEventLogger = auditEventLogger;
     }
-
+    
     @EventListener
-    public void handleAuthorizationSuccess(AuthorizedEvent event) {
+    public void handleAuthorizationSuccess(AuthorizationGrantedEvent<?> event) {
         if (event.getSource() instanceof FilterInvocation) {
             FilterInvocation filterInvocation = (FilterInvocation) event.getSource();
             if (filterInvocation.getRequest().getRequestURI().contains("/actuator/hawtio")) {
                 auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
-                LogAuditEventRecord.OpType.LOGIN, 
-                LogAuditEventRecord.ResType.ALLOW, 
-                "Hawtio accessed");
+                    LogAuditEventRecord.OpType.LOGIN, 
+                    LogAuditEventRecord.ResType.ALLOW, 
+                    "Hawtio accessed");
             }
         }
-    }    
-
+    }
+    
     @EventListener
-    public void handleAccessDenied(AuthorizationFailureEvent event) {
+    public void handleAccessDenied(AuthorizationDeniedEvent<?> event) {
         if (event.getSource() instanceof FilterInvocation) {
             FilterInvocation filterInvocation = (FilterInvocation) event.getSource();
             String requestURI = filterInvocation.getRequest().getRequestURI();

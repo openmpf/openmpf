@@ -136,6 +136,7 @@ public class LoginController {
             Exception authException,
             Authentication authentication) {
         
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Login page accessed");
         if (authentication != null && authentication.isAuthenticated()) {
             auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User is already authenticated.");
             return "redirect:/";
@@ -145,8 +146,9 @@ public class LoginController {
         model.addObject("version", propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Failed login attempt: Bad credentials.");
-            model.addObject("error", "Invalid username and password!");
+            String badCredentialsMessage = "Failed login attempt: Invalid username and/or password.";
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, badCredentialsMessage);
+            model.addObject("error", badCredentialsMessage);
         }
 
         return model;

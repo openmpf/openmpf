@@ -69,7 +69,7 @@ public class TransientPipelineDefinition {
             @JsonProperty("actions") List<TransientAction> actions, 
             @JsonProperty("displayName") String displayName) {
         
-        _displayName = displayName.isBlank() 
+        _displayName = displayName == null || displayName.isBlank() 
                 ? "Job specified transient pipeline" 
                 : displayName;
         _pipeline = Utils.trimAndUpper(pipeline, ImmutableList.toImmutableList());

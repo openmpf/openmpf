@@ -70,11 +70,6 @@ public class LocalSecurityConfig {
     }
 
     @Bean
-    public AuthorizationEventPublisher authorizationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        return new SpringAuthorizationEventPublisher(applicationEventPublisher);
-    }
-
-    @Bean
     @Order(1)
     public SecurityFilterChain restSecurityFilterChain(
             HttpSecurity http, RestBasicAuthEntryPoint restBasicAuthEntryPoint) throws Exception {

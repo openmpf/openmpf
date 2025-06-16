@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Message;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -114,8 +115,8 @@ public class TestDetectionTaskSplitter {
                 ActionType.DETECTION,
                 "TEST",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()),
                 true,
                 true);
         Action action = new Action(
@@ -127,13 +128,13 @@ public class TestDetectionTaskSplitter {
 
 
         Task task = new Task("taskName", "task description",
-                             Collections.singletonList(action.name()));
+                             List.of(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.name()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
-                pipeline, Collections.singletonList(task), Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+                pipeline, List.of(task), List.of(action),
+                List.of(algorithm));
 
         BatchJob testJob = new BatchJobImpl(
                 testId,
@@ -143,9 +144,9 @@ public class TestDetectionTaskSplitter {
                 testPriority,
                 null,
                 null,
-                Collections.singletonList(testMedia),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
+                List.of(testMedia),
+                Map.of(),
+                Map.of(),
                 false);
 
         TestUtil.assertThrows(NoSuchElementException.class,
@@ -163,8 +164,14 @@ public class TestDetectionTaskSplitter {
 
     private void assertMediaTypeHeaderSet(MediaType mediaType, String mimeType) {
 
-        BatchJob testJob = createSimpleJobForTest(Map.of(), Map.of(), Map.of(),
-                                                  "/samples/new_face_video.avi", mediaType, mimeType);
+        BatchJob testJob = createSimpleJobForTest(
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                "/samples/new_face_video.avi",
+                mediaType,
+                mimeType,
+                Map.of());
 
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
@@ -184,13 +191,22 @@ public class TestDetectionTaskSplitter {
         String propertyValue = "VALUE";
         jobProperties.put(propertyName, propertyValue);
         jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+
         Map<String, String> actionProperties = new HashMap<>();
         actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         actionProperties.put(MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        BatchJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
-                                                      "/samples/new_face_video.avi", MediaType.VIDEO, "video/avi");
+
+        BatchJob testJob = createSimpleJobForTest(
+                actionProperties,
+                jobProperties,
+                Map.of(),
+                "/samples/new_face_video.avi",
+                MediaType.VIDEO,
+                "video/avi",
+                Map.of());
+
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
@@ -213,14 +229,22 @@ public class TestDetectionTaskSplitter {
         String propertyValue = "VALUE";
         mediaProperties.put(propertyName, propertyValue);
         mediaProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         jobProperties.put(MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+
         BatchJob testJob = createSimpleJobForTest(
-                Collections.emptyMap(), jobProperties, mediaProperties,
-                "/samples/new_face_video.avi", MediaType.VIDEO, "video/avi");
+                Map.of(),
+                jobProperties,
+                mediaProperties,
+                "/samples/new_face_video.avi",
+                MediaType.VIDEO,
+                "video/avi",
+                Map.of());
+
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
@@ -296,8 +320,14 @@ public class TestDetectionTaskSplitter {
         expectedProperties.putAll(mediaProperties);
 
         BatchJob testJob = createSimpleJobForTest(
-                Collections.emptyMap(), jobProperties, mediaProperties,
-                "/samples/meds-aa-S001-01-exif-rotation.jpg", MediaType.IMAGE, "image/jpeg");
+                Map.of(),
+                jobProperties,
+                mediaProperties,
+                "/samples/meds-aa-S001-01-exif-rotation.jpg",
+                MediaType.IMAGE,
+                "image/jpeg",
+                Map.of());
+
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
 
@@ -319,8 +349,13 @@ public class TestDetectionTaskSplitter {
         expectedProperties.putAll(jobProperties);
 
         BatchJob testJob = createSimpleJobForTest(
-                actionProperties, jobProperties, Collections.emptyMap(),
-                "/samples/meds-aa-S001-01-exif-rotation.jpg", MediaType.IMAGE, "image/jpeg");
+                actionProperties,
+                jobProperties,
+                Map.of(),
+                "/samples/meds-aa-S001-01-exif-rotation.jpg",
+                MediaType.IMAGE,
+                "image/jpeg",
+                Map.of());
 
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
@@ -343,8 +378,13 @@ public class TestDetectionTaskSplitter {
         expectedProperties.putAll(mediaProperties);
 
         BatchJob testJob = createSimpleJobForTest(
-                actionProperties, Collections.emptyMap(), mediaProperties,
-                "/samples/meds-aa-S001-01-exif-rotation.jpg", MediaType.IMAGE, "image/jpeg");
+                actionProperties,
+                Map.of(),
+                mediaProperties,
+                "/samples/meds-aa-S001-01-exif-rotation.jpg",
+                MediaType.IMAGE,
+                "image/jpeg",
+                Map.of());
 
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
@@ -380,6 +420,44 @@ public class TestDetectionTaskSplitter {
         }
     }
 
+    private MediaImpl createSimpleMediaForTest(
+        String mediaUri,
+        MediaType mediaType,
+        String mimeType,
+        Map<String, String> mediaProperties,
+        Map<String, String> mediaMetadata) {
+
+        URI fullMediaUri = ioUtils.findFile(mediaUri);
+        MediaImpl testMedia = new MediaImpl(
+                nextId(),
+                new MediaUri(fullMediaUri),
+                UriScheme.get(fullMediaUri),
+                Paths.get(fullMediaUri),
+                mediaProperties,
+                Map.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                null);
+        testMedia.setLength(300);
+        testMedia.setType(mediaType);
+        testMedia.setMimeType(mimeType);
+        testMedia.addMetadata(mediaMetadata);
+
+        if (testMedia.matchesType(MediaType.VIDEO)) {
+            // Video media must have FPS in metadata to support adaptive frame interval processing.
+            if (testMedia.getMetadata("FPS") == null) {
+                testMedia.addMetadata("FPS", "30");
+            }
+            if (testMedia.getMetadata("FRAME_COUNT") != null) {
+                int frameCount = Integer.parseInt(testMedia.getMetadata("FRAME_COUNT"));
+                testMedia.setLength(frameCount);
+            }
+        }
+
+        return testMedia;
+    }
 
     private BatchJob createSimpleJobForTest(
             Map<String, String> actionProperties,
@@ -387,7 +465,27 @@ public class TestDetectionTaskSplitter {
             Map<String, String>  mediaProperties,
             String mediaUri,
             MediaType mediaType,
-            String mimeType) throws WfmProcessingException {
+            String mimeType,
+            Map<String, String> mediaMetadata) throws WfmProcessingException {
+
+        MediaImpl testMedia = createSimpleMediaForTest(
+                mediaUri,
+                mediaType,
+                mimeType,
+                mediaProperties,
+                mediaMetadata);
+
+        return createSimpleJobForTest(
+                actionProperties,
+                jobProperties,
+                testMedia);
+    }
+
+    private BatchJob createSimpleJobForTest(
+            Map<String, String> actionProperties,
+            Map<String, String> jobProperties,
+            MediaImpl testMedia) throws WfmProcessingException {
+
         long testId = 12345;
         String testExternalId = "externID";
 
@@ -397,8 +495,8 @@ public class TestDetectionTaskSplitter {
                 ActionType.DETECTION,
                 "TEST",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()),
                 true,
                 true);
 
@@ -409,47 +507,36 @@ public class TestDetectionTaskSplitter {
         Action action = new Action("detectionAction", "detectionDescription",
                                    algorithm.name(), actionPropList);
 
-        Task task = new Task("taskName", "taskDescr", Collections.singletonList(action.name()));
+        Task task = new Task("taskName", "taskDescr", List.of(action.name()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
-                                         Collections.singletonList(task.name()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline,
-                Collections.singletonList(task),
-                Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+                List.of(task),
+                List.of(action),
+                List.of(algorithm));
 
-        return createSimpleJobForTest(testId, testExternalId, pipelineElements, jobProperties, mediaProperties,
-                                      mediaUri, mediaType, mimeType);
+        return createSimpleJobForTest(
+                testId,
+                testExternalId,
+                pipelineElements,
+                jobProperties,
+                testMedia);
     }
-
 
     private BatchJob createSimpleJobForTest(
             long testJobId,
             String testExternalId,
             JobPipelineElements testPipe,
             Map<String, String> jobProperties,
-            Map<String, String> mediaProperties,
-            String mediaUri,
-            MediaType mediaType,
-            String mimeType) {
+            MediaImpl testMedia) {
+
         final int testPriority = 4;
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-        URI fullMediaUri = ioUtils.findFile(mediaUri);
-        MediaImpl testMedia = new MediaImpl(
-                nextId(), new MediaUri(fullMediaUri), UriScheme.get(fullMediaUri),
-                Paths.get(fullMediaUri), mediaProperties, Map.of(), List.of(),
-                List.of(), List.of(), null, null);
-        testMedia.setLength(300);
-        testMedia.setType(mediaType);
-        testMedia.setMimeType(mimeType);
-        // Video media must have FPS in metadata to support adaptive frame interval processing.
-        if (testMedia.matchesType(MediaType.VIDEO)) {
-            testMedia.addMetadata("FPS", "30");
-        }
 
         var testJob = new BatchJobImpl(
                 testJobId,
@@ -459,9 +546,9 @@ public class TestDetectionTaskSplitter {
                 testPriority,
                 null,
                 null,
-                Collections.singletonList(testMedia),
+                List.of(testMedia),
                 jobProperties,
-                Collections.emptyMap(),
+                Map.of(),
                 false);
         testJob.setCurrentTaskIndex(0);
         return testJob;
@@ -484,8 +571,8 @@ public class TestDetectionTaskSplitter {
 
         Algorithm algorithm = new Algorithm(
                 "FACECV", "description", ActionType.DETECTION, "FACE", OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()),
                 true, true);
 
         List<ActionProperty> actionPropertyList = actionProperties.entrySet()
@@ -496,13 +583,13 @@ public class TestDetectionTaskSplitter {
         Action action = new Action("FACECV", "dummyDescriptionFACECV", algorithm.name(),
                                    actionPropertyList);
         Task task = new Task("Test task", "task description",
-                             Collections.singletonList(action.name()));
+                             List.of(action.name()));
         Pipeline pipeline = new Pipeline("OCV FACE DETECTION PIPELINE",
                                          "TestDetectionSplitter Pipeline",
-                                         Collections.singletonList(task.name()));
+                                         List.of(task.name()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
-                pipeline, Collections.singletonList(task), Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+                pipeline, List.of(task), List.of(action),
+                List.of(algorithm));
 
         // Capture a snapshot of the detection system property settings when the job is created.
         Map<String, String> allSystemProperties =
@@ -518,7 +605,7 @@ public class TestDetectionTaskSplitter {
                 0,
                 null,
                 null,
-                Collections.singletonList(testMedia),
+                List.of(testMedia),
                 jobProperties,
                 algorithmProperties,
                 false);
@@ -883,20 +970,20 @@ public class TestDetectionTaskSplitter {
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION, "MEDIA",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
         var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION, "PARENT",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
         var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION, "CHILD",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
         var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION, "SHARED",
                 OptionalInt.empty(),
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()), true, false);
 
         var action1 = new Action("EXTRACT_ACTION", null, algo1.name(), List.of());
         var action2 = new Action("PARENT_ACTION", null, algo2.name(),
@@ -985,5 +1072,119 @@ public class TestDetectionTaskSplitter {
         Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
         Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
         Assert.assertEquals(3, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+    }
+
+    private void getMessagesAndCheckSegments(
+            String samplingInterval,
+            String frameRateCap,
+            String targetSegmentLength,
+            String minSegmentLength,
+            String segmentLengthSpecification,
+            String frameCount,
+            String fps,
+            List<Pair<Integer, Integer>> segmentRanges) {
+
+        HashMap<String, String> jobProperties = new HashMap<>();
+        jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, samplingInterval);
+        jobProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCap);
+        jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, targetSegmentLength);
+        jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, minSegmentLength);
+        jobProperties.put(MpfConstants.SEGMENT_LENGTH_SPECIFICATION, segmentLengthSpecification);
+
+        Map<String, String> mediaMetadata = new HashMap<>();
+        mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
+        mediaMetadata.put("FRAME_COUNT", frameCount);
+        mediaMetadata.put("FPS", fps);
+
+        MediaImpl testMedia = createSimpleMediaForTest(
+                "/samples/new_face_video.avi",
+                MediaType.VIDEO,
+                "video/avi",
+                Map.of(),
+                mediaMetadata);
+
+        BatchJob testJob = createSimpleJobForTest(
+                Map.of(),
+                jobProperties,
+                testMedia);
+
+        List<Message> responseList = detectionSplitter.performSplit(
+                testJob, testJob.getPipelineElements().getTask(0));
+
+        Assert.assertEquals(segmentRanges.size(), responseList.size());
+
+        for (int i = 0; i < segmentRanges.size(); i++) {
+            Message message = responseList.get(i);
+            Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+
+            DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
+            Assert.assertEquals((int)segmentRanges.get(i).getLeft(), request.getVideoRequest().getStartFrame());
+            Assert.assertEquals((int)segmentRanges.get(i).getRight(), request.getVideoRequest().getStopFrame());
+        }
+   }
+
+    @Test
+    public void testSegmentLengthSpecification() {
+        getMessagesAndCheckSegments( // no effect
+                "1", // no effect
+                "-1",
+                "40",
+                "1",
+                "FRAME",
+                "120",
+                "30", // no effect
+                List.of(Pair.of(0, 39),
+                        Pair.of(40, 79),
+                        Pair.of(80, 119)));
+
+        getMessagesAndCheckSegments(
+                "-1", // no effect
+                "3", // no effect
+                "40",
+                "1",
+                "FRAME",
+                "120",
+                "60", // no effect
+                List.of(Pair.of(0, 39),
+                        Pair.of(40, 79),
+                        Pair.of(80, 119)));
+
+        getMessagesAndCheckSegments(
+                "5", // no effect
+                "1", // no effect
+                "180",
+                "1",
+                "SECONDS", // calculated segment size of 30 * 180 = 5,400
+                "20000",
+                "30",
+                List.of(Pair.of(0, 5_399),
+                        Pair.of(5_400, 10_799),
+                        Pair.of(10_800,16_199),
+                        Pair.of(16_200,19_999)));
+
+        getMessagesAndCheckSegments(
+                "-1", // no effect
+                "10", // no effect
+                "180",
+                "1",
+                "SECONDS", // calculated segment size of 60 * 180 = 10,800
+                "40000",
+                "60",
+                List.of(Pair.of(0, 10_799),
+                        Pair.of(10_800, 21_599),
+                        Pair.of(21_600,32_399),
+                        Pair.of(32_400,39_999)));
+
+        getMessagesAndCheckSegments(
+                "-1", // no effect
+                "10", // no effect
+                "180",
+                "60",
+                "SECONDS", // calculated segment size of 60 * 180 = 10,800
+                "35000",
+                "60",
+                List.of(Pair.of(0, 10_799),
+                        Pair.of(10_800, 21_599),
+                        Pair.of(21_600, 34_999))); // longer segment due to min segment length
     }
 }

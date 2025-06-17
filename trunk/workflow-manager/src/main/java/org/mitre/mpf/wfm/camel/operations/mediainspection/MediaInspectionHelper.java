@@ -48,7 +48,7 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
-import org.mitre.mpf.heic.HeicConverter;
+import org.mitre.mpf.heif.HeifConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -301,7 +301,7 @@ public class MediaInspectionHelper {
             var tempDir = _propertiesUtil.getTemporaryMediaDirectory().toPath();
             mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
             LOG.info("{} is HEIF image. It will be converted to PNG.", media.getLocalPath());
-            HeicConverter.convert(media.getLocalPath(), mediaPath);
+            HeifConverter.convert(media.getLocalPath(), mediaPath);
             _inProgressJobs.addConvertedMediaPath(job.getId(), media.getId(), mediaPath);
         }
         else if (mimeType.equalsIgnoreCase("image/png")

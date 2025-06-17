@@ -966,7 +966,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 new JsonPipeline("PIPELINE_NAME", "pipeline description"),
                 9, "site", "version", "external id",
                 startTime, endTime,
-                "COMPLETE_WITH_ERRORS", Map.of("ALGO", Map.of("ALGO_KEY", "ALGO_VALUE")),
+                "ERROR", Map.of("ALGO", Map.of("ALGO_KEY", "ALGO_VALUE")),
                 Map.of("JOB_PROP", "JOB_VALUE"),
                 Map.of("ENV_VAR1", "ENV_VALUE"),
                 List.of(media1, media2),
@@ -1021,7 +1021,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals("PAST JOB FOUND", jobRequest.getTiesDbStatus());
 
         verify(_mockInProgressJobs)
-            .setJobStatus(36, BatchJobStatusType.COMPLETE_WITH_ERRORS);
+            .setJobStatus(36, BatchJobStatusType.ERROR);
 
         var newOutputObject = newOutputObjectCaptor.getValue();
         var outputObjectChecker = new FieldChecker<>(outputObject, newOutputObject);
@@ -1171,7 +1171,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 contains("TEST_MSG"));
 
         verify(_mockInProgressJobs)
-            .setJobStatus(38L, BatchJobStatusType.COMPLETE_WITH_ERRORS);
+            .setJobStatus(38L, BatchJobStatusType.ERROR);
 
         assertEquals(oldOutputObjectUri, newOutputObjectUri);
     }

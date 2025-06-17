@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.heic;
+package org.mitre.mpf.heif;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -34,14 +34,14 @@ import java.nio.file.Path;
 
 import org.mitre.mpf.videooverlay.JniLoader;
 
-public class HeicConverter {
+public class HeifConverter {
     static {
         JniLoader.ensureLoaded();
     }
 
     /**
-     * Converts a HEIC image to another format.
-     * @param inputPath Path to the HEIC file
+     * Converts a HEIF image to another format.
+     * @param inputPath Path to the HEIF file
      * @param outputPath Path to output file. The image format is determined by the file extension.
      */
     public static void convert(Path inputPath, Path outputPath) throws IOException {
@@ -55,6 +55,6 @@ public class HeicConverter {
     private static native void convertNative(String inputFile, String outputFile);
 
 
-    private HeicConverter() {
+    private HeifConverter() {
     }
 }

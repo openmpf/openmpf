@@ -46,17 +46,6 @@ public class JobStatusMessage extends AtmosphereMessage {
         this.setContent(datamap);
     }
 
-    private void setContent (long id, double progress, String updatedJobStatus, Instant endDate) {
-        HashMap<String, Object> datamap = new HashMap<String, Object>();
-        datamap.put("id", id);
-        datamap.put("progress", progress);
-        datamap.put("jobStatus", updatedJobStatus);
-        datamap.put("endDate", endDate);
-        datamap.put("outputFileExists", false);
-        datamap.put("isSessionJob", false);
-        this.setContent(datamap);
-    }
-
     public JobStatusMessage(long id, double progress, BatchJobStatusType batchJobStatus,
                             Instant endDate, boolean outputFileExists) {
         super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
@@ -69,7 +58,7 @@ public class JobStatusMessage extends AtmosphereMessage {
         super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
         // If there are job progress updates and the status is null it will be updated to IN_PROGRESS
         StreamingJobStatusType updatedJobStatus = (streamingJobStatus != null) ? streamingJobStatus : StreamingJobStatusType.IN_PROGRESS;
-        setContent(id, progress, updatedJobStatus.name(), endDate);
+        setContent(id, progress, updatedJobStatus.name(), endDate, false);
     }
 
     private JobStatusMessage(Map<String, Object> dataMap) {

@@ -154,7 +154,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                     jobCreationRequest.pipelineDefinition());
         }
         else {
-            //allow setting for both the piplineName and pipelineDefinition
+            // Allow setting for both the piplineName and pipelineDefinition.
              pipelineElements = _pipelineService.getBatchPipelineElements(
                     jobCreationRequest.pipelineName(),
                     jobCreationRequest.pipelineDefinition());

@@ -583,8 +583,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         var transientPipeline = new TransientPipelineDefinition(
                 List.of("MOG MOTION DETECTION (WITH TRACKING) TASK", actionTaskName),
                 List.of(ocvFaceTask),
-                List.of(ocvFaceAction),
-                "Transient");
+                List.of(ocvFaceAction));
 
         int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
 

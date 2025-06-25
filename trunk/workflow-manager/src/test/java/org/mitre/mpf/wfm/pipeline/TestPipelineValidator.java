@@ -737,7 +737,8 @@ public class TestPipelineValidator {
         var transientPipeline = _objectMapper.readValue(path.toFile(),
                                                         TransientPipelineDefinition.class);
         var partLookup = new TransientPipelinePartLookup(transientPipeline,
-                                                         _pipelinePartLookup);
+                                                         _pipelinePartLookup,
+                                                         "Test Pipeline Name");
         _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup);
     }
 
@@ -762,8 +763,8 @@ public class TestPipelineValidator {
         var path = TestUtil.findFilePath("/transient-pipelines/partial-transient.json");
         var transientPipeline = _objectMapper.readValue(path.toFile(),
                                                         TransientPipelineDefinition.class);
-        var partLookup = new TransientPipelinePartLookup(transientPipeline,
-                                                         _pipelinePartLookup);
+        var partLookup = new TransientPipelinePartLookup(
+                transientPipeline, _pipelinePartLookup, "Test Pipeline Name");
         _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup);
     }
 
@@ -773,7 +774,8 @@ public class TestPipelineValidator {
         var path = TestUtil.findFilePath("/transient-pipelines/validation-errors.json");
         var transientPipeline = _objectMapper.readValue(path.toFile(),
                                                         TransientPipelineDefinition.class);
-        var partLookup = new TransientPipelinePartLookup(transientPipeline, _pipelinePartLookup);
+        var partLookup = new TransientPipelinePartLookup(
+                transientPipeline, _pipelinePartLookup, "Test Pipeline Name");
         var ex = TestUtil.assertThrows(
                 InvalidPipelineException.class,
                 () -> _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup));
@@ -791,7 +793,8 @@ public class TestPipelineValidator {
         var path = TestUtil.findFilePath("/transient-pipelines/duplicates.json");
         var transientPipeline = _objectMapper.readValue(path.toFile(),
                                                         TransientPipelineDefinition.class);
-        var partLookup = new TransientPipelinePartLookup(transientPipeline, _pipelinePartLookup);
+        var partLookup = new TransientPipelinePartLookup(
+                transientPipeline, _pipelinePartLookup, "Test Pipeline Name");
         var ex = TestUtil.assertThrows(
                 InvalidPipelineException.class,
                 () -> _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup));
@@ -813,7 +816,8 @@ public class TestPipelineValidator {
         var transientPipeline = _objectMapper.readValue(path.toFile(),
                                                         TransientPipelineDefinition.class);
 
-        var partLookup = new TransientPipelinePartLookup(transientPipeline, _pipelinePartLookup);
+        var partLookup = new TransientPipelinePartLookup(
+                transientPipeline, _pipelinePartLookup, "Test Pipeline Name");
         var ex = TestUtil.assertThrows(
                 InvalidPipelineException.class,
                 () -> _pipelineValidator.verifyBatchPipelineRunnable(

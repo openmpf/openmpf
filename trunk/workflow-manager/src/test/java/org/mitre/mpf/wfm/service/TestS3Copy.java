@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -53,6 +54,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonTiming;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -91,6 +93,9 @@ public class TestS3Copy extends MockitoTest.Strict {
     @Mock
     private AggregateJobPropertiesUtil _mockAggJobProps;
 
+    @Mock
+    private OutgoingRequestTokenService _mockTokenService;
+
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
     private S3StorageBackendImpl _s3StorageBackend;
@@ -121,11 +126,16 @@ public class TestS3Copy extends MockitoTest.Strict {
                 .thenReturn(20);
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(2);
+
+        when(_mockTokenService.addTokenToS3Request(notNull(), notNull()))
+            .thenAnswer(inv -> inv.getArgument(1));
+
         _s3StorageBackend = new S3StorageBackendImpl(
                 _mockPropertiesUtil,
                 _mockLocalStorageBackend,
                 _mockInProgressJobs,
                 _mockAggJobProps,
+                _mockTokenService,
                 _objectMapper);
     }
 

@@ -43,6 +43,7 @@ import org.mitre.mpf.interop.subject.CancellationState;
 import org.mitre.mpf.interop.subject.SubjectJobDetails;
 import org.mitre.mpf.interop.subject.SubjectJobRequest;
 import org.mitre.mpf.interop.subject.SubjectJobResult;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -83,6 +84,9 @@ public class TestS3StorageBackend {
 
     private final WorkflowPropertyService _mockWorkflowPropertyService
             = mock(WorkflowPropertyService.class);
+
+    private final OutgoingRequestTokenService _mockTokenService
+            = mock(OutgoingRequestTokenService.class);
 
     private S3StorageBackend _s3StorageBackend;
 
@@ -139,7 +143,8 @@ public class TestS3StorageBackend {
         _s3StorageBackend = new S3StorageBackendImpl(
                 _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
                 new AggregateJobPropertiesUtil(_mockPropertiesUtil,
-                                               _mockWorkflowPropertyService), null);
+                                               _mockWorkflowPropertyService),
+                _mockTokenService, null);
     }
 
     private static Map<String, String> getS3Properties() {
@@ -356,6 +361,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreArtifacts() throws IOException, StorageException {
+        setUpTokenService();
         ArtifactExtractionRequest request = createArtifactExtractionRequest();
 
         Path filePath0 = getTestFileCopy();
@@ -420,6 +426,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreMarkupRequest() throws IOException, StorageException {
+        setUpTokenService();
         long jobId = 534;
         long mediaId = 421;
         Path filePath = getTestFileCopy();
@@ -492,6 +499,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreJsonOutputObject() throws IOException, StorageException {
+        setUpTokenService();
         Path filePath = getTestFileCopy();
 
         JsonOutputObject outputObject = setJobProperties(getS3Properties());
@@ -507,6 +515,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canSetKeyPrefix() throws IOException, StorageException {
+        setUpTokenService();
         Path filePath = getTestFileCopy();
 
         var properties = getS3Properties();
@@ -527,6 +536,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void doesNotStoreDuplicateOutputObject() throws IOException, StorageException {
+        setUpTokenService();
         Path filePath = getTestFileCopy();
 
         Map<String, String> s3Properties = getS3Properties();
@@ -545,6 +555,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canHandleConnectionRefused() throws IOException {
+        setUpTokenService();
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET, "http://localhost:5001/" + RESULTS_BUCKET);
         Path filePath = getTestFileCopy();
@@ -566,6 +577,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryUploadAndFailWhenServerError() throws IOException {
+        setUpTokenService();
         int retryCount = 2;
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(retryCount);
@@ -595,6 +607,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryUploadAndRecoverWhenServerError() throws IOException, StorageException {
+        setUpTokenService();
         REQUESTED_PUT_FAILURES.set(2);
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(2);
@@ -621,6 +634,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canDownloadFromS3() throws IOException, StorageException {
+        setUpTokenService();
         Map<String, String> s3Properties = getS3Properties();
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
@@ -645,6 +659,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryDownloadAndFailWhenServerError() throws IOException {
+        setUpTokenService();
         int retryCount = 2;
         when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
                 .thenReturn(retryCount);
@@ -670,6 +685,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryDownloadAndRecoverWhenServerError() throws IOException, StorageException {
+        setUpTokenService();
         REQUESTED_GET_FAILURES.set(2);
         when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
                 .thenReturn(2);
@@ -699,6 +715,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void throwsStorageExceptionWhenRemoteFileMissing() throws IOException {
+        setUpTokenService();
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
         Media media = mock(Media.class);
@@ -719,6 +736,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreDerivativeMedia() throws IOException, StorageException {
+        setUpTokenService();
         long jobId = 534;
         long parentMediaId = 420;
         long derivativeMediaId = 421;
@@ -767,6 +785,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canHandleStoreDerivativeMediaFailure() throws IOException, StorageException {
+        setUpTokenService();
         long jobId = 534;
         long parentMediaId = 420;
         long derivativeMediaId = 421;
@@ -815,6 +834,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreMediaSelectorOutput() throws StorageException, IOException {
+        setUpTokenService();
         var job = mock(BatchJob.class);
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.copyOf(getS3Properties()));
@@ -847,6 +867,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreSubjectResult() throws IOException, StorageException {
+        setUpTokenService();
         var filePath = getTestFileCopy();
 
         var jobRequest = new SubjectJobRequest(
@@ -886,6 +907,10 @@ public class TestS3StorageBackend {
                 .isEqualTo(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);
     }
 
+    private void setUpTokenService() {
+        when(_mockTokenService.addTokenToS3Request(notNull(), notNull()))
+            .thenAnswer(inv -> inv.getArgument(1));
+    }
 
     private static void startSpark() {
         Spark.port(5000);

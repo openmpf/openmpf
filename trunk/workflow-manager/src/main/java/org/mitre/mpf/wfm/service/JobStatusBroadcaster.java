@@ -56,16 +56,18 @@ public class JobStatusBroadcaster {
     public void broadcast(long jobId, BatchJobStatusType jobStatus) {
         var progress = _jobProgress.getJobProgress(jobId)
                 .orElseGet(() -> jobStatus.isTerminal() ? 100.0f : 0.0f);
-        broadcast(jobId, progress, jobStatus, null);
+        broadcast(jobId, progress, jobStatus, null, false);
     }
 
     public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus) {
-        broadcast(jobId, progress, jobStatus, null);
+        broadcast(jobId, progress, jobStatus, null, false);
     }
 
-    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus, Instant endDate) {
+    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus,
+                          Instant endDate, boolean outputObjectExists) {
         if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
-            AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
+            AtmosphereController.broadcast(
+                    new JobStatusMessage(jobId, progress, jobStatus, endDate, outputObjectExists));
         }
     }
 

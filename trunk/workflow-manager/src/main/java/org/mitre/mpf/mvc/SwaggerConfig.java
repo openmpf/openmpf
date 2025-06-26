@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.MessageModel;
 import org.springframework.boot.actuate.endpoint.web.servlet.WebMvcEndpointHandlerMapping;
 import org.springframework.context.annotation.Bean;
@@ -97,6 +99,7 @@ public class SwaggerConfig {
             .directModelSubstitute(OptionalInt.class, Integer.class)
             .directModelSubstitute(OptionalLong.class, Long.class)
             .directModelSubstitute(OptionalDouble.class, Double.class)
+            .directModelSubstitute(MediaUri.class, URI.class)
             .globalResponseMessage(RequestMethod.GET, globalResponses)
             .globalResponseMessage(RequestMethod.DELETE, globalResponses)
             .globalResponseMessage(RequestMethod.POST, globalResponses)

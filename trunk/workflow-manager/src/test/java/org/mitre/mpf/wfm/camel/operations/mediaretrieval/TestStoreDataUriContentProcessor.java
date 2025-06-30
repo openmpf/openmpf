@@ -256,6 +256,13 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
         verifyMimeTypeNotSet();
     }
 
+    @Test
+    public void testBase64InContentType() {
+        assertStored(
+            "data:text/plain;charset=UTF-8gg;badbase64,SGVsbG8sIFdvcmxkIQ==",
+            "SGVsbG8sIFdvcmxkIQ==",
+            "text/plain");
+    }
 
     @Test
     public void testBase64BinaryData() {

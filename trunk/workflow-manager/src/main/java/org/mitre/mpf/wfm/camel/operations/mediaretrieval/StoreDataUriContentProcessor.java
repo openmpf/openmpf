@@ -105,7 +105,9 @@ public class StoreDataUriContentProcessor extends WfmProcessor {
         var metadataSection = uriSections[0];
         var dataSection = uriSections[1];
 
-        if (metadataSection.endsWith("base64")) {
+        boolean isBase64Encoded = metadataSection.endsWith(";base64")
+                || metadataSection.equals("base64");
+        if (isBase64Encoded) {
             decodeAndStore(dataSection, media.getLocalPath());
         }
         else {

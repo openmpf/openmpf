@@ -152,10 +152,19 @@ public class PipelineServiceImpl implements PipelineService, PipelinePartLookup 
     @Override
     public synchronized JobPipelineElements getBatchPipelineElements(
             TransientPipelineDefinition transientPipeline) {
-        var transientPipelineLookup = new TransientPipelinePartLookup(transientPipeline, this);
+        return getBatchPipelineElements(
+                "Job specified transient pipeline", transientPipeline);
+    }
+
+    @Override
+    public synchronized JobPipelineElements getBatchPipelineElements(
+            String pipelineName,
+            TransientPipelineDefinition transientPipeline) {
+        pipelineName = fixName(pipelineName);
+        var transientPipelineLookup = new TransientPipelinePartLookup(
+                transientPipeline, this, pipelineName);
         _validator.validateTransientPipeline(transientPipeline, transientPipelineLookup);
-        return getPipelineElements(transientPipelineLookup.getPipelineName(),
-                                   transientPipelineLookup);
+        return getPipelineElements(pipelineName, transientPipelineLookup);
     }
 
 

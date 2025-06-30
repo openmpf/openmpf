@@ -217,7 +217,7 @@ public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
         verify(_mockJobStatusBroadcaster)
             .broadcast(
                 eq(jobId), eq(100.0), any(BatchJobStatusType.class),
-                eq(jobRequestEntity.getTimeCompleted()));
+                eq(jobRequestEntity.getTimeCompleted()), eq(true));
 
         verify(_mockJobStatusBroadcaster)
             .tiesDbStatusChanged(jobId, jobRequestEntity.getTiesDbStatus());

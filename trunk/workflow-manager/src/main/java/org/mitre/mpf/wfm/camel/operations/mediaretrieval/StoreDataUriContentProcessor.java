@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.mediaretrieval;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -104,10 +105,10 @@ public class StoreDataUriContentProcessor extends WfmProcessor {
         var metadataSection = uriSections[0];
         var dataSection = uriSections[1];
 
-        if (metadataSection.endsWith("base64")) {
-            BaseEncoding.base64()
-                    .decodingSource(CharSource.wrap(dataSection))
-                    .copyTo(MoreFiles.asByteSink(media.getLocalPath()));
+        boolean isBase64Encoded = metadataSection.endsWith(";base64")
+                || metadataSection.equals("base64");
+        if (isBase64Encoded) {
+            decodeAndStore(dataSection, media.getLocalPath());
         }
         else {
             Files.writeString(media.getLocalPath(), dataSection, StandardCharsets.UTF_8);
@@ -117,6 +118,18 @@ public class StoreDataUriContentProcessor extends WfmProcessor {
         if (semiColonPos > 0) {
             _inProgressJobs.setMimeType(
                 jobId, media.getId(), metadataSection.substring(0, semiColonPos));
+        }
+    }
+
+    private static void decodeAndStore(String base64Content, Path storagePath) throws IOException {
+        try {
+            BaseEncoding.base64()
+                    .decodingSource(CharSource.wrap(base64Content))
+                    .copyTo(MoreFiles.asByteSink(storagePath));
+        }
+        catch (BaseEncoding.DecodingException e) {
+            throw new WfmProcessingException(
+                    "Failed to decode base64 data URI content due to: " + e.getMessage(), e);
         }
     }
 }

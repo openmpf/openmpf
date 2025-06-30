@@ -154,8 +154,10 @@ public class JobRequestServiceImpl implements JobRequestService {
                     jobCreationRequest.pipelineDefinition());
         }
         else {
-            throw new WfmProcessingException("Job request must either contain \"pipelineName\" " +
-                                                     "or \"pipelineDefinition\", but not both.");
+            // Allow setting for both the piplineName and pipelineDefinition.
+             pipelineElements = _pipelineService.getBatchPipelineElements(
+                    jobCreationRequest.pipelineName(),
+                    jobCreationRequest.pipelineDefinition());
         }
 
         var systemPropertiesSnapshot = _propertiesUtil.createSystemPropertiesSnapshot();

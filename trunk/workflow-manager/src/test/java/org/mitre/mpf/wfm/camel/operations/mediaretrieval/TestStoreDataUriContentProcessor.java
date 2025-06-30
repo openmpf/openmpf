@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -122,50 +123,53 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
 
     @Test
     public void testBase64Error() {
-        assertError("data:base64,ABC-?");
+        assertError("data:base64,ABC-?", "Unrecognized character: ?");
     }
 
     @Test
     public void testCommaMissing() {
-        assertError("data:text/plain;Hello");
+        assertError("data:text/plain;Hello", "does not contain a comma");
     }
 
 
-    private void assertError(String dataUri) {
+    private void assertError(String dataUri, String expectedErrorContent) {
         createMockMedia(dataUri);
         _storeDataUriContentProcessor.process(_testExchange);
 
         verify(_mockInProgressJobs)
             .addError(
                 eq(TEST_JOB_ID), eq(783L), eq(IssueCodes.LOCAL_STORAGE),
-                contains("Error saving data URI content"));
+                and(
+                    contains("Error saving data URI content"),
+                    contains(expectedErrorContent))
+                );
         verifyMimeTypeNotSet();
     }
 
 
     @Test
     public void testEmpty() {
-        assertSaved("data:text/plain;,", "", "text/plain");
-        assertSaved("data:text/plain1;base64,", "", "text/plain1");
+        assertStored("data:text/plain;,", "", "text/plain");
+        assertStored("data:text/plain1;base64,", "", "text/plain1");
     }
 
 
     @Test
     public void testEmptyNoMimeType() {
-        assertSaved("data:,", "", null);
-        assertSaved("data:base64,", "", null);
+        assertStored("data:,", "", null);
+        assertStored("data:base64,", "", null);
         verifyMimeTypeNotSet();
     }
 
 
     @Test
     public void testPercentEncoding() {
-        assertSaved(
+        assertStored(
             "data:text/plain;,Hello,%20World!",
             "Hello, World!",
             "text/plain");
 
-        assertSaved(
+        assertStored(
                 "data:text/plain,%E4%BD%A0%E5%8F%AB%E4%BB%80%E4%B9%88%E5%90%8D%E5%AD%97%EF%BC%9F",
                "你叫什么名字？",
                "text/plain");
@@ -173,12 +177,12 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
 
     @Test
     public void testPercentEncodingNoMime() {
-        assertSaved(
+        assertStored(
             "data:;,Hello,%20World!",
             "Hello, World!",
             null);
 
-        assertSaved(
+        assertStored(
                 "data:,%E4%BD%A0%E5%8F%AB%E4%BB%80%E4%B9%88%E5%90%8D%E5%AD%97%EF%BC%9F",
                "你叫什么名字？",
                null);
@@ -187,12 +191,12 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
 
     @Test
     public void testBase64TextEnglish() {
-        assertSaved(
+        assertStored(
             "data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==",
             "Hello, World!",
             "text/plain");
 
-        assertSaved(
+        assertStored(
             "data:text/plain1;charset=UTF-8;base64,5L2g5Y+r5LuA5LmI5ZCN5a2X77yf",
             "你叫什么名字？",
             "text/plain1");
@@ -201,11 +205,11 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
 
     @Test
     public void testBase64TextNoMime() {
-        assertSaved(
+        assertStored(
             "data:;base64,SGVsbG8sIFdvcmxkIQ==",
             "Hello, World!",
             null);
-        assertSaved(
+        assertStored(
             "data:base64,5L2g5Y+r5LuA5LmI5ZCN5a2X77yf",
             "你叫什么名字？",
             null);
@@ -215,17 +219,17 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
 
     @Test
     public void testBase64InRegularData() {
-        assertSaved(
+        assertStored(
             "data:text/plain;,base64,",
             "base64,",
             "text/plain");
 
-        assertSaved(
+        assertStored(
             "data:text/plain1;,base64,def",
             "base64,def",
             "text/plain1");
 
-        assertSaved(
+        assertStored(
             "data:text/plain2;,abcbase64,def",
             "abcbase64,def",
             "text/plain2");
@@ -234,17 +238,17 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
 
     @Test
     public void testBase64InRegularDataNoMimeType() {
-        assertSaved(
+        assertStored(
             "data:,base64,",
             "base64,",
             null);
 
-        assertSaved(
+        assertStored(
             "data:;,base64,def",
             "base64,def",
             null);
 
-        assertSaved(
+        assertStored(
             "data:;,abcbase64,def",
             "abcbase64,def",
             null);
@@ -252,6 +256,13 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
         verifyMimeTypeNotSet();
     }
 
+    @Test
+    public void testBase64InContentType() {
+        assertStored(
+            "data:text/plain;charset=UTF-8gg;badbase64,SGVsbG8sIFdvcmxkIQ==",
+            "SGVsbG8sIFdvcmxkIQ==",
+            "text/plain");
+    }
 
     @Test
     public void testBase64BinaryData() {
@@ -280,7 +291,7 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
         IntStream.range(0, expectedData.length)
             .forEach(i -> expectedData[i] = (byte) i);
 
-        var path = assertSaved(uri);
+        var path = assertStored(uri);
         assertThat(path)
             .hasBinaryContent(expectedData);
     }
@@ -300,8 +311,8 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
     }
 
 
-    private void assertSaved(String dataUri, String expectedContent, String expectedMimeType) {
-        var path = assertSaved(dataUri);
+    private void assertStored(String dataUri, String expectedContent, String expectedMimeType) {
+        var path = assertStored(dataUri);
         assertThat(path)
                 .usingCharset(StandardCharsets.UTF_8)
                 .hasContent(expectedContent);
@@ -310,7 +321,7 @@ public class TestStoreDataUriContentProcessor extends MockitoTest.Strict {
         }
     }
 
-    private Path assertSaved(String dataUri) {
+    private Path assertStored(String dataUri) {
         var media = createMockMedia(dataUri);
         _storeDataUriContentProcessor.process(_testExchange);
         verifyNoErrors();

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,48 +24,58 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
 import java.net.URI;
-import java.util.stream.Stream;
+import java.net.URISyntaxException;
+import java.util.Objects;
 
-import org.mitre.mpf.rest.api.MediaUri;
+import org.mitre.mpf.rest.api.util.Utils;
 
-public enum UriScheme {
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false, false),
+/**
+ * Wrapper around a URI that prevents data URI content from being added to the string produced by
+ * calling .toString(). This prevents the content from appearing in log and error messages.
+ */
+public record MediaUri(URI uri) {
 
-	FILE(false, false),
-	HTTP(true, true),
-	HTTPS(true, true),
-	RTSP(true, false),
-    DATA(false, true);
-
-	private final boolean _remote;
-	public boolean isRemote() { return _remote; }
-
-    private final boolean _usesTempFile;
-    public boolean usesTempFile() { return _usesTempFile; }
-
-	UriScheme(boolean remote, boolean usesTempFile) {
-        _remote = remote;
-        _usesTempFile = usesTempFile;
+    public MediaUri {
+        uri = Utils.normalize(uri);
     }
 
-	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String schemeStr) {
-		return Stream.of(values())
-				.filter(schemeEnum -> schemeEnum.name().equalsIgnoreCase(schemeStr))
-				.findAny()
-				.orElse(UNDEFINED);
-	}
+    @JsonCreator // Deserialize from a JSON string instead of object.
+    public MediaUri(String uriStr) throws URISyntaxException {
+        this(new URI(uriStr));
+    }
 
-	public static UriScheme get(URI uri) {
-		return parse(uri.getScheme());
-	}
+    public static MediaUri create(String uriStr) {
+        return new MediaUri(URI.create(uriStr));
+    }
 
-    public static UriScheme get(MediaUri uri) {
-        return get(uri.get());
+    public URI get() {
+        return uri;
+    }
+
+    @JsonValue // Serialize as a JSON string instead of object.
+    public String fullString() {
+        return uri.toString();
+    }
+
+    public String shortString() {
+        var full = fullString();
+        if (full.startsWith("data:")) {
+            int commaPos = full.indexOf(',');
+            if (commaPos > 0) {
+                return full.substring(0, commaPos + 1) + "<truncated>";
+            }
+        }
+        return full;
+    }
+
+    @Override
+    public String toString() {
+        return shortString();
     }
 }

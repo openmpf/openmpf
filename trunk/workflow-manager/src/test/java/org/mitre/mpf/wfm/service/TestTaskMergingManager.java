@@ -46,6 +46,7 @@ import org.apache.camel.impl.DefaultHeadersMapFactory;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
@@ -111,7 +112,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                 List.of(algo1, algo2, algo3, algo4));
 
         _testMedia = new MediaImpl(
-                321, "file:///fake-uri", UriScheme.FILE, null, Map.of(), Map.of(),
+                321, MediaUri.create("file:///fake-uri"), UriScheme.FILE, null, Map.of(), Map.of(),
                 List.of(), List.of(), List.of(), null, null);
 
         _testJob = new BatchJobImpl(

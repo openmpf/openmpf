@@ -37,7 +37,6 @@ import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createDetectionPro
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTestDetectionContext;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -172,9 +172,9 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 
 
 	private static Media createTestMedia() {
-		URI mediaUri = URI.create("file:///example.wav");
+		var mediaUri = MediaUri.create("file:///example.wav");
 		MediaImpl media = new MediaImpl(
-				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
+				1, mediaUri, UriScheme.get(mediaUri), Paths.get(mediaUri.get()), Map.of(),
 				Map.of(), List.of(), List.of(), List.of(), null, null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");

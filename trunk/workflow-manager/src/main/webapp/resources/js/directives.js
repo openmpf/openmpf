@@ -85,6 +85,7 @@ AppDirectives.directive('pipelineSelection', function ($log, PipelinesService, J
         scope: {
             selectedPipeline: '=',  // the selected pipeline object (use .selected to get value)
             selectedPriority: '=',  // the selected priority object (use .selected to get value)
+            selectedSkipTiesDb: '=',// the selected skip tiesdb check flag
             helpPlacement: '@'      // the placement of help popovers
         },
         controller: function ($scope, $element, $attrs) {
@@ -137,6 +138,9 @@ AppDirectives.directive('pipelineSelection', function ($log, PipelinesService, J
                     }
                 }
             })
+
+            // set default skiptiesdb checkbox
+            $scope.selectedSkipTiesDb = true;
         }
     }
 });

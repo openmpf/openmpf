@@ -69,7 +69,6 @@ public class MpfPropertiesConfigurationBuilder {
             "markup.",
             "http.object.storage.nginx.service.uri",
             "mpf.output.objects.artifacts.and.exemplars.only",
-            "mpf.output.objects.last.task.only",
             "s3.");
 
 

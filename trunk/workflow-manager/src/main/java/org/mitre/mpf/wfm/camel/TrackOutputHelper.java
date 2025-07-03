@@ -82,7 +82,7 @@ public class TrackOutputHelper {
 
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        boolean isSuppressed = isSuppressed(job, media, taskIdx);
+        boolean isSuppressed = isSuppressed(job, media, taskIdx, actionIdx);
         boolean isMergeTarget = _taskMergingManager.isMergeTarget(job, media, taskIdx);
         boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
         boolean isMergeSource = _taskMergingManager.isMergeSource(job, media, taskIdx, actionIdx);
@@ -114,12 +114,14 @@ public class TrackOutputHelper {
                 !indexedTracks.isEmpty(), indexedTracks);
     }
 
-
-    private boolean isSuppressed(BatchJob job, Media media, int taskIdx) {
-        return _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)
-                && taskIdx < job.getPipelineElements().getLastDetectionTaskIdx();
+    private boolean isSuppressed(BatchJob job, Media media, int taskIdx, int actionIdx) {
+        return actionIdx != -1 ? _aggregateJobPropertiesUtil.isSuppressTrack(media, job,
+            job.getPipelineElements().getAction(taskIdx, actionIdx)) : _aggregateJobPropertiesUtil.isSuppressTrack(media, job);
     }
 
+    private boolean isSuppressed(BatchJob job, Media media, int taskIdx) {
+        return isSuppressed(job, media, taskIdx, -1);
+    }
 
     private boolean needToCheckSuppressedTriggers(BatchJob job, Media media, int taskIdx) {
         if (!isSuppressed(job, media, taskIdx)) {

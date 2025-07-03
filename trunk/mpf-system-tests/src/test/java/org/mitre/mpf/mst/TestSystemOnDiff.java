@@ -154,7 +154,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
         Map<String, String> jobProperties = new HashMap<>();
-        jobProperties.put("OUTPUT_LAST_TASK_ONLY", "true");
+        jobProperties.put("SUPPRESS_TRACKS", "true");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
 
         long jobId = runPipelineOnMedia(pipelineName, media, jobProperties);
@@ -234,7 +234,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         var media = ImmutableList.of(
                 toMediaObject(
                         ioUtils.findFile("/samples/face/ff-region-motion-face.avi"),
-                        ImmutableMap.of("OUTPUT_LAST_TASK_ONLY", "true")),
+                        ImmutableMap.of("SUPPRESS_TRACKS", "true")),
                 toMediaObject(ioUtils.findFile("/samples/face/ff-region-motion-face.avi")));
 
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";

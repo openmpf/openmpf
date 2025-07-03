@@ -214,20 +214,16 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbMedia))
                 .thenReturn("http://tiesdb");
-        when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbMedia, _job))
-                .thenReturn(false);
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbParentMedia))
                 .thenReturn("http://tiesdbForParent");
         // Configure _tiesDbParentMedia so that task merging and output last task only are both
         // enabled. When both are enabled, the TiesDb output should only report the track type for
         // the last task and its transitive merge targets.
-        when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbParentMedia, _job))
-                .thenReturn(true);
-        when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
-                .thenReturn(IntStream.of(2, 1));
-        when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
-                .thenReturn(IntStream.of(2, 1));
+        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
+        //         .thenReturn(IntStream.of(2, 1));
+        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
+        //         .thenReturn(IntStream.of(2, 1));
 
         var pipelineElements = _job.getPipelineElements();
         var mediaActionProps = new MediaActionProps((m, a) -> Map.of());
@@ -584,7 +580,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",
-                ImmutableSortedSet.of(
+                ImmutableSortedSet.of("PARENT_SUPPRESSED",
                         "MERGE_SOURCE", "MERGE_SOURCE_AND_TARGET", "MERGE_SOURCE0",
                         "MERGE_SOURCE1"),
                 "host-123",

@@ -61,6 +61,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
@@ -470,7 +471,7 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
 
     private MediaImpl createTestMedia(Collection<MediaSelector> mediaSelectors) {
         return new MediaImpl(
-                MEDIA_ID, "file:///path/to/media", null, _mediaPath, Map.of(),
+                MEDIA_ID, MediaUri.create("file:///path/to/media"), null, _mediaPath, Map.of(),
                 Map.of(), List.of(), List.of(), mediaSelectors, "ACTION3", null);
     }
 

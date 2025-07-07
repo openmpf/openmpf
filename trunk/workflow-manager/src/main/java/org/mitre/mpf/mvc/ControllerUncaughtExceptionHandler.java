@@ -66,10 +66,11 @@ public class ControllerUncaughtExceptionHandler {
                 ? "An unknown error has occurred. Check the Workflow Manager log for details."
                 : exception.getMessage();
 
-        boolean isExpectingHtml = !hasAjaxHeader(request) && !jsonIsFirstMatchingMimeType(request);
-        return isExpectingHtml
-                ? new ModelAndView("error", "exceptionMessage", errorMessage)
-                : createErrorModel(errorMessage, getStatus(exception));
+        boolean isExpectingJson = isRestUrl(request) || hasAjaxHeader(request)
+                || jsonIsFirstMatchingMimeType(request);
+        return isExpectingJson
+                ? createErrorModel(errorMessage, getStatus(exception))
+                : new ModelAndView("error", "exceptionMessage", errorMessage);
     }
 
     private static HttpStatus getStatus(Exception exception) {
@@ -78,6 +79,12 @@ public class ControllerUncaughtExceptionHandler {
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
+
+
+    private static boolean isRestUrl(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/rest/");
+    }
+
 
     private static boolean hasAjaxHeader(HttpServletRequest request) {
         String requestedWithHeaderVal = request.getHeader("X-Requested-With");
@@ -110,4 +117,3 @@ public class ControllerUncaughtExceptionHandler {
         return new ResponseMessage(errorMessage, status);
     }
 }
-

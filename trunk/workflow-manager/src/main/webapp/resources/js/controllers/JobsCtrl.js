@@ -270,7 +270,7 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
     }
 
 
-    $scope.$on('SSPC_JOBSTATUS', (event, {content: {id, jobStatus, progress, endDate}}) => {
+    $scope.$on('SSPC_JOBSTATUS', (event, {content: {id, jobStatus, progress, endDate, outputFileExists}}) => {
         const job = $scope.jobs.find(j => j.jobId == id);
         if (job) {
             $scope.$apply(() => {
@@ -278,7 +278,7 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
                     jobProgress: progress,
                     jobStatus,
                     endDate,
-                    outputFileExists: jobStatus.startsWith('COMPLETE'),
+                    outputFileExists: outputFileExists,
                     terminal: progress == 100
                 });
             });

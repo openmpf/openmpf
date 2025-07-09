@@ -222,7 +222,7 @@ public class TestTrackMergingProcessor {
 
         Detection detection2a = new Detection(10, 10, 52, 60, 18f, 200, 0, noProps);
         Detection detection2b = new Detection(10, 10, 52, 60, 18f, 399, 0, noProps);
-        Track track2 = new Track(TEST_JOB_ID, mediaId, 0, 0, 200, 399, 0, 0,, 18f,
+        Track track2 = new Track(TEST_JOB_ID, mediaId, 0, 0, 200, 399, 0, 0, 18f,
                                  ImmutableSortedSet.of(detection2a, detection2b), noProps, "", "", null, null);
 
         Detection detection3a = new Detection(10, 10, 52, 60, 18f, 420, 0, noProps);

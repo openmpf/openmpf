@@ -53,6 +53,7 @@
             var dropzone = null;
             var serverDirs = [];//the directory structure
             var treeDirs = [];
+            $scope.selectedSkipTiesDbServer = false;
             $scope.selectedJobPriorityServer = {selected: {priority: '4', type: '(default)'}}; //default
             $scope.selectedPipelineServer = {};//selected pipeline
             $scope.urls = null;
@@ -69,6 +70,7 @@
                 $("#breadcrumb").html("");
 
                 $scope.media_props = getNewMediaProps();
+                $scope.selectedSkipTiesDbServer = false;
                 $scope.selectedJobPriorityServer = {selected: {priority: '4', type: '(default)'}}; //default
                 filesToSubmit = [];//files going back to server
                 $scope.filesToSubmitCount = filesToSubmit.length;
@@ -732,7 +734,10 @@
                     var jobCreationRequest = {
                         media: files,
                         pipelineName: $scope.selectedPipelineServer.selected,
-                        priority: $scope.selectedJobPriorityServer.selected.priority
+                        priority: $scope.selectedJobPriorityServer.selected.priority,
+                        jobProperties: {
+                            SKIP_TIES_DB_CHECK: $scope.selectedSkipTiesDbServer.toString()
+                        }
                     };
 
                     //finally submit the job

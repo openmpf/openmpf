@@ -131,9 +131,6 @@ public class TestTiesDbService extends MockitoTest.Strict {
     @Mock
     private JobConfigHasher _mockJobConfigHasher;
 
-    @Mock
-    private TaskMergingManager _mockTaskMergingManager;
-
     private TiesDbService _tiesDbService;
 
     private static final Instant PROCESS_DATE = Instant.ofEpochSecond(1622724824);
@@ -216,13 +213,6 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbParentMedia))
                 .thenReturn("http://tiesdbForParent");
-        // Configure _tiesDbParentMedia so that task merging and output last task only are both
-        // enabled. When both are enabled, the TiesDb output should only report the track type for
-        // the last task and its transitive merge targets.
-        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
-        //         .thenReturn(IntStream.of(2, 1));
-        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
-        //         .thenReturn(IntStream.of(2, 1));
 
         var pipelineElements = _job.getPipelineElements();
         var mediaActionProps = new MediaActionProps((m, a) -> Map.of());

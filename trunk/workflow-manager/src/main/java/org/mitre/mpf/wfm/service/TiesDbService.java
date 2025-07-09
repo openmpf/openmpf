@@ -112,9 +112,6 @@ public class TiesDbService {
 
     private final JobConfigHasher _jobConfigHasher;
 
-    private final TaskMergingManager _taskMergingManager;
-
-
     @Inject
     TiesDbService(PropertiesUtil propertiesUtil,
                   AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
@@ -124,8 +121,7 @@ public class TiesDbService {
                   OAuthClientTokenProvider oAuthClientTokenProvider,
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs,
-                  JobConfigHasher jobConfigHasher,
-                  TaskMergingManager taskMergingManager) {
+                  JobConfigHasher jobConfigHasher) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
@@ -135,7 +131,6 @@ public class TiesDbService {
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
         _jobConfigHasher = jobConfigHasher;
-        _taskMergingManager = taskMergingManager;
     }
 
     public void prepareAssertions(

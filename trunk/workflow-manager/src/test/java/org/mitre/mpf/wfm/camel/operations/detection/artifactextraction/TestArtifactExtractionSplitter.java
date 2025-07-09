@@ -48,7 +48,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 
 import java.nio.file.Paths;
@@ -63,13 +62,10 @@ public class TestArtifactExtractionSplitter {
 
     private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
-    private final TaskMergingManager _mockTaskMergingManager = mock(TaskMergingManager.class);
-
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
             _mockInProgressJobs,
-            _mockAggregateJobPropertiesUtil,
-            _mockTaskMergingManager);
+            _mockAggregateJobPropertiesUtil);
 
 
 

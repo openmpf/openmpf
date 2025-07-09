@@ -28,13 +28,6 @@
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
-        "name": "OUTPUT_MERGE_WITH_PREVIOUS_TASK",
-        "description": "Tasks with this property set to true will replace the preceding task's tracks in the JSON output object. Those tracks will inherit the track type and algorithm from the preceding task's tracks.",
-        "type": "BOOLEAN",
-        "defaultValue": "false",
-        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
-    },
-    {
         "name": "IS_ANNOTATOR",
         "description": "Components with this property set to true will take the feed-forward track passed to it and adds some additional detection properties",
         "type": "BOOLEAN",

@@ -57,7 +57,6 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -75,17 +74,13 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    private final TaskMergingManager _taskMergingManager;
-
     @Inject
     ArtifactExtractionSplitterImpl(
             InProgressBatchJobsService inProgressBatchJobs,
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            TaskMergingManager taskMergingManager) {
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         super(inProgressBatchJobs);
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _taskMergingManager = taskMergingManager;
     }
 
     @Override
@@ -116,15 +111,6 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         List<Message> messages = new ArrayList<>();
         for (Media media : job.getMedia()) {
             if (!media.matchesType(MediaType.VIDEO, MediaType.IMAGE)) {
-                continue;
-            }
-
-            // If the user has requested that this task be merged with one that follows, then skip artifact extraction.
-            // Artifact extraction will be performed for the next task this one is merged with.
-            if (_taskMergingManager.isMergeTarget(job, media, taskIndex)) {
-                LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to being merged with a following task.",
-                        pipelineElements.getTask(taskIndex).name(), media.getId());
                 continue;
             }
 

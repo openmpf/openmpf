@@ -84,14 +84,6 @@ public class Track implements Comparable<Track> {
     private final int _endOffsetTimeInclusive;
     public int getEndOffsetTimeInclusive() { return _endOffsetTimeInclusive; }
 
-    /**
-     * The index of the task that should be reported after applying task merging. If task
-     * merging does not apply to this track, this field will contain the index of the task that
-     * actually generated this track.
-     */
-    private final int _mergedTaskIndex;
-    public int getMergedTaskIndex() { return _mergedTaskIndex; }
-
     private final float _confidence;
     public float getConfidence() { return _confidence; }
 
@@ -137,7 +129,6 @@ public class Track implements Comparable<Track> {
             @JsonProperty("endOffsetFrameInclusive") int endOffsetFrameInclusive,
             @JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
             @JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
-            @JsonProperty("mergedTaskIndex") int mergedTaskIndex,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
@@ -153,7 +144,6 @@ public class Track implements Comparable<Track> {
         _endOffsetFrameInclusive = endOffsetFrameInclusive;
         _startOffsetTimeInclusive = startOffsetTimeInclusive;
         _endOffsetTimeInclusive = endOffsetTimeInclusive;
-        _mergedTaskIndex = mergedTaskIndex;
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
@@ -176,7 +166,7 @@ public class Track implements Comparable<Track> {
         return Objects.hash(
                 _jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
                 _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
-                _mergedTaskIndex, _confidence, _selectorId, _selectedInput, _trackProperties,
+                _confidence, _selectorId, _selectedInput, _trackProperties,
                 _exemplar, _detections);
     }
 
@@ -212,7 +202,6 @@ public class Track implements Comparable<Track> {
                 .thenComparingInt(Track::getEndOffsetFrameInclusive)
                 .thenComparingInt(Track::getStartOffsetTimeInclusive)
                 .thenComparingInt(Track::getEndOffsetTimeInclusive)
-                .thenComparingInt(Track::getMergedTaskIndex)
                 .thenComparingDouble(Track::getConfidence)
                 .thenComparing(Track::getSelectorId, CompareUtils.optionalCompare())
                 .thenComparing(Track::getSelectedInput, CompareUtils.optionalCompare())

@@ -292,7 +292,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         addPipeline(pipelineName,
                 "EAST TEXT DETECTION TASK",
                 "TESSERACT OCR TEXT DETECTION (WITH FF REGION) TASK",
-                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has IS_ANNOTATOR=TRUE
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/ocr/keyword-tagging.jpg"));
         long jobId = runPipelineOnMedia(pipelineName, media, Map.of());
@@ -332,7 +332,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         String pipelineName = "SPHINX SPEECH DETECTION WITH KEYWORD TAGGING AND MARKUP PIPELINE";
         addPipeline(pipelineName,
                 "SPHINX SPEECH DETECTION TASK",
-                "KEYWORD TAGGING (WITH FF REGION) TASK", // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+                "KEYWORD TAGGING (WITH FF REGION) TASK", // has IS_ANNOTATOR=TRUE
                 "OCV GENERIC MARKUP TASK");
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/green.wav"));

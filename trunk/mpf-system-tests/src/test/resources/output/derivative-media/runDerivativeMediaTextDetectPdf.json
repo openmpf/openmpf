@@ -84,7 +84,7 @@
             "description": "Performs keyword tagging on feed-forward tracks and detections.",
             "properties": {
               "FEED_FORWARD_TYPE": "REGION",
-              "OUTPUT_MERGE_WITH_PREVIOUS_TASK": "TRUE"
+              "IS_ANNOTATOR": "TRUE"
             }
           }
         ]

@@ -522,12 +522,6 @@ public class AggregateJobPropertiesUtil {
                 continue;
             }
 
-            boolean shouldMerge = Boolean.parseBoolean(
-                    getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, jobPart));
-            if (!shouldMerge) {
-                continue;
-            }
-
             for (int prevTaskIndex = jobPart.taskIndex() - 1;
                  prevTaskIndex > media.getCreationTask();
                  prevTaskIndex--) {
@@ -551,11 +545,6 @@ public class AggregateJobPropertiesUtil {
         else {
             return prop;
         }
-    }
-
-    public boolean isSuppressTrack(Media media, BatchJob job) {
-        return Boolean.parseBoolean(
-                getValue(MpfConstants.SUPPRESS_TRACKS_PROPERTY, job, media));
     }
 
     public boolean isSuppressTrack(Media media, BatchJob job, Action action) {

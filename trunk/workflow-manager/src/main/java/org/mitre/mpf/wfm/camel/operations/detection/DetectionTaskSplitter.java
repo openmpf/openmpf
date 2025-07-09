@@ -59,7 +59,6 @@ import org.mitre.mpf.wfm.segmenting.ImageMediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
@@ -80,8 +79,6 @@ public class DetectionTaskSplitter {
 
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    private final TaskMergingManager _taskMergingManager;
-
     private final MediaSegmenter _imageMediaSegmenter;
 
     private final MediaSegmenter _videoMediaSegmenter;
@@ -96,7 +93,6 @@ public class DetectionTaskSplitter {
             CamelContext camelContext,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobs,
-            TaskMergingManager taskMergingManager,
             @Named(ImageMediaSegmenter.REF) MediaSegmenter imageMediaSegmenter,
             @Named(VideoMediaSegmenter.REF) MediaSegmenter videoMediaSegmenter,
             @Named(AudioMediaSegmenter.REF) MediaSegmenter audioMediaSegmenter,
@@ -104,7 +100,6 @@ public class DetectionTaskSplitter {
         _camelContext = camelContext;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobs = inProgressBatchJobs;
-        _taskMergingManager = taskMergingManager;
         _imageMediaSegmenter = imageMediaSegmenter;
         _videoMediaSegmenter = videoMediaSegmenter;
         _audioMediaSegmenter = audioMediaSegmenter;
@@ -214,9 +209,6 @@ public class DetectionTaskSplitter {
         var actionType = job.getPipelineElements().getAlgorithm(action.algorithm())
                 .actionType();
         var destination = "MPF.%s_%s_REQUEST".formatted(actionType, action.algorithm());
-        boolean needsBreadCrumb = _taskMergingManager.needsBreadCrumb(
-                job, media, detectionContext.getTaskIndex(), detectionContext.getActionIndex());
-
         var messages = new ArrayList<Message>(requests.size());
         for (var request : requests) {
             var message = new DefaultMessage(_camelContext);
@@ -226,10 +218,7 @@ public class DetectionTaskSplitter {
                     DetectionResponseRouteBuilder.JMS_DESTINATION);
             media.getType()
                     .ifPresent(mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
-            if (needsBreadCrumb) {
-                request.feedForwardTrack()
-                    .ifPresent(t -> _taskMergingManager.addBreadCrumb(message, t));
-            }
+
             message.getHeaders().putAll(request.headers());
             message.setBody(request.protobuf());
             messages.add(message);

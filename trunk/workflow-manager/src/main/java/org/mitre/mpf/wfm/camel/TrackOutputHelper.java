@@ -35,13 +35,13 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.springframework.stereotype.Component;
 
@@ -59,41 +59,32 @@ public class TrackOutputHelper {
 
     private final TriggerProcessor _triggerProcessor;
 
-    private final TaskMergingManager _taskMergingManager;
-
     @Inject
     TrackOutputHelper(
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobsService,
-            TriggerProcessor triggerProcessor,
-            TaskMergingManager taskMergingManager) {
+            TriggerProcessor triggerProcessor) {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobsService = inProgressBatchJobsService;
         _triggerProcessor = triggerProcessor;
-        _taskMergingManager = taskMergingManager;
     }
 
     public record TrackInfo(
             boolean isSuppressed,
-            boolean isMergeSource,
-            boolean isMergeTarget,
             boolean hadAnyTracks,
             Multimap<String, Track> tracksGroupedByAction) { }
 
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
         boolean isSuppressed = isSuppressed(job, media, taskIdx, actionIdx);
-        boolean isMergeTarget = _taskMergingManager.isMergeTarget(job, media, taskIdx);
         boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean isMergeSource = _taskMergingManager.isMergeSource(job, media, taskIdx, actionIdx);
+        boolean canAvoidGettingTracks =(isSuppressed && !needToCheckTrackTriggers);
 
-        boolean canAvoidGettingTracks =
-                isMergeTarget || (isSuppressed && !needToCheckTrackTriggers);
         if (canAvoidGettingTracks) {
             int trackCount = _inProgressBatchJobsService.getTrackCount(
                     job.getId(), media.getId(), taskIdx, actionIdx);
             return new TrackInfo(
-                    isSuppressed, isMergeSource, isMergeTarget, trackCount > 0,
+                    isSuppressed, trackCount > 0,
                     ImmutableMultimap.of());
         }
 
@@ -110,17 +101,27 @@ public class TrackOutputHelper {
         }
         var indexedTracks = Multimaps.index(tracks, t -> getMergedAction(t, job));
         return new TrackInfo(
-                isSuppressed, isMergeSource, isMergeTarget,
+                isSuppressed,
                 !indexedTracks.isEmpty(), indexedTracks);
     }
 
     private boolean isSuppressed(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        return actionIdx != -1 ? _aggregateJobPropertiesUtil.isSuppressTrack(media, job,
-            job.getPipelineElements().getAction(taskIdx, actionIdx)) : _aggregateJobPropertiesUtil.isSuppressTrack(media, job);
+        return _aggregateJobPropertiesUtil.isSuppressTrack(media, job, 
+            job.getPipelineElements().getAction(taskIdx, actionIdx));
     }
 
     private boolean isSuppressed(BatchJob job, Media media, int taskIdx) {
-        return isSuppressed(job, media, taskIdx, -1);
+         for (int taskIndex = taskIdx; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
+            Task task = job.getPipelineElements().getTask(taskIndex);
+
+            for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
+                if (isSuppressed(job, media, taskIdx, actionIndex)) {
+                    return true;
+                }
+            }
+         }
+
+        return false;
     }
 
     private boolean needToCheckSuppressedTriggers(BatchJob job, Media media, int taskIdx) {
@@ -157,19 +158,10 @@ public class TrackOutputHelper {
 
 
     private String getMergedAction(Track track, BatchJob job) {
-        int actionIndex;
-        var trackMergingEnabled = track.getMergedTaskIndex() != track.getTaskIndex();
-        if (trackMergingEnabled) {
-            // When track merging is enabled, the merged task will never be the last task.  Only
-            // the last task can have more than one action, so the merged action has to be the
-            // first and only action in the task.
-            actionIndex = 0;
-        }
-        else {
-            actionIndex = track.getActionIndex();
-        }
+        int actionIndex = track.getActionIndex();
+
         return job.getPipelineElements()
-                .getAction(track.getMergedTaskIndex(), actionIndex)
+                .getAction(track.getTaskIndex(), actionIndex)
                 .name();
     }
 }

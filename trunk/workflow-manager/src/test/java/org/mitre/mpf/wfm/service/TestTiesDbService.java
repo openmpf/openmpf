@@ -167,8 +167,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 _mockOAuthClientTokenProvider,
                 _mockJobRequestDao,
                 _mockInProgressJobs,
-                _mockJobConfigHasher,
-                _mockTaskMergingManager);
+                _mockJobConfigHasher);
 
         lenient().when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);

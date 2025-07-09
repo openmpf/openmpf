@@ -207,7 +207,6 @@ public class TestRedis {
                 124,
                 4322,
                 5424,
-                0,
                 0.6f,
                 detections,
                 ImmutableSortedMap.of("a", "b", "c", "d", "e", "f"),

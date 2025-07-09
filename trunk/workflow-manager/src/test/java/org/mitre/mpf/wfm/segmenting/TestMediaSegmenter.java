@@ -464,7 +464,7 @@ public class TestMediaSegmenter {
         Detection exemplar = TopQualitySelectionUtil.getTopQualityItem(
                 detectionList, "CONFIDENCE");
 
-		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, 1,
+		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0,
 				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "", "CONFIDENCE",
                 null, null);
 		return track;

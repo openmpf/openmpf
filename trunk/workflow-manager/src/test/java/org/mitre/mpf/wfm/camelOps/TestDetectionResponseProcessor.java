@@ -234,7 +234,6 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         var track = trackCaptor.getValue();
         assertEquals(JOB_ID, track.getJobId());
         assertEquals(5, track.getStartOffsetFrameInclusive());
-        assertEquals(0, track.getMergedTaskIndex());
     }
 
     @Test

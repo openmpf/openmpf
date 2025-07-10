@@ -40,6 +40,9 @@ import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectComponent;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectComponentProperty;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
+import org.mitre.mpf.wfm.service.component.InvalidComponentDescriptorException;
+import org.mitre.mpf.wfm.service.component.RegistrationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -51,18 +54,25 @@ public class SubjectComponentService {
 
     private final SubjectComponentRepo _subjectComponentRepo;
 
+    private final ConstraintValidationService _constraintValidator;
+
     @Inject
-    SubjectComponentService(SubjectComponentRepo subjectComponentRepo) {
+    SubjectComponentService(
+            SubjectComponentRepo subjectComponentRepo,
+            ConstraintValidationService constraintValidator) {
         _subjectComponentRepo = subjectComponentRepo;
+        _constraintValidator = constraintValidator;
     }
 
 
     @Transactional
-    public synchronized RegistrationResult registerComponent(SubjectComponentDescriptor descriptor) {
+    public synchronized RegistrationResult registerComponent(
+            SubjectComponentDescriptor descriptor) throws InvalidComponentDescriptorException {
+        _constraintValidator.validate(descriptor, InvalidComponentDescriptorException::new);
         var result = registerComponentInternal(descriptor);
         LOG.info(
                 "Registration attempt for {} resulted in: {}",
-                descriptor.componentName(), result.description);
+                descriptor.componentName(), result.getDescription());
         return result;
     }
 
@@ -158,18 +168,5 @@ public class SubjectComponentService {
 
     private static <T> boolean optionalFieldMatches(Optional<T> opt, T value) {
         return Objects.equals(value, opt.orElse(null));
-    }
-
-
-    public enum RegistrationResult {
-        NEW("A new component was registered."),
-        SAME("The component was already registered."),
-        UPDATED("Updated existing component.");
-
-        public final String description;
-
-        RegistrationResult(String description) {
-            this.description = description;
-        }
     }
 }

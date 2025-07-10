@@ -30,7 +30,6 @@ import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.service.component.AddComponentService;
 import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
-import org.mitre.mpf.wfm.service.component.ComponentStateService;
 import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,6 @@ public class DetectionComponentRegistrationRouteBuilder extends
     @Inject
     DetectionComponentRegistrationRouteBuilder(
             ObjectMapper objectMapper,
-            ComponentStateService componentState,
             AddComponentService addComponentService) {
         super(
             ENTRY_POINT,
@@ -64,7 +62,8 @@ public class DetectionComponentRegistrationRouteBuilder extends
 
 
     @Override
-    public String registerComponent(JsonComponentDescriptor descriptor) throws ComponentRegistrationException {
+    public String registerComponent(JsonComponentDescriptor descriptor)
+            throws ComponentRegistrationException {
         LOG.info(
                 "Received detection component registration request for \"{}\".",
                 descriptor.componentName());

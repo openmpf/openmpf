@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.wfm.service.component.InvalidComponentDescriptorException;
 import org.mitre.mpf.wfm.service.component.subject.SubjectComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.subject.SubjectComponentService;
 import org.slf4j.Logger;
@@ -60,7 +61,8 @@ public class SubjectComponentRegistrationRouteBuilder extends
     }
 
     @Override
-    public String registerComponent(SubjectComponentDescriptor descriptor) {
+    public String registerComponent(SubjectComponentDescriptor descriptor)
+            throws InvalidComponentDescriptorException {
         LOG.info(
                 "Received subject component registration request for \"{}\".",
                 descriptor.componentName());

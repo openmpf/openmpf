@@ -36,10 +36,14 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include "BatchExecutorUtil.h"
+
 #include "Messenger.h"
 
 
 namespace MPF::COMPONENT {
+
+using BatchExecutorUtil::AsUniquePtr;
 
 Messenger::Messenger(
         LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue)
@@ -58,13 +62,13 @@ Messenger::Messenger(
 
 std::unique_ptr<cms::BytesMessage> Messenger::ReceiveMessage() {
     while (true) {
-        std::unique_ptr<cms::Message> message{request_consumer_->receive()};
+        auto message = AsUniquePtr(request_consumer_->receive());
         if (auto bytes_message = dynamic_cast<cms::BytesMessage*>(message.get())) {
             // The cast was successful, so message and bytes_message point to the same object.
             // message.release() is called so that message's destructor does not delete the
             // message object.
-            message.release();
-            return std::unique_ptr<cms::BytesMessage>{bytes_message};
+            (void) message.release();
+            return AsUniquePtr(bytes_message);
         }
         logger_.Error(
             "Error: Expected an ActiveMQ BytesMessage, but a different message type was received.");
@@ -82,7 +86,7 @@ AmqMetadata Messenger::GetAmqMetadata(const cms::Message& message) {
         selector_id = std::nullopt;
     }
     return {
-        std::unique_ptr<cms::Destination>{message.getCMSReplyTo()->clone()},
+        AsUniquePtr(message.getCMSReplyTo()->clone()),
         message.getCMSPriority(),
         message.getStringProperty("CorrelationId"),
         message.getStringProperty("breadcrumbId"),
@@ -99,7 +103,7 @@ void Messenger::Rollback() {
 void Messenger::SendResponse(
         const JobContext& job_context,
         const std::vector<unsigned char>& response_bytes) {
-    std::unique_ptr<cms::BytesMessage> message{session_->createBytesMessage()};
+    auto message = AsUniquePtr(session_->createBytesMessage());
     const auto &amq_meta = job_context.amq_metadata;
     message->setStringProperty("CorrelationId", amq_meta.correlation_id);
     message->setLongProperty("JobId", job_context.job_id);
@@ -181,7 +185,7 @@ std::unique_ptr<cms::Connection> Messenger::CreateConnection(
         policy->setTopicPrefetch(0);
         connection_factory.setPrefetchPolicy(policy.release());
     }
-    return std::unique_ptr<cms::Connection>{connection_factory.createConnection()};
+    return AsUniquePtr(connection_factory.createConnection());
 }
 
 
@@ -189,20 +193,34 @@ std::unique_ptr<cms::MessageConsumer> Messenger::CreateRequestConsumer(
         const LoggerWrapper& logger,
         cms::Session& session,
         std::string_view request_queue_name) {
-    std::unique_ptr<cms::Destination> request_queue{
-        session.createQueue(std::string{request_queue_name})};
+    auto request_queue = AsUniquePtr(session.createQueue(std::string{request_queue_name}));
 
     if (auto media_type_selector = GetMediaTypeSelector()) {
         logger.Info("Creating ActiveMQ consumer for queue ", request_queue_name,
                         " with selector: ", *media_type_selector);
-        return std::unique_ptr<cms::MessageConsumer>{
-                session.createConsumer(request_queue.get(), *media_type_selector)};
+        return AsUniquePtr(session.createConsumer(request_queue.get(), *media_type_selector));
     }
     else {
         logger.Info("Creating ActiveMQ consumer for queue: ", request_queue_name);
-        return std::unique_ptr<cms::MessageConsumer>{
-                session.createConsumer(request_queue.get())};
+        return AsUniquePtr(session.createConsumer(request_queue.get()));
     }
 }
 
+std::unique_ptr<cms::Message> Messenger::SendTextRequestResponse(
+        const std::string& request_queue_name, const std::string& message_body) {
+    auto response_queue = AsUniquePtr(session_->createTemporaryQueue());
+    auto response_consumer = AsUniquePtr(session_->createConsumer(response_queue.get()));
+
+    auto request_queue = AsUniquePtr(session_->createQueue(request_queue_name));
+    auto request_producer = AsUniquePtr(session_->createProducer(request_queue.get()));
+    auto message = AsUniquePtr(session_->createTextMessage(message_body));
+    message->setCMSReplyTo(response_queue.get());
+    request_producer->send(message.get());
+    session_->commit();
+
+    auto response = AsUniquePtr(response_consumer->receive());
+    session_->commit();
+    return response;
 }
+
+} // end namespace MPF::COMPONENT

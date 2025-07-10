@@ -67,7 +67,8 @@ set(batch_executor_lib_files
 	BatchExecutorUtil.cpp BatchExecutorUtil.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
 	LoggerWrapper.h LoggerWrapper.cpp
-	HealthCheck.h HealthCheck.cpp)
+	HealthCheck.h HealthCheck.cpp
+	ComponentRegistration.h ComponentRegistration.cpp)
 
 add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})
 target_include_directories(batch_executor_lib PUBLIC

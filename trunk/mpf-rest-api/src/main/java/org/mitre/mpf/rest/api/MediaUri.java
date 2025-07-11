@@ -36,13 +36,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Wrapper around a URI that limits the length of the String produced by calling .toString().
- * We accept data URIs, so the URIs can be very long. This prevents long URIs from appearing in
- * log and error messages.
+ * Wrapper around a URI that prevents data URI content from being added to the string produced by
+ * calling .toString(). This prevents the content from appearing in log and error messages.
  */
 public record MediaUri(URI uri) {
-
-    private static final int MAX_DISPLAY_LENGTH = 500;
 
     public MediaUri {
         uri = Utils.normalize(uri);
@@ -68,9 +65,13 @@ public record MediaUri(URI uri) {
 
     public String shortString() {
         var full = fullString();
-        return full.length() < MAX_DISPLAY_LENGTH
-                ? full
-                : full.substring(0, MAX_DISPLAY_LENGTH) + "...";
+        if (full.startsWith("data:")) {
+            int commaPos = full.indexOf(',');
+            if (commaPos > 0) {
+                return full.substring(0, commaPos + 1) + "<truncated>";
+            }
+        }
+        return full;
     }
 
     @Override

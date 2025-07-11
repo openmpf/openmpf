@@ -40,6 +40,8 @@ import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectComponent;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectComponentProperty;
+import org.mitre.mpf.wfm.service.ConstraintValidationService;
+import org.mitre.mpf.wfm.service.component.InvalidComponentDescriptorException;
 import org.mitre.mpf.wfm.service.component.RegistrationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,14 +54,21 @@ public class SubjectComponentService {
 
     private final SubjectComponentRepo _subjectComponentRepo;
 
+    private final ConstraintValidationService _constraintValidator;
+
     @Inject
-    SubjectComponentService(SubjectComponentRepo subjectComponentRepo) {
+    SubjectComponentService(
+            SubjectComponentRepo subjectComponentRepo,
+            ConstraintValidationService constraintValidator) {
         _subjectComponentRepo = subjectComponentRepo;
+        _constraintValidator = constraintValidator;
     }
 
 
     @Transactional
-    public synchronized RegistrationResult registerComponent(SubjectComponentDescriptor descriptor) {
+    public synchronized RegistrationResult registerComponent(
+            SubjectComponentDescriptor descriptor) throws InvalidComponentDescriptorException {
+        _constraintValidator.validate(descriptor, InvalidComponentDescriptorException::new);
         var result = registerComponentInternal(descriptor);
         LOG.info(
                 "Registration attempt for {} resulted in: {}",

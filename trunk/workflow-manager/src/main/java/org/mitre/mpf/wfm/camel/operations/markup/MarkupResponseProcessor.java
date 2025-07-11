@@ -89,7 +89,7 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         addProcessingTime(jobId, action, headers);
 
         markupResult.setPipeline(job.getPipelineElements().getName());
-        markupResult.setSourceUri(media.getUri());
+        markupResult.setSourceUri(media.getUri().fullString());
 
         switch (markupResult.getMarkupStatus()) {
             case FAILED:

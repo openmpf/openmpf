@@ -28,9 +28,12 @@ package org.mitre.mpf.mvc.controller;
 
 import com.google.common.collect.ImmutableSet;
 import io.swagger.annotations.Api;
+import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
@@ -55,6 +58,9 @@ import java.util.Set;
 @Profile("!docker")
 public class AdminComponentRegistrationController extends BasicAdminComponentRegistrationController {
 
+    private static final Logger log = LoggerFactory.getLogger(
+            AdminComponentRegistrationController.class);
+
     private final PropertiesUtil _propertiesUtil;
 
     private final AddComponentService _addComponentService;
@@ -72,7 +78,7 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
             RemoveComponentService removeComponentService,
             ComponentStateService componentState,
             ComponentReRegisterService reRegisterService) {
-        super(addComponentService, removeComponentService, componentState);
+        super(removeComponentService, componentState);
         _propertiesUtil = propertiesUtil;
         _addComponentService = addComponentService;
         _removeComponentService = removeComponentService;
@@ -204,5 +210,49 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
                 return handleAddComponentExceptions(componentPackageFileName, e);
             }
         });
+    }
+
+    private static ResponseMessage handleAddComponentExceptions(
+            String componentPackage,
+            ComponentRegistrationException exception) {
+
+        if (exception instanceof ComponentRegistrationStatusException) {
+            ComponentRegistrationStatusException ex = (ComponentRegistrationStatusException) exception;
+            HttpStatus responseCode;
+            switch (ex.getComponentState()) {
+                case REGISTERING:
+                case REGISTERED:
+                    responseCode = HttpStatus.CONFLICT;
+                    break;
+                default:
+                    responseCode = HttpStatus.INTERNAL_SERVER_ERROR;
+            }
+            return handleRegistrationErrorResponse(componentPackage, ex.getMessage(), responseCode, ex);
+        }
+        else if (exception instanceof DuplicateComponentException
+                || exception instanceof ComponentRegistrationSubsystemException) {
+            return handleRegistrationErrorResponse(componentPackage, exception.getMessage(), HttpStatus.CONFLICT);
+        }
+        else if (exception instanceof InvalidComponentDescriptorException) {
+            return handleRegistrationErrorResponse(componentPackage, exception.getMessage(),
+                                                   HttpStatus.BAD_REQUEST, exception);
+        }
+        else {
+            return handleRegistrationErrorResponse(componentPackage, exception.getMessage(),
+                                                   HttpStatus.INTERNAL_SERVER_ERROR, exception);
+        }
+    }
+
+    private static ResponseMessage handleRegistrationErrorResponse(
+            String componentPackageFileName, String reason, HttpStatus httpStatus, Exception ex) {
+
+        String errorMsg = String.format("Cannot register component: \"%s\": %s", componentPackageFileName, reason);
+        log.error(errorMsg, ex);
+        return new ResponseMessage(errorMsg, httpStatus);
+    }
+
+    private static ResponseMessage handleRegistrationErrorResponse(
+            String componentPackageFileName, String reason, HttpStatus httpStatus) {
+        return handleRegistrationErrorResponse(componentPackageFileName, reason, httpStatus, null);
     }
 }

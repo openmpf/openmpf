@@ -39,7 +39,6 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.enums.UriScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -76,7 +75,7 @@ public class RemoteMediaSplitter extends WfmLocalSplitter {
 			for (Media media : job.getMedia()) {
 
 				// Check that the media has not previously failed. This will happen if the input URIs are invalid.
-				if (!media.isFailed() && media.getUriScheme() != UriScheme.FILE && media.getUriScheme() != UriScheme.UNDEFINED) {
+				if (!media.isFailed() && media.getUriScheme().isRemote()) {
 					var message = new DefaultMessage(exchange.getContext());
 					message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
 					message.setHeader(MpfHeaders.JOB_ID, jobId);

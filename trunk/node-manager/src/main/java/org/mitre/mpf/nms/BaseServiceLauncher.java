@@ -354,6 +354,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                 env.put("ACTIVE_MQ_BROKER_URI", this.mServiceDesc.getActiveMqHost());
                 env.put("SERVICE_NAME", this.mServiceDesc.getFullyQualifiedName());
                 env.put("COMPONENT_NAME", this.mServiceDesc.getComponentName());
+                env.put("DISABLE_COMPONENT_REGISTRATION", "true");
                 // add any given by the service
                 for (EnvironmentVariable envVar : s.envVars()) {
                     if (null != envVar.sep() && !envVar.sep().isEmpty()) {

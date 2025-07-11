@@ -34,6 +34,8 @@ import java.time.Instant;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.security.core.Authentication;
@@ -41,7 +43,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 @Component
 public class AuditEventLogger {
-    private static final Logger log = LoggerFactory.getLogger("json.AuditEventLogger");
+    private static final Logger log = LoggerFactory.getLogger(AuditEventLogger.class);
+    private static final Marker AUDIT_MARKER = MarkerFactory.getMarker("mpf.AUDIT");
     private final ObjectMapper mapper;
     private final PropertiesUtil propertiesUtil;
 
@@ -58,7 +61,7 @@ public class AuditEventLogger {
         }
         
         try {
-            log.info("{}", mapper.writeValueAsString(event));
+            log.info(AUDIT_MARKER, "{}", mapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("Failed to log event: {}", event, e);
         }

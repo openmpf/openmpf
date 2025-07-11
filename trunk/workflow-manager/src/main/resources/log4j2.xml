@@ -33,28 +33,22 @@
 
     <Appenders>
         <Console name="STDOUT">
-            <PatternLayout pattern="${layoutPattern}"/>
-        </Console>
-
-        <!-- Separate appender for JSON Audit Events -->
-        <Console name="JSON_STDOUT">
-            <PatternLayout pattern="%msg%n"/>
+            <PatternLayout>
+                <MarkerPatternSelector defaultPattern="${layoutPattern}">
+                    <PatternMatch key="mpf.AUDIT" pattern="%msg%n"/>
+                </MarkerPatternSelector>
+            </PatternLayout>
         </Console>
 
         <RollingRandomAccessFile name="WFM_FILE" fileName="${wfmLogFile}" filePattern="${wfmLogFile}.%date{yyyy-MM-dd}.%i">
-            <PatternLayout pattern="${layoutPattern}"/>
+            <PatternLayout>
+                <MarkerPatternSelector defaultPattern="${layoutPattern}">
+                    <PatternMatch key="mpf.AUDIT" pattern="%msg%n"/>
+                </MarkerPatternSelector>
+            </PatternLayout>
             <Policies>
                 <!-- Causes a rollover once the date/time pattern specified in filePattern no longer applies to the
                      active file. -->
-                <TimeBasedTriggeringPolicy />
-                <SizeBasedTriggeringPolicy size="50MB"/>
-            </Policies>
-        </RollingRandomAccessFile>
-        
-        <!-- Separate appender for JSON Audit Events-->
-        <RollingRandomAccessFile name="JSON_FILE" fileName="${wfmLogFile}" filePattern="${wfmLogFile}.%date{yyyy-MM-dd}.%i">
-            <PatternLayout pattern="%msg%n"/>
-            <Policies>
                 <TimeBasedTriggeringPolicy />
                 <SizeBasedTriggeringPolicy size="50MB"/>
             </Policies>
@@ -65,12 +59,6 @@
         <!-- To change the verbosity of MPF's own logging, change the level in the XML element below. -->
         <Logger name="org.mitre" level="INFO" />
         
-        <!-- Logger for Audit Events -->
-        <Logger name="json.AuditEventLogger" level="INFO" additivity="false">
-            <AppenderRef ref="JSON_FILE"/>
-            <AppenderRef ref="JSON_STDOUT"/>
-        </Logger>
-
         <Root level="INFO">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="WFM_FILE"/>

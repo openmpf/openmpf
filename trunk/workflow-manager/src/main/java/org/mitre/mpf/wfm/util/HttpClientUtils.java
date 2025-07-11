@@ -131,27 +131,6 @@ public class HttpClientUtils implements AutoCloseable {
     }
 
 
-    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request) {
-        var future = ThreadUtil.<HttpResponse>newFuture();
-        var mdcCtx = MDC.getCopyOfContextMap();
-        httpAsyncClient.execute(request, new FutureCallback<>() {
-            @Override
-            public void completed(HttpResponse result) {
-                MdcUtil.all(mdcCtx, () -> future.complete(result));
-            }
-
-            @Override
-            public void failed(Exception ex) {
-                MdcUtil.all(mdcCtx, () -> future.completeExceptionally(ex));
-            }
-
-            @Override
-            public void cancelled() {
-                MdcUtil.all(mdcCtx, () -> future.cancel(true));
-            }
-        });
-        return future;
-    }
 
 
     public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries) {
@@ -170,11 +149,27 @@ public class HttpClientUtils implements AutoCloseable {
             int retries,
             long delayMs,
             Predicate<HttpResponse> isRetryable) {
+        try {
+            return throwingExecuteRequest(request, retries, delayMs, isRetryable);
+        }
+        catch (Exception e) {
+            // Instead of reporting error in two ways like the base HTTP client does, we report
+            // all errors through a failed future. We do this so that callers only have to handle
+            // errors in one way.
+            return ThreadUtil.failedFuture(e);
+        }
+    }
+
+    private CompletableFuture<HttpResponse> throwingExecuteRequest(
+            HttpUriRequest request,
+            int retries,
+            long delayMs,
+            Predicate<HttpResponse> isRetryable) {
 
         log.info("Starting {} request to \"{}\".", request.getMethod(), request.getURI());
         long nextDelay = Math.min(delayMs * 2, 30_000);
 
-        return executeRequest(request).thenApply(resp -> {
+        return throwingExecuteRequest(request).thenApply(resp -> {
             int statusCode = resp.getStatusLine().getStatusCode();
             if ((statusCode >= 200 && statusCode <= 299) || retries <= 0
                     || !isRetryable.test(resp)) {
@@ -204,12 +199,39 @@ public class HttpClientUtils implements AutoCloseable {
             if (future.isCompletedExceptionally() && retries > 0) {
                 return ThreadUtil.delayAndUnwrap(
                         nextDelay, TimeUnit.MILLISECONDS,
-                        () -> executeRequest(request, retries - 1, nextDelay, isRetryable));
+                        () -> throwingExecuteRequest(request, retries - 1, nextDelay, isRetryable));
             }
             return future;
         });
     }
 
+    // Callers of this method must handle both exceptions thrown synchronously and failed futures.
+    // When an exception is thrown synchronously, we should not retry because the request was not
+    // valid and all future attempts will fail.
+    private CompletableFuture<HttpResponse> throwingExecuteRequest(HttpUriRequest request) {
+        var future = ThreadUtil.<HttpResponse>newFuture();
+        var mdcCtx = MDC.getCopyOfContextMap();
+        // httpAsyncClient reports errors in two ways. When it can detect an error before network
+        // activity, it throws an exception synchronously. When the error occurs during network
+        // activity, the client reports the error by calling FutureCallback.failed.
+        httpAsyncClient.execute(request, new FutureCallback<>() {
+            @Override
+            public void completed(HttpResponse result) {
+                MdcUtil.all(mdcCtx, () -> future.complete(result));
+            }
+
+            @Override
+            public void failed(Exception ex) {
+                MdcUtil.all(mdcCtx, () -> future.completeExceptionally(ex));
+            }
+
+            @Override
+            public void cancelled() {
+                MdcUtil.all(mdcCtx, () -> future.cancel(true));
+            }
+        });
+        return future;
+    }
 
     // TODO: Implement sendGetCallback
 

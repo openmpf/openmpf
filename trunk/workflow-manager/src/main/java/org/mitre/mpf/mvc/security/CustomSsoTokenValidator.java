@@ -102,7 +102,8 @@ public class CustomSsoTokenValidator {
         var token = authHeader.substring(BEARER_PREFIX.length());
         if (token.isBlank()) {
             throw new BadCredentialsException(
-                "No token following \"%s\"".formatted(BEARER_PREFIX));
+                "The Authorization header contained \"%s\", without a token after it."
+                .formatted(BEARER_PREFIX));
         }
         validateToken(token);
         authentication.setAuthenticated(true);
@@ -123,9 +124,9 @@ public class CustomSsoTokenValidator {
             return;
         }
 
+        // The cache is checked a second time here because there is period of time between the
+        // cache being updated and the _inProgressValidations entry being removed.
         if (_cache.contains(token)) {
-            // There is period of time between the cache being updated and the
-            // _inProgressValidations entry being removed.
             newFuture.complete(null);
             _inProgressValidations.remove(token);
             return;
@@ -158,22 +159,6 @@ public class CustomSsoTokenValidator {
         LOG.info("Successfully validated incoming SSO token.");
     }
 
-
-    private void validateRemotely2(String token) {
-        var request = new HttpGet(_customSsoProps.getValidationUri());
-        request.addHeader("Cookie", _customSsoProps.getTokenProperty() + '=' + token);
-        var response = ThreadUtil.join(
-                _httpClient.executeRequest(request, _customSsoProps.getHttpRetryCount()));
-
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode < 200 || statusCode > 299) {
-            var errorPrefix = "Received %s response from token validator".formatted(statusCode);
-            var errorDetails = getBody(response)
-                .map(b -> ", with body: " + b)
-                .orElse(".");
-            throw new BadCredentialsException(errorPrefix + errorDetails);
-        }
-    }
 
     private void validateRemotely(String token) {
         HttpResponse response;

@@ -57,10 +57,12 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
 import org.mitre.mpf.wfm.service.TiesDbService;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.InvalidJobIdException;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +121,9 @@ public class JobController {
 
     @Autowired
     private PastJobResultsService pastJobResultsService;
+
+    @Autowired
+    private AuditEventLogger auditEventLogger;
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -314,6 +319,10 @@ public class JobController {
             if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
                 return ResponseEntity.notFound().build();
             }
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.READ, 
+                               LogAuditEventRecord.ResType.ALLOW, 
+                               "User retrieved JSON output object for job " + jobId);
             var resultsStream = pastJobResultsService.getDetectionJobResultsStream(internalJobId);
             return ResponseEntity.ok(new InputStreamResource(resultsStream));
         }
@@ -328,8 +337,13 @@ public class JobController {
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
     public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) String idParam) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(idParam);
-        return MdcUtil.job(internalJobId, () ->
-                new ModelAndView("output_object", "jobId", idParam));
+        return MdcUtil.job(internalJobId, () -> {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.READ, 
+                               LogAuditEventRecord.ResType.ALLOW, 
+                               "User clicked to view JSON output object for job: " + idParam);
+            return new ModelAndView("output_object", "jobId", idParam);
+        });
     }
 
 

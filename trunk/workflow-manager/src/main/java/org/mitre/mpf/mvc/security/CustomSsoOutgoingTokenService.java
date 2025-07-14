@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.inject.Inject;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
@@ -126,13 +127,15 @@ public class CustomSsoOutgoingTokenService implements ITokenProvider {
 
     private Optional<String> getCachedToken() {
         var cachedToken = _cachedToken.get();
-        return Optional.ofNullable(cachedToken)
-            .filter(ct -> _clock.now().isBefore(ct.expirationTime()))
-            .map(CachedToken::token);
+        return _clock.now().isBefore(cachedToken.expirationTime)
+            ? Optional.of(cachedToken.token)
+            : Optional.empty();
     }
 
 
     private CachedToken requestNewToken() {
+        Instant tokenRequestStartTime;
+        HttpResponse response;
         try {
             var request = new HttpPost(_customSsoProps.getTokenUri());
             request.addHeader("Content-Type", "application/json");
@@ -142,9 +145,17 @@ public class CustomSsoOutgoingTokenService implements ITokenProvider {
             var bodyJson = _objectMapper.writeValueAsString(body);
             request.setEntity(new StringEntity(bodyJson, ContentType.APPLICATION_JSON));
 
-            var tokenRequestStartTime = _clock.now();
-            var response = ThreadUtil.join(
-                    _httpClient.executeRequest(request, _customSsoProps.getHttpRetryCount()));
+            tokenRequestStartTime = _clock.now();
+            response = ThreadUtil.join(
+                    _httpClient.executeRequest(request, _customSsoProps.getHttpRetryCount()),
+                    Exception.class);
+        }
+        catch (Exception e) {
+            throw new WfmProcessingException(
+                    "Request to get new SSO token failed due to: " + e, e);
+        }
+
+        try {
             int responseStatusCode = response.getStatusLine().getStatusCode();
             if (responseStatusCode < 200 || responseStatusCode > 299) {
                 throw new WfmProcessingException(

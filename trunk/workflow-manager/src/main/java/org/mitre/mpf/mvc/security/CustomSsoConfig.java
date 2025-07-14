@@ -29,10 +29,15 @@ package org.mitre.mpf.mvc.security;
 import java.io.IOException;
 import java.util.Optional;
 
+import javax.inject.Inject;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -52,38 +57,61 @@ public class CustomSsoConfig {
         return CustomSsoProps.isEnabled();
     }
 
+
     @Bean
     @Order(1)
     public SecurityFilterChain restSecurityFilterChain(
             HttpSecurity http,
-            CustomSsoTokenValidator customSsoTokenValidator) throws Exception {
+            BeanFactory baseFactory) throws Exception {
         var failureHandler = new FailureHandler();
         return http.antMatcher("/rest/**")
             .authorizeHttpRequests(x -> x.anyRequest().authenticated())
             .csrf(x -> x.disable())
-            .addFilter(preAuthFilter(customSsoTokenValidator, failureHandler))
+            .addFilter(createPreAuthFiler(baseFactory, failureHandler))
             .exceptionHandling(x -> x.authenticationEntryPoint(failureHandler))
             .build();
     }
 
-    private static AbstractPreAuthenticatedProcessingFilter preAuthFilter(
-            CustomSsoTokenValidator customSsoTokenValidator,
-            FailureHandler failureHandler) {
-        var authFilter = new AbstractPreAuthenticatedProcessingFilter() {
-            @Override
-            protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
-                return "REST Client";
-            }
 
-            @Override
-            protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
-                return request.getHeader("Authorization");
-            }
-        };
-        authFilter.setAuthenticationManager(customSsoTokenValidator::authenticate);
-        authFilter.setAuthenticationFailureHandler(failureHandler);
-        return authFilter;
+    // Create a PreAuthFilter using a custom bean factory. It is not created like a normal bean
+    // because PreAuthFilter should only be used for REST requests. If PreAuthFilter was registered
+    // like a normal bean, it would also be used for log in through the WebUI. A BeanFactory is
+    // used instead of directly invoking the constructor so that the bean lifecycle methods are
+    // invoked properly. It also allows PreAuthFilter to use constructor injection.
+    private static PreAuthFilter createPreAuthFiler(
+            BeanFactory baseFactory,
+            FailureHandler failureHandler) {
+        var definition = new AnnotatedGenericBeanDefinition(PreAuthFilter.class);
+        definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR);
+
+        var factory = new DefaultListableBeanFactory(baseFactory);
+        factory.registerSingleton("customFailureHandler", failureHandler);
+        factory.registerBeanDefinition("customPreAuthFilter", definition);
+        return factory.getBean(PreAuthFilter.class);
     }
+
+
+    private static class PreAuthFilter extends AbstractPreAuthenticatedProcessingFilter {
+
+        @Inject
+        PreAuthFilter(
+                CustomSsoTokenValidator customSsoTokenValidator,
+                FailureHandler failureHandler) {
+            setAuthenticationManager(customSsoTokenValidator::authenticate);
+            setAuthenticationFailureHandler(failureHandler);
+        }
+
+        @Override
+        protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
+            return "REST Client";
+        }
+
+        @Override
+        protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
+            return request.getHeader("Authorization");
+        }
+    }
+
 
     private static class FailureHandler
             implements AuthenticationEntryPoint, AuthenticationFailureHandler {

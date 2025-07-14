@@ -87,7 +87,8 @@ public class CustomSsoTokenValidator {
     }
 
 
-    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+    public Authentication authenticate(Authentication authentication)
+            throws AuthenticationException {
         var authHeader = (String) authentication.getCredentials();
         if (authHeader == null) {
             throw new BadCredentialsException("No Authorization header present.");
@@ -158,7 +159,7 @@ public class CustomSsoTokenValidator {
     }
 
 
-    private void validateRemotely(String token) {
+    private void validateRemotely2(String token) {
         var request = new HttpGet(_customSsoProps.getValidationUri());
         request.addHeader("Cookie", _customSsoProps.getTokenProperty() + '=' + token);
         var response = ThreadUtil.join(
@@ -174,6 +175,30 @@ public class CustomSsoTokenValidator {
         }
     }
 
+    private void validateRemotely(String token) {
+        HttpResponse response;
+        try {
+            var request = new HttpGet(_customSsoProps.getValidationUri());
+            request.addHeader("Cookie", _customSsoProps.getTokenProperty() + '=' + token);
+            response = ThreadUtil.join(
+                    _httpClient.executeRequest(request, _customSsoProps.getHttpRetryCount()),
+                    Exception.class);
+        }
+        catch (Exception e) {
+            throw new BadCredentialsException(
+                    "Failed to validate token because communication with the SSO server failed with error: "
+                    + e, e);
+        }
+
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode < 200 || statusCode > 299) {
+            var errorPrefix = "Received %s response from token validator".formatted(statusCode);
+            var errorDetails = getBody(response)
+                .map(b -> ", with body: " + b)
+                .orElse(".");
+            throw new BadCredentialsException(errorPrefix + errorDetails);
+        }
+    }
 
     private static Optional<String> getBody(HttpResponse response) {
         var entity = response.getEntity();
@@ -220,7 +245,8 @@ class TokenCache {
         _lock.lock();
         try {
             if (_tokenLookup.contains(token)) {
-                throw new IllegalStateException();
+                throw new IllegalStateException(
+                        "Caller should not have added a token if it was already present.");
             }
             _tokenLookup.add(token);
             _expirationQueue.add(new CachedToken(token, expirationTime));

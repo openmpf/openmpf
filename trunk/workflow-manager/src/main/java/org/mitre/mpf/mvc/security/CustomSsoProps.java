@@ -139,7 +139,7 @@ public class CustomSsoProps {
     private static Optional<String> toNonBlank(String string)  {
         return Optional.ofNullable(string)
             .map(String::strip)
-            .filter(s -> !s.isBlank()) ;
+            .filter(s -> !s.isBlank());
     }
 
 

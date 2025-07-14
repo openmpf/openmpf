@@ -26,9 +26,7 @@
 
 #include <jni.h>
 #include <libheif/heif_cxx.h>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <libheif/heifio/encoder_png.h>
 
 #include "JniHelper.h"
 
@@ -38,22 +36,23 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
         JNIEnv *env, jclass clz, jstring inputFile, jstring outputFile) {
 
     JniHelper jni(env);
+
+    class LibHeifInitializer {
+        public:
+        LibHeifInitializer() { heif_init(nullptr); }
+        ~LibHeifInitializer() { heif_deinit(); }
+    };
+
     try {
+        LibHeifInitializer initializer;
         heif::Context ctx;
         ctx.read_from_file(jni.ToStdString(inputFile));
 
+        std::unique_ptr<PngEncoder> encoder = std::make_unique<PngEncoder>();
+
         heif::ImageHandle handle = ctx.get_primary_image_handle();
-        heif::Image img = handle.decode_image(heif_colorspace_RGB,
-                                              heif_chroma_interleaved_RGB);
-
-        int stride = cv::Mat::AUTO_STEP;
-        uint8_t* data = img.get_plane(heif_channel_interleaved, &stride);
-        int width = handle.get_width();
-        int height = handle.get_height();
-
-        cv::Mat cv_img(height, width, CV_8UC3, data, stride);
-        cv::cvtColor(cv_img, cv_img, cv::COLOR_RGB2BGR);
-        cv::imwrite(jni.ToStdString(outputFile), cv_img);
+        heif::ImageHandle png_img = ctx.encode_image(handle, encoder);
+        ctx.write_to_file(jni.ToStdString(outputFile));
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());

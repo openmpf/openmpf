@@ -43,9 +43,9 @@ public class LocalSecurityConfig {
 
     @Bean
     @Order(1)
+    @Profile("!custom_sso")
     public SecurityFilterChain restSecurityFilterChain(
             HttpSecurity http, RestBasicAuthEntryPoint restBasicAuthEntryPoint) throws Exception {
-
         return http.antMatcher("/rest/**")
             .authorizeHttpRequests(x -> x.anyRequest().authenticated())
             .httpBasic(x -> x.authenticationEntryPoint(restBasicAuthEntryPoint))

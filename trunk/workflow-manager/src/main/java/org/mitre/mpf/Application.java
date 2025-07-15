@@ -34,6 +34,7 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
+import org.mitre.mpf.mvc.security.CustomSsoConfig;
 import org.mitre.mpf.mvc.security.OidcSecurityConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -59,7 +60,13 @@ public class Application extends SpringBootServletInitializer {
     public static void main(String[] args) {
         var app = new SpringApplication(Application.class);
         if (OidcSecurityConfig.isEnabled()) {
+            if (CustomSsoConfig.isEnabled()) {
+                throw new IllegalStateException("OIDC and Custom SSO can not both be enabled.");
+            }
             app.setAdditionalProfiles("oidc");
+        }
+        else if (CustomSsoConfig.isEnabled()) {
+            app.setAdditionalProfiles("custom_sso");
         }
         app.run(args);
     }

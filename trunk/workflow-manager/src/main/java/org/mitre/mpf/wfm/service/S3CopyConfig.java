@@ -35,11 +35,13 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 
 public class S3CopyConfig {
+    public final UnaryOperator<String> props;
+
     public final String sourceAccessKey;
     public final String destinationAccessKey;
     public final String sourceSecretKey;
@@ -60,10 +62,11 @@ public class S3CopyConfig {
     public final S3UrlUtil sourceUrlUtil;
     public final S3UrlUtil destinationUrlUtil;
 
-    public final AwsRequestOverrideConfiguration sourceOverrideConfig;
-    public final AwsRequestOverrideConfiguration destinationOverrideConfig;
+    public final AwsCredentialsProvider sourceCredentials;
+    public final AwsCredentialsProvider destinationCredentials;
 
     public S3CopyConfig(UnaryOperator<String> props) throws StorageException {
+        this.props = props;
         sourceAccessKey = getSrcProp(props, MpfConstants.S3_ACCESS_KEY);
         destinationAccessKey = props.apply(MpfConstants.S3_ACCESS_KEY);
 
@@ -96,10 +99,8 @@ public class S3CopyConfig {
                 : S3UrlUtil.PATH_STYLE;
         destinationUrlUtil = S3UrlUtil.get(props);
 
-        sourceOverrideConfig = getOverrideConfig(
-                sourceAccessKey, sourceSecretKey, sourceSessionToken);
-        destinationOverrideConfig = getOverrideConfig(
-                destinationAccessKey, destinationSecretKey, destinationSessionToken);
+        sourceCredentials = getCredentials(sourceAccessKey, sourceSecretKey, sourceSessionToken);
+        destinationCredentials = getCredentials(destinationAccessKey, destinationSecretKey, destinationSessionToken);
     }
 
 
@@ -143,7 +144,7 @@ public class S3CopyConfig {
     }
 
 
-    private static AwsRequestOverrideConfiguration getOverrideConfig(
+    private static AwsCredentialsProvider getCredentials(
             String accessKey, String secretKey, String sessionToken) {
         AwsCredentials credentials;
         if (sessionToken != null && !sessionToken.isBlank()) {
@@ -152,7 +153,6 @@ public class S3CopyConfig {
         else {
             credentials = AwsBasicCredentials.create(accessKey, secretKey);
         }
-        return AwsRequestOverrideConfiguration.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(credentials)).build();
+        return StaticCredentialsProvider.create(credentials);
     }
 }

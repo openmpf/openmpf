@@ -43,10 +43,9 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.subject.CallbackMethod;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
-import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -69,9 +68,7 @@ public class JobCompleteCallbackService {
 
     private final PropertiesUtil _propertiesUtil;
 
-    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
-
-    private final OAuthClientTokenProvider _oAuthClientTokenProvider;
+    private final OutgoingRequestTokenService _clientTokenProvider;
 
     @Inject
     JobCompleteCallbackService(
@@ -79,12 +76,11 @@ public class JobCompleteCallbackService {
             ObjectMapper objectMapper,
             PropertiesUtil propertiesUtil,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            OAuthClientTokenProvider oAuthClientTokenProvider) {
+            OutgoingRequestTokenService clientTokenProvider) {
         _httpClientUtils = httpClientUtils;
         _objectMapper = objectMapper;
         _propertiesUtil = propertiesUtil;
-        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _oAuthClientTokenProvider = oAuthClientTokenProvider;
+        _clientTokenProvider = clientTokenProvider;
     }
 
 
@@ -100,9 +96,7 @@ public class JobCompleteCallbackService {
                     job.getId(),
                     Optional.ofNullable(outputObjectUri),
                     job.getExternalId());
-            if (shouldUseOidc(job)) {
-                _oAuthClientTokenProvider.addToken(request);
-            }
+            _clientTokenProvider.addTokenToJobCompleteCallback(job, request);
             return sendCallback(request);
         }
         catch (Exception e) {
@@ -123,9 +117,7 @@ public class JobCompleteCallbackService {
                     job.getId(),
                     job.getOutputUri(),
                     job.getExternalId());
-            if (shouldUseOidc(job)) {
-                _oAuthClientTokenProvider.addToken(request);
-            }
+            _clientTokenProvider.addTokenToJobCompleteCallback(job, request);
             return sendCallback(request);
         }
         catch (Exception e) {
@@ -193,18 +185,6 @@ public class JobCompleteCallbackService {
     }
 
 
-    private boolean shouldUseOidc(BatchJob job) {
-        return job.getMedia()
-            .stream()
-            .map(m -> _aggregateJobPropertiesUtil.getValue(MpfConstants.CALLBACK_USE_OIDC, job, m))
-            .anyMatch(Boolean::parseBoolean);
-    }
-
-    private boolean shouldUseOidc(DbSubjectJob job) {
-        return _aggregateJobPropertiesUtil.getValue(MpfConstants.CALLBACK_USE_OIDC, job)
-                .map(Boolean::parseBoolean)
-                .orElse(false);
-    }
 
     private static HttpResponse checkResponse(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();

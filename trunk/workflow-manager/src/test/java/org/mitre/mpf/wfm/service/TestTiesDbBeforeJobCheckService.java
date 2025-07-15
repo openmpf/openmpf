@@ -39,9 +39,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -87,7 +90,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
@@ -136,7 +139,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     private HttpClientUtils _mockHttpClientUtils;
 
     @Mock
-    private OAuthClientTokenProvider _mockOAuthClientTokenProvider;
+    private OutgoingRequestTokenService _mockTokenService;
 
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
@@ -159,7 +162,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 _mockAggJobProps,
                 _mockJobConfigHasher,
                 _mockHttpClientUtils,
-                _mockOAuthClientTokenProvider,
+                _mockTokenService,
                 _objectMapper,
                 _mockInProgressJobs,
                 _mockS3StorageBackend);
@@ -191,6 +194,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 elements);
         assertEquals(TiesDbCheckStatus.NOT_REQUESTED, result.status());
         assertTrue(result.checkInfo().isEmpty());
+        verifyTokenNotAdded();
     }
 
 
@@ -226,6 +230,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         assertEquals(TiesDbCheckStatus.MEDIA_HASHES_ABSENT, result.status());
         assertTrue(result.checkInfo().isEmpty());
+        verifyTokenNotAdded();
     }
 
 
@@ -260,6 +265,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         assertEquals(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT, result.status());
         assertTrue(result.checkInfo().isEmpty());
+        verifyTokenNotAdded();
     }
 
 
@@ -289,6 +295,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         assertEquals(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB, result.status());
         assertTrue(result.checkInfo().isEmpty());
+        verifyTokenNotAdded();
     }
 
 
@@ -324,6 +331,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         assertThat(ex.getMessage(), containsString("isn't a valid URI"));
         assertThat(ex.getCause(), instanceOf(URISyntaxException.class));
+        verifyTokenNotAdded();
     }
 
 
@@ -379,6 +387,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var checkResult = setupSingleUriSingleRequestTiesDbTest(tiesDbData);
         assertEquals(TiesDbCheckStatus.NO_MATCH, checkResult.status());
         assertTrue(checkResult.checkInfo().isEmpty());
+        verifyTokenAdded();
     }
 
 
@@ -487,6 +496,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals(BatchJobStatusType.COMPLETE, info.jobStatus());
         assertEquals(Instant.parse("2021-06-04T13:35:58.981Z"), info.processDate());
         assertTrue(info.s3CopyEnabled());
+        verifyTokenAdded();
     }
 
 
@@ -568,7 +578,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .toList();
 
         when(_mockAggJobProps.getValue(
-                eq(MpfConstants.TIES_DB_USE_OIDC), any(BatchJob.class),
+                eq(MpfConstants.TIES_DB_ADD_TOKEN), any(BatchJob.class),
                 any(Media.class)))
                 .thenReturn("true");
 
@@ -580,7 +590,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 createHttpResponse(page3));
 
         var checkResult = setupSingleTiesDbUriTest(
-                Map.of(MpfConstants.TIES_DB_USE_OIDC, "true"));
+                Map.of(MpfConstants.TIES_DB_ADD_TOKEN, "true"));
         assertEquals(TiesDbCheckStatus.FOUND_MATCH, checkResult.status());
         assertTrue(checkResult.checkInfo().isPresent());
 
@@ -603,8 +613,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertUrisMatch(page3Uri, requests.get(2).getURI());
 
         for (var request : requests) {
-            verify(_mockOAuthClientTokenProvider)
-                .addToken(request);
+            verify(_mockTokenService)
+                .addTokenToTiesDbRequest(any(), eq(request));
         }
     }
 
@@ -649,12 +659,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals(BatchJobStatusType.COMPLETE, info.jobStatus());
         assertEquals(Instant.parse("2021-06-04T13:35:58.981Z"), info.processDate());
         assertFalse(info.s3CopyEnabled());
+        verifyTokenAdded(2);
     }
 
 
 
     @Test
-    public void testPartialFailureNoMatchFound() throws IOException {
+    public void testPartialFailureNoMatchFound() {
         var tiesDbData = List.of(
             Map.of(
                 "assertionId", "s10",
@@ -684,6 +695,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         assertThat(ex.getMessage(), containsString(
                 "TiesDb responded with a non-200 status code of 400 and body: test-error"));
+        verifyTokenAdded(2);
     }
 
 
@@ -745,6 +757,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     public void testCheckAfterMediaInspectionNoMatch() throws IOException {
         var exchange = runSuccessfulAfterMediaInspectionTest("WRONG_JOB_HASH");
         assertTrue(exchange.getOut().getHeaders().isEmpty());
+        verifyTokenAdded();
     }
 
 
@@ -755,6 +768,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals(
                 "file:///1.json",
                 exchange.getOut().getHeader(MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB));
+        verifyTokenAdded();
     }
 
 
@@ -770,6 +784,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .addFatalError(
                         eq(123L), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
                         contains(errorMsg));
+        verifyTokenAdded();
     }
 
     private Exchange runSuccessfulAfterMediaInspectionTest(String tiesDbHash) throws IOException {
@@ -861,7 +876,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 _mockPropertiesUtil,
                 _mockAggJobProps,
                 _mockJobConfigHasher,
-                _mockHttpClientUtils);
+                _mockHttpClientUtils,
+                _mockTokenService);
     }
 
 
@@ -1339,5 +1355,19 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     private static JobCreationRequest createJobRequest() {
         return new JobCreationRequest(
                 null, null, Map.of(), null, null, null, null, null, null, null);
+    }
+
+    private void verifyTokenAdded() {
+        verifyTokenAdded(1);
+    }
+
+    private void verifyTokenAdded(int numAdded) {
+        verify(_mockTokenService, times(numAdded))
+            .addTokenToTiesDbRequest(notNull(), notNull());
+    }
+
+    private void verifyTokenNotAdded() {
+        verify(_mockTokenService, never())
+            .addTokenToTiesDbRequest(notNull(), notNull());
     }
 }

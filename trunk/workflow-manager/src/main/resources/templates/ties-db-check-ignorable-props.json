@@ -26,8 +26,9 @@
             "TIES_DB_COPY_SRC_S3_HOST",
             "TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX",
             "FFPROBE_STDERR_NUM_LINES",
-            "CALLBACK_USE_OIDC",
-            "TIES_DB_USE_OIDC"
+            "CALLBACK_ADD_TOKEN",
+            "TIES_DB_ADD_TOKEN",
+            "S3_ADD_TOKEN"
         ]
     },
     {

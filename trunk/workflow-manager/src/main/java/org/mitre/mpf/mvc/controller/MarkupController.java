@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
@@ -61,6 +62,7 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +109,8 @@ public class MarkupController {
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
 
+    @Autowired
+    private AuditEventLogger auditEventLogger;
 
     @GetMapping("/markup/get-markup-results-filtered")
     @ResponseBody
@@ -216,7 +220,7 @@ public class MarkupController {
             response.flushBuffer();
             return;
         }
-
+        
         Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
         if (localPath != null) {
             if (!Files.exists(localPath)) {
@@ -226,6 +230,11 @@ public class MarkupController {
                 return;
             }
             ioUtils.sendBinaryResponse(localPath, response);
+            
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.EXTRACT, 
+                                LogAuditEventRecord.ResType.ALLOW, 
+                                "Downloaded markup file: uri=" + markupResult.getMarkupUri());
             return;
         }
 
@@ -263,6 +272,11 @@ public class MarkupController {
                     var s3Response = s3Stream.response();
                     IoUtils.sendBinaryResponse(s3Stream, response,
                             s3Response.contentType(), s3Response.contentLength());
+                    // Log after successful S3 download
+                    auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                        LogAuditEventRecord.OpType.EXTRACT, 
+                                        LogAuditEventRecord.ResType.ALLOW, 
+                                        "Downloaded markup file: uri=" + markupResult.getMarkupUri());
                 }
                 return;
             } catch (StorageException e) {
@@ -279,6 +293,11 @@ public class MarkupController {
             try (InputStream inputStream = urlConnection.getInputStream()) {
                 IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
                         urlConnection.getContentLength());
+                // Log after successful URL download
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                    LogAuditEventRecord.OpType.EXTRACT, 
+                                    LogAuditEventRecord.ResType.ALLOW, 
+                                    "Downloaded markup file: uri=" + markupResult.getMarkupUri());
             }
         } catch (IOException e) {
             log.error("Markup with id " + id + " download failed: " + e.getMessage());

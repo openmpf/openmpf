@@ -156,7 +156,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
         var track1 = createTrack(1);
         var message1 = createMessage();
-        _taskMergingManager.addBreadCrumb(message1, track1);
+        _taskMergingManager.addBreadCrumb(message1, List.of(track1));
 
         var breadCrumb1 = message1.getHeader("breadcrumbId", String.class);
         assertTrue(breadCrumb1.startsWith("mpf-1-"));
@@ -166,7 +166,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
         var track2 = createTrack(2);
         var message2 = createMessage();
-        _taskMergingManager.addBreadCrumb(message2, track2);
+        _taskMergingManager.addBreadCrumb(message2, List.of(track2));
         var breadCrumb2 = message2.getHeader("breadcrumbId", String.class);
         assertTrue(breadCrumb2.startsWith("mpf-2-"));
         assertEquals(2, _taskMergingManager.getMergedTaskIndex(

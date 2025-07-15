@@ -7,6 +7,13 @@
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
+        "name": "FEED_FORWARD_ALL_TRACKS",
+        "description": "When true all feed-forward tracks will be passed to this algorithm in one sub-job. When false each feed-forward track will be passed in a separate sub-job.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
         "name": "FEED_FORWARD_TOP_QUALITY_COUNT",
         "description": "Only applies if FEED_FORWARD_TYPE is set to a value other than “NONE”. If set to a value <= 0, then for each track generated in the previous pipeline stage, this algorithm will process the frame associated with each detection in that track, ignoring frames that don’t have detections. If FEED_FORWARD_TYPE is set to “FRAME”, then the entire frame is processed. If FEED_FORWARD_TYPE is set to “SUPERSET_REGION”, then only the superset region for those frames is processed. If this property is set to “1” then only the exemplar frame for each of the previous tracks is processed. If this property is set to a value > 1, say 5, then each of the detections in the previous track are sorted according to the value of the QUALITY_SELECTION_PROPERTY job property. and this algorithm will only process the frames associated with the top 5 detections with the highest quality. For detections with the same quality values, it will select those with a lower frame index. If the track contains less than 5 detections, then all of the available detections are used. In practice, setting this property to a value > 1 has no effect on image and audio jobs because each track only contains one detection.",
         "type": "INT",

@@ -52,7 +52,10 @@ public interface MediaSegmenter {
     static final Set<String> FEED_FORWARD_TYPES
             = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
-    public static final String FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST = "FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST";
+    public static final String FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST
+            = "FEED_FORWARD_BEST_DETECTION_PROP_NAMES_LIST";
+
+    public static final String FEED_FORWARD_ALL_TRACKS = "FEED_FORWARD_ALL_TRACKS";
 
     List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context);
 
@@ -106,6 +109,11 @@ public interface MediaSegmenter {
             log.warn("Unknown feed forward type: {}. Disabling feed forward.", feedForwardType);
             return false;
         }
+    }
+
+
+    public static boolean feedForwardAllTracksIsEnabled(DetectionContext context) {
+        return Boolean.parseBoolean(context.getAlgorithmProperties().get(FEED_FORWARD_ALL_TRACKS));
     }
 
 

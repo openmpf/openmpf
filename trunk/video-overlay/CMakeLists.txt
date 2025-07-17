@@ -31,13 +31,13 @@ project(VideoOverlay)
 set(CMAKE_CXX_STANDARD 17)
 set(JNI_SRC_DIR ./src/main/cpp)
 set(JNI_HELPER_FILES ${JNI_SRC_DIR}/JniHelper.h ${JNI_SRC_DIR}/JniHelper.cpp)
+
+# Build the OpenCV-based JNI library used by artifact extraction.
 set(OCV_JNI_SRC ${JNI_SRC_DIR}/BoundingBoxImageHandle.h ${JNI_SRC_DIR}/BoundingBoxImageHandle.cpp
                 ${JNI_SRC_DIR}/BoundingBoxVideoHandle.h ${JNI_SRC_DIR}/BoundingBoxVideoHandle.cpp
                 ${JNI_SRC_DIR}/BoundingBoxWriter.cpp
                 ${JNI_SRC_DIR}/FrameExtractor.cpp
                 ${JNI_SRC_DIR}/ResolutionConfig.h)
-set(HEIF_JNI_SRC ${JNI_SRC_DIR}/HeifConverter.cpp)
-
 find_package(OpenCV 4.9.0 EXACT REQUIRED PATHS /opt/opencv-4.9.0 COMPONENTS opencv_core opencv_freetype)
 
 find_package(mpfComponentInterface REQUIRED)
@@ -61,8 +61,11 @@ install(TARGETS mpfopencvjni
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
 
+# Build the HEIF JNI library used by HeifConverter.
+set(HEIF_JNI_SRC ${JNI_SRC_DIR}/HeifConverter.cpp)
+find_package(PNG)
 add_library(mpfheifjni SHARED ${HEIF_JNI_SRC} ${JNI_HELPER_FILES})
-target_link_libraries(mpfheifjni heif heifio ${JAVA_JVM_LIBRARY})
+target_link_libraries(mpfheifjni heif heifio ${JAVA_JVM_LIBRARY} PNG::PNG)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_command(TARGET mpfheifjni POST_BUILD

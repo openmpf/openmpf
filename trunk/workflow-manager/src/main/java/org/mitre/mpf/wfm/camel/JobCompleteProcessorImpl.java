@@ -180,6 +180,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         var completionStatus = job.getStatus().onComplete();
 
         URI outputObjectUri = null;
+        boolean outputObjectExists = false;
         var outputSha = new MutableObject<String>();
         var trackCounter = new TrackCounter();
         try {
@@ -196,6 +197,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         outputSha,
                         trackCounter); // this may update the job status
             }
+            outputObjectExists = true;
             jobRequest.setOutputObjectPath(outputObjectUri.toString());
             jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
         } catch (Exception exception) {
@@ -233,7 +235,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         jobRequestDao.persist(jobRequest);
         jobStatusBroadcaster.broadcast(
-            job.getId(), 100, job.getStatus(), jobRequest.getTimeCompleted());
+            job.getId(), 100, job.getStatus(), jobRequest.getTimeCompleted(), outputObjectExists);
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());

@@ -51,10 +51,11 @@ public class TransientPipelinePartLookup implements PipelinePartLookup {
 
     private final Map<String, Action> _actions;
 
-    public TransientPipelinePartLookup(TransientPipelineDefinition transientPipeline,
-                                       PipelinePartLookup existingPipelineParts) {
+    public TransientPipelinePartLookup(
+            TransientPipelineDefinition transientPipeline,
+            PipelinePartLookup existingPipelineParts,
+            String pipelineName) {
 
-        var pipelineName = "Job specified transient pipeline";
         _pipeline = new Pipeline(pipelineName, pipelineName, transientPipeline.pipeline());
 
         _tasks = transientPipeline.tasks()

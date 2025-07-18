@@ -48,7 +48,9 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -73,18 +75,22 @@ public class JobCompleteCallbackService {
 
     private final OAuthClientTokenProvider _oAuthClientTokenProvider;
 
+    private final AuditEventLogger _auditEventLogger;
+
     @Inject
     JobCompleteCallbackService(
             HttpClientUtils httpClientUtils,
             ObjectMapper objectMapper,
             PropertiesUtil propertiesUtil,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            OAuthClientTokenProvider oAuthClientTokenProvider) {
+            OAuthClientTokenProvider oAuthClientTokenProvider,
+            AuditEventLogger auditEventLogger) {
         _httpClientUtils = httpClientUtils;
         _objectMapper = objectMapper;
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _oAuthClientTokenProvider = oAuthClientTokenProvider;
+        _auditEventLogger = auditEventLogger;
     }
 
 
@@ -137,7 +143,25 @@ public class JobCompleteCallbackService {
         LOG.info("Sending job completion callback to: {}", request.getURI());
         return _httpClientUtils.executeRequest(
                     request, _propertiesUtil.getHttpCallbackRetryCount())
-                .thenApplyAsync(JobCompleteCallbackService::checkResponse);
+                .thenApplyAsync(response -> {
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    _auditEventLogger.log(
+                        LogAuditEventRecord.TagType.OPERATIONAL,
+                        LogAuditEventRecord.OpType.CREATE,
+                        LogAuditEventRecord.ResType.ALLOW,
+                        String.format("Job completion callback: %s %s - %d", 
+                            request.getMethod(), request.getURI(), statusCode ));
+                    return checkResponse(response);
+                })
+                .exceptionallyCompose(err -> {
+                    _auditEventLogger.log(
+                        LogAuditEventRecord.TagType.OPERATIONAL,
+                        LogAuditEventRecord.OpType.CREATE,
+                        LogAuditEventRecord.ResType.ERROR,
+                        String.format("Job completion callback failed: %s %s : %s", 
+                            request.getMethod(), request.getURI(), err.getMessage()));
+                    return ThreadUtil.failedFuture(err);
+                });
     }
 
 

@@ -85,7 +85,9 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -125,6 +127,8 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private final S3StorageBackend _s3StorageBackend;
 
+    private final AuditEventLogger _auditEventLogger;
+
     @Inject
     public TiesDbBeforeJobCheckServiceImpl(
             PropertiesUtil propertiesUtil,
@@ -134,7 +138,8 @@ public class TiesDbBeforeJobCheckServiceImpl
             OAuthClientTokenProvider oAuthClientTokenProvider,
             ObjectMapper objectMapper,
             InProgressBatchJobsService inProgressJobs,
-            S3StorageBackend s3StorageBackend) {
+            S3StorageBackend s3StorageBackend,
+            AuditEventLogger auditEventLogger) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _jobConfigHasher = jobConfigHasher;
@@ -143,6 +148,7 @@ public class TiesDbBeforeJobCheckServiceImpl
         _objectMapper = objectMapper;
         _inProgressJobs = inProgressJobs;
         _s3StorageBackend = s3StorageBackend;
+        _auditEventLogger = auditEventLogger;
     }
 
 
@@ -381,7 +387,15 @@ public class TiesDbBeforeJobCheckServiceImpl
         return _httpClientUtils.executeRequest(
                 request,
                 _propertiesUtil.getHttpCallbackRetryCount())
-            .thenApply(resp -> checkResponse(unpagedUri, resp))
+            .thenApply(resp -> {
+                int statusCode = resp.getStatusLine().getStatusCode();
+                _auditEventLogger.log(
+                    LogAuditEventRecord.TagType.OPERATIONAL,
+                    LogAuditEventRecord.OpType.READ,
+                    LogAuditEventRecord.ResType.ALLOW,
+                    String.format("TiesDB API call: GET %s - %s", uri, statusCode));
+                return checkResponse(unpagedUri, resp);
+            })
             .thenCompose(resp -> {
                 var responseJson = parseResponse(resp);
                 var bestMatch = getBestMatchSoFar(
@@ -394,6 +408,11 @@ public class TiesDbBeforeJobCheckServiceImpl
                             unpagedUri, offset + limit, jobHash, bestMatch, s3CopyEnabled,
                             useOidc, lastException);
             }).exceptionally(e -> {
+                _auditEventLogger.log(
+                    LogAuditEventRecord.TagType.OPERATIONAL,
+                    LogAuditEventRecord.OpType.READ,
+                    LogAuditEventRecord.ResType.ERROR,
+                    String.format("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage()));
                 lastException.set(e.getCause());
                 return prevBest;
             });

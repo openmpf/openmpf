@@ -286,6 +286,88 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 5 * MINUTES)
+    public void runMergeWithPreviousTextTaskTest() {
+        String pipelineName = "TESSERACT OCR TEXT DETECTION ON EAST REGIONS WITH KEYWORD TAGGING PIPELINE";
+        addPipeline(pipelineName,
+                "EAST TEXT DETECTION TASK",
+                "TESSERACT OCR TEXT DETECTION (WITH FF REGION) TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/ocr/keyword-tagging.jpg"));
+        long jobId = runPipelineOnMedia(pipelineName, media, Map.of());
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        assertEquals(2, outputMedia.getTrackTypes().size());
+
+        SortedSet<JsonActionOutputObject> textRegionTracksOutput = outputMedia.getTrackTypes().get("TEXT REGION");
+        assertEquals(1, textRegionTracksOutput.size());
+        assertEquals("TEXT REGION tracks for task other than EAST", "EAST TEXT DETECTION ACTION",
+                textRegionTracksOutput.first().getAction());
+        assertEquals("EAST", textRegionTracksOutput.first().getAlgorithm());
+        assertTrue(textRegionTracksOutput.first().getTracks().stream().allMatch(
+                t -> t.getType().equals("TEXT REGION")));
+
+        SortedSet<JsonActionOutputObject> textTracksOutput  = outputMedia.getTrackTypes().get("TEXT");
+        assertEquals(1, textTracksOutput.size());
+        assertEquals("TEXT tracks for task other than KEYWORD TAGGING",
+                "TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION",
+                textTracksOutput.first().getAction());
+        assertEquals("TESSERACTOCR", textTracksOutput.first().getAlgorithm());
+        assertTrue(textTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("TEXT")));
+
+        boolean allTextTracksHaveTags = textTracksOutput.stream()
+                .flatMap(ja -> ja.getTracks().stream())
+                .allMatch(jt -> jt.getTrackProperties().containsKey("TAGS"));
+        assertTrue(
+                "The keyword tagging task should have added a \"TAGS\" track property"
+                        + " to all of the text tracks.",
+                allTextTracksHaveTags);
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void runMergeWithPreviousSpeechTaskTest() {
+        String pipelineName = "SPHINX SPEECH DETECTION WITH KEYWORD TAGGING AND MARKUP PIPELINE";
+        addPipeline(pipelineName,
+                "SPHINX SPEECH DETECTION TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK", // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+                "OCV GENERIC MARKUP TASK");
+
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/green.wav"));
+        long jobId = runPipelineOnMedia(pipelineName, media, Map.of());
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        assertEquals(2, outputMedia.getTrackTypes().size());
+
+        SortedSet<JsonActionOutputObject> speechTracksOutput = outputMedia.getTrackTypes().get("SPEECH");
+        assertEquals(1, speechTracksOutput.size());
+        assertEquals("SPEECH tracks for task other than KEYWORD TAGGING",
+                "SPHINX SPEECH DETECTION ACTION",
+                speechTracksOutput.first().getAction());
+        assertEquals("SPHINX", speechTracksOutput.first().getAlgorithm());
+        assertTrue(speechTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("SPEECH")));
+
+        boolean allSpeechTracksHaveTags = speechTracksOutput.stream()
+                .flatMap(ja -> ja.getTracks().stream())
+                .allMatch(jt -> jt.getTrackProperties().containsKey("TAGS"));
+        assertTrue(
+                "The keyword tagging task should have added a \"TAGS\" track property"
+                        + " to all of the speech tracks.",
+                allSpeechTracksHaveTags);
+
+        SortedSet<JsonActionOutputObject> noTracksOutput  =
+                outputMedia.getTrackTypes().get(JsonActionOutputObject.NO_TRACKS_TYPE);
+        assertEquals(1, noTracksOutput.size());
+        assertEquals("No tracks for task other than MARKUP",
+                "OCV GENERIC MARKUP ACTION",
+                noTracksOutput.first().getAction());
+        assertEquals("MARKUPCV", noTracksOutput.first().getAlgorithm());
+    }
+
+    @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImage() throws Exception {
         runSystemTest("OCV FACE DETECTION PIPELINE", "output/face/runFaceOcvDetectImage.json",
                       "/samples/face/meds-aa-S001-01.jpg",

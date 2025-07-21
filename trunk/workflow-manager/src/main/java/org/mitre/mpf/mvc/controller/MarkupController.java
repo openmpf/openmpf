@@ -48,6 +48,7 @@ import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
@@ -55,6 +56,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -149,19 +151,14 @@ public class MarkupController {
             model.setPipeline(job.getPipelineElements().getName());
             model.setSourceUri(med.getPersistentUri());
             model.setSourceFileAvailable(false);
-            if (!StringUtils.isBlank(med.getPersistentUri())) {
-                Path path = IoUtils.toLocalPath(med.getPersistentUri()).orElse(null);
-                if (path == null || Files.exists(path)) { // if remote media or available local media
-                    String downloadUrl = UriComponentsBuilder.fromPath("server/download")
-                            .queryParam("sourceUri", med.getPersistentUri())
-                            .queryParam("jobId", jobId)
-                            .toUriString();
-                    model.setSourceDownloadUrl(downloadUrl);
-                    model.setSourceFileAvailable(true);
-                    med.getType()
-                        .or(() -> inProgressJobs.getMediaType(internalJobId, med.getId()))
-                        .ifPresent(mt -> model.setSourceMediaType(mt.toString()));
-                }
+
+            if (isRemoteOrLocallyAvailable(med.getPersistentUri())) {
+                getSourceDownloadUrl(internalJobId, med)
+                    .ifPresent(model::setSourceDownloadUrl);
+                model.setSourceFileAvailable(true);
+                med.getType()
+                    .or(() -> inProgressJobs.getMediaType(internalJobId, med.getId()))
+                    .ifPresent(mt -> model.setSourceMediaType(mt.toString()));
             }
             markupResultModels.put(med.getId(), model);
         }
@@ -175,7 +172,7 @@ public class MarkupController {
                         (markupResult.getParentMediaId() + "").contains(search) ||
                         (markupResult.getMediaId() + "").contains(search) ||
                         (markupResult.getMarkupUri() != null && markupResult.getMarkupUri().toLowerCase().contains(search)) ||
-                        (markupResult.getSourceUri() != null && markupResult.getSourceUri().toLowerCase().contains(search))) {
+                        (markupResult.getSourceUri() != null && markupResult.getSourceUri().fullString().toLowerCase().contains(search))) {
                     markupResultModelsFiltered.add(markupResult);
                 }
             } else {
@@ -347,13 +344,9 @@ public class MarkupController {
             }
         }
 
-        Path path = IoUtils.toLocalPath(media.getPersistentUri()).orElse(null);
-        if (path == null || Files.exists(path))  { // if remote media or available local media
-            sourceDownloadUrl = UriComponentsBuilder
-                    .fromPath("server/download")
-                    .queryParam("sourceUri", media.getPersistentUri())
-                    .queryParam("jobId", markupResult.getJobId())
-                    .toUriString();
+        if (isRemoteOrLocallyAvailable(media.getPersistentUri()))  {
+            sourceDownloadUrl = getSourceDownloadUrl(markupResult.getJobId(), media)
+                    .orElse("");
             sourceFileAvailable = true;
             sourceMediaType = media.getType()
                     .map(Enum::toString)
@@ -375,4 +368,26 @@ public class MarkupController {
                 sourceDownloadUrl,
                 sourceFileAvailable);
     }
+
+
+    private static Optional<String> getSourceDownloadUrl(long jobId, Media media) {
+        if (media.getUriScheme() == UriScheme.DATA) {
+            return Optional.empty();
+        }
+        var downloadUrl = UriComponentsBuilder.fromPath("server/download")
+                .queryParam("sourceUri", media.getPersistentUri())
+                .queryParam("jobId", jobId)
+                .toUriString();
+        return Optional.of(downloadUrl);
+    }
+
+    private static boolean isRemoteOrLocallyAvailable(MediaUri uri) {
+        if (UriScheme.get(uri) == UriScheme.FILE) {
+            return Files.exists(Path.of(uri.get()));
+        }
+        else {
+            return true;
+        }
+    }
+
 }

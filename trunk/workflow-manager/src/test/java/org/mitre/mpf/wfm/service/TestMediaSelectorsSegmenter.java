@@ -41,6 +41,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor;
@@ -152,7 +153,7 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
     private static Media createTestMedia(Collection<MediaSelector> mediaSelectors) {
         return new MediaImpl(
             428,
-            "file:///path/to/media",
+            MediaUri.create("file:///path/to/media"),
             null,
             Path.of("/path/to/media"),
             Map.of("MEDIA-PROP1", "MEDIA-VALUE1"),

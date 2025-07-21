@@ -38,6 +38,7 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.interop.subject.CancellationState;
 import org.mitre.mpf.interop.subject.SubjectJobDetails;
 import org.mitre.mpf.interop.subject.SubjectJobRequest;
@@ -312,7 +313,7 @@ public class TestS3StorageBackend {
 
         Media media = mock(Media.class);
         when(media.getUri())
-                .thenReturn(uri);
+                .thenReturn(MediaUri.create(uri));
         try {
             _s3StorageBackend.downloadFromS3(media, s3Properties::get);
             fail("Expected StorageException");
@@ -625,7 +626,7 @@ public class TestS3StorageBackend {
 
         Media media = mock(Media.class);
         when(media.getUri())
-                .thenReturn(_expectedUri.toString());
+                .thenReturn(new MediaUri(_expectedUri));
         when(media.getLocalPath())
                 .thenReturn(localPath);
 
@@ -652,7 +653,7 @@ public class TestS3StorageBackend {
 
         Media media = mock(Media.class);
         when(media.getUri())
-                .thenReturn(S3_HOST + "BAD_BUCKET/12/34/1234567");
+                .thenReturn(MediaUri.create(S3_HOST + "BAD_BUCKET/12/34/1234567"));
         when(media.getLocalPath())
                 .thenReturn(localPath);
 
@@ -676,7 +677,7 @@ public class TestS3StorageBackend {
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
         Media media = mock(Media.class);
         when(media.getUri())
-                .thenReturn(_expectedUri.toString());
+                .thenReturn(new MediaUri(_expectedUri));
         when(media.getLocalPath())
                 .thenReturn(localPath);
 
@@ -702,7 +703,7 @@ public class TestS3StorageBackend {
 
         Media media = mock(Media.class);
         when(media.getUri())
-                .thenReturn(S3_HOST + "BAD_BUCKET/12/34/1234567");
+                .thenReturn(MediaUri.create(S3_HOST + "BAD_BUCKET/12/34/1234567"));
         when(media.getLocalPath())
                 .thenReturn(localPath);
 

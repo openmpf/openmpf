@@ -390,7 +390,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             var mediaOutputObject = new JsonMediaOutputObject(
                     media.getId(),
                     media.getParentId(),
-                    media.getPersistentUri(),
+                    media.getPersistentUri().fullString(),
                     null,
                     media.getType().map(Enum::toString).orElse(null),
                     media.getMimeType().orElse(null),

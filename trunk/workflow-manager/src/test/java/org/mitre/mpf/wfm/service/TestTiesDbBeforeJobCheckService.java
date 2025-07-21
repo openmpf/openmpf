@@ -89,6 +89,7 @@ import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.MockitoTest;
@@ -875,7 +876,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(jobMedia1.getLinkedHash())
             .thenReturn(Optional.of("SHA1"));
         when(jobMedia1.getUri())
-            .thenReturn("http://localhost/dest-bucket/media1");
+            .thenReturn(MediaUri.create("http://localhost/dest-bucket/media1"));
         when(jobMedia1.getMediaSelectorsOutputUri())
             .thenReturn(Optional.of(URI.create("http://localhost/dest-bucket/media-selectors-out.json")));
 
@@ -883,7 +884,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(jobMedia2.getLinkedHash())
             .thenReturn(Optional.of("SHA2"));
         when(jobMedia2.getUri())
-            .thenReturn("http://localhost/dest-bucket/media2");
+            .thenReturn(MediaUri.create("http://localhost/dest-bucket/media2"));
 
         when(job.getMedia())
             .thenReturn(List.of(jobMedia1, jobMedia2));

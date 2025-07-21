@@ -70,6 +70,7 @@ import org.junit.Test;
 import org.mitre.mpf.interop.JsonActionTiming;
 import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
@@ -590,7 +591,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private void initTestMedia() {
         _tiesDbMedia = new MediaImpl(
             676,
-            "file:///media-676",
+            MediaUri.create("file:///media-676"),
             UriScheme.FILE,
             null,
             Map.of(),
@@ -604,7 +605,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         _tiesDbParentMedia = new MediaImpl(
             677,
-            "file:///media-677",
+            MediaUri.create("file:///media-677"),
             UriScheme.FILE,
             null,
             Map.of(MpfConstants.LINKED_MEDIA_HASH, "LINKED_MEDIA_HASH"),
@@ -620,7 +621,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             679,
             677,
             1,
-            "file:///media-679",
+            MediaUri.create("file:///media-679"),
             UriScheme.FILE,
             null,
             Map.of(),
@@ -635,7 +636,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         _noTiesDbMedia = new MediaImpl(
             678,
-            "file:///media-678",
+            MediaUri.create("file:///media-678"),
             UriScheme.FILE,
             null,
             Map.of(),

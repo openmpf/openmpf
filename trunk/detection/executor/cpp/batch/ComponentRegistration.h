@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,48 +24,11 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+#pragma once
 
-import java.net.URI;
-import java.util.stream.Stream;
+#include "LoggerWrapper.h"
+#include "Messenger.h"
 
-import org.mitre.mpf.rest.api.MediaUri;
-
-public enum UriScheme {
-
-	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false, false),
-
-	FILE(false, false),
-	HTTP(true, true),
-	HTTPS(true, true),
-	RTSP(true, false),
-    DATA(false, true);
-
-	private final boolean _remote;
-	public boolean isRemote() { return _remote; }
-
-    private final boolean _usesTempFile;
-    public boolean usesTempFile() { return _usesTempFile; }
-
-	UriScheme(boolean remote, boolean usesTempFile) {
-        _remote = remote;
-        _usesTempFile = usesTempFile;
-    }
-
-	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String schemeStr) {
-		return Stream.of(values())
-				.filter(schemeEnum -> schemeEnum.name().equalsIgnoreCase(schemeStr))
-				.findAny()
-				.orElse(UNDEFINED);
-	}
-
-	public static UriScheme get(URI uri) {
-		return parse(uri.getScheme());
-	}
-
-    public static UriScheme get(MediaUri uri) {
-        return get(uri.get());
-    }
+namespace MPF::COMPONENT {
+    void RegisterComponent(const LoggerWrapper& logger, Messenger& messenger);
 }

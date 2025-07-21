@@ -37,7 +37,7 @@ import org.mitre.mpf.rest.api.util.Utils;
 
 
 public record JobCreationMediaData(
-        String mediaUri,
+        MediaUri mediaUri,
         Map<String, String> properties,
         Map<String, String> metadata,
         List<JobCreationMediaRange> frameRanges,

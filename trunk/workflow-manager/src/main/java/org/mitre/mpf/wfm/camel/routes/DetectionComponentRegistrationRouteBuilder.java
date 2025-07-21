@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,48 +24,49 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.wfm.camel.routes;
 
-import java.net.URI;
-import java.util.stream.Stream;
+import javax.inject.Inject;
 
-import org.mitre.mpf.rest.api.MediaUri;
+import org.mitre.mpf.wfm.service.component.AddComponentService;
+import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
+import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-public enum UriScheme {
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false, false),
+@Component
+public class DetectionComponentRegistrationRouteBuilder extends
+        BaseComponentRegistrationRouteBuilder<JsonComponentDescriptor> {
 
-	FILE(false, false),
-	HTTP(true, true),
-	HTTPS(true, true),
-	RTSP(true, false),
-    DATA(false, true);
+    private static final Logger LOG = LoggerFactory.getLogger(
+            DetectionComponentRegistrationRouteBuilder.class);
 
-	private final boolean _remote;
-	public boolean isRemote() { return _remote; }
 
-    private final boolean _usesTempFile;
-    public boolean usesTempFile() { return _usesTempFile; }
+    private static final String ENTRY_POINT = "activemq:MPF.DETECTION_COMPONENT_REGISTRATION";
 
-	UriScheme(boolean remote, boolean usesTempFile) {
-        _remote = remote;
-        _usesTempFile = usesTempFile;
+    private final AddComponentService _addComponentService;
+
+    @Inject
+    DetectionComponentRegistrationRouteBuilder(
+            ObjectMapper objectMapper,
+            AddComponentService addComponentService) {
+        super(
+            ENTRY_POINT,
+            "Detection Tracking Component Registration",
+            objectMapper.readerFor(JsonComponentDescriptor.class));
+        _addComponentService = addComponentService;
     }
 
-	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String schemeStr) {
-		return Stream.of(values())
-				.filter(schemeEnum -> schemeEnum.name().equalsIgnoreCase(schemeStr))
-				.findAny()
-				.orElse(UNDEFINED);
-	}
 
-	public static UriScheme get(URI uri) {
-		return parse(uri.getScheme());
-	}
-
-    public static UriScheme get(MediaUri uri) {
-        return get(uri.get());
+    @Override
+    public String registerComponent(JsonComponentDescriptor descriptor)
+            throws ComponentRegistrationException {
+        LOG.info(
+                "Received detection component registration request for \"{}\".",
+                descriptor.componentName());
+        return _addComponentService.registerUnmanagedComponent(descriptor).getDescription();
     }
 }

@@ -33,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -100,7 +101,7 @@ public class TestDetectionTaskSplitter {
 
         URI mediaUri = ioUtils.findFile("/samples/new_face_video.avi");
         MediaImpl testMedia = new MediaImpl(
-                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                nextId(), new MediaUri(mediaUri), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
         testMedia.setType(MediaType.VIDEO);
         testMedia.setMimeType("video/avi");
@@ -205,7 +206,7 @@ public class TestDetectionTaskSplitter {
                 MediaType.VIDEO,
                 "video/avi",
                 Map.of());
-        
+
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
@@ -243,7 +244,7 @@ public class TestDetectionTaskSplitter {
                 MediaType.VIDEO,
                 "video/avi",
                 Map.of());
-        
+
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
@@ -326,7 +327,7 @@ public class TestDetectionTaskSplitter {
                 MediaType.IMAGE,
                 "image/jpeg",
                 Map.of());
-        
+
         assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
 
@@ -429,7 +430,7 @@ public class TestDetectionTaskSplitter {
         URI fullMediaUri = ioUtils.findFile(mediaUri);
         MediaImpl testMedia = new MediaImpl(
                 nextId(),
-                fullMediaUri.toString(),
+                new MediaUri(fullMediaUri),
                 UriScheme.get(fullMediaUri),
                 Paths.get(fullMediaUri),
                 mediaProperties,
@@ -466,7 +467,7 @@ public class TestDetectionTaskSplitter {
             MediaType mediaType,
             String mimeType,
             Map<String, String> mediaMetadata) throws WfmProcessingException {
-        
+
         MediaImpl testMedia = createSimpleMediaForTest(
                 mediaUri,
                 mediaType,
@@ -484,7 +485,7 @@ public class TestDetectionTaskSplitter {
             Map<String, String> actionProperties,
             Map<String, String> jobProperties,
             MediaImpl testMedia) throws WfmProcessingException {
-        
+
         long testId = 12345;
         String testExternalId = "externID";
 
@@ -536,6 +537,7 @@ public class TestDetectionTaskSplitter {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
+
         var testJob = new BatchJobImpl(
                 testJobId,
                 testExternalId,
@@ -560,9 +562,9 @@ public class TestDetectionTaskSplitter {
             Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties,
             Map<String,String> mediaProperties) {
 
-        URI mediaUri = URI.create("file:///path/to/dummy/media");
+        var mediaUri = MediaUri.create("file:///path/to/dummy/media");
         MediaImpl testMedia = new MediaImpl(
-                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                nextId(), mediaUri, UriScheme.get(mediaUri), Paths.get(mediaUri.get()),
                 mediaProperties, Map.of(), List.of(), List.of(), List.of(), null, null);
         testMedia.setType(MediaType.VIDEO);
         testMedia.setMimeType("video/dummy");
@@ -960,8 +962,9 @@ public class TestDetectionTaskSplitter {
 
     @Test
     public void testSourceMediaOnlyAndDerivativeMediaOnly() {
-        var parentMedia = new MediaImpl(700, "file:///parent", UriScheme.FILE, Paths.get("/local/path/parent"),
-                Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
+        var parentMedia = new MediaImpl(700, MediaUri.create("file:///parent"), UriScheme.FILE,
+                Paths.get("/local/path/parent"), Map.of(), Map.of(), List.of(),
+                List.of(), List.of(), null, null);
         parentMedia.setType(MediaType.UNKNOWN);
         parentMedia.setMimeType("application/pdf");
 
@@ -1012,15 +1015,19 @@ public class TestDetectionTaskSplitter {
         Assert.assertEquals(1, responseList.size()); // parent only
 
         // Children will be added after the extraction task in a real job.
-        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", UriScheme.FILE, Paths.get("/local/path/child1"),
-                Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of(), null, null, null);
+        var childMedia1 = new MediaImpl(701, 700, 0,
+                MediaUri.create("file:///child1"), UriScheme.FILE,
+                Paths.get("/local/path/child1"), Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(),
+                List.of(), List.of(), null, null, null);
         childMedia1.setType(MediaType.IMAGE);
         childMedia1.setMimeType("image/png");
 
-        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", UriScheme.FILE, Paths.get("/local/path/child2"),
-                Map.of(), Map.of(), null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                List.of(), List.of(), List.of(), null, null, null);
+        var childMedia2 = new MediaImpl(702, 700, 0,
+                MediaUri.create("file:///child2"), UriScheme.FILE,
+                Paths.get("/local/path/child2"), Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(),
+                List.of(), List.of(), null, null, null);
         childMedia2.setType(MediaType.IMAGE);
         childMedia2.setMimeType("image/jpeg");
 
@@ -1100,7 +1107,7 @@ public class TestDetectionTaskSplitter {
                 Map.of(),
                 jobProperties,
                 testMedia);
-        
+
         List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
@@ -1112,7 +1119,7 @@ public class TestDetectionTaskSplitter {
 
             DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
             Assert.assertEquals((int)segmentRanges.get(i).getLeft(), request.getVideoRequest().getStartFrame());
-            Assert.assertEquals((int)segmentRanges.get(i).getRight(), request.getVideoRequest().getStopFrame());    
+            Assert.assertEquals((int)segmentRanges.get(i).getRight(), request.getVideoRequest().getStopFrame());
         }
    }
 

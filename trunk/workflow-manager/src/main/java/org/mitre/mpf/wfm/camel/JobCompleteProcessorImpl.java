@@ -463,7 +463,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     // even if they do not generate any results.
                     noOutputActions.put(JsonActionOutputObject.NO_TRACKS_TYPE, action);
                 }
-                else if (trackInfo.isSuppressed()) {
+                else if (trackInfo.isSuppressed() || isAnnotator(job, media, task)) {
                     noOutputActions.put(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, action);
                 }
                 else {
@@ -507,6 +507,23 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         return annotatorValue != null && Boolean.parseBoolean(annotatorValue);
     }
+
+
+    private boolean isAnnotator(BatchJob job, Media media, Task task) {
+        // for each task, iterate though the actions list and check to see if the action is an annotator
+        for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
+            String actionName = task.actions().get(actionIndex);
+            Action action = job.getPipelineElements().getAction(actionName);
+
+            // add the action to the list if it's an annotator
+            if (isAnnotator(job, media, action)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
 
     private void addJsonTracks(

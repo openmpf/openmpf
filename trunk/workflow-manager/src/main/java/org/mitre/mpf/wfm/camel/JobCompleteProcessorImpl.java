@@ -463,8 +463,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     // even if they do not generate any results.
                     noOutputActions.put(JsonActionOutputObject.NO_TRACKS_TYPE, action);
                 }
-                else if (trackInfo.isSuppressed() || isAnnotator(job, media, task)) {
+                else if (trackInfo.isSuppressed()) {
                     noOutputActions.put(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, action);
+                } 
+                else if (isAnnotator(job, media, task)) {
+                    //skip the track since thea annotator already appends to the ff track
                 }
                 else {
                     trackCounter.add(media, trackInfo.tracksGroupedByAction().size());

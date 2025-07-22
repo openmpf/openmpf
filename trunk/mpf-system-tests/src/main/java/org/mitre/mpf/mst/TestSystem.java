@@ -419,6 +419,7 @@ public abstract class TestSystem {
                 expectedOutputPath, jobId);
         var expectedOutputJson = objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
         var actualOutputJson = getJobOutputObject(jobId);
+        log.info("Actual output for job {}: {}", jobId, actualOutputJson);
         outputChecker.compareJsonOutputObjects(
                 expectedOutputJson, actualOutputJson, jobRequest.pipelineName());
         return actualOutputJson;

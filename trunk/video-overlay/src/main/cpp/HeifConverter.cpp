@@ -26,7 +26,6 @@
 
 #include <jni.h>
 #include "JniHelper.h"
-//#include <libheif/heif.h>
 #include <libheif/heifio/encoder.h>
 #include <libheif/heifio/encoder_png.h>
 #include <libheif/heif_cxx.h>
@@ -47,26 +46,18 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
     try {
         LibHeifInitializer initializer;
         heif::Context ctx;
-        struct heif_error err;
         ctx.read_from_file(jni.ToStdString(inputFile));
-
-        std::unique_ptr<PngEncoder> encoder = std::make_unique<PngEncoder>();
-
         heif::ImageHandle handle = ctx.get_primary_image_handle();
-        int has_alpha = heif_image_handle_has_alpha_channel(handle.get_raw_image_handle());
-        int bit_depth = heif_image_handle_get_luma_bits_per_pixel(handle.get_raw_image_handle());
-        if (bit_depth < 0) {
-            throw std::runtime_error("HEIF/AVIF image has undefined bit-depth");
-        }
-
         std::unique_ptr<heif_image*> image = std::make_unique<heif_image*>();
-        err = heif_decode_image(handle.get_raw_image_handle(), image.get(),
-                                encoder->colorspace(has_alpha),
-                                encoder->chroma(has_alpha, bit_depth),
-                                nullptr);
+        struct heif_error err = heif_decode_image(handle.get_raw_image_handle(), image.get(),
+                                                  heif_colorspace_RGB,
+                                                  heif_chroma_interleaved_RGB,
+                                                  nullptr);
         if (err.code != 0) {
             throw std::runtime_error(std::string("Could not decode HEIF/AVIF image: ") + std::string(err.message));
         }
+
+        std::unique_ptr<PngEncoder> encoder = std::make_unique<PngEncoder>();
         bool success = encoder->Encode(handle.get_raw_image_handle(), *(image.get()),
                                        jni.ToStdString(outputFile));
         if (!success) {

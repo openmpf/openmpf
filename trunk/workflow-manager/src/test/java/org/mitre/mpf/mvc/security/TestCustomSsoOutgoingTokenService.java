@@ -144,7 +144,7 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
     }
 
     @Test
-    public void testCacheing() throws IOException {
+    public void testCaching() throws IOException {
         when(_mockSsoProps.getTokenLifeTime())
             .thenReturn(Duration.ofMinutes(5));
 
@@ -192,9 +192,8 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
         {
             var callbackRequest = new HttpGet();
             _outgoingTokenService.addToken(callbackRequest);
-            // This request should not have been cached.
             assertThat(captor.getAllValues())
-                .as("The cached token should not have been used.")
+                .as("A new token should have been used for this request.")
                 .hasSize(2);
             validateSsoTokenRequest(captor.getValue());
             assertHeaderSet(callbackRequest, "Authorization", "Bearer <MY TOKEN>");

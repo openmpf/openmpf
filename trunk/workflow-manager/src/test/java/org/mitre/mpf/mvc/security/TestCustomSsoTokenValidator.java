@@ -69,6 +69,8 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
     private static final Duration TOKEN_LIFETIME = Duration.ofSeconds(5);
 
+    private static final int HTTP_RETRY_COUNT = 3;
+
     @Mock
     private CustomSsoProps _mockSsoProps;
 
@@ -91,7 +93,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         lenient().when(_mockSsoProps.getTokenLifeTime())
             .thenReturn(TOKEN_LIFETIME);
         lenient().when(_mockSsoProps.getHttpRetryCount())
-                .thenReturn(3);
+                .thenReturn(HTTP_RETRY_COUNT);
     }
 
 
@@ -103,15 +105,16 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
     @Test
     public void testMissingPrefix() {
-        var expectedMsg = "Authorization header did not start with \"Bearer \"";
+        var expectedMsg = "Authorization header did not start with \"Bearer\"";
         assertBadCredentials("", expectedMsg);
         assertBadCredentials("asdf", expectedMsg);
-        assertBadCredentials("Bearer", expectedMsg);
     }
 
     @Test
     public void testPrefixButNoToken() {
-        assertBadCredentials("Bearer ", "No token following \"Bearer \"");
+        assertBadCredentials(
+            "Bearer",
+            "The Authorization header contained \"Bearer\", without a token after it");
     }
 
 
@@ -121,7 +124,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "reason");
         response.setEntity(new StringEntity(errorDetails, StandardCharsets.UTF_8));
 
-        when(_mockHttpClient.executeRequest(argThat(this::hasTokenCookieSet), eq(3)))
+        when(_mockHttpClient.executeRequest(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
             .thenReturn(ThreadUtil.completedFuture(response));
 
         assertBadCredentials("Bearer <MY TOKEN>", errorDetails);
@@ -134,7 +137,8 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         var numHttpRequests = new AtomicInteger(0);
         {
             var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
-            when(_mockHttpClient.executeRequest(argThat(this::hasTokenCookieSet), eq(3)))
+            when(_mockHttpClient.executeRequest(
+                    argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
                 .thenAnswer(a -> {
                     numHttpRequests.incrementAndGet();
                     return ThreadUtil.completedFuture(response);
@@ -184,7 +188,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         var numToken2Requests = new AtomicInteger(0);
 
 
-        when(_mockHttpClient.executeRequest(any(), eq(3)))
+        when(_mockHttpClient.executeRequest(any(), eq(HTTP_RETRY_COUNT)))
             .thenAnswer(inv -> {
                 HttpUriRequest request = inv.getArgument(0);
                 if (hasTokenCookieSet(request, "<MY TOKEN>")) {

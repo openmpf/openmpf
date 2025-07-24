@@ -62,7 +62,7 @@ public class CustomSsoTokenValidator {
 
     private static final Logger LOG = LoggerFactory.getLogger(CustomSsoTokenValidator.class);
 
-    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String BEARER_PREFIX = "Bearer";
 
     private final CustomSsoProps _customSsoProps;
 
@@ -99,12 +99,14 @@ public class CustomSsoTokenValidator {
                 "Authorization header did not start with \"%s\"".formatted(BEARER_PREFIX));
         }
 
-        var token = authHeader.substring(BEARER_PREFIX.length());
-        if (token.isBlank()) {
+        authHeader = authHeader.strip();
+        if (authHeader.equals(BEARER_PREFIX)) {
             throw new BadCredentialsException(
                 "The Authorization header contained \"%s\", without a token after it."
                 .formatted(BEARER_PREFIX));
         }
+
+        var token = authHeader.substring(BEARER_PREFIX.length() + 1);
         validateToken(token);
         authentication.setAuthenticated(true);
         return authentication;

@@ -539,6 +539,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 Algorithm futureAlgorithm = job.getPipelineElements().getAlgorithm(futureAction.algorithm());
                 String futureTrackType = futureAlgorithm.trackType();
 
+                System.out.println("Checking annotator for action: " + action.name() +
+                        ", trackType: " + trackType + ", algorithm: " + algorithm.name() + ", futureAction: " + futureActionName +
+                        ", futureTrackType: " + futureTrackType + ", futureAlgorithm: " + futureAlgorithm.name());
+
                 // add the action to the annotator list if the action has the annotator property, and track type matches
                 if (isAnnotator(job, media, futureAction)
                         && trackType.equals(futureTrackType)) {

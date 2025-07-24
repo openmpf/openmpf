@@ -429,7 +429,9 @@ public abstract class TestSystem {
     protected JsonOutputObject getJobOutputObject(long jobId) {
         try {
             File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId).toFile();
-            return objectMapper.readValue(outputObjectFile, JsonOutputObject.class);
+            JsonOutputObject outputJson = objectMapper.readValue(outputObjectFile, JsonOutputObject.class);
+            log.info("Actual output for job {}: {}", jobId, objectMapper.writeValueAsString(outputJson));
+            return outputJson;
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);

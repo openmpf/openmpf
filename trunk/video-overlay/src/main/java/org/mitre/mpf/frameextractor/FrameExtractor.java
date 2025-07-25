@@ -29,7 +29,7 @@ package org.mitre.mpf.frameextractor;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.videooverlay.JniLoader;
+import org.mitre.mpf.videooverlay.JniOcvLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashBasedTable;
@@ -50,7 +50,7 @@ public class FrameExtractor {
     private static final Logger log = LoggerFactory.getLogger(FrameExtractor.class);
 
     static {
-        JniLoader.ensureLoaded();
+        JniOcvLoader.ensureLoaded();
     }
 
     private final URI media;

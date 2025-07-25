@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,13 +31,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JniLoader {
-    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
+public class JniOcvLoader {
+    private static final Logger log = LoggerFactory.getLogger(JniOcvLoader.class);
 
     private static boolean _isLoaded;
 
     static {
-        log.info("Loading JNI libraries...");
+        log.info("Loading OpenCV JNI libraries...");
         try {
             System.loadLibrary("mpfopencvjni");
             _isLoaded = true;
@@ -48,7 +48,6 @@ public class JniLoader {
 
             var libNames = List.of(
                     "libmpfDetectionComponentApi.so",
-                    "libmpfProtobufsShared.so",
                     "libmpfopencvjni.so");
 
             for (var libName : libNames) {
@@ -61,7 +60,7 @@ public class JniLoader {
         }
     }
 
-    private JniLoader() {
+    private JniOcvLoader() {
     }
 
     /**

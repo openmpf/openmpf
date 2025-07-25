@@ -26,11 +26,8 @@
 
 package org.mitre.mpf.videooverlay;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class JniHeifLoader {
     private static final Logger log = LoggerFactory.getLogger(JniHeifLoader.class);
@@ -45,16 +42,9 @@ public class JniHeifLoader {
         }
         catch (UnsatisfiedLinkError ex) {
             log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libDir = System.getenv("MPF_HOME") + "/lib";
-
-            var libNames = List.of("libmpfheifjni.so");
-
-            for (var libName : libNames) {
-                var path = libDir + '/' + libName;
-                log.warn("Trying to load library using full path: {}", path);
-                System.load(path);
-            }
-
+            String path = System.getenv("MPF_HOME") + "/lib/" + "libmpfheifjni.so";
+            log.warn("Trying to load library using full path: {}", path);
+            System.load(path);
             _isLoaded = true;
         }
     }

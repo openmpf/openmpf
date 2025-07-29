@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,30 +26,38 @@
 
 package org.mitre.mpf.videooverlay;
 
-public class BoundingBoxWriter {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class JniHeifLoader {
+    private static final Logger log = LoggerFactory.getLogger(JniHeifLoader.class);
+
+    private static boolean _isLoaded;
 
     static {
-        JniOcvLoader.ensureLoaded();
+        log.info("Loading Heif JNI libraries...");
+        try {
+            System.loadLibrary("mpfheifjni");
+            _isLoaded = true;
+        }
+        catch (UnsatisfiedLinkError ex) {
+            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
+            String path = System.getenv("MPF_HOME") + "/lib/" + "libmpfheifjni.so";
+            log.warn("Trying to load library using full path: {}", path);
+            System.load(path);
+            _isLoaded = true;
+        }
     }
 
-    private BoundingBoxWriter() {
+    private JniHeifLoader() {
     }
 
     /**
-     * Marks up the source video using the information contained in the serialized protobuf and
-     * writes the marked up video to the destination video file.
+     * This method exists to force the static initializer to run when a class with native methods
+     * is first used. This should always return true.
+     * @return true
      */
-    public static void markup(byte[] protobytes) throws VideoOverlayJniException {
-        try {
-            markupNative(protobytes);
-        }
-        catch (VideoOverlayJniException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new VideoOverlayJniException(e);
-        }
+    public static boolean ensureLoaded() {
+        return _isLoaded;
     }
-
-	private static native void markupNative(byte[] protobytes) throws Exception;
 }

@@ -32,7 +32,9 @@ import static java.util.stream.Collectors.toMap;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,6 +88,7 @@ import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobCompleteCallbackService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
+import org.mitre.mpf.wfm.service.TaskMergingManager;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -157,6 +160,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private JobCompleteCallbackService jobCompleteCallbackService;
+
+    @Autowired
+    private TaskMergingManager taskMergingManager;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -440,8 +446,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             TrackCounter trackCounter) {
         var prevUnmergedAction = job.getPipelineElements().getAction(0, 0);
         var noOutputActions = HashMultimap.<String, Action>create();
+        var annotatorsMap = new HashMap<String, List<String>>();
+
         for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);
+            var annotators = getAnnotators(job, media, taskIndex);
 
             for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
                 String actionName = task.actions().get(actionIndex);
@@ -450,6 +459,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
                     continue;
                 }
+
+                // store the current action name -> annotators lookup
+                annotatorsMap.put(actionName, annotators);
 
                 var trackInfo = trackOutputHelper.getTrackInfo(job, media, taskIndex, actionIndex);
                 if (!trackInfo.hadAnyTracks()) {
@@ -471,7 +483,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     trackCounter.add(media, trackInfo.tracksGroupedByAction().size());
                     addJsonTracks(
                             mediaOutputObject, job, media, action,
-                            trackInfo.tracksGroupedByAction());
+                            trackInfo.tracksGroupedByAction(),
+                            annotatorsMap);
                 }
 
                 if (!trackInfo.isMergeSource()) {
@@ -484,13 +497,40 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         addMissingTrackInfo(noOutputActions, mediaOutputObject);
     }
 
+    private List<String> getAnnotators(BatchJob job, Media media, int taskIndex) {
+        List<String> annotators = new ArrayList<>();
+
+        boolean mergeTarget = taskMergingManager.isMergeTarget(job, media, taskIndex);
+        if(mergeTarget) {
+            // search subsequent tasks to determine if they are annotators for this task if it's a merge target
+            for (int nextTaskIndex = (taskIndex + 1); nextTaskIndex < job.getPipelineElements().getTaskCount(); nextTaskIndex++) {
+                Task nextTask = job.getPipelineElements().getTask(nextTaskIndex);
+
+                // for each task, iterate though the actions list and check to see if the action is an annotator
+                for (int actionIndex = 0; actionIndex < nextTask.actions().size(); actionIndex++) {
+                    String actionName = nextTask.actions().get(actionIndex);
+                    // Action action = job.getPipelineElements().getAction(actionName);
+                    boolean mergeSource = taskMergingManager.isMergeSource(job, media, nextTaskIndex, actionIndex);
+
+                    // add the action to the list if it's a merge source
+                    if (mergeSource) {
+                        annotators.add(actionName);
+                    }
+                }
+            }
+        }
+
+        return annotators;
+    }
+
 
     private void addJsonTracks(
             JsonMediaOutputObject mediaOutputObject,
             BatchJob job,
             Media media,
             Action action,
-            Multimap<String, Track> tracksGroupedByMergedAction) {
+            Multimap<String, Track> tracksGroupedByMergedAction, 
+            HashMap<String, List<String>> annotatorsMap) {
         for (var entry : tracksGroupedByMergedAction.asMap().entrySet()) {
             var mergedAction = job.getPipelineElements().getAction(entry.getKey());
             var mergedAlgo = job.getPipelineElements().getAlgorithm(mergedAction.algorithm());
@@ -502,6 +542,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         track, trackIndex++, mergedAlgo.trackType(), action, media, job);
                 jsonAction.getTracks().add(jsonTrackOutputObject);
             }
+
+            if(annotatorsMap.containsKey(mergedAction.name())) {
+                jsonAction.getAnnotators().addAll(annotatorsMap.get(mergedAction.name()));
+            }
+
             mediaOutputObject.getTrackTypes()
                     .computeIfAbsent(mergedAlgo.trackType(), k -> new TreeSet<>())
                     .add(jsonAction);
@@ -647,7 +692,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         .noneMatch(ja -> action.name().equals(ja.getAction()));
                 if (actionMissing) {
                     mediaOutputObject.getTrackTypes()
-                        .computeIfAbsent(reason, k -> new TreeSet<>())
+                        .computeIfAbsent(reason, k -> {
+                            if (JsonActionOutputObject.TRACKS_MERGED_TYPE.equals(k)) {
+                                // don't generate this type in the output
+                                return null;
+                            } else {
+                                return new TreeSet<>();
+                            }
+                        })
                         .add(new JsonActionOutputObject(action.name(), action.algorithm()));
                 }
             }

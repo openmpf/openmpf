@@ -52,6 +52,12 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     private String algorithm;
     public String getAlgorithm() { return algorithm; }
 
+    @JsonProperty("annotators")
+    @JsonPropertyDescription("The set of annotations for the action.")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private SortedSet<String> annotators;
+    public SortedSet<String> getAnnotators() { return annotators; }
+
     @JsonProperty("tracks")
     @JsonPropertyDescription("The set of object detection tracks produced in this action for the given medium.")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -61,6 +67,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     public JsonActionOutputObject(String action, String algorithm) {
         this.action = action;
         this.algorithm = algorithm;
+        this.annotators = new TreeSet<>();
         this.tracks = new TreeSet<>();
     }
 
@@ -69,8 +76,14 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     @JsonCreator
     public static JsonActionOutputObject factory(@JsonProperty("action") String action,
                                                  @JsonProperty("algorithm") String algorithm,
+                                                 @JsonProperty("annotators") SortedSet<String> annotators,
                                                  @JsonProperty("tracks") SortedSet<JsonTrackOutputObject> tracks) {
         JsonActionOutputObject trackOutputObject = new JsonActionOutputObject(action, algorithm);
+
+        if(annotators != null) {
+            trackOutputObject.annotators.addAll(annotators);
+        }
+
         if(tracks != null) {
             trackOutputObject.tracks.addAll(tracks);
         }
@@ -78,7 +91,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     }
 
     public int hashCode() {
-        return Objects.hash(action, algorithm, tracks);
+        return Objects.hash(action, algorithm, annotators, tracks);
     }
 
     @Override
@@ -93,6 +106,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
             .nullsFirst(Comparator
                     .comparing(JsonActionOutputObject::getAction)
                     .thenComparing(JsonActionOutputObject::getAlgorithm)
+                    .thenComparing(sortedSetCompare(JsonActionOutputObject::getAnnotators))
                     .thenComparing(sortedSetCompare(JsonActionOutputObject::getTracks))
             );
 

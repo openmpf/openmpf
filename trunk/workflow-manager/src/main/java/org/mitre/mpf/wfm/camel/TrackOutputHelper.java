@@ -35,6 +35,7 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -114,10 +115,23 @@ public class TrackOutputHelper {
                 !indexedTracks.isEmpty(), indexedTracks);
     }
 
+    private boolean isSuppressed(BatchJob job, Media media, int taskIdx, int actionIdx) {
+        return _aggregateJobPropertiesUtil.isSuppressTrack(media, job, 
+            job.getPipelineElements().getAction(taskIdx, actionIdx));
+    }
 
     private boolean isSuppressed(BatchJob job, Media media, int taskIdx) {
-        return _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)
-                && taskIdx < job.getPipelineElements().getLastDetectionTaskIdx();
+         for (int taskIndex = taskIdx; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
+            Task task = job.getPipelineElements().getTask(taskIndex);
+
+            for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
+                if (isSuppressed(job, media, taskIdx, actionIndex)) {
+                    return true;
+                }
+            }
+         }
+
+        return false;
     }
 
 

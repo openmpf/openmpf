@@ -136,7 +136,7 @@ public class TaskMergingManager {
 
     private boolean isMergeSource(BatchJob job, Media media, Action action) {
         var mergeProperty = _aggregateJobPropertiesUtil.getValue(
-                MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, job, media, action);
+                MpfConstants.IS_ANNOTATOR_PROPERTY, job, media, action);
         return Boolean.parseBoolean(mergeProperty);
     }
 

@@ -141,7 +141,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
     @Test
     public void addsBreadCrumbWhenTaskMergingEnabled() {
         when(_mockAggJobPropUtil.getValue(
-                    eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
+                    eq(MpfConstants.IS_ANNOTATOR_PROPERTY),
                     eq(_testJob), eq(_testMedia),
                     argThat(a -> a.name().equals("ACTION4"))))
                 .thenReturn("TRUE");
@@ -181,7 +181,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
     @Test
     public void testTaskMergingWhenBreadCrumbNotNeeded() {
         when(_mockAggJobPropUtil.getValue(
-                eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
+                eq(MpfConstants.IS_ANNOTATOR_PROPERTY),
                 eq(_testJob), eq(_testMedia),
                 argThat(a -> a.name().equals("ACTION3")
                     || a.name().equals("ACTION4"))))

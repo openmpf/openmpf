@@ -28,15 +28,15 @@
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
-        "name": "OUTPUT_LAST_TASK_ONLY",
-        "description": "The JSON output object will contain the exemplar and extracted artifacts for each track in the last task only.",
+        "name": "IS_ANNOTATOR",
+        "description": "Components with this property set to true will take the feed-forward track passed to it and adds some additional detection properties",
         "type": "BOOLEAN",
-        "propertiesKey": "mpf.output.objects.last.task.only",
+        "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
-        "name": "OUTPUT_MERGE_WITH_PREVIOUS_TASK",
-        "description": "Tasks with this property set to true will replace the preceding task's tracks in the JSON output object. Those tracks will inherit the track type and algorithm from the preceding task's tracks.",
+        "name": "SUPPRESS_TRACKS",
+        "description": "Tasks with this property set to true will hide the tracks so they don't appear in the JSON output. The action will be listed in the TRACKS SUPPRESSED section of the JSON.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

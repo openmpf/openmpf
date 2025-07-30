@@ -214,16 +214,16 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbMedia))
                 .thenReturn("http://tiesdb");
-        when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbMedia, _job))
-                .thenReturn(false);
+        // when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbMedia, _job))
+        //         .thenReturn(false);
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbParentMedia))
                 .thenReturn("http://tiesdbForParent");
         // Configure _tiesDbParentMedia so that task merging and output last task only are both
         // enabled. When both are enabled, the TiesDb output should only report the track type for
         // the last task and its transitive merge targets.
-        when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbParentMedia, _job))
-                .thenReturn(true);
+        // when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbParentMedia, _job))
+        //         .thenReturn(true);
         when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
                 .thenReturn(IntStream.of(2, 1));
         when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))

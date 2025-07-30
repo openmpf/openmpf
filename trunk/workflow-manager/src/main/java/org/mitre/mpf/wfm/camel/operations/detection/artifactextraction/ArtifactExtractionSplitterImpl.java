@@ -111,27 +111,10 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         if (finalActionType == ActionType.MARKUP) {
             lastTaskIndex = lastTaskIndex - 1;
         }
-        boolean notLastTask = (taskIndex < lastTaskIndex);
 
         List<Message> messages = new ArrayList<>();
         for (Media media : job.getMedia()) {
             if (!media.matchesType(MediaType.VIDEO, MediaType.IMAGE)) {
-                continue;
-            }
-
-            // If the user has requested output objects for the last task only, and this is
-            // not the last task, then skip extraction for this media. Also return an empty
-            // list if this is the second to last task, but the action type of the last task
-            // is MARKUP.
-            // The OUTPUT_LAST_TASK_ONLY property only makes sense to be set at the job or
-            // media level.
-            boolean lastTaskOnly = Boolean.parseBoolean(
-                    _aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
-            if (lastTaskOnly && notLastTask) {
-                LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to {} property.",
-                        pipelineElements.getTask(taskIndex).name(), media.getId(),
-                        MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
                 continue;
             }
 
@@ -148,6 +131,20 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                  actionIndex++) {
 
                 Action action = pipelineElements.getAction(taskIndex, actionIndex);
+
+                // If the user has requested to suppress tracks for this action, 
+                // then skip extraction for this media. 
+                boolean suppressTracks = Boolean.parseBoolean(
+                    _aggregateJobPropertiesUtil.getValue(MpfConstants.SUPPRESS_TRACKS_PROPERTY, job, media, action));
+                if (suppressTracks) {
+                    LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {}, media {}, and action {}" +
+                                " due to {} property.",
+                        pipelineElements.getTask(taskIndex).name(), media.getId(), actionIndex,
+                        MpfConstants.SUPPRESS_TRACKS_PROPERTY);
+
+                    continue;
+                }
+
                 ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, action);
                 LOG.debug("Artifact extraction policy = {}", extractionPolicy);
                 if (extractionPolicy == ArtifactExtractionPolicy.NONE) {

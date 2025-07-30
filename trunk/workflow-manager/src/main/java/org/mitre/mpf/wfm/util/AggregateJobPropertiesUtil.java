@@ -515,7 +515,7 @@ public class AggregateJobPropertiesUtil {
             }
 
             boolean shouldMerge = Boolean.parseBoolean(
-                    getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, jobPart));
+                    getValue(MpfConstants.IS_ANNOTATOR_PROPERTY, jobPart));
             if (!shouldMerge) {
                 continue;
             }
@@ -545,11 +545,9 @@ public class AggregateJobPropertiesUtil {
         }
     }
 
-    public boolean isOutputLastTaskOnly(Media media, BatchJob job) {
-        // Action properties and algorithm properties are not checked because it doesn't make sense
-        // to apply OUTPUT_LAST_TASK_ONLY to a single task.
+    public boolean isSuppressTrack(Media media, BatchJob job, Action action) {
         return Boolean.parseBoolean(
-                getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
+                getValue(MpfConstants.SUPPRESS_TRACKS_PROPERTY, job, media, action));
     }
 
     public boolean isNonVisualObjectType(String type) {

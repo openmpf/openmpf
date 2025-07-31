@@ -224,10 +224,10 @@ public class TestTiesDbService extends MockitoTest.Strict {
         // the last task and its transitive merge targets.
         // when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbParentMedia, _job))
         //         .thenReturn(true);
-        when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
-                .thenReturn(IntStream.of(2, 1));
-        when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
-                .thenReturn(IntStream.of(2, 1));
+        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
+        //         .thenReturn(IntStream.of(2, 1));
+        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
+        //         .thenReturn(IntStream.of(2, 1));
 
         var pipelineElements = _job.getPipelineElements();
         var mediaActionProps = new MediaActionProps((m, a) -> Map.of());

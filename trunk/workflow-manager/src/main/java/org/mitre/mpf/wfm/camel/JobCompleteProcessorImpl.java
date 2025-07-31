@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -691,16 +692,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         .flatMap(Collection::stream)
                         .noneMatch(ja -> action.name().equals(ja.getAction()));
                 if (actionMissing) {
-                    mediaOutputObject.getTrackTypes()
+                    Optional.ofNullable(mediaOutputObject.getTrackTypes()
                         .computeIfAbsent(reason, k -> {
                             if (JsonActionOutputObject.TRACKS_MERGED_TYPE.equals(k)) {
-                                // don't generate this type in the output
                                 return null;
                             } else {
                                 return new TreeSet<>();
                             }
-                        })
-                        .add(new JsonActionOutputObject(action.name(), action.algorithm()));
+                        }))
+                        .ifPresent(set -> set.add(new JsonActionOutputObject(action.name(), action.algorithm())));
                 }
             }
         }

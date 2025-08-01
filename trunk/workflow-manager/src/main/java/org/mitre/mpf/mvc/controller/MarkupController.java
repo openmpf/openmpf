@@ -121,6 +121,10 @@ public class MarkupController {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.READ, 
+                                LogAuditEventRecord.ResType.ERROR, 
+                                "Failed to retrieve markup results: Invalid job ID " + jobId);
             return ResponseEntity.notFound().build();
         }
 
@@ -219,6 +223,10 @@ public class MarkupController {
         MarkupResult markupResult = markupResultDao.findById(id);
         if (markupResult == null) {
             log.error("Markup with id " + id + " download failed. Invalid id.");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.EXTRACT, 
+                                LogAuditEventRecord.ResType.ERROR, 
+                                "Markup download failed: Invalid markup ID " + id);
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -228,6 +236,10 @@ public class MarkupController {
         if (localPath != null) {
             if (!Files.exists(localPath)) {
                 log.error("Markup with id " + id + " download failed. Invalid path: " + localPath);
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                    LogAuditEventRecord.OpType.EXTRACT, 
+                                    LogAuditEventRecord.ResType.ERROR, 
+                                    "Markup download failed: File not found at path " + localPath + " for markup ID " + id);
                 response.setStatus(404);
                 response.flushBuffer();
                 return;
@@ -248,6 +260,10 @@ public class MarkupController {
         if (job == null) {
             log.error("Markup with id " + id + " download failed. Invalid job with id " +
                     markupResult.getJobId() + ".");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.EXTRACT, 
+                                LogAuditEventRecord.ResType.ERROR, 
+                                "Markup download failed: Invalid job ID " + markupResult.getJobId() + " for markup ID " + id);
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -261,6 +277,10 @@ public class MarkupController {
         if (media == null) {
             log.error("Markup with id " + id + " download failed. Invalid media with id " +
                     markupResult.getMediaId() + ".");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.EXTRACT, 
+                                LogAuditEventRecord.ResType.ERROR, 
+                                "Markup download failed: Invalid media ID " + markupResult.getMediaId() + " for markup ID " + id);
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -284,6 +304,10 @@ public class MarkupController {
                 return;
             } catch (StorageException e) {
                 log.error("Markup with id " + id + " download failed: " + e.getMessage());
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                    LogAuditEventRecord.OpType.EXTRACT, 
+                                    LogAuditEventRecord.ResType.ERROR, 
+                                    "Markup download failed: S3 error for markup ID " + id + " : " + e.getMessage());
                 response.setStatus(500);
                 response.flushBuffer();
                 return;
@@ -304,6 +328,10 @@ public class MarkupController {
             }
         } catch (IOException e) {
             log.error("Markup with id " + id + " download failed: " + e.getMessage());
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                LogAuditEventRecord.OpType.EXTRACT, 
+                                LogAuditEventRecord.ResType.ERROR, 
+                                "Markup download failed: IO error for markup ID " + id + " : " + e.getMessage());
             response.setStatus(500);
             response.flushBuffer();
             return;

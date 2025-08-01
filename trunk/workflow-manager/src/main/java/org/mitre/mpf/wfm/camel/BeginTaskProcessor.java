@@ -30,6 +30,7 @@ import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
@@ -57,6 +58,13 @@ public class BeginTaskProcessor extends WfmProcessor {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         inProgressBatchJobs.incrementTask(jobId);
         BatchJob job = inProgressBatchJobs.getJob(jobId);
+        exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
+
+        if (job.getStatus() == BatchJobStatusType.ERROR) {
+            log.warn("Skipping rest of job because it is in the ERROR state.");
+            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
+            return;
+        }
 
         if (job.getCurrentTaskIndex() > 0) {
             // If this is not the first task, log that the previous task completed.
@@ -64,14 +72,11 @@ public class BeginTaskProcessor extends WfmProcessor {
                     job.getCurrentTaskIndex(), job.getPipelineElements().getTaskCount());
         }
 
-
         if (job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
             jobProgressStore.setJobProgress(jobId, 99.0f);
             jobStatusBroadcaster.broadcast(jobId, job.getStatus());
             log.debug("All tasks have completed. Setting the {} flag.", MpfHeaders.JOB_COMPLETE);
             exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
         }
-
-        exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
     }
 }

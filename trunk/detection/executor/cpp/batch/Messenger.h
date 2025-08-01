@@ -64,6 +64,9 @@ public:
             const JobContext& job_context,
             const std::vector<unsigned char>& response_bytes);
 
+    std::unique_ptr<cms::Message> SendTextRequestResponse(
+            const std::string& request_queue_name, const std::string& message_body);
+
 
     /**
      * Returns the job request message to the ActiveMQ broker. The broker will decide whether to

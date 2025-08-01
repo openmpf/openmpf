@@ -201,6 +201,20 @@ App.config(function($logProvider){
 });
 
 
+App.config(['$compileProvider', $compileProvider => {
+	// The default regex requires the data URI to have the mime type included and for it to be an
+	// image type. The regex is modified so that the image can be displayed even if the content
+	// type is not specified in the URI.
+	// default imgSrcSanitizationWhitelist: /^\s*((https?|ftp|file|blob):|data:image\/)/
+	$compileProvider.imgSrcSanitizationWhitelist(/^\s*(https?|ftp|file|blob|data):/)
+
+	// Browsers will not allow navigation to data URIs, however <a> elements with the download
+	// attribute set do work.
+	// default aHrefSanitizationWhitelist /^\s*(https?|ftp|mailto|tel|file):/
+	$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|data):/)
+}]);
+
+
 App.run([
 'JobStatusNotifier', 'ServerSidePush',
 (JobStatusNotifier, ServerSidePush) => {

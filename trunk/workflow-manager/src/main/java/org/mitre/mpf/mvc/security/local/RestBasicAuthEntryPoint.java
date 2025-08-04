@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.local;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -47,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * but since this is applied to our REST endpoints JSON is more appropriate.
  */
 @Component
+@LocalSecurityProfile
 public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper _objectMapper;

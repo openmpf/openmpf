@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,41 +24,42 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
+package org.mitre.mpf.mvc.security.custom.sso;
 
-import org.hibernate.SessionFactory;
-import org.mitre.mpf.mvc.security.local.LocalSecurityProfile;
-import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.entities.persistent.User;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
+import java.io.IOException;
+import java.util.Map;
 
 import javax.inject.Inject;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-@LocalSecurityProfile
-@Repository
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@Profile("custom_sso")
+@Service
+public class CustomSsoRestFailureHandler extends CustomSsoBaseFailureHandler {
+
+    private final ObjectMapper _objectMapper;
 
     @Inject
-    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
-        super(User.class, sessionFactory);
+    CustomSsoRestFailureHandler(ObjectMapper objectMapper) {
+        super(CustomSsoRestFailureHandler.class);
+        _objectMapper = objectMapper;
     }
 
+
     @Override
-    public Optional<User> findByUserName(final String userName) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(User.class);
-        var root = query.from(User.class);
-
-        query.where(cb.equal(root.get("userName"), userName));
-
-        return buildQuery(query)
-                .list()
-                .stream()
-                .findFirst();
+    public void doCommence(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AuthenticationException authException) throws IOException, ServletException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        var messageObj = Map.of("message", authException.getMessage());
+        _objectMapper.writeValue(response.getWriter(), messageObj);
     }
 }

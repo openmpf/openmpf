@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.custom.sso;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -42,6 +42,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.mvc.security.ITokenProvider;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.ClockService;
 import org.mitre.mpf.wfm.util.HttpClientUtils;

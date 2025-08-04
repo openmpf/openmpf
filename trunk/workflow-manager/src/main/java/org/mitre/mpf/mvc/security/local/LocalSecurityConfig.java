@@ -25,12 +25,12 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.local;
 
+import org.mitre.mpf.mvc.security.AjaxAuthenticationEntrypoint;
 import org.mitre.mpf.wfm.enums.UserRole;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -38,12 +38,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
-@Profile("(!oidc & !jenkins) | test-with-security")
+@LocalSecurityProfile
 public class LocalSecurityConfig {
 
     @Bean
     @Order(1)
-    @Profile("!custom_sso")
     public SecurityFilterChain restSecurityFilterChain(
             HttpSecurity http, RestBasicAuthEntryPoint restBasicAuthEntryPoint) throws Exception {
         return http.antMatcher("/rest/**")

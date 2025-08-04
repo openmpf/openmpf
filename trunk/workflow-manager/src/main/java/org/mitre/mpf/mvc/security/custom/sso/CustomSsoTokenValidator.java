@@ -24,12 +24,13 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.custom.sso;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.PriorityQueue;
@@ -45,6 +46,7 @@ import javax.inject.Inject;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.mitre.mpf.wfm.enums.UserRole;
 import org.mitre.mpf.wfm.service.ClockService;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -54,6 +56,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -87,9 +91,9 @@ public class CustomSsoTokenValidator {
     }
 
 
-    public Authentication authenticate(Authentication authentication)
+    public Authentication authenticateBearer(Authentication authenticationRequest)
             throws AuthenticationException {
-        var authHeader = (String) authentication.getCredentials();
+        var authHeader = (String) authenticationRequest.getCredentials();
         if (authHeader == null) {
             throw new BadCredentialsException("No Authorization header present.");
         }
@@ -107,9 +111,29 @@ public class CustomSsoTokenValidator {
         }
 
         var token = authHeader.substring(BEARER_PREFIX.length() + 1);
+        return authenticate(token, authenticationRequest);
+    }
+
+
+    public Authentication authenticateCookie(Authentication authenticationRequest) {
+        var token = (String) authenticationRequest.getCredentials();
+        if (token == null) {
+            throw new BadCredentialsException("No cookie present.");
+        }
+        return authenticate(token, authenticationRequest);
+    }
+
+
+    private Authentication authenticate(String token, Authentication authenticationRequest) {
         validateToken(token);
-        authentication.setAuthenticated(true);
-        return authentication;
+        authenticationRequest.setAuthenticated(true);
+
+        var authenticationResult = new PreAuthenticatedAuthenticationToken(
+                authenticationRequest.getPrincipal(),
+                authenticationRequest.getCredentials(),
+                List.of(new SimpleGrantedAuthority(UserRole.ADMIN.springName)));
+        authenticationResult.setAuthenticated(true);
+        return authenticationResult;
     }
 
 
@@ -172,7 +196,7 @@ public class CustomSsoTokenValidator {
                     Exception.class);
         }
         catch (Exception e) {
-            throw new BadCredentialsException(
+            throw new AuthServerReportedBadCredentialsException(
                     "Failed to validate token because communication with the SSO server failed with error: "
                     + e, e);
         }
@@ -183,7 +207,7 @@ public class CustomSsoTokenValidator {
             var errorDetails = getBody(response)
                 .map(b -> ", with body: " + b)
                 .orElse(".");
-            throw new BadCredentialsException(errorPrefix + errorDetails);
+            throw new AuthServerReportedBadCredentialsException(errorPrefix + errorDetails);
         }
     }
 

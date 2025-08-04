@@ -77,13 +77,14 @@ public class TestOutgoingRequestTokenService extends MockitoTest.Strict {
 
     @Before
     public void init() {
-        _tokenService = new OutgoingRequestTokenService(_mockAggJobProps, _mockTokenProvider);
+        _tokenService = new OutgoingRequestTokenService(
+                _mockAggJobProps, Optional.of(_mockTokenProvider));
     }
 
 
     @Test
     public void testTokensDisabled() {
-        var service = new OutgoingRequestTokenService(_mockAggJobProps, null);
+        var service = new OutgoingRequestTokenService(_mockAggJobProps, Optional.empty());
 
         service.addTokenToJobCompleteCallback((BatchJob) null, null);
         service.addTokenToJobCompleteCallback((DbSubjectJob) null, null);

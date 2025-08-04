@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.oidc;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -33,6 +33,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 
 import org.apache.http.client.methods.HttpUriRequest;
+import org.mitre.mpf.mvc.security.ITokenProvider;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

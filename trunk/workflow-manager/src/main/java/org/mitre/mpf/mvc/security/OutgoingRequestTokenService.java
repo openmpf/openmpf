@@ -26,10 +26,10 @@
 
 package org.mitre.mpf.mvc.security;
 
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.apache.http.client.methods.HttpUriRequest;
@@ -55,11 +55,15 @@ public class OutgoingRequestTokenService {
     @Inject
     OutgoingRequestTokenService(
             AggregateJobPropertiesUtil aggregateJobProps,
-            @Nullable ITokenProvider tokenProvider) {
-        _tokenProvider = tokenProvider;
-        _tokenRequired = _tokenProvider == null
-            ? TOKENS_NOT_REQUIRED
-            : new TokenRequiredCheckEnabled(aggregateJobProps);
+            Optional<ITokenProvider> tokenProvider) {
+        if (tokenProvider.isPresent()) {
+            _tokenProvider = tokenProvider.get();
+            _tokenRequired = new TokenRequiredCheckEnabled(aggregateJobProps);
+        }
+        else {
+            _tokenProvider = null;
+            _tokenRequired = TOKENS_NOT_REQUIRED;
+        }
     }
 
 

@@ -25,13 +25,47 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.oidc;
 
-import java.util.Optional;
+import java.io.IOException;
+import java.util.Map;
 
-public record OidcClaimConfig(
-        Optional<String> adminClaimName,
-        Optional<String> adminClaimValue,
-        Optional<String> userClaimName,
-        Optional<String> userClaimValue) {
+import javax.inject.Inject;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@Component
+@Profile("oidc")
+public class JwtAccessDeniedHandler implements AccessDeniedHandler {
+
+    private final BearerTokenAccessDeniedHandler _bearerTokenAccessDeniedHandler
+            = new BearerTokenAccessDeniedHandler();
+
+    private final ObjectMapper _objectMapper;
+
+    @Inject
+    JwtAccessDeniedHandler(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
+    }
+
+    @Override
+    public void handle(
+            HttpServletRequest request, HttpServletResponse response,
+            AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        _bearerTokenAccessDeniedHandler.handle(request, response, accessDeniedException);
+        if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
+            var messageObj = Map.of("message", accessDeniedException.getMessage());
+            _objectMapper.writeValue(response.getWriter(), messageObj);
+        }
+    }
 }

@@ -24,41 +24,14 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
 
-import org.hibernate.SessionFactory;
-import org.mitre.mpf.mvc.security.local.LocalSecurityProfile;
-import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.entities.persistent.User;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+package org.mitre.mpf.mvc.security.oidc;
 
 import java.util.Optional;
 
-import javax.inject.Inject;
-
-@LocalSecurityProfile
-@Repository
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
-
-    @Inject
-    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
-        super(User.class, sessionFactory);
-    }
-
-    @Override
-    public Optional<User> findByUserName(final String userName) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(User.class);
-        var root = query.from(User.class);
-
-        query.where(cb.equal(root.get("userName"), userName));
-
-        return buildQuery(query)
-                .list()
-                .stream()
-                .findFirst();
-    }
+public record OidcClaimConfig(
+        Optional<String> adminClaimName,
+        Optional<String> adminClaimValue,
+        Optional<String> userClaimName,
+        Optional<String> userClaimValue) {
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,45 +24,41 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
-package org.mitre.mpf.mvc.security;
-
-import java.io.IOException;
-import java.util.Map;
+package org.mitre.mpf.mvc.security.custom.sso;
 
 import javax.inject.Inject;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
-import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
+import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+@Service
+@Profile("custom_sso")
+public class CustomSsoBrowserAuthFilter extends AbstractPreAuthenticatedProcessingFilter {
 
-@Component
-public class JwtAccessDeniedHandler implements AccessDeniedHandler {
-
-    private final BearerTokenAccessDeniedHandler _bearerTokenAccessDeniedHandler
-            = new BearerTokenAccessDeniedHandler();
-
-    private final ObjectMapper _objectMapper;
+    private final CustomSsoProps _customSsoProps;
 
     @Inject
-    JwtAccessDeniedHandler(ObjectMapper objectMapper) {
-        _objectMapper = objectMapper;
+    CustomSsoBrowserAuthFilter(
+            CustomSsoTokenValidator customSsoTokenValidator,
+            CustomSsoBrowserFailureHandler failureHandler,
+            CustomSsoProps customSsoProps) {
+        setAuthenticationManager(customSsoTokenValidator::authenticateCookie);
+        setAuthenticationFailureHandler(failureHandler);
+        _customSsoProps = customSsoProps;
     }
 
     @Override
-    public void handle(
-            HttpServletRequest request, HttpServletResponse response,
-            AccessDeniedException accessDeniedException) throws IOException, ServletException {
-        _bearerTokenAccessDeniedHandler.handle(request, response, accessDeniedException);
-        if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
-            var messageObj = Map.of("message", accessDeniedException.getMessage());
-            _objectMapper.writeValue(response.getWriter(), messageObj);
-        }
+    protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
+        return _customSsoProps.getTokenFromCookie(request)
+            .map(s -> "SSO user")
+            .orElse(null);
+    }
+
+    @Override
+    protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
+        return _customSsoProps.getTokenFromCookie(request)
+                .orElse(null);
     }
 }

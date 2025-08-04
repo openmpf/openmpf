@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.custom.sso;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -52,6 +52,7 @@ import org.junit.Test;
 import org.mitre.mpf.test.MockClockService;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.enums.UserRole;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.Mock;
@@ -144,13 +145,13 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
                     return ThreadUtil.completedFuture(response);
                 });
 
-            var authResult = _tokenValidator.authenticate(createAuth(authHeader));
+            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
             assertThat(authResult.isAuthenticated()).isTrue();
         }
 
         _mockClock.advance(Duration.ofSeconds(3));
         {
-            var authResult = _tokenValidator.authenticate(createAuth(authHeader));
+            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
             assertThat(authResult.isAuthenticated()).isTrue();
             assertThat(numHttpRequests)
                 .as("Cached value should have been used")
@@ -159,7 +160,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         _mockClock.advance(Duration.ofSeconds(1));
         {
-            var authResult = _tokenValidator.authenticate(createAuth(authHeader));
+            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
             assertThat(authResult.isAuthenticated()).isTrue();
             assertThat(numHttpRequests)
                 .as("Cached value should have been used")
@@ -168,7 +169,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         _mockClock.advance(Duration.ofSeconds(4));
         {
-            var authResult = _tokenValidator.authenticate(createAuth(authHeader));
+            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
             assertThat(authResult.isAuthenticated()).isTrue();
             assertThat(numHttpRequests)
                 .as("Cached value should not have been used")
@@ -207,15 +208,15 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         var authHeader = "Bearer <MY TOKEN>";
         var authFuture1 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticate(createAuth(authHeader)));
+            () -> _tokenValidator.authenticateBearer(createAuth(authHeader)));
         var authFuture2 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticate(createAuth(authHeader)));
+            () -> _tokenValidator.authenticateBearer(createAuth(authHeader)));
 
         var authHeader2 = "Bearer <MY TOKEN2>";
         var authFuture3 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticate(createAuth(authHeader2)));
+            () -> _tokenValidator.authenticateBearer(createAuth(authHeader2)));
         var authFuture4 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticate(createAuth(authHeader2)));
+            () -> _tokenValidator.authenticateBearer(createAuth(authHeader2)));
 
         // Verify that both requests have started.
         assertThat(ThreadUtil.allOf(request1Started, request2Started))
@@ -250,6 +251,20 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
     }
 
 
+    @Test
+    public void testValidationFromBrowser() {
+        var httpResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
+        when(_mockHttpClient.executeRequest(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
+                .thenReturn(ThreadUtil.completedFuture(httpResponse));
+
+        var authRequest = new PreAuthenticatedAuthenticationToken("n/a", "<MY TOKEN>");
+        var authResponse = _tokenValidator.authenticateCookie(authRequest);
+        assertThat(authResponse.getAuthorities())
+                .singleElement()
+                .extracting(g -> g.getAuthority())
+                .isEqualTo(UserRole.ADMIN.springName);
+    }
+
 
     private boolean hasTokenCookieSet(HttpUriRequest request) {
         return hasTokenCookieSet(request, "<MY TOKEN>");
@@ -271,7 +286,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
     private void assertBadCredentials(String token, String expectedMsg) {
         var auth = createAuth(token);
         assertThatExceptionOfType(BadCredentialsException.class)
-            .isThrownBy(() -> _tokenValidator.authenticate(auth))
+            .isThrownBy(() -> _tokenValidator.authenticateBearer(auth))
             .withMessageContaining(expectedMsg);
         assertThat(auth.isAuthenticated()).isFalse();
     }

@@ -1,4 +1,30 @@
-package org.mitre.mpf.mvc.security;
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2025 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+package org.mitre.mpf.mvc.security.custom.sso;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -6,9 +32,15 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
+import org.apache.http.client.utils.URIBuilder;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +58,9 @@ public class CustomSsoProps {
         public static final String SSO_TOKEN_LIFE_TIME_SECONDS = "CUSTOM_SSO_TOKEN_LIFE_TIME_SECONDS";
         public static final String SSO_USER = "CUSTOM_SSO_USER";
         public static final String SSO_PASSWORD = "CUSTOM_SSO_PASSWORD";
+
+        public static final String SSO_LOG_IN_URL = "CUSTOM_SSO_LOG_IN_URL";
+        public static final String SSO_RETURN_URL = "CUSTOM_SSO_RETURN_URL";
 
         private EnvKeys(){
         }
@@ -66,14 +101,26 @@ public class CustomSsoProps {
     }
 
 
+    public URI getFullRedirectUri() {
+        var loginUri = getRequiredUriPropOrEnv(EnvKeys.SSO_LOG_IN_URL);
+        var returnUri = getRequiredUriPropOrEnv(EnvKeys.SSO_RETURN_URL);
+        try {
+            return new URIBuilder(loginUri)
+                .addParameter("return_to", returnUri.toString())
+                .build();
+        }
+        catch (URISyntaxException e) {
+            // Should be impossible because loginUri is already a URI.
+            throw new WfmProcessingException("The Custom SSO login uri was invalid.");
+        }
+    }
+
+
     private static final Duration DEFAULT_LIFE_TIME = Duration.ofMinutes(5);
 
     public Duration getTokenLifeTime() {
         var optSecondsString = getOptionalPropOrEnv(EnvKeys.SSO_TOKEN_LIFE_TIME_SECONDS);
         if (optSecondsString.isEmpty()) {
-            LOG.info(
-                "No token lifetime provided. Using default of {} seconds",
-                DEFAULT_LIFE_TIME.toSeconds());
             return DEFAULT_LIFE_TIME;
         }
         try {
@@ -92,6 +139,15 @@ public class CustomSsoProps {
         return getRequiredPropOrEnv(EnvKeys.TOKEN_PROPERTY);
     }
 
+    public Optional<String> getTokenFromCookie(HttpServletRequest request) {
+        var tokenProp = getTokenProperty();
+        return Stream.of(request.getCookies())
+            .filter(c -> c.getName().equals(tokenProp))
+            .findFirst()
+            .map(Cookie::getValue);
+    }
+
+
     public String getSsoUser() {
         return getRequiredPropOrEnv(EnvKeys.SSO_USER);
     }
@@ -104,6 +160,14 @@ public class CustomSsoProps {
         return _propertiesUtil.getHttpCallbackRetryCount();
     }
 
+    private static final String SSO_ERROR_ATTR = CustomSsoProps.class.getName() + ".custom-sso-error";
+    public static void storeErrorMessage(HttpSession session, String message) {
+        session.setAttribute(SSO_ERROR_ATTR, message);
+    }
+
+    public static Optional<String> getStoredErrorMessage(HttpSession session) {
+        return Optional.ofNullable((String) session.getAttribute(SSO_ERROR_ATTR));
+    }
 
     private Optional<String> getOptionalPropOrEnv(String envName) {
         return toNonBlank(_propertiesUtil.lookup(getPropName(envName)))
@@ -128,7 +192,6 @@ public class CustomSsoProps {
                 .formatted(getPropName(envName), envName), e);
         }
     }
-
 
 
     private static final Optional<String> getOptionalEnv(String varName) {

@@ -72,7 +72,7 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
@@ -98,7 +98,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
     private MediaInspectionHelper mockMediaInspectionHelper;
 
     @Mock
-    private TaskMergingManager mockTaskMergingManager;
+    private TaskAnnotatorService mockTaskMergingManager;
 
     private DetectionResponseProcessor detectionResponseProcessor;
 
@@ -221,7 +221,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         exchange.getIn().getHeaders().put(MpfHeaders.PROCESSING_TIME, 1234L);
         exchange.getIn().setBody(detectionResponse);
 
-        when(mockTaskMergingManager.getMergedTaskIndex(
+        when(mockTaskMergingManager.getAnnotatedTaskIndex(
                 argThat(j -> j.getId() == JOB_ID),
                 argThat(m -> m.getId() == MEDIA_ID),
                 eq(0),
@@ -248,7 +248,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         var track = trackCaptor.getValue();
         assertEquals(JOB_ID, track.getJobId());
         assertEquals(5, track.getStartOffsetFrameInclusive());
-        assertEquals(0, track.getMergedTaskIndex());
+        assertEquals(0, track.getAnnotatedTaskIndex());
     }
 
     @Test

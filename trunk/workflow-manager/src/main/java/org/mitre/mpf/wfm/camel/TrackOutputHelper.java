@@ -42,7 +42,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.springframework.stereotype.Component;
 
@@ -60,14 +60,14 @@ public class TrackOutputHelper {
 
     private final TriggerProcessor _triggerProcessor;
 
-    private final TaskMergingManager _taskMergingManager;
+    private final TaskAnnotatorService _taskMergingManager;
 
     @Inject
     TrackOutputHelper(
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobsService,
             TriggerProcessor triggerProcessor,
-            TaskMergingManager taskMergingManager) {
+            TaskAnnotatorService taskMergingManager) {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobsService = inProgressBatchJobsService;
         _triggerProcessor = triggerProcessor;
@@ -84,9 +84,9 @@ public class TrackOutputHelper {
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
         boolean isSuppressed = isSuppressed(job, media, taskIdx);
-        boolean isMergeTarget = _taskMergingManager.isMergeTarget(job, media, taskIdx);
+        boolean isMergeTarget = _taskMergingManager.taskHasAnnotator(job, media, taskIdx);
         boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean isMergeSource = _taskMergingManager.isMergeSource(job, media, taskIdx, actionIdx);
+        boolean isMergeSource = _taskMergingManager.isAnnotatorAction(job, media, taskIdx, actionIdx);
 
         boolean canAvoidGettingTracks =
                 isMergeTarget || (isSuppressed && !needToCheckTrackTriggers);
@@ -170,7 +170,7 @@ public class TrackOutputHelper {
 
     private String getMergedAction(Track track, BatchJob job) {
         int actionIndex;
-        var trackMergingEnabled = track.getMergedTaskIndex() != track.getTaskIndex();
+        var trackMergingEnabled = track.getAnnotatedTaskIndex() != track.getTaskIndex();
         if (trackMergingEnabled) {
             // When track merging is enabled, the merged task will never be the last task.  Only
             // the last task can have more than one action, so the merged action has to be the
@@ -181,7 +181,7 @@ public class TrackOutputHelper {
             actionIndex = track.getActionIndex();
         }
         return job.getPipelineElements()
-                .getAction(track.getMergedTaskIndex(), actionIndex)
+                .getAction(track.getAnnotatedTaskIndex(), actionIndex)
                 .name();
     }
 }

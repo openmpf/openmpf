@@ -65,13 +65,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 
-public class TestTaskMergingManager extends MockitoTest.Strict {
+public class TestTaskAnnotatorService extends MockitoTest.Strict {
 
     @Mock
     private AggregateJobPropertiesUtil _mockAggJobPropUtil;
 
     @InjectMocks
-    private TaskMergingManager _taskMergingManager;
+    private TaskAnnotatorService _taskAnnotatorService;
 
     private BatchJob _testJob;
 
@@ -124,16 +124,16 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
 
     @Test
     public void testFirstTask() {
-        assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 0, 0));
-        int task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 0, 0, Map.of());
+        assertFalse(_taskAnnotatorService.needsBreadCrumb(_testJob, _testMedia, 0, 0));
+        int task = _taskAnnotatorService.getAnnotatedTaskIndex(_testJob, _testMedia, 0, 0, Map.of());
         assertEquals(0, task);
     }
 
 
     @Test
     public void testTaskMergingDisabled() {
-        assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 1, 0));
-        int task = _taskMergingManager.getMergedTaskIndex(_testJob, _testMedia, 1, 0, Map.of());
+        assertFalse(_taskAnnotatorService.needsBreadCrumb(_testJob, _testMedia, 1, 0));
+        int task = _taskAnnotatorService.getAnnotatedTaskIndex(_testJob, _testMedia, 1, 0, Map.of());
         assertEquals(1, task);
     }
 
@@ -152,24 +152,24 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                     argThat(a -> a.name().equals("ACTION1"))))
                 .thenReturn("TEST=TRUE");
 
-        assertTrue(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 3, 0));
+        assertTrue(_taskAnnotatorService.needsBreadCrumb(_testJob, _testMedia, 3, 0));
 
         var track1 = createTrack(1);
         var message1 = createMessage();
-        _taskMergingManager.addBreadCrumb(message1, track1);
+        _taskAnnotatorService.addBreadCrumb(message1, track1);
 
         var breadCrumb1 = message1.getHeader("breadcrumbId", String.class);
         assertTrue(breadCrumb1.startsWith("mpf-1-"));
-        assertEquals(1, _taskMergingManager.getMergedTaskIndex(
+        assertEquals(1, _taskAnnotatorService.getAnnotatedTaskIndex(
                 _testJob, _testMedia, -1, -1, message1.getHeaders()));
 
 
         var track2 = createTrack(2);
         var message2 = createMessage();
-        _taskMergingManager.addBreadCrumb(message2, track2);
+        _taskAnnotatorService.addBreadCrumb(message2, track2);
         var breadCrumb2 = message2.getHeader("breadcrumbId", String.class);
         assertTrue(breadCrumb2.startsWith("mpf-2-"));
-        assertEquals(2, _taskMergingManager.getMergedTaskIndex(
+        assertEquals(2, _taskAnnotatorService.getAnnotatedTaskIndex(
                 _testJob, _testMedia, -1, -1, message2.getHeaders()));
 
         var prefixAndUuid1 = breadCrumb1.substring(0, breadCrumb1.lastIndexOf('-'));
@@ -191,8 +191,8 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
                 eq(_testJob), eq(_testMedia), any(Action.class)))
             .thenReturn(true);
 
-        assertFalse(_taskMergingManager.needsBreadCrumb(_testJob, _testMedia, 3, 0));
-        int task = _taskMergingManager.getMergedTaskIndex(
+        assertFalse(_taskAnnotatorService.needsBreadCrumb(_testJob, _testMedia, 3, 0));
+        int task = _taskAnnotatorService.getAnnotatedTaskIndex(
             _testJob, _testMedia, 3, 0, Map.of());
         assertEquals(1, task);
     }

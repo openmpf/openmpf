@@ -59,7 +59,7 @@ import org.mitre.mpf.wfm.segmenting.ImageMediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ public class DetectionTaskSplitter {
 
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    private final TaskMergingManager _taskMergingManager;
+    private final TaskAnnotatorService _taskMergingManager;
 
     private final MediaSegmenter _imageMediaSegmenter;
 
@@ -96,7 +96,7 @@ public class DetectionTaskSplitter {
             CamelContext camelContext,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobs,
-            TaskMergingManager taskMergingManager,
+            TaskAnnotatorService taskMergingManager,
             @Named(ImageMediaSegmenter.REF) MediaSegmenter imageMediaSegmenter,
             @Named(VideoMediaSegmenter.REF) MediaSegmenter videoMediaSegmenter,
             @Named(AudioMediaSegmenter.REF) MediaSegmenter audioMediaSegmenter,

@@ -133,7 +133,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private JobConfigHasher _mockJobConfigHasher;
 
     @Mock
-    private TaskMergingManager _mockTaskMergingManager;
+    private TaskAnnotatorService _mockTaskAnnotatorManager;
 
     private TiesDbService _tiesDbService;
 
@@ -172,7 +172,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 _mockJobRequestDao,
                 _mockInProgressJobs,
                 _mockJobConfigHasher,
-                _mockTaskMergingManager);
+                _mockTaskAnnotatorManager);
 
         lenient().when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);
@@ -224,9 +224,9 @@ public class TestTiesDbService extends MockitoTest.Strict {
         // the last task and its transitive merge targets.
         // when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbParentMedia, _job))
         //         .thenReturn(true);
-        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
+        // when(_mockTaskAnnotatorManager.getTransitiveAnnotatedTasks(_job, _tiesDbParentMedia, 3, 0))
         //         .thenReturn(IntStream.of(2, 1));
-        // when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
+        // when(_mockTaskAnnotatorManager.getTransitiveAnnotatedTasks(_job, _tiesDbParentMedia, 3, 1))
         //         .thenReturn(IntStream.of(2, 1));
 
         var pipelineElements = _job.getPipelineElements();

@@ -89,7 +89,7 @@ import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobCompleteCallbackService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -163,7 +163,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private JobCompleteCallbackService jobCompleteCallbackService;
 
     @Autowired
-    private TaskMergingManager taskMergingManager;
+    private TaskAnnotatorService taskMergingManager;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -501,7 +501,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private List<String> getAnnotators(BatchJob job, Media media, int taskIndex) {
         List<String> annotators = new ArrayList<>();
 
-        boolean mergeTarget = taskMergingManager.isMergeTarget(job, media, taskIndex);
+        boolean mergeTarget = taskMergingManager.taskHasAnnotator(job, media, taskIndex);
         if(mergeTarget) {
             // search subsequent tasks to determine if they are annotators for this task if it's a merge target
             for (int nextTaskIndex = (taskIndex + 1); nextTaskIndex < job.getPipelineElements().getTaskCount(); nextTaskIndex++) {
@@ -511,7 +511,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 for (int actionIndex = 0; actionIndex < nextTask.actions().size(); actionIndex++) {
                     String actionName = nextTask.actions().get(actionIndex);
                     // Action action = job.getPipelineElements().getAction(actionName);
-                    boolean mergeSource = taskMergingManager.isMergeSource(job, media, nextTaskIndex, actionIndex);
+                    boolean mergeSource = taskMergingManager.isAnnotatorAction(job, media, nextTaskIndex, actionIndex);
 
                     // add the action to the list if it's a merge source
                     if (mergeSource) {

@@ -85,8 +85,8 @@ public class Track implements Comparable<Track> {
     public int getEndOffsetTimeInclusive() { return _endOffsetTimeInclusive; }
 
     /**
-     * The index of the task that should be reported after applying task merging. If task
-     * merging does not apply to this track, this field will contain the index of the task that
+     * The index of the task that should be reported after the task has been annotated. If task
+     * annotation does not apply to this track, this field will contain the index of the task that
      * actually generated this track.
      */
     private final int _annotatedTaskIndex;
@@ -137,7 +137,7 @@ public class Track implements Comparable<Track> {
             @JsonProperty("endOffsetFrameInclusive") int endOffsetFrameInclusive,
             @JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
             @JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
-            @JsonProperty("annotedTaskIndex") int annotedTaskIndex,
+            @JsonProperty("annotatedTaskIndex") int annotatedTaskIndex,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
@@ -153,7 +153,7 @@ public class Track implements Comparable<Track> {
         _endOffsetFrameInclusive = endOffsetFrameInclusive;
         _startOffsetTimeInclusive = startOffsetTimeInclusive;
         _endOffsetTimeInclusive = endOffsetTimeInclusive;
-        _annotatedTaskIndex = annotedTaskIndex;
+        _annotatedTaskIndex = annotatedTaskIndex;
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);

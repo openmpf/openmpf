@@ -36,6 +36,15 @@ class LibHeifInitializer {
     ~LibHeifInitializer() { heif_deinit(); }
 };
 
+// This class is here to ensure that the heif_image allocated in
+// heif_decode_image() is freed properly.
+class HeifImageHolder {
+    public:
+    HeifImageHolder(heif_image *image) : m_image(image) {}
+    ~HeifImageHolder() {heif_image_release(m_image);}
+    heif_image* m_image;
+};
+
 extern "C" {
 
 JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
@@ -48,8 +57,8 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
         heif::Context ctx;
         ctx.read_from_file(jni.ToStdString(inputFile));
         heif::ImageHandle handle = ctx.get_primary_image_handle();
-        std::unique_ptr<heif_image*> image = std::make_unique<heif_image*>();
-        struct heif_error err = heif_decode_image(handle.get_raw_image_handle(), image.get(),
+        HeifImageHolder image(nullptr);
+        struct heif_error err = heif_decode_image(handle.get_raw_image_handle(), &(image.m_image),
                                                   heif_colorspace_RGB,
                                                   heif_chroma_interleaved_RGB,
                                                   nullptr);
@@ -57,8 +66,8 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
             throw std::runtime_error(std::string("Could not decode HEIF/AVIF image: ") + std::string(err.message));
         }
 
-        std::unique_ptr<PngEncoder> encoder = std::make_unique<PngEncoder>();
-        bool success = encoder->Encode(handle.get_raw_image_handle(), *(image.get()),
+        PngEncoder encoder;
+        bool success = encoder.Encode(handle.get_raw_image_handle(), image.m_image,
                                        jni.ToStdString(outputFile));
         if (!success) {
             throw std::runtime_error("Could not encode HEIF/AVIF image to PNG image");

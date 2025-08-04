@@ -31,13 +31,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JniLoader {
-    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
+public class JniOcvLoader {
+    private static final Logger log = LoggerFactory.getLogger(JniOcvLoader.class);
 
     private static boolean _isLoaded;
 
     static {
-        log.info("Loading JNI libraries...");
+        log.info("Loading OpenCV JNI libraries...");
         try {
             System.loadLibrary("mpfopencvjni");
             _isLoaded = true;
@@ -60,7 +60,7 @@ public class JniLoader {
         }
     }
 
-    private JniLoader() {
+    private JniOcvLoader() {
     }
 
     /**

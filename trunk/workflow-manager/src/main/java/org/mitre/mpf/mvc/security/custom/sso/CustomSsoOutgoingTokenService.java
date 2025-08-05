@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.security.custom.sso;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -42,8 +41,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.mvc.security.FailedToGetTokenException;
 import org.mitre.mpf.mvc.security.ITokenProvider;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.ClockService;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -152,14 +151,14 @@ public class CustomSsoOutgoingTokenService implements ITokenProvider {
                     Exception.class);
         }
         catch (Exception e) {
-            throw new WfmProcessingException(
+            throw new FailedToGetTokenException(
                     "Request to get new SSO token failed due to: " + e, e);
         }
 
         try {
             int responseStatusCode = response.getStatusLine().getStatusCode();
             if (responseStatusCode < 200 || responseStatusCode > 299) {
-                throw new WfmProcessingException(
+                throw new FailedToGetTokenException(
                     "Request to get new SSO token failed with status code: " + responseStatusCode);
             }
 
@@ -173,7 +172,8 @@ public class CustomSsoOutgoingTokenService implements ITokenProvider {
                     tokenRequestStartTime.plus(_customSsoProps.getTokenLifeTime()));
         }
         catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new FailedToGetTokenException(
+                    "Request to get new SSO token failed due to: " + e, e);
         }
     }
 

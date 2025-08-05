@@ -29,6 +29,7 @@ package org.mitre.mpf.mvc.security.custom.sso;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -139,9 +140,11 @@ public class CustomSsoProps {
         return getRequiredPropOrEnv(EnvKeys.TOKEN_PROPERTY);
     }
 
+
     public Optional<String> getTokenFromCookie(HttpServletRequest request) {
         var tokenProp = getTokenProperty();
-        return Stream.of(request.getCookies())
+        return Stream.ofNullable(request.getCookies())
+            .flatMap(Arrays::stream)
             .filter(c -> c.getName().equals(tokenProp))
             .findFirst()
             .map(Cookie::getValue);

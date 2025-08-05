@@ -46,9 +46,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.mvc.security.FailedToGetTokenException;
 import org.mitre.mpf.test.MockClockService;
 import org.mitre.mpf.test.MockitoTest;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -107,7 +107,7 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
             .thenReturn(ThreadUtil.completedFuture(tokenResponse));
 
         var callbackRequest = new HttpGet();
-        assertThatExceptionOfType(WfmProcessingException.class)
+        assertThatExceptionOfType(FailedToGetTokenException.class)
             .isThrownBy(() -> _outgoingTokenService.addToken(callbackRequest))
             .withMessageContaining("Request to get new SSO token failed");
 

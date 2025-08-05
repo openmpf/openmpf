@@ -52,6 +52,7 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.http.ConnectionClosedException;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.subject.SubjectJobResult;
+import org.mitre.mpf.mvc.security.FailedToGetTokenException;
 import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -389,7 +390,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             }
             return urlUtil.getFullUri(bucketUri, objectName);
         }
-        catch (SdkException e) {
+        catch (SdkException | FailedToGetTokenException e) {
             LOG.error("Failed to upload {} due to S3 error: {}", path, e);
             // Don't include path so multiple failures appear as one issue in JSON output object.
             throw new StorageException("Failed to upload due to S3 error: " + e, e);

@@ -501,20 +501,19 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private List<String> getAnnotators(BatchJob job, Media media, int taskIndex) {
         List<String> annotators = new ArrayList<>();
 
-        boolean mergeTarget = taskMergingManager.taskHasAnnotator(job, media, taskIndex);
-        if(mergeTarget) {
-            // search subsequent tasks to determine if they are annotators for this task if it's a merge target
+        boolean hasAnnotator = taskMergingManager.taskHasAnnotator(job, media, taskIndex);
+        if(hasAnnotator) {
+            // search subsequent tasks to determine if they are annotators for this task
             for (int nextTaskIndex = (taskIndex + 1); nextTaskIndex < job.getPipelineElements().getTaskCount(); nextTaskIndex++) {
                 Task nextTask = job.getPipelineElements().getTask(nextTaskIndex);
 
                 // for each task, iterate though the actions list and check to see if the action is an annotator
                 for (int actionIndex = 0; actionIndex < nextTask.actions().size(); actionIndex++) {
                     String actionName = nextTask.actions().get(actionIndex);
-                    // Action action = job.getPipelineElements().getAction(actionName);
-                    boolean mergeSource = taskMergingManager.isAnnotatorAction(job, media, nextTaskIndex, actionIndex);
+                    boolean isAnnotator = taskMergingManager.isAnnotatorAction(job, media, nextTaskIndex, actionIndex);
 
-                    // add the action to the list if it's a merge source
-                    if (mergeSource) {
+                    // add the action to the list if it's an annotator action
+                    if (isAnnotator) {
                         annotators.add(actionName);
                     }
                 }

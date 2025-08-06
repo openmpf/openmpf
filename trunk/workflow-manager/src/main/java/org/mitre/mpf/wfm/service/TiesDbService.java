@@ -112,7 +112,7 @@ public class TiesDbService {
 
     private final JobConfigHasher _jobConfigHasher;
 
-    private final TaskAnnotatorService _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
 
     @Inject
@@ -125,7 +125,7 @@ public class TiesDbService {
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs,
                   JobConfigHasher jobConfigHasher,
-                  TaskAnnotatorService taskMergingManager) {
+                  TaskAnnotatorService taskAnnotatorService) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
@@ -135,7 +135,7 @@ public class TiesDbService {
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
         _jobConfigHasher = jobConfigHasher;
-        _taskMergingManager = taskMergingManager;
+        _taskAnnotatorService = taskAnnotatorService;
     }
 
     public void prepareAssertions(

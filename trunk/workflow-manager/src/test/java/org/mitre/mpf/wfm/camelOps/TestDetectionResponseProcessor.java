@@ -98,7 +98,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
     private MediaInspectionHelper mockMediaInspectionHelper;
 
     @Mock
-    private TaskAnnotatorService mockTaskMergingManager;
+    private TaskAnnotatorService mockTaskAnnotatorService;
 
     private DetectionResponseProcessor detectionResponseProcessor;
 
@@ -129,7 +129,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
                 mockAggregateJobPropertiesUtil,
                 mockInProgressJobs,
                 mockMediaInspectionHelper,
-                mockTaskMergingManager);
+                mockTaskAnnotatorService);
 
         var algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION, "TEST",
@@ -221,7 +221,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         exchange.getIn().getHeaders().put(MpfHeaders.PROCESSING_TIME, 1234L);
         exchange.getIn().setBody(detectionResponse);
 
-        when(mockTaskMergingManager.getAnnotatedTaskIndex(
+        when(mockTaskAnnotatorService.getAnnotatedTaskIndex(
                 argThat(j -> j.getId() == JOB_ID),
                 argThat(m -> m.getId() == MEDIA_ID),
                 eq(0),

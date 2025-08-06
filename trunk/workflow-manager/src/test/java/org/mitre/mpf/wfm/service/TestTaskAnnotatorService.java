@@ -131,7 +131,7 @@ public class TestTaskAnnotatorService extends MockitoTest.Strict {
 
 
     @Test
-    public void testTaskMergingDisabled() {
+    public void testTaskAnnotationDisabled() {
         assertFalse(_taskAnnotatorService.needsBreadCrumb(_testJob, _testMedia, 1, 0));
         int task = _taskAnnotatorService.getAnnotatedTaskIndex(_testJob, _testMedia, 1, 0, Map.of());
         assertEquals(1, task);
@@ -139,7 +139,7 @@ public class TestTaskAnnotatorService extends MockitoTest.Strict {
 
 
     @Test
-    public void addsBreadCrumbWhenTaskMergingEnabled() {
+    public void addsBreadCrumbWhenTaskAnnotationEnabled() {
         when(_mockAggJobPropUtil.getValue(
                     eq(MpfConstants.IS_ANNOTATOR_PROPERTY),
                     eq(_testJob), eq(_testMedia),
@@ -179,7 +179,7 @@ public class TestTaskAnnotatorService extends MockitoTest.Strict {
 
 
     @Test
-    public void testTaskMergingWhenBreadCrumbNotNeeded() {
+    public void testTaskAnnotationWhenBreadCrumbNotNeeded() {
         when(_mockAggJobPropUtil.getValue(
                 eq(MpfConstants.IS_ANNOTATOR_PROPERTY),
                 eq(_testJob), eq(_testMedia),

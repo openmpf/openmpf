@@ -133,7 +133,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private JobConfigHasher _mockJobConfigHasher;
 
     @Mock
-    private TaskAnnotatorService _mockTaskAnnotatorManager;
+    private TaskAnnotatorService _mockTaskAnnotatorService;
 
     private TiesDbService _tiesDbService;
 
@@ -172,7 +172,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 _mockJobRequestDao,
                 _mockInProgressJobs,
                 _mockJobConfigHasher,
-                _mockTaskAnnotatorManager);
+                _mockTaskAnnotatorService);
 
         lenient().when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);

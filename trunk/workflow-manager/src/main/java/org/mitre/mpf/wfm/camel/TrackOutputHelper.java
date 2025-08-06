@@ -60,18 +60,18 @@ public class TrackOutputHelper {
 
     private final TriggerProcessor _triggerProcessor;
 
-    private final TaskAnnotatorService _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
     @Inject
     TrackOutputHelper(
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobsService,
             TriggerProcessor triggerProcessor,
-            TaskAnnotatorService taskMergingManager) {
+            TaskAnnotatorService taskAnnotatorService) {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobsService = inProgressBatchJobsService;
         _triggerProcessor = triggerProcessor;
-        _taskMergingManager = taskMergingManager;
+        _taskAnnotatorService = taskAnnotatorService;
     }
 
     public record TrackInfo(
@@ -84,9 +84,9 @@ public class TrackOutputHelper {
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
         boolean isSuppressed = isSuppressed(job, media, taskIdx);
-        boolean isMergeTarget = _taskMergingManager.taskHasAnnotator(job, media, taskIdx);
+        boolean isMergeTarget = _taskAnnotatorService.taskHasAnnotator(job, media, taskIdx);
         boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean isMergeSource = _taskMergingManager.isAnnotatorAction(job, media, taskIdx, actionIdx);
+        boolean isMergeSource = _taskAnnotatorService.isAnnotatorAction(job, media, taskIdx, actionIdx);
 
         boolean canAvoidGettingTracks =
                 isMergeTarget || (isSuppressed && !needToCheckTrackTriggers);

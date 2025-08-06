@@ -80,7 +80,7 @@ public class DetectionTaskSplitter {
 
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    private final TaskAnnotatorService _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
     private final MediaSegmenter _imageMediaSegmenter;
 
@@ -96,7 +96,7 @@ public class DetectionTaskSplitter {
             CamelContext camelContext,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobs,
-            TaskAnnotatorService taskMergingManager,
+            TaskAnnotatorService taskAnnotatorService,
             @Named(ImageMediaSegmenter.REF) MediaSegmenter imageMediaSegmenter,
             @Named(VideoMediaSegmenter.REF) MediaSegmenter videoMediaSegmenter,
             @Named(AudioMediaSegmenter.REF) MediaSegmenter audioMediaSegmenter,
@@ -104,7 +104,7 @@ public class DetectionTaskSplitter {
         _camelContext = camelContext;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobs = inProgressBatchJobs;
-        _taskMergingManager = taskMergingManager;
+        _taskAnnotatorService = taskAnnotatorService;
         _imageMediaSegmenter = imageMediaSegmenter;
         _videoMediaSegmenter = videoMediaSegmenter;
         _audioMediaSegmenter = audioMediaSegmenter;
@@ -214,7 +214,7 @@ public class DetectionTaskSplitter {
         var actionType = job.getPipelineElements().getAlgorithm(action.algorithm())
                 .actionType();
         var destination = "MPF.%s_%s_REQUEST".formatted(actionType, action.algorithm());
-        boolean needsBreadCrumb = _taskMergingManager.needsBreadCrumb(
+        boolean needsBreadCrumb = _taskAnnotatorService.needsBreadCrumb(
                 job, media, detectionContext.getTaskIndex(), detectionContext.getActionIndex());
 
         var messages = new ArrayList<Message>(requests.size());
@@ -228,7 +228,7 @@ public class DetectionTaskSplitter {
                     .ifPresent(mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
             if (needsBreadCrumb) {
                 request.feedForwardTrack()
-                    .ifPresent(t -> _taskMergingManager.addBreadCrumb(message, t));
+                    .ifPresent(t -> _taskAnnotatorService.addBreadCrumb(message, t));
             }
             message.getHeaders().putAll(request.headers());
             message.setBody(request.protobuf());

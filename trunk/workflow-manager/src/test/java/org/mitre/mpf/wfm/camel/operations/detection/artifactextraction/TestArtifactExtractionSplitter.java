@@ -63,13 +63,13 @@ public class TestArtifactExtractionSplitter {
 
     private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
-    private final TaskAnnotatorService _mockTaskAnnotatorManager = mock(TaskAnnotatorService.class);
+    private final TaskAnnotatorService _mockTaskAnnotatorService = mock(TaskAnnotatorService.class);
 
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
             _mockInProgressJobs,
             _mockAggregateJobPropertiesUtil,
-            _mockTaskAnnotatorManager);
+            _mockTaskAnnotatorService);
 
 
 

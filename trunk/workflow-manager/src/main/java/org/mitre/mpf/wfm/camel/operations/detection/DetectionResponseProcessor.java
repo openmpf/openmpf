@@ -68,18 +68,18 @@ public class DetectionResponseProcessor
 
     private final MediaInspectionHelper _mediaInspectionHelper;
 
-    private final TaskAnnotatorService _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
                                       MediaInspectionHelper mediaInspectionHelper,
-                                      TaskAnnotatorService taskMergingManager) {
+                                      TaskAnnotatorService taskAnnotatorService) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
-        _taskMergingManager = taskMergingManager;
+        _taskAnnotatorService = taskAnnotatorService;
     }
 
     @Override
@@ -99,7 +99,7 @@ public class DetectionResponseProcessor
         var qualityFilter = createQualityFilter(job, media, action);
         var qualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
         var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();
-        var annotatedTaskIdx = _taskMergingManager.getAnnotatedTaskIndex(
+        var annotatedTaskIdx = _taskAnnotatorService.getAnnotatedTaskIndex(
                 job, media,
                 detectionResponse.getTaskIndex(),
                 detectionResponse.getActionIndex(),

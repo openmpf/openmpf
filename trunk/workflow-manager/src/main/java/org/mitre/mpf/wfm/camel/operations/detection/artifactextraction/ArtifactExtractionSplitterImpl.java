@@ -75,17 +75,17 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    private final TaskAnnotatorService _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
     @Inject
     ArtifactExtractionSplitterImpl(
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            TaskAnnotatorService taskMergingManager) {
+            TaskAnnotatorService taskAnnotatorService) {
         super(inProgressBatchJobs);
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _taskMergingManager = taskMergingManager;
+        _taskAnnotatorService = taskAnnotatorService;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
             // If the user has requested that this task be merged with one that follows, then skip artifact extraction.
             // Artifact extraction will be performed for the next task this one is merged with.
-            if (_taskMergingManager.taskHasAnnotator(job, media, taskIndex)) {
+            if (_taskAnnotatorService.taskHasAnnotator(job, media, taskIndex)) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to being merged with a following task.",
                         pipelineElements.getTask(taskIndex).name(), media.getId());

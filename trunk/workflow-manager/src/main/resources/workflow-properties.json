@@ -525,6 +525,13 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
+        "name": "REMOTE_MEDIA_ADD_TOKEN",
+        "description": "If Workflow Manager is configured to use SSO and this property is true, a SSO token will be included when downloading media.",
+        "type": "BOOLEAN",
+        "propertiesKey": "remote.media.add.token",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "CALLBACK_ADD_TOKEN",
         "description": "If Workflow Manager is configured to use SSO and this property is true, a SSO token will be included in the job completion callback.",
         "type": "BOOLEAN",

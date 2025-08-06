@@ -66,6 +66,11 @@ public class OutgoingRequestTokenService {
         }
     }
 
+    public void addTokenToRemoteMediaDownloadRequest(BatchJob job, Media media, HttpUriRequest request) {
+        if (_tokenRequired.remoteMediaDownloadNeedsToken(job, media)) {
+            _tokenProvider.addToken(request);
+        }
+    }
 
     public void addTokenToJobCompleteCallback(BatchJob job, HttpUriRequest request) {
         if (_tokenRequired.jobCompleteCallbackNeedsToken(job)) {
@@ -108,6 +113,10 @@ public class OutgoingRequestTokenService {
 
 
     private static class TokenRequiredCheck {
+        public boolean remoteMediaDownloadNeedsToken(BatchJob job, Media media) {
+            return false;
+        }
+
         public boolean jobCompleteCallbackNeedsToken(BatchJob job) {
             return false;
         }
@@ -138,6 +147,11 @@ public class OutgoingRequestTokenService {
 
         public TokenRequiredCheckEnabled(AggregateJobPropertiesUtil aggregateJobProps) {
             _aggregateJobProps = aggregateJobProps;
+        }
+
+        @Override
+        public boolean remoteMediaDownloadNeedsToken(BatchJob job, Media media) {
+            return needsToken(JobPartsIter.stream(job, media), MpfConstants.REMOTE_MEDIA_ADD_TOKEN);
         }
 
         @Override

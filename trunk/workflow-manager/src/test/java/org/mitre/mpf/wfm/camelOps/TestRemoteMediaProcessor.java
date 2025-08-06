@@ -30,6 +30,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,6 +48,7 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
+import org.apache.http.nio.reactor.IOReactorException;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,6 +56,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
@@ -66,6 +70,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -77,7 +82,7 @@ import com.google.common.collect.ImmutableList;
 
 import spark.Spark;
 
-public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
+public class TestRemoteMediaProcessor extends MockitoTest.Strict {
     private static final Logger LOG = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
     private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
     private static final MediaUri EXT_IMG = MediaUri.create("http://localhost:4587/test-image.jpg");
@@ -92,6 +97,9 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
+
+    @Mock
+    private OutgoingRequestTokenService _mockTokenService;
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -132,16 +140,27 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
     }
 
     @Before
-    public void init() {
-        when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
+    public void init() throws IOReactorException {
+        lenient().when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
                 .thenReturn(3);
 
-        when(_mockPropertiesUtil.getRemoteMediaDownloadSleep())
+        lenient().when(_mockPropertiesUtil.getRemoteMediaDownloadSleep())
                 .thenReturn(200);
 
+        when(_mockPropertiesUtil.getHttpCallbackConcurrentConnectionsPerRoute())
+                .thenReturn(10);
+
+        when(_mockPropertiesUtil.getHttpCallbackConcurrentConnections())
+                .thenReturn(10);
+
+
         _remoteMediaProcessor = new RemoteMediaProcessor(
-                _mockInProgressJobs, null, _mockPropertiesUtil,
-                new AggregateJobPropertiesUtil(_mockPropertiesUtil, mock(WorkflowPropertyService.class)));
+                _mockInProgressJobs,
+                null,
+                _mockPropertiesUtil,
+                new AggregateJobPropertiesUtil(_mockPropertiesUtil, mock(WorkflowPropertyService.class)),
+                new HttpClientUtils(_mockPropertiesUtil, null),
+                _mockTokenService);
     }
 
 
@@ -166,6 +185,8 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
                                         media.getErrorMessage()),
                            media.isFailed());
         LOG.info("Remote valid image retrieval request passed.");
+        verify(_mockTokenService)
+            .addTokenToRemoteMediaDownloadRequest(notNull(), eq(media), notNull());
     }
 
 
@@ -191,6 +212,9 @@ public class TestRemoteMediaProcessor extends MockitoTest.Lenient {
                 .addError(eq(jobId), eq(mediaId), eq(IssueCodes.REMOTE_STORAGE_DOWNLOAD), nonBlank());
 
         LOG.info("Remote invalid image retrieval request passed.");
+
+        verify(_mockTokenService)
+            .addTokenToRemoteMediaDownloadRequest(notNull(), eq(media), notNull());
     }
 
 

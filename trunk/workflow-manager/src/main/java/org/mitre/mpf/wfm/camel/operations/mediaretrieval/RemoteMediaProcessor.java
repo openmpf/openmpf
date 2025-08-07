@@ -148,10 +148,8 @@ public class RemoteMediaProcessor extends WfmProcessor {
         var request = new HttpGet(media.getUri().uri());
         _tokenService.addTokenToRemoteMediaDownloadRequest(job, media, request);
 
-        var responseFuture = _httpClient.downloadResponse(
+        var response = _httpClient.downloadResponseSync(
                 request, media.getLocalPath(), _propertiesUtil.getRemoteMediaDownloadRetries());
-
-        var response = ThreadUtil.join(responseFuture, IOException.class);
         var statusCode = response.getStatusLine().getStatusCode();
         if (statusCode >= 200 && statusCode <= 299) {
             log.info(

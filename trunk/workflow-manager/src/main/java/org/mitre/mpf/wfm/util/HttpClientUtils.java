@@ -148,6 +148,9 @@ public class HttpClientUtils implements AutoCloseable {
                 r -> true);
     }
 
+    public HttpResponse executeRequestSync(HttpUriRequest request, int retries) throws IOException {
+        return ThreadUtil.join(executeRequest(request, retries), IOException.class);
+    }
 
     public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries,
                                                           Predicate<HttpResponse> isRetryable) {
@@ -169,6 +172,15 @@ public class HttpClientUtils implements AutoCloseable {
                 retries,
                 INITIAL_DELAY,
                 r -> true);
+    }
+
+    public HttpResponse downloadResponseSync(
+            HttpUriRequest request,
+            Path targetPath,
+            int retries) throws IOException {
+        return ThreadUtil.join(
+                downloadResponse(request, targetPath, retries),
+                IOException.class);
     }
 
     private CompletableFuture<HttpResponse> executeRequest(

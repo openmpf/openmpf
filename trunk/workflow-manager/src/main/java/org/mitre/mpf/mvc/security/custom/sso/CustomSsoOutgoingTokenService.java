@@ -146,9 +146,7 @@ public class CustomSsoOutgoingTokenService implements ITokenProvider {
             request.setEntity(new StringEntity(bodyJson, ContentType.APPLICATION_JSON));
 
             tokenRequestStartTime = _clock.now();
-            response = ThreadUtil.join(
-                    _httpClient.executeRequest(request, _customSsoProps.getHttpRetryCount()),
-                    Exception.class);
+            response = _httpClient.executeRequestSync(request, _customSsoProps.getHttpRetryCount());
         }
         catch (Exception e) {
             throw new FailedToGetTokenException(

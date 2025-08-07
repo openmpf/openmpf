@@ -239,8 +239,7 @@ public class ServerMediaController {
 
         var request = new HttpGet(sourceUri);
         tokenService.addTokenToRemoteMediaDownloadRequest(job, sourceUri, request);
-        var responseFuture = httpClient.executeRequest(request, 0);
-        var responseToForward = ThreadUtil.join(responseFuture, IOException.class);
+        var responseToForward = httpClient.executeRequestSync(request, 0);
         return ForwardHttpResponseUtil.createResponseEntity(responseToForward);
     }
 }

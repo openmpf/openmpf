@@ -263,8 +263,7 @@ public class MarkupController {
         }
 
         var request = new HttpGet(markupResult.getMarkupUri());
-        var responseFuture = httpClientUtils.executeRequest(request, 0);
-        var markupResponse = ThreadUtil.join(responseFuture, IOException.class);
+        var markupResponse = httpClientUtils.executeRequestSync(request, 0);
         return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
 

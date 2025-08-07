@@ -27,6 +27,8 @@
 
 package org.mitre.mpf.wfm.util;
 
+import org.javasimon.SimonManager;
+import org.javasimon.Split;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadata;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionException;
@@ -54,7 +56,7 @@ public class FrameTimeInfoBuilder {
 
 
     public static FrameTimeInfo getFrameTimeInfo(
-                Path mediaPath, FfprobeMetadata.Video ffprobeMetadata) {
+                Path mediaPath, FfprobeMetadata.Video ffprobeMetadata, String mimeType) {
         String[] command = {
                 "ffprobe", "-threads", FFPROBE_THREADS, "-hide_banner", "-select_streams", "v",
                 "-show_entries", "frame=best_effort_timestamp",
@@ -63,24 +65,35 @@ public class FrameTimeInfoBuilder {
         LOG.info("Getting PTS values using ffprobe with the following command: {}",
                  Arrays.toString(command));
 
+        var ptsValuesBuilder = new PtsBuilder();
         try {
-            var process = new ProcessBuilder(command)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start();
-            process.getOutputStream().close();
+            Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.util.FrameTimeInfoBuilder.getFrameTimeInfo").start();
+            try {
+                var process = new ProcessBuilder(command)
+                        .redirectError(ProcessBuilder.Redirect.DISCARD)
+                        .start();
+                process.getOutputStream().close();
 
-            var ptsValuesBuilder = new PtsBuilder();
 
-            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    ptsValuesBuilder.accept(line);
+                try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        ptsValuesBuilder.accept(line);
+                    }
+                }
+                if (process.waitFor() != 0) {
+                    throw new MediaInspectionException(
+                        "Failed to get timestamps for \"%s\" because ffprobe exited with status %s"
+                        .formatted(mediaPath, process.exitValue()));
                 }
             }
-            if (process.waitFor() != 0) {
-                throw new MediaInspectionException(
-                    "Failed to get timestamps for \"%s\" because ffprobe exited with status %s"
-                    .formatted(mediaPath, process.exitValue()));
+            finally {
+                split.stop();
+                LOG.info("getFrameTimeInfo [stopwatch: {}, media: {}, mime type: {}, frame count: {}]",
+                         split.getStopwatch().sample().getLast(),
+                         mediaPath,
+                         mimeType,
+                         ffprobeMetadata.frameCount().getAsLong());
             }
 
             var timeInfo = ptsValuesBuilder.build(

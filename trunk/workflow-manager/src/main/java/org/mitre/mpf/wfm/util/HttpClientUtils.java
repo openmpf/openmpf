@@ -219,36 +219,27 @@ public class HttpClientUtils implements AutoCloseable {
             int statusCode = resp.getStatusLine().getStatusCode();
             if ((statusCode >= 200 && statusCode <= 299) || retries <= 0
                     || !isRetryable.test(resp)) {
-                return ThreadUtil.completedFuture(resp);
+                return resp;
             }
-
-            log.warn("\"{}\" responded with a non-200 status code of {}. There are {} " +
-                             "attempts remaining and the next attempt will begin in {} ms.",
-                     request.getURI(),statusCode, retries, nextDelay);
-            return ThreadUtil.<HttpResponse>failedFuture(new IllegalStateException("non-200"));
+            throw new IllegalStateException(
+                    "The server responded with a non-200 status code of " + statusCode);
         })
-        .exceptionally(err -> {
-            if (retries > 0) {
-                log.error(String.format(
-                        "Failed to issue %s request to '%s'. There are %s attempts remaining " +
-                                "and the next attempt will begin in %s ms.",
-                        request.getMethod(), request.getURI(), retries, nextDelay), err);
-            }
-            else {
+        .exceptionallyCompose(err -> {
+            if (retries <= 0) {
                 log.error(String.format(
                         "Failed to issue %s request to '%s'. All retry attempts exhausted.",
                         request.getMethod(), request.getURI()), err);
+                return ThreadUtil.failedFuture(err);
             }
-            return ThreadUtil.failedFuture(err);
-        })
-        .thenCompose(future -> {
-            if (future.isCompletedExceptionally() && retries > 0) {
-                return ThreadUtil.delayAndUnwrap(
-                        nextDelay, TimeUnit.MILLISECONDS,
-                        () -> throwingExecuteRequest(
-                                request, consumerCreator, retries - 1, nextDelay, isRetryable));
-            }
-            return future;
+            log.error(String.format(
+                    "Failed to issue %s request to '%s'. There are %s attempts remaining " +
+                            "and the next attempt will begin in %s ms.",
+                    request.getMethod(), request.getURI(), retries, nextDelay), err);
+
+            return ThreadUtil.delayAndUnwrap(
+                    nextDelay, TimeUnit.MILLISECONDS,
+                    () -> throwingExecuteRequest(
+                            request, consumerCreator, retries - 1, nextDelay, isRetryable));
         });
     }
 

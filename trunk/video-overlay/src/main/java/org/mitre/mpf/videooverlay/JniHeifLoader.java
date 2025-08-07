@@ -24,37 +24,40 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.videooverlay;
 
-package org.mitre.mpf.heif;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+public class JniHeifLoader {
+    private static final Logger log = LoggerFactory.getLogger(JniHeifLoader.class);
 
-import org.mitre.mpf.videooverlay.JniHeifLoader;
+    private static boolean _isLoaded;
 
-public class HeifConverter {
     static {
-        JniHeifLoader.ensureLoaded();
+        log.info("Loading Heif JNI libraries...");
+        try {
+            System.loadLibrary("mpfheifjni");
+            _isLoaded = true;
+        }
+        catch (UnsatisfiedLinkError ex) {
+            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
+            String path = System.getenv("MPF_HOME") + "/lib/" + "libmpfheifjni.so";
+            log.warn("Trying to load library using full path: {}", path);
+            System.load(path);
+            _isLoaded = true;
+        }
+    }
+
+    private JniHeifLoader() {
     }
 
     /**
-     * Converts a HEIF image to another format.
-     * @param inputPath Path to the HEIF file
-     * @param outputPath Path to output file. The image format is determined by the file extension.
+     * This method exists to force the static initializer to run when a class with native methods
+     * is first used. This should always return true.
+     * @return true
      */
-    public static void convert(Path inputPath, Path outputPath) throws IOException {
-        if (!Files.exists(inputPath)) {
-            throw new FileNotFoundException(inputPath.toAbsolutePath() + " does not exist.");
-        }
-        Files.createDirectories(outputPath.getParent());
-        convertNative(inputPath.toString(), outputPath.toString());
-    }
-
-    private static native void convertNative(String inputFile, String outputFile);
-
-
-    private HeifConverter() {
+    public static boolean ensureLoaded() {
+        return _isLoaded;
     }
 }

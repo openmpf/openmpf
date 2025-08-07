@@ -29,7 +29,7 @@ package org.mitre.mpf.videooverlay;
 public class BoundingBoxWriter {
 
     static {
-        JniLoader.ensureLoaded();
+        JniOcvLoader.ensureLoaded();
     }
 
     private BoundingBoxWriter() {

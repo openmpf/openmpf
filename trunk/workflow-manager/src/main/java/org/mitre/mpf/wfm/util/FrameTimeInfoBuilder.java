@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.LongConsumer;
 import java.util.stream.LongStream;
@@ -91,9 +92,9 @@ public class FrameTimeInfoBuilder {
                 split.stop();
                 LOG.info("getFrameTimeInfo [stopwatch: {}, media: {}, mime type: {}, frame count: {}]",
                          split.getStopwatch().sample().getLast(),
-                         mediaPath,
+                         mediaPath.toString(),
                          mimeType,
-                         ffprobeMetadata.frameCount().getAsLong());
+                         ffprobeMetadata.frameCount().orElse(0));
             }
 
             var timeInfo = ptsValuesBuilder.build(

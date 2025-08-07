@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc.security;
 
+import java.net.URI;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -68,6 +69,15 @@ public class OutgoingRequestTokenService {
 
     public void addTokenToRemoteMediaDownloadRequest(BatchJob job, Media media, HttpUriRequest request) {
         if (_tokenRequired.remoteMediaDownloadNeedsToken(job, media)) {
+            _tokenProvider.addToken(request);
+        }
+    }
+
+    public void addTokenToRemoteMediaDownloadRequest(
+            BatchJob job,
+            URI mediaUri,
+            HttpUriRequest request) {
+        if (_tokenRequired.remoteMediaDownloadNeedsToken(job, mediaUri)) {
             _tokenProvider.addToken(request);
         }
     }
@@ -117,6 +127,10 @@ public class OutgoingRequestTokenService {
             return false;
         }
 
+        public boolean remoteMediaDownloadNeedsToken(BatchJob job, URI mediaUri) {
+            return false;
+        }
+
         public boolean jobCompleteCallbackNeedsToken(BatchJob job) {
             return false;
         }
@@ -152,6 +166,16 @@ public class OutgoingRequestTokenService {
         @Override
         public boolean remoteMediaDownloadNeedsToken(BatchJob job, Media media) {
             return needsToken(JobPartsIter.stream(job, media), MpfConstants.REMOTE_MEDIA_ADD_TOKEN);
+        }
+
+        public boolean remoteMediaDownloadNeedsToken(BatchJob job, URI mediaUri) {
+            var jobParts = job.getMedia()
+                    .stream()
+                    .filter(m -> mediaUri.equals(m.getUri().get()))
+                    .findFirst()
+                    .map(m -> JobPartsIter.stream(job, m))
+                    .orElseGet(() -> JobPartsIter.stream(job));
+            return needsToken(jobParts, MpfConstants.REMOTE_MEDIA_ADD_TOKEN);
         }
 
         @Override

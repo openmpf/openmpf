@@ -26,11 +26,25 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import io.swagger.annotations.Api;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.http.client.methods.HttpGet;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
@@ -39,9 +53,11 @@ import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,17 +71,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
+import io.swagger.annotations.Api;
 
 @Api(value = "Server Media",description = "Server media retrieval")
 @Controller
@@ -87,13 +93,16 @@ public class ServerMediaController {
     private JobRequestDao jobRequestDao;
 
     @Autowired
-    private IoUtils ioUtils;
-
-    @Autowired
     private JsonUtils jsonUtils;
 
     @Autowired
     private S3StorageBackend s3StorageBackend;
+
+    @Autowired
+    private HttpClientUtils httpClient;
+
+    @Autowired
+    private OutgoingRequestTokenService tokenService;
 
 
     private static class SortAlphabeticalCaseInsensitive implements Comparator<ServerMediaFile> {
@@ -201,27 +210,22 @@ public class ServerMediaController {
     }
 
 
-
     @RequestMapping(value = "/server/download", method = RequestMethod.GET)
     @ResponseBody
-    public void download(HttpServletResponse response,
-                         @RequestParam("jobId") String jobId,
-                         @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
-
+    public Object download(
+            @RequestParam("jobId") String jobId,
+            @RequestParam("sourceUri") URI sourceUri) throws StorageException, IOException {
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
-            ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
+            return ResponseEntity.ok(new PathResource(sourceUri));
         }
+
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
-            log.error("Media for job id " + jobId + " download failed. Invalid job id.");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+            log.error("Media for job id {} download failed. Invalid job id.", jobId);
+            return ResponseEntity.notFound().build();
         }
 
-        // If any of the code below throws an uncaught exception it will result in printing a stack trace
-        // to the log and a status code of 500. An image preview in the UI will appear as a broken image link.
 
         var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
         var combinedProperties
@@ -229,19 +233,14 @@ public class ServerMediaController {
         var uriScheme = UriScheme.parse(sourceUri.getScheme());
         if ((uriScheme.equals(UriScheme.HTTP) || uriScheme.equals(UriScheme.HTTPS)) &&
                 S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-            try (var s3Stream = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties)) {
-                var s3Response = s3Stream.response();
-                IoUtils.sendBinaryResponse(s3Stream, response, s3Response.contentType(),
-                                           s3Response.contentLength());
-            }
-            return;
+            var s3Stream = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
+            return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
         }
 
-        URL mediaUrl = sourceUri.toURL();
-        URLConnection urlConnection = mediaUrl.openConnection();
-        try (InputStream inputStream = urlConnection.getInputStream()) {
-            IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
-                                       urlConnection.getContentLength());
-        }
+        var request = new HttpGet(sourceUri);
+        tokenService.addTokenToRemoteMediaDownloadRequest(job, sourceUri, request);
+        var responseFuture = httpClient.executeRequest(request, 0);
+        var responseToForward = ThreadUtil.join(responseFuture, IOException.class);
+        return ForwardHttpResponseUtil.createResponseEntity(responseToForward);
     }
 }

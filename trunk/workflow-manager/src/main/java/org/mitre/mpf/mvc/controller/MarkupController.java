@@ -27,9 +27,6 @@
 package org.mitre.mpf.mvc.controller;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,9 +38,8 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.HttpGet;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
@@ -59,13 +55,17 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.PathResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -106,6 +106,9 @@ public class MarkupController {
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
+
+    @Autowired
+    private HttpClientUtils httpClientUtils;
 
 
     @GetMapping("/markup/get-markup-results-filtered")
@@ -207,86 +210,64 @@ public class MarkupController {
 
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    public void getFile(@RequestParam("id") long id,
-                        HttpServletResponse response) throws IOException, StorageException {
-        MarkupResult markupResult = markupResultDao.findById(id);
+    @ResponseBody
+    public Object getFile(@RequestParam("id") long id) throws StorageException, IOException {
+        var markupResult = markupResultDao.findById(id);
         if (markupResult == null) {
-            log.error("Markup with id " + id + " download failed. Invalid id.");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+            log.error("Markup with id {} download failed. Invalid id.", id);
+            return ResponseEntity.notFound().build();
         }
 
-        Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
-        if (localPath != null) {
-            if (!Files.exists(localPath)) {
-                log.error("Markup with id " + id + " download failed. Invalid path: " + localPath);
-                response.setStatus(404);
-                response.flushBuffer();
-                return;
+        var localPath = IoUtils.toLocalPath(markupResult.getMarkupUri());
+        if (localPath.isPresent()) {
+            if (Files.exists(localPath.get())) {
+                return ResponseEntity.ok(new PathResource(localPath.get()));
             }
-            ioUtils.sendBinaryResponse(localPath, response);
-            return;
+            log.error("Markup with id {} download failed. Invalid path: {}", id, localPath);
+            return ResponseEntity.notFound().build();
         }
 
-        BatchJob job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
+        var job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
                 .map(JobRequest::getJob)
-                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
-                .orElse(null);
-        if (job == null) {
-            log.error("Markup with id " + id + " download failed. Invalid job with id " +
-                    markupResult.getJobId() + ".");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class));
+        if (job.isEmpty()) {
+            log.error(
+                    "Markup with id {} download failed. Invalid job with id {}.",
+                    id, markupResult.getJobId());
+            return ResponseEntity.notFound().build();
         }
 
-        var media = job.getMedia()
+        var media = job.get()
+                .getMedia()
                 .stream()
                 .filter(m -> m.getId() == markupResult.getMediaId())
-                .findAny()
-                .orElse(null);
-        if (media == null) {
-            log.error("Markup with id " + id + " download failed. Invalid media with id " +
-                    markupResult.getMediaId() + ".");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+                .findAny();
+        if (media.isEmpty()) {
+            log.error(
+                    "Markup with id {} download failed. Invalid media with id {}.",
+                    id, markupResult.getMediaId());
+            return ResponseEntity.notFound().build();
         }
 
-        var combinedProperties = getProperties(job, media, markupResult);
-
+        var combinedProperties = getProperties(job.get(), media.get(), markupResult);
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             try {
-                try (var s3Stream = s3StorageBackend.getFromS3(
-                        markupResult.getMarkupUri(), combinedProperties)) {
-                    var s3Response = s3Stream.response();
-                    IoUtils.sendBinaryResponse(s3Stream, response,
-                            s3Response.contentType(), s3Response.contentLength());
-                }
-                return;
-            } catch (StorageException e) {
-                log.error("Markup with id " + id + " download failed: " + e.getMessage());
-                response.setStatus(500);
-                response.flushBuffer();
-                return;
+                var s3Stream = s3StorageBackend.getFromS3(
+                        markupResult.getMarkupUri(), combinedProperties);
+                return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
+            }
+            catch (StorageException e) {
+                log.error("Markup with id " + id + " download failed: " + e.getMessage(), e);
+                return ResponseEntity.internalServerError().build();
             }
         }
 
-        try {
-            URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
-            URLConnection urlConnection = mediaUrl.openConnection();
-            try (InputStream inputStream = urlConnection.getInputStream()) {
-                IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
-                        urlConnection.getContentLength());
-            }
-        } catch (IOException e) {
-            log.error("Markup with id " + id + " download failed: " + e.getMessage());
-            response.setStatus(500);
-            response.flushBuffer();
-            return;
-        }
+        var request = new HttpGet(markupResult.getMarkupUri());
+        var responseFuture = httpClientUtils.executeRequest(request, 0);
+        var markupResponse = ThreadUtil.join(responseFuture, IOException.class);
+        return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
+
 
     private UnaryOperator<String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
         var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
@@ -370,5 +351,4 @@ public class MarkupController {
             return true;
         }
     }
-
 }

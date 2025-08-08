@@ -72,7 +72,7 @@ public class FrameTimeInfoBuilder {
             try (split) {
                 ptsValuesBuilder = getPtsFromFfprobe(command, mediaPath);
             }
-            logStats(split, mediaPath, mimeType, ptsValuesBuilder.getFrameCount());
+            logStats(split, mediaPath, mimeType, ptsValuesBuilder.getFrameCount(), ffprobeMetadata);
 
             var timeInfo = ptsValuesBuilder.build(
                     ffprobeMetadata.fps(), ffprobeMetadata.timeBase());
@@ -120,17 +120,19 @@ public class FrameTimeInfoBuilder {
 
 
     private static Split startFfprobePtsStopwatch() {
-        return SimonManager.getStopwatch(FrameTimeInfoBuilder.class.getName() + ".ffprobePts")
+        return SimonManager.getStopwatch(FrameTimeInfoBuilder.class.getName() + ".getPtsFromFfprobe")
             .start();
     }
 
-    private static void logStats(Split split, Path mediaPath, String mimeType, int frameCount) {
-        var millis = Duration.ofNanos(split.runningFor()).toMillis();
-        LOG.info("getFrameTimeInfo [stopwatch: {}, media: {}, mime type: {}, frame count: {}]",
+    private static void logStats(Split split, Path mediaPath, String mimeType, int frameCount, FfprobeMetadata.Video ffprobeData) {
+        double millis = (double)split.runningFor()/1000000.0;
+        LOG.info("getFrameTimeInfo [stopwatch: {}, media: {}, mime type: {}, frame count: {}, duration: {} msec, fps: {}]",
                     millis,
                     mediaPath,
                     mimeType,
-                    frameCount);
+                    frameCount,
+                    ffprobeData.durationMs().orElse(0),
+                    ffprobeData.fps().toDouble());
     }
 
 

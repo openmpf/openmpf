@@ -72,7 +72,7 @@ public class FrameTimeInfoBuilder {
             try (split) {
                 ptsValuesBuilder = getPtsFromFfprobe(command, mediaPath);
             }
-            logStats(split, mediaPath, mimeType, ptsValuesBuilder.getFrameCount(), ffprobeMetadata);
+            logStats(split, mediaPath, mimeType, ptsValuesBuilder.getFrameCount());
 
             var timeInfo = ptsValuesBuilder.build(
                     ffprobeMetadata.fps(), ffprobeMetadata.timeBase());
@@ -124,15 +124,13 @@ public class FrameTimeInfoBuilder {
             .start();
     }
 
-    private static void logStats(Split split, Path mediaPath, String mimeType, int frameCount, FfprobeMetadata.Video ffprobeData) {
-        double millis = (double)split.runningFor()/1000000.0;
-        LOG.info("getFrameTimeInfo [stopwatch: {}, media: {}, mime type: {}, frame count: {}, duration: {} msec, fps: {}]",
+    private static void logStats(Split split, Path mediaPath, String mimeType, int frameCount) {
+        var millis = Duration.ofNanos(split.runningFor()).toMillis();
+        LOG.info("getFrameTimeInfo [stopwatch: {} msec, media: {}, mime type: {}, frame count: {}]",
                     millis,
                     mediaPath,
                     mimeType,
-                    frameCount,
-                    ffprobeData.durationMs().orElse(0),
-                    ffprobeData.fps().toDouble());
+                    frameCount);
     }
 
 

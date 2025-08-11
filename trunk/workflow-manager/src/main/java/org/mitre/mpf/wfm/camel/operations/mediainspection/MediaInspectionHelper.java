@@ -239,7 +239,8 @@ public class MediaInspectionHelper {
 
         FrameTimeInfo frameTimeInfo;
         try {
-            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata);
+            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata,
+                                                                  mediaMetadata.get("MIME_TYPE"));
         }
         catch (MediaInspectionException e) {
             if (ffprobeMetadata.frameCount().isPresent()) {

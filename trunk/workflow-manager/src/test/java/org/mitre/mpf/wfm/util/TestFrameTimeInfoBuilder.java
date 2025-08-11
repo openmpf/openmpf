@@ -102,7 +102,7 @@ public class TestFrameTimeInfoBuilder {
         var videoPath = TestUtil.findFilePath("/samples/text-test-video-detection.avi");
         var ffprobeMetdata = new FfprobeMetadata.Video(
                 -1, -1, fps, OptionalLong.empty(), OptionalLong.empty(), 0, timeBase);
-        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(videoPath, ffprobeMetdata);
+        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(videoPath, ffprobeMetdata, "");
 
         assertEquals(2206, timeInfo.getTimeMsFromFrame(0));
         assertEquals(0, timeInfo.getFrameFromTimeMs(2206));
@@ -128,7 +128,7 @@ public class TestFrameTimeInfoBuilder {
             throws IOException {
         var ffprobeMetdata = new FfprobeMetadata.Video(
                 -1, -1, fps, OptionalLong.of(-1), OptionalLong.of(-1), 0, timeBase);
-        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(video, ffprobeMetdata);
+        var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(video, ffprobeMetdata, "");
         assertEquals(isCfr, timeInfo.hasConstantFrameRate());
         assertFalse(timeInfo.requiresTimeEstimation());
 

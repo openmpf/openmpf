@@ -24,37 +24,45 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.mvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Optional;
+
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-
-// Spring's built-in MappingJackson2HttpMessageConverter does not allow you to configure the ObjectMapper that it uses.
-// Classes annotated with @Controller will use this class. This class ensures that those controllers,
-// and classes that explicitly use ObjectMapper, all use the same ObjectMapper instance.
 @Component
-public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
+public class ProbingResourceMessageConverter extends ResourceHttpMessageConverter {
 
-    // These classes should use the internal Spring HttpMessageConverters.
-    private static final ImmutableList<Class<?>> DENY_LIST
-            = ImmutableList.of(String.class, Resource.class);
-
-    @Inject
-    CustomJacksonHttpMessageConverter(ObjectMapper objectMapper) {
-        super(objectMapper);
+    @Override
+    protected void addDefaultHeaders(
+            HttpHeaders headers,
+            Resource resource,
+            MediaType suggestedContentType) throws IOException {
+        var contentType = Optional.ofNullable(headers.getContentType())
+                .or(() -> probeContentType(resource))
+                .orElse(suggestedContentType);
+        super.addDefaultHeaders(headers, resource, contentType);
     }
 
 
-    @Override
-    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-        return DENY_LIST.stream().noneMatch(blc -> blc.isAssignableFrom(clazz))
-                && super.canWrite(clazz, mediaType);
+    private static Optional<MediaType> probeContentType(Resource resource) {
+        if (!resource.isFile()) {
+            return Optional.empty();
+        }
+        try {
+            var path = resource.getFile().toPath();
+            return Optional.ofNullable(Files.probeContentType(path))
+                .map(MediaType::parseMediaType);
+        }
+        catch (IOException | InvalidMediaTypeException e) {
+            return Optional.empty();
+        }
     }
 }

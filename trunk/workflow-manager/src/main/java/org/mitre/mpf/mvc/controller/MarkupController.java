@@ -29,7 +29,6 @@ package org.mitre.mpf.mvc.controller;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,11 +37,12 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
-import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -60,74 +60,76 @@ import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.PathResource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import io.swagger.annotations.Api;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
-@Controller
+@RestController
 @Scope("request")
 public class MarkupController {
     private static final Logger log = LoggerFactory.getLogger(MarkupController.class);
 
-    @Autowired
-    private MarkupResultDao markupResultDao;
+    private final MarkupResultDao _markupResultDao;
 
-    @Autowired
-    private JobRequestDao jobRequestDao;
+    private final JobRequestDao _jobRequestDao;
 
-    @Autowired
-    private IoUtils ioUtils;
+    private final JsonUtils _jsonUtils;
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    private final S3StorageBackend _s3StorageBackend;
 
-    @Autowired
-    private S3StorageBackend s3StorageBackend;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final HttpClientUtils _httpClientUtils;
 
-    @Autowired
-    private HttpClientUtils httpClientUtils;
-
+    @Inject
+    MarkupController(
+            MarkupResultDao markupResultDao,
+            JobRequestDao jobRequestDao,
+            JsonUtils jsonUtils,
+            S3StorageBackend s3StorageBackend,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            PropertiesUtil propertiesUtil,
+            InProgressBatchJobsService inProgressJobs,
+            HttpClientUtils httpClientUtils) {
+        _markupResultDao = markupResultDao;
+        _jobRequestDao = jobRequestDao;
+        _jsonUtils = jsonUtils;
+        _s3StorageBackend = s3StorageBackend;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _propertiesUtil = propertiesUtil;
+        _inProgressJobs = inProgressJobs;
+        _httpClientUtils = httpClientUtils;
+    }
 
     @GetMapping("/markup/get-markup-results-filtered")
-    @ResponseBody
     public ResponseEntity<Object> getMarkupResultsFiltered(
             @RequestParam("jobId") String jobId,
             @RequestParam("page") int page,
             @RequestParam("pageLen") int pageLen,
             @RequestParam("search") String search) {
 
-        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(jobId);
+        JobRequest jobRequest = _jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
             return ResponseEntity.notFound().build();
         }
 
-        BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+        BatchJob job = _jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
-        List<MarkupResult> markupResults = markupResultDao.findByJobId(internalJobId);
+        List<MarkupResult> markupResults = _markupResultDao.findByJobId(internalJobId);
 
         //convert markup objects
         Map<Long, MarkupResultConvertedModel> markupResultModels = new HashMap<>();
@@ -156,7 +158,7 @@ public class MarkupController {
                     .ifPresent(model::setSourceDownloadUrl);
                 model.setSourceFileAvailable(true);
                 med.getType()
-                    .or(() -> inProgressJobs.getMediaType(internalJobId, med.getId()))
+                    .or(() -> _inProgressJobs.getMediaType(internalJobId, med.getId()))
                     .ifPresent(mt -> model.setSourceMediaType(mt.toString()));
             }
             markupResultModels.put(med.getId(), model);
@@ -209,10 +211,9 @@ public class MarkupController {
     }
 
 
-    @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping("/markup/download")
     public Object getFile(@RequestParam("id") long id) throws StorageException, IOException {
-        var markupResult = markupResultDao.findById(id);
+        var markupResult = _markupResultDao.findById(id);
         if (markupResult == null) {
             log.error("Markup with id {} download failed. Invalid id.", id);
             return ResponseEntity.notFound().build();
@@ -221,15 +222,15 @@ public class MarkupController {
         var localPath = IoUtils.toLocalPath(markupResult.getMarkupUri());
         if (localPath.isPresent()) {
             if (Files.exists(localPath.get())) {
-                return ResponseEntity.ok(new PathResource(localPath.get()));
+                return new PathResource(localPath.get());
             }
             log.error("Markup with id {} download failed. Invalid path: {}", id, localPath);
             return ResponseEntity.notFound().build();
         }
 
-        var job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
+        var job = Optional.ofNullable(_jobRequestDao.findById(markupResult.getJobId()))
                 .map(JobRequest::getJob)
-                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class));
+                .map(bytes -> _jsonUtils.deserialize(bytes, BatchJob.class));
         if (job.isEmpty()) {
             log.error(
                     "Markup with id {} download failed. Invalid job with id {}.",
@@ -252,7 +253,7 @@ public class MarkupController {
         var combinedProperties = getProperties(job.get(), media.get(), markupResult);
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             try {
-                var s3Stream = s3StorageBackend.getFromS3(
+                var s3Stream = _s3StorageBackend.getFromS3(
                         markupResult.getMarkupUri(), combinedProperties);
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
@@ -263,27 +264,16 @@ public class MarkupController {
         }
 
         var request = new HttpGet(markupResult.getMarkupUri());
-        var markupResponse = httpClientUtils.executeRequestSync(request, 0);
+        var markupResponse = _httpClientUtils.executeRequestSync(request, 0);
         return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
 
 
     private UnaryOperator<String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
         var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
-        return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
+        return _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }
 
-    private MarkupResultModel convertMarkupResult(MarkupResult markupResult) {
-        boolean isImage = false;
-        if(markupResult.getMarkupUri() != null) {
-            String nonUrlPath = markupResult.getMarkupUri().replace("file:", "");
-            String markupContentType = ioUtils.getPathContentType(Paths.get(nonUrlPath));
-            isImage = (markupContentType != null && StringUtils.startsWithIgnoreCase(markupContentType, "IMAGE"));
-        }
-
-        return new MarkupResultModel(markupResult.getId(), markupResult.getJobId(),
-                                     markupResult.getPipeline(), markupResult.getMarkupUri(), isImage);
-    }
 
     private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
         String markupMediaType = "";
@@ -316,7 +306,7 @@ public class MarkupController {
 
         return new MarkupResultConvertedModel(
                 markupResult.getId(),
-                propertiesUtil.getExportedJobId(markupResult.getJobId()),
+                _propertiesUtil.getExportedJobId(markupResult.getJobId()),
                 markupResult.getMediaId(),
                 media.getParentId(),
                 markupResult.getPipeline(),

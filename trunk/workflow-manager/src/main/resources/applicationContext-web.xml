@@ -54,9 +54,6 @@
 
         <!-- Enables the Spring MVC @Controller programming model -->
         <mvc:annotation-driven>
-            <mvc:message-converters>
-                <bean class="org.mitre.mpf.mvc.CustomJacksonHttpMessageConverter" />
-            </mvc:message-converters>
         </mvc:annotation-driven>
 
         <!-- added for swagger 2 -->

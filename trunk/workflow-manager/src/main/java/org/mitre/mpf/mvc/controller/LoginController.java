@@ -41,7 +41,6 @@ import org.mitre.mpf.mvc.security.custom.sso.CustomSsoProps;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -51,18 +50,16 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.servlet.ModelAndView;
 
 
-@Controller
-@Scope("request")
+@RestController
 public class LoginController {
 
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
@@ -126,9 +123,7 @@ public class LoginController {
     @PostMapping("/logout")
     public String logout(
             @RequestParam(value = "reason", required = false) String reason,
-            HttpServletRequest request,
-            HttpSession session,
-            HttpServletResponse response) {
+            HttpSession session) {
         session.invalidate();
         SecurityContextHolder.clearContext(); // prevent a user from recovering a session
         String redirect = "redirect:/login";
@@ -161,7 +156,6 @@ public class LoginController {
 
 
     @GetMapping("/user/role-info")
-    @ResponseBody
     public AuthenticationModel getSecurityCredentials(HttpServletRequest request /*needed for UserPrincipal*/) {
         return getAuthenticationModel(request);
     }

@@ -45,7 +45,8 @@ import org.mitre.mpf.mvc.security.FailedToGetTokenException;
 import org.mitre.mpf.mvc.security.ITokenProvider;
 import org.mitre.mpf.wfm.service.ClockService;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
-import org.mitre.mpf.wfm.util.ThreadUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -57,6 +58,9 @@ import software.amazon.awssdk.http.SdkHttpFullRequest;
 @Service
 @Profile("custom_sso")
 public class CustomSsoOutgoingTokenService implements ITokenProvider {
+
+    private static final Logger log = LoggerFactory.getLogger(
+            CustomSsoOutgoingTokenService.class);
 
     private final CustomSsoProps _customSsoProps;
 
@@ -137,6 +141,7 @@ public class CustomSsoOutgoingTokenService implements ITokenProvider {
         Instant tokenRequestStartTime;
         HttpResponse response;
         try {
+            log.info("Requesting new SSO token for outgoing request.");
             var request = new HttpPost(_customSsoProps.getTokenUri());
             request.addHeader("Content-Type", "application/json");
             var body = Map.of(

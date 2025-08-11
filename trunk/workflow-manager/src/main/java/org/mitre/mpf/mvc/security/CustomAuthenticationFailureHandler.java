@@ -24,8 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security.local;
-
+package org.mitre.mpf.mvc.security;
 
 import java.io.IOException;
 
@@ -35,53 +34,36 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.LogAuditEventRecord;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.csrf.CsrfException;
-import org.springframework.stereotype.Service;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
 
-@Service("CustomAccessDeniedHandler")
-@LocalSecurityProfile
-public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
+@Component
+public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private final AuditEventLogger auditEventLogger;
-    
-    @Autowired
-    public CustomAccessDeniedHandler(AuditEventLogger auditEventLogger) {
+
+    public CustomAuthenticationFailureHandler(AuditEventLogger auditEventLogger) {
         this.auditEventLogger = auditEventLogger;
     }
 
     @Override
-    public void handle(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AccessDeniedException accessDeniedException) throws IOException, ServletException {
-
-        if (!(accessDeniedException instanceof CsrfException)) {
-            super.handle(request, response, accessDeniedException);
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+                                      AuthenticationException exception) throws IOException, ServletException {
+        
+        if (exception instanceof BadCredentialsException) {
+            String attemptedUsername = request.getParameter("username");
+            String badCredentialsMessage;
+            if (attemptedUsername != null && !attemptedUsername.trim().isEmpty()) {
+                badCredentialsMessage = "Failed login attempt for user '" + attemptedUsername + "': Invalid username and/or password.";
+            } else {
+                badCredentialsMessage = "Failed login attempt: Invalid username and/or password.";
+            }
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, 
+                               LogAuditEventRecord.ResType.DENY, badCredentialsMessage);
         }
-        else if (isAjax(request)) {
-            response.sendError(403, "INVALID_CSRF_TOKEN");
-        }
-        else if ("/login".equals(request.getRequestURI())) {
-            // CSRF failures on login page
-            auditEventLogger.log(
-                LogAuditEventRecord.TagType.SECURITY,
-                LogAuditEventRecord.OpType.LOGIN,
-                LogAuditEventRecord.ResType.DENY,
-                "Login attempt failed: Invalid XSRF token"
-            );
-            
-            response.sendRedirect("/");
-        }
-        else {
-            super.handle(request, response, accessDeniedException);
-        }
-    }
-
-
-    private static boolean isAjax(HttpServletRequest request) {
-        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+        
+        response.sendRedirect("/login?reason=error");
     }
 }

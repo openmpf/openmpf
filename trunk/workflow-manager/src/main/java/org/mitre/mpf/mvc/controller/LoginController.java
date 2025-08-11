@@ -38,6 +38,8 @@ import javax.servlet.http.HttpSession;
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
 import org.mitre.mpf.mvc.security.custom.sso.CustomSsoProps;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +53,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.servlet.ModelAndView;
@@ -66,11 +66,17 @@ public class LoginController {
 
     private final PropertiesUtil _propertiesUtil;
 
+    private final AuditEventLogger _auditEventLogger;
+
     private final Optional<CustomSsoProps> _customSsoProps;
 
     @Inject
-    LoginController(PropertiesUtil propertiesUtil, Optional<CustomSsoProps> customSsoProps) {
+    LoginController(
+            PropertiesUtil propertiesUtil,
+            AuditEventLogger auditEventLogger,
+            Optional<CustomSsoProps> customSsoProps) {
         _propertiesUtil = propertiesUtil;
+        _auditEventLogger = auditEventLogger;
         _customSsoProps = customSsoProps;
     }
 
@@ -120,26 +126,15 @@ public class LoginController {
         return mv;
     }
 
-    @PostMapping("/logout")
-    public String logout(
-            @RequestParam(value = "reason", required = false) String reason,
-            HttpSession session) {
-        session.invalidate();
-        SecurityContextHolder.clearContext(); // prevent a user from recovering a session
-        String redirect = "redirect:/login";
-        if (reason != null) {
-            redirect += "?reason=" + reason;
-        }
-        return redirect;
-    }
-
     @GetMapping("/login")
     public Object getLogin(
             @SessionAttribute(name = WebAttributes.AUTHENTICATION_EXCEPTION, required = false)
             Exception authException,
             Authentication authentication) {
 
+        _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Login page accessed");
         if (authentication != null && authentication.isAuthenticated()) {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User is already authenticated.");
             return "redirect:/";
         }
 
@@ -147,7 +142,11 @@ public class LoginController {
         model.addObject("version", _propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
-            model.addObject("error", "Invalid username and password!");
+            model.addObject("error", "Failed login attempt: Invalid username and/or password.");
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                               LogAuditEventRecord.OpType.LOGIN,
+                               LogAuditEventRecord.ResType.ERROR,
+                               "Failed login attempt: Invalid username and/or password");
         }
 
         return model;
@@ -167,10 +166,9 @@ public class LoginController {
             AccessDeniedException accessDeniedException) {
 
         if (accessDeniedException != null) {
-            log.error(
-                "A user successfully authenticated with an OIDC provider, but was not" +
-                            " authorized to access Workflow Manager.",
-                    accessDeniedException);
+            String errorMessage = "A user successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.";
+            log.error(errorMessage, accessDeniedException);
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, errorMessage);
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(

@@ -33,11 +33,19 @@
 
     <Appenders>
         <Console name="STDOUT">
-            <PatternLayout pattern="${layoutPattern}"/>
+            <PatternLayout>
+                <MarkerPatternSelector defaultPattern="${layoutPattern}">
+                    <PatternMatch key="mpf.AUDIT" pattern="%msg%n"/>
+                </MarkerPatternSelector>
+            </PatternLayout>
         </Console>
 
         <RollingRandomAccessFile name="WFM_FILE" fileName="${wfmLogFile}" filePattern="${wfmLogFile}.%date{yyyy-MM-dd}.%i">
-            <PatternLayout pattern="${layoutPattern}"/>
+            <PatternLayout>
+                <MarkerPatternSelector defaultPattern="${layoutPattern}">
+                    <PatternMatch key="mpf.AUDIT" pattern="%msg%n"/>
+                </MarkerPatternSelector>
+            </PatternLayout>
             <Policies>
                 <!-- Causes a rollover once the date/time pattern specified in filePattern no longer applies to the
                      active file. -->
@@ -45,13 +53,12 @@
                 <SizeBasedTriggeringPolicy size="50MB"/>
             </Policies>
         </RollingRandomAccessFile>
-
     </Appenders>
 
     <Loggers>
         <!-- To change the verbosity of MPF's own logging, change the level in the XML element below. -->
         <Logger name="org.mitre" level="INFO" />
-
+        
         <Root level="INFO">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="WFM_FILE"/>

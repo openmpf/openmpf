@@ -24,64 +24,57 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security.local;
 
+package org.mitre.mpf.wfm.util;
 
-import java.io.IOException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.time.Instant;
 
-import org.mitre.mpf.wfm.util.AuditEventLogger;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
+import org.mitre.mpf.interop.util.TimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.csrf.CsrfException;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-@Service("CustomAccessDeniedHandler")
-@LocalSecurityProfile
-public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
+@Component
+public class AuditEventLogger {
+    private static final Logger log = LoggerFactory.getLogger(AuditEventLogger.class);
+    private static final Marker AUDIT_MARKER = MarkerFactory.getMarker("mpf.AUDIT");
+    private final ObjectMapper mapper;
+    private final PropertiesUtil propertiesUtil;
 
-    private final AuditEventLogger auditEventLogger;
-    
     @Autowired
-    public CustomAccessDeniedHandler(AuditEventLogger auditEventLogger) {
-        this.auditEventLogger = auditEventLogger;
+    public AuditEventLogger(PropertiesUtil propertiesUtil) {
+        this.mapper = new ObjectMapper();
+        this.propertiesUtil = propertiesUtil;
     }
 
-    @Override
-    public void handle(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AccessDeniedException accessDeniedException) throws IOException, ServletException {
-
-        if (!(accessDeniedException instanceof CsrfException)) {
-            super.handle(request, response, accessDeniedException);
+    private void writeToLogger(LogAuditEventRecord event) {
+        // Only log if audit logging is enabled
+        if (!propertiesUtil.isAuditLoggingEnabled()) {
+            return;
         }
-        else if (isAjax(request)) {
-            response.sendError(403, "INVALID_CSRF_TOKEN");
-        }
-        else if ("/login".equals(request.getRequestURI())) {
-            // CSRF failures on login page
-            auditEventLogger.log(
-                LogAuditEventRecord.TagType.SECURITY,
-                LogAuditEventRecord.OpType.LOGIN,
-                LogAuditEventRecord.ResType.DENY,
-                "Login attempt failed: Invalid XSRF token"
-            );
-            
-            response.sendRedirect("/");
-        }
-        else {
-            super.handle(request, response, accessDeniedException);
+        
+        try {
+            log.info(AUDIT_MARKER, "{}", mapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Failed to log event: {}", event, e);
         }
     }
 
-
-    private static boolean isAjax(HttpServletRequest request) {
-        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+    private String getCurrentLoggedInUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null ? auth.getName() : "system";
     }
+
+    public AuditEventLogger log (LogAuditEventRecord.TagType tag, LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String msg) {
+        writeToLogger(new LogAuditEventRecord(TimeUtils.toIsoString(Instant.now()), tag, "openmpf", getCurrentLoggedInUser(), op, res, msg));
+        return this;
+    }
+    
 }

@@ -53,9 +53,11 @@ import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +92,8 @@ public class ServerMediaController {
 
     private final OutgoingRequestTokenService _tokenService;
 
+    private final AuditEventLogger _auditEventLogger;
+
 
     @Inject
     ServerMediaController(
@@ -100,7 +104,8 @@ public class ServerMediaController {
             JsonUtils jsonUtils,
             S3StorageBackend s3StorageBackend,
             HttpClientUtils httpClient,
-            OutgoingRequestTokenService tokenService) {
+            OutgoingRequestTokenService tokenService,
+            AuditEventLogger auditEventLogger) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _serverMediaService = serverMediaService;
@@ -109,6 +114,7 @@ public class ServerMediaController {
         _s3StorageBackend = s3StorageBackend;
         _httpClient = httpClient;
         _tokenService = tokenService;
+        _auditEventLogger = auditEventLogger;
     }
 
 
@@ -145,7 +151,14 @@ public class ServerMediaController {
     public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath,
                                           @RequestParam(required = false, defaultValue = "true") boolean useCache) {
         File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                               LogAuditEventRecord.OpType.READ,
+                               LogAuditEventRecord.ResType.ERROR,
+                               "Invalid directory path requested: " + fullPath);
+            return null; // security check
+        }
+
 
         List<ServerMediaFile> mediaFiles = _serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, true);
         return new ServerMediaListing(mediaFiles);
@@ -166,7 +179,13 @@ public class ServerMediaController {
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
 
         File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                               LogAuditEventRecord.OpType.MODIFY,
+                               LogAuditEventRecord.ResType.ERROR,
+                               "Invalid directory path requested for filtered listing: " + fullPath);
+            return null; // security check
+        }
 
         List<ServerMediaFile> mediaFiles = _serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, false);
 
@@ -198,9 +217,17 @@ public class ServerMediaController {
     public Object serve(@RequestParam("nodeFullPath") String nodeFullPath) {
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                            LogAuditEventRecord.OpType.READ,
+                                            LogAuditEventRecord.ResType.ALLOW,
+                                            "Viewed server node image: path=" + nodeFullPath);
             return new PathResource(path);
         }
         else {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                               LogAuditEventRecord.OpType.READ,
+                               LogAuditEventRecord.ResType.ERROR,
+                               "File not readable or not found: " + nodeFullPath);
             return ResponseEntity.notFound().build();
         }
     }
@@ -211,6 +238,10 @@ public class ServerMediaController {
             @RequestParam("jobId") String jobId,
             @RequestParam("sourceUri") URI sourceUri) throws StorageException, IOException {
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                            LogAuditEventRecord.OpType.EXTRACT,
+                            LogAuditEventRecord.ResType.ALLOW,
+                            "Downloaded media file: jobId=" + jobId + ", uri=" + sourceUri);
             return new PathResource(sourceUri);
         }
 
@@ -218,6 +249,10 @@ public class ServerMediaController {
         JobRequest jobRequest = _jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
             log.error("Media for job id {} download failed. Invalid job id.", jobId);
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                               LogAuditEventRecord.OpType.EXTRACT,
+                               LogAuditEventRecord.ResType.ERROR,
+                               "Media download failed: invalid job ID " + jobId);
             return ResponseEntity.notFound().build();
         }
 
@@ -228,6 +263,10 @@ public class ServerMediaController {
         var uriScheme = UriScheme.parse(sourceUri.getScheme());
         if ((uriScheme.equals(UriScheme.HTTP) || uriScheme.equals(UriScheme.HTTPS)) &&
                 S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                            LogAuditEventRecord.OpType.EXTRACT,
+                            LogAuditEventRecord.ResType.ALLOW,
+                            "Downloaded media file: uri=" + sourceUri);
             var s3Stream = _s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
             return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
         }

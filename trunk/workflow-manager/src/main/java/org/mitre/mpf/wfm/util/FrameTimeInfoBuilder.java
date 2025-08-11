@@ -27,6 +27,8 @@
 
 package org.mitre.mpf.wfm.util;
 
+import org.javasimon.SimonManager;
+import org.javasimon.Split;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadata;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionException;
@@ -37,6 +39,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.OptionalInt;
 import java.util.function.LongConsumer;
@@ -54,7 +57,7 @@ public class FrameTimeInfoBuilder {
 
 
     public static FrameTimeInfo getFrameTimeInfo(
-                Path mediaPath, FfprobeMetadata.Video ffprobeMetadata) {
+                Path mediaPath, FfprobeMetadata.Video ffprobeMetadata, String mimeType) {
         String[] command = {
                 "ffprobe", "-threads", FFPROBE_THREADS, "-hide_banner", "-select_streams", "v",
                 "-show_entries", "frame=best_effort_timestamp",
@@ -64,24 +67,12 @@ public class FrameTimeInfoBuilder {
                  Arrays.toString(command));
 
         try {
-            var process = new ProcessBuilder(command)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start();
-            process.getOutputStream().close();
-
-            var ptsValuesBuilder = new PtsBuilder();
-
-            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    ptsValuesBuilder.accept(line);
-                }
+            PtsBuilder ptsValuesBuilder;
+            var split = startFfprobePtsStopwatch();
+            try (split) {
+                ptsValuesBuilder = getPtsFromFfprobe(command, mediaPath);
             }
-            if (process.waitFor() != 0) {
-                throw new MediaInspectionException(
-                    "Failed to get timestamps for \"%s\" because ffprobe exited with status %s"
-                    .formatted(mediaPath, process.exitValue()));
-            }
+            logStats(split, mediaPath, mimeType, ptsValuesBuilder.getFrameCount());
 
             var timeInfo = ptsValuesBuilder.build(
                     ffprobeMetadata.fps(), ffprobeMetadata.timeBase());
@@ -105,8 +96,46 @@ public class FrameTimeInfoBuilder {
         }
     }
 
+    private static PtsBuilder getPtsFromFfprobe(
+                String[] command, Path mediaPath) throws IOException, InterruptedException {
+        var ptsValuesBuilder = new PtsBuilder();
+        var process = new ProcessBuilder(command)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start();
+        process.getOutputStream().close();
+
+        try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                ptsValuesBuilder.accept(line);
+            }
+        }
+        if (process.waitFor() != 0) {
+            throw new MediaInspectionException(
+                "Failed to get timestamps for \"%s\" because ffprobe exited with status %s"
+                .formatted(mediaPath, process.exitValue()));
+        }
+        return ptsValuesBuilder;
+    }
+
+
+    private static Split startFfprobePtsStopwatch() {
+        return SimonManager.getStopwatch(FrameTimeInfoBuilder.class.getName() + ".getPtsFromFfprobe")
+            .start();
+    }
+
+    private static void logStats(Split split, Path mediaPath, String mimeType, int frameCount) {
+        var millis = Duration.ofNanos(split.runningFor()).toMillis();
+        LOG.info("getFrameTimeInfo [stopwatch: {} msec, media: {}, mime type: {}, frame count: {}]",
+                    millis,
+                    mediaPath,
+                    mimeType,
+                    frameCount);
+    }
+
 
     private static class PtsBuilder {
+        private int _frameCount;
         private long _firstPts = 0;
         private long _prevPts = -1;
         private long _delta = -1;
@@ -117,6 +146,7 @@ public class FrameTimeInfoBuilder {
         private LongConsumer _state = this::initPrev;
 
         public void accept(String line) {
+            _frameCount++;
             long pts;
             try {
                 pts = Long.parseLong(line);
@@ -171,6 +201,10 @@ public class FrameTimeInfoBuilder {
                     .toArray();
             boolean requiresEstimation = estimateMissingTimes(frameTimes, fps);
             return FrameTimeInfo.forVariableFrameRate(fps, frameTimes, requiresEstimation);
+        }
+
+        public int getFrameCount() {
+            return _frameCount;
         }
     }
 

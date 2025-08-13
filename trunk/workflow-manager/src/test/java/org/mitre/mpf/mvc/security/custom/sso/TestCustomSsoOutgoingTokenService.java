@@ -51,7 +51,6 @@ import org.mitre.mpf.test.MockClockService;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
-import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
@@ -103,8 +102,8 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
         var tokenResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "error");
 
         var captor = ArgumentCaptor.forClass(HttpPost.class);
-        when(_mockHttpClient.executeRequest(captor.capture(), eq(HTTP_RETRY_COUNT)))
-            .thenReturn(ThreadUtil.completedFuture(tokenResponse));
+        when(_mockHttpClient.executeRequestSync(captor.capture(), eq(HTTP_RETRY_COUNT)))
+            .thenReturn(tokenResponse);
 
         var callbackRequest = new HttpGet();
         assertThatExceptionOfType(FailedToGetTokenException.class)
@@ -154,8 +153,8 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
             ContentType.APPLICATION_JSON));
 
         var captor = ArgumentCaptor.forClass(HttpPost.class);
-        when(_mockHttpClient.executeRequest(captor.capture(), eq(HTTP_RETRY_COUNT)))
-            .thenReturn(ThreadUtil.completedFuture(tokenResponse));
+        when(_mockHttpClient.executeRequestSync(captor.capture(), eq(HTTP_RETRY_COUNT)))
+            .thenReturn(tokenResponse);
 
         {
             var callbackRequest = new HttpGet();
@@ -209,15 +208,15 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
             .isEqualTo(value);
     }
 
-    private ArgumentCaptor<HttpPost> setUpTokenResponse() {
+    private ArgumentCaptor<HttpPost> setUpTokenResponse() throws IOException {
         var tokenResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK");
         tokenResponse.setEntity(new StringEntity(
              "{\"token_prop\": \"<MY TOKEN>\"}",
             ContentType.APPLICATION_JSON));
 
         var captor = ArgumentCaptor.forClass(HttpPost.class);
-        when(_mockHttpClient.executeRequest(captor.capture(), eq(HTTP_RETRY_COUNT)))
-            .thenReturn(ThreadUtil.completedFuture(tokenResponse));
+        when(_mockHttpClient.executeRequestSync(captor.capture(), eq(HTTP_RETRY_COUNT)))
+            .thenReturn(tokenResponse);
         return captor;
     }
 

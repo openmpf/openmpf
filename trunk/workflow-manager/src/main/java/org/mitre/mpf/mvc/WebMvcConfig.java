@@ -60,29 +60,29 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         var iter = converters.listIterator();
-        var addedJacksonConverter = false;
         var addedResourceConverter = false;
+        var addedJacksonConverter = false;
         while (iter.hasNext()) {
             var next = iter.next();
-            if (next instanceof MappingJackson2SmileHttpMessageConverter) {
-                // Prevent HTTP responses from using the Smile format.
-                iter.remove();
+            if (next instanceof ResourceHttpMessageConverter) {
+                iter.set(_probingResourceConverter);
+                addedResourceConverter = true;
             }
             else if (next instanceof MappingJackson2HttpMessageConverter) {
                 iter.set(createJacksonConverter());
                 addedJacksonConverter = true;
             }
-            else if (next instanceof ResourceHttpMessageConverter) {
-                iter.set(_probingResourceConverter);
-                addedResourceConverter = true;
+            else if (next instanceof MappingJackson2SmileHttpMessageConverter) {
+                // Prevent HTTP responses from using the Smile format.
+                iter.remove();
             }
         }
 
-        if (!addedJacksonConverter) {
-            converters.add(createJacksonConverter());
-        }
         if (!addedResourceConverter) {
             converters.add(_probingResourceConverter);
+        }
+        if (!addedJacksonConverter) {
+            converters.add(createJacksonConverter());
         }
     }
 

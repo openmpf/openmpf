@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -120,29 +121,29 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
 
     @Test
-    public void testRemoteValidationFails() {
+    public void testRemoteValidationFails() throws IOException {
         var errorDetails = "<ERROR DETAILS>";
         var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "reason");
         response.setEntity(new StringEntity(errorDetails, StandardCharsets.UTF_8));
 
-        when(_mockHttpClient.executeRequest(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
-            .thenReturn(ThreadUtil.completedFuture(response));
+        when(_mockHttpClient.executeRequestSync(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
+            .thenReturn(response);
 
         assertBadCredentials("Bearer <MY TOKEN>", errorDetails);
     }
 
 
     @Test
-    public void testCache() {
+    public void testCache() throws IOException {
         var authHeader = "Bearer <MY TOKEN>";
         var numHttpRequests = new AtomicInteger(0);
         {
             var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
-            when(_mockHttpClient.executeRequest(
+            when(_mockHttpClient.executeRequestSync(
                     argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
                 .thenAnswer(a -> {
                     numHttpRequests.incrementAndGet();
-                    return ThreadUtil.completedFuture(response);
+                    return response;
                 });
 
             var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
@@ -179,7 +180,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
 
     @Test
-    public void testOverlappingRequests() {
+    public void testOverlappingRequests() throws IOException {
         var request1Started = ThreadUtil.<Void>newFuture();
         var request2Started = ThreadUtil.<Void>newFuture();
 
@@ -189,18 +190,18 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         var numToken2Requests = new AtomicInteger(0);
 
 
-        when(_mockHttpClient.executeRequest(any(), eq(HTTP_RETRY_COUNT)))
+        when(_mockHttpClient.executeRequestSync(any(), eq(HTTP_RETRY_COUNT)))
             .thenAnswer(inv -> {
                 HttpUriRequest request = inv.getArgument(0);
                 if (hasTokenCookieSet(request, "<MY TOKEN>")) {
                     numToken1Requests.incrementAndGet();
                     request1Started.complete(null);
-                    return httpFuture1;
+                    return httpFuture1.join();
                 }
                 else if (hasTokenCookieSet(request, "<MY TOKEN2>")) {
                     numToken2Requests.incrementAndGet();
                     request2Started.complete(null);
-                    return httpFuture2;
+                    return httpFuture2.join();
                 }
                 Assert.fail("Unexpected token");
                 return null;
@@ -252,10 +253,10 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
 
     @Test
-    public void testValidationFromBrowser() {
+    public void testValidationFromBrowser() throws IOException {
         var httpResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
-        when(_mockHttpClient.executeRequest(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
-                .thenReturn(ThreadUtil.completedFuture(httpResponse));
+        when(_mockHttpClient.executeRequestSync(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
+                .thenReturn(httpResponse);
 
         var authRequest = new PreAuthenticatedAuthenticationToken("n/a", "<MY TOKEN>");
         var authResponse = _tokenValidator.authenticateCookie(authRequest);

@@ -27,6 +27,8 @@
 
 package org.mitre.mpf;
 
+import java.util.Map;
+
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -34,6 +36,7 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
+import org.mitre.mpf.mvc.security.custom.sso.AuthServerReportedBadCredentialsException;
 import org.mitre.mpf.mvc.security.custom.sso.CustomSsoConfig;
 import org.mitre.mpf.mvc.security.oidc.OidcSecurityConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +50,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
+import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
 
 
 @SpringBootApplication
@@ -140,5 +146,17 @@ public class Application extends SpringBootServletInitializer {
         servlet.setLoadOnStartup(0);
         servlet.setAsyncSupported(true);
         return servlet;
+    }
+
+    @Bean
+    public DefaultAuthenticationEventPublisher defaultAuthenticationEventPublisher() {
+        var eventPublisher = new DefaultAuthenticationEventPublisher();
+        eventPublisher.setAdditionalExceptionMappings(Map.of(
+            AuthServerReportedBadCredentialsException.class,
+            AuthenticationFailureBadCredentialsEvent.class));
+
+        eventPublisher.setDefaultAuthenticationFailureEvent(
+                AbstractAuthenticationFailureEvent.class);
+        return eventPublisher;
     }
 }

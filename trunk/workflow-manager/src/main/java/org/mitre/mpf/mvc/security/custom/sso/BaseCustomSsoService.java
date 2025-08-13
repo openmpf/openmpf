@@ -34,25 +34,33 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 
-public abstract class CustomSsoBaseFailureHandler
-        implements AuthenticationEntryPoint, AuthenticationFailureHandler  {
+public abstract class BaseCustomSsoService
+        extends AbstractPreAuthenticatedProcessingFilter
+        implements AuthenticationProvider, AuthenticationEntryPoint, AuthenticationFailureHandler {
 
-    private final String _exceptionAttribute;
 
-    CustomSsoBaseFailureHandler(Class<? extends CustomSsoBaseFailureHandler> subClass) {
-        _exceptionAttribute = subClass.getName() + ".exception";
+    protected BaseCustomSsoService(AuthenticationEventPublisher authEventPublisher) {
+        var providerManager = new ProviderManager(this);
+        providerManager.setAuthenticationEventPublisher(authEventPublisher);
+        setAuthenticationManager(providerManager);
+        setAuthenticationFailureHandler(this);
     }
 
-    public abstract void doCommence(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        AuthenticationException authException) throws IOException, ServletException;
 
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return PreAuthenticatedAuthenticationToken.class.isAssignableFrom(authentication);
+    }
 
     @Override
     public void onAuthenticationFailure(
@@ -75,16 +83,25 @@ public abstract class CustomSsoBaseFailureHandler
             HttpServletResponse response,
             AuthenticationException authException) throws IOException, ServletException {
         var exception = getException(request).orElse(authException);
-        doCommence(request, response, exception);
+        handleAuthCommence(request, response, exception);
     }
 
 
+    protected abstract void handleAuthCommence(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AuthenticationException authException) throws IOException, ServletException;
+
+
+    private static final String EXCEPTION_ATTR
+            = BaseCustomSsoService.class.getName() + ".exception";
+
     private void setException(ServletRequest request, AuthenticationException exception) {
-        request.setAttribute(_exceptionAttribute, exception);
+        request.setAttribute(EXCEPTION_ATTR, exception);
     }
 
     private Optional<AuthenticationException> getException(ServletRequest request) {
         return Optional.ofNullable(
-                (AuthenticationException) request.getAttribute(_exceptionAttribute));
+                (AuthenticationException) request.getAttribute(EXCEPTION_ATTR));
     }
 }

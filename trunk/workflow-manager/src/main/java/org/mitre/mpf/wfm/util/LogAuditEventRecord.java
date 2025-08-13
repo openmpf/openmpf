@@ -24,13 +24,15 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
- 
+
 package org.mitre.mpf.wfm.util;
+
+import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public record LogAuditEventRecord(
-    String time,
+    Instant time,
     TagType tag,
     String app,
     String user,
@@ -40,9 +42,9 @@ public record LogAuditEventRecord(
 ) {
     public enum TagType {
         SECURITY("&B1E7-FFFF&");
-        
+
         private final String value;
-        
+
         TagType( String value) {
             this.value = value;
         }
@@ -63,7 +65,7 @@ public record LogAuditEventRecord(
         EXTRACT("e");
 
         private final String value;
-        
+
         OpType( String value) {
             this.value = value;
         }
@@ -78,9 +80,9 @@ public record LogAuditEventRecord(
         ALLOW("a"),
         DENY("d"),
         ERROR("e");
-        
+
         private final String value;
-        
+
         ResType( String value) {
             this.value = value;
         }

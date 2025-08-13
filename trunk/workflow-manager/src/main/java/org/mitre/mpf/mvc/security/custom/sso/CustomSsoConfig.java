@@ -46,28 +46,27 @@ public class CustomSsoConfig {
     @Order(1)
     public SecurityFilterChain restSecurityFilterChain(
             HttpSecurity http,
-            CustomSsoRestAuthFilter restAuthFilter,
-            CustomSsoRestFailureHandler failureHandler) throws Exception {
+            CustomSsoRestService ssoService) throws Exception {
         return http.antMatcher("/rest/**")
             .authorizeHttpRequests(x -> x.anyRequest().authenticated())
-            .addFilter(restAuthFilter)
-            .exceptionHandling(x -> x.authenticationEntryPoint(failureHandler))
+            .addFilter(ssoService)
+            .exceptionHandling(x -> x.authenticationEntryPoint(ssoService))
             .csrf(x -> x.disable())
             .build();
     }
+
 
     @Bean
     @Order(2)
     public SecurityFilterChain userLoginSecurityFilterChain(
             HttpSecurity http,
-            CustomSsoBrowserFailureHandler failureHandler,
-            CustomSsoBrowserAuthFilter browserAuthFilter,
+            CustomSsoBrowserService ssoService,
             CustomSsoProps customSsoProps) throws Exception {
         return http.authorizeRequests(x ->
                 x.antMatchers("/custom_sso_error", "/resources/**", "/favicon.ico").permitAll()
                 .anyRequest().authenticated())
-            .addFilter(browserAuthFilter)
-            .exceptionHandling(e -> e.authenticationEntryPoint(failureHandler))
+            .addFilter(ssoService)
+            .exceptionHandling(e -> e.authenticationEntryPoint(ssoService))
             .logout(x ->
                 x.deleteCookies(customSsoProps.getTokenProperty())
                 .logoutSuccessUrl("/"))

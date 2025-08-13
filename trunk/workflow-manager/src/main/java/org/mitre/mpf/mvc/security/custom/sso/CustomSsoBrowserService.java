@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.security.custom.sso;
 
 import java.io.IOException;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.servlet.ServletException;
@@ -35,31 +34,63 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-@Profile("custom_sso")
 @Service
-public class CustomSsoRestFailureHandler extends CustomSsoBaseFailureHandler {
+@Profile("custom_sso")
+public class CustomSsoBrowserService extends BaseCustomSsoService {
 
-    private final ObjectMapper _objectMapper;
+    private final CustomSsoTokenValidator _customSsoTokenValidator;
+
+    private final CustomSsoProps _customSsoProps;
 
     @Inject
-    CustomSsoRestFailureHandler(ObjectMapper objectMapper) {
-        super(CustomSsoRestFailureHandler.class);
-        _objectMapper = objectMapper;
+    CustomSsoBrowserService(
+            AuthenticationEventPublisher authEventPublisher,
+            CustomSsoTokenValidator customSsoTokenValidator,
+            CustomSsoProps customSsoProps) {
+        super(authEventPublisher);
+        _customSsoTokenValidator = customSsoTokenValidator;
+        _customSsoProps = customSsoProps;
     }
 
 
     @Override
-    public void doCommence(
+    protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
+        // We expect that users may arrive without a cookie, so we do not treat that as an error.
+        // We return null in that case to indicate that we need to start the authentication process
+        // by redirecting the user to the SSO login page.
+        return _customSsoProps.getTokenFromCookie(request)
+            .map(s -> "SSO user")
+            .orElse(null);
+    }
+
+    @Override
+    protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
+        return _customSsoProps.getTokenFromCookie(request)
+                .orElse(null);
+    }
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        return _customSsoTokenValidator.authenticateCookie(authentication);
+    }
+
+    @Override
+    protected void handleAuthCommence(
             HttpServletRequest request,
             HttpServletResponse response,
             AuthenticationException authException) throws IOException, ServletException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        var messageObj = Map.of("message", authException.getMessage());
-        _objectMapper.writeValue(response.getWriter(), messageObj);
+        if (authException instanceof AuthServerReportedBadCredentialsException) {
+            CustomSsoProps.storeErrorMessage(request.getSession(), authException.getMessage());
+            response.sendRedirect("/custom_sso_error");
+        }
+        else {
+            response.sendRedirect(_customSsoProps.getFullRedirectUri().toString());
+        }
     }
 }

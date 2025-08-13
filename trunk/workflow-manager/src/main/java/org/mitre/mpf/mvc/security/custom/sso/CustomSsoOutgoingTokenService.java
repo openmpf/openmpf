@@ -170,6 +170,7 @@ public class CustomSsoOutgoingTokenService implements ITokenProvider {
                 var responseBody = _objectMapper.readTree(is);
                 newToken = responseBody.get(_customSsoProps.getTokenProperty()).asText();
             }
+            log.info("Successfully retrieved new SSO token.");
             return new CachedToken(
                     newToken,
                     tokenRequestStartTime.plus(_customSsoProps.getTokenLifeTime()));

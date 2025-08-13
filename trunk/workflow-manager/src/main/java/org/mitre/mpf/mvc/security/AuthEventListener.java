@@ -24,41 +24,47 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security.custom.sso;
+package org.mitre.mpf.mvc.security;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.springframework.context.event.EventListener;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
+import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
+import org.springframework.security.authentication.event.LogoutSuccessEvent;
+import org.springframework.stereotype.Component;
 
-import org.springframework.context.annotation.Profile;
-import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
-import org.springframework.stereotype.Service;
+@Component
+public class AuthEventListener {
 
-@Service
-@Profile("custom_sso")
-public class CustomSsoBrowserAuthFilter extends AbstractPreAuthenticatedProcessingFilter {
+    private final AuditEventLogger _auditEventLogger;
 
-    private final CustomSsoProps _customSsoProps;
-
-    @Inject
-    CustomSsoBrowserAuthFilter(
-            CustomSsoTokenValidator customSsoTokenValidator,
-            CustomSsoBrowserFailureHandler failureHandler,
-            CustomSsoProps customSsoProps) {
-        setAuthenticationManager(customSsoTokenValidator::authenticateCookie);
-        setAuthenticationFailureHandler(failureHandler);
-        _customSsoProps = customSsoProps;
+    AuthEventListener(AuditEventLogger auditEventLogger) {
+        _auditEventLogger = auditEventLogger;
     }
 
-    @Override
-    protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
-        return _customSsoProps.getTokenFromCookie(request)
-            .map(s -> "SSO user")
-            .orElse(null);
+    @EventListener
+    public void onSuccess(AuthenticationSuccessEvent success) {
+        _auditEventLogger.loginEvent()
+            .withSecurityTag()
+            .withAuth(success.getAuthentication())
+            .allowed("User successfully logged in.");
     }
 
-    @Override
-    protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
-        return _customSsoProps.getTokenFromCookie(request)
-                .orElse(null);
+
+    @EventListener
+    public void onFailure(AbstractAuthenticationFailureEvent event) {
+        _auditEventLogger.loginEvent()
+            .withSecurityTag()
+            .withAuth(event.getAuthentication())
+            .denied("Authentication failed: %s", event.getException().getMessage());
+    }
+
+
+    @EventListener
+    public void onLogout(LogoutSuccessEvent logoutEvent) {
+        _auditEventLogger.loginEvent()
+            .withSecurityTag()
+            .withAuth(logoutEvent.getAuthentication())
+            .allowed("User logged out.");
     }
 }

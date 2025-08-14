@@ -135,7 +135,13 @@ public class ServerMediaController {
     public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath,
                                           @RequestParam(required = false, defaultValue = "true") boolean useCache) {
         File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.READ, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "Invalid directory path requested: " + fullPath);
+            return null; // security check
+        }
 
         List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, true);
         return new ServerMediaListing(mediaFiles);
@@ -157,7 +163,13 @@ public class ServerMediaController {
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
 
         File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.MODIFY, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "Invalid directory path requested for filtered listing: " + fullPath);
+            return null; // security check
+        }
 
         List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, false);
 
@@ -206,6 +218,10 @@ public class ServerMediaController {
                     .body(new PathResource(path));
         }
         else {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.READ, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "File not readable or not found: " + nodeFullPath);
             return ResponseEntity.notFound().build();
         }
     }
@@ -231,6 +247,10 @@ public class ServerMediaController {
         JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
             log.error("Media for job id " + jobId + " download failed. Invalid job id.");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.EXTRACT, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "Media download failed: invalid job ID " + jobId);
             response.setStatus(404);
             response.flushBuffer();
             return;

@@ -40,7 +40,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,6 +53,7 @@ import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -269,9 +269,9 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 
 
 	private static Media createTestMedia(Collection<MediaSelector> mediaSelectors) {
-		URI mediaUri = URI.create("file:///example.foo");
+		var mediaUri = MediaUri.create("file:///example.foo");
 		MediaImpl media = new MediaImpl(
-				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
+				1, mediaUri, UriScheme.get(mediaUri), Paths.get(mediaUri.get()), Map.of(),
 				Map.of(), List.of(), List.of(), mediaSelectors, null, null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");

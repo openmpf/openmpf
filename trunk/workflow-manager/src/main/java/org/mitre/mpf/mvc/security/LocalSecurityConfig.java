@@ -30,7 +30,6 @@ package org.mitre.mpf.mvc.security;
 import org.mitre.mpf.wfm.enums.UserRole;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.LogAuditEventRecord;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -89,7 +88,8 @@ public class LocalSecurityConfig {
             CustomAccessDeniedHandler customAccessDeniedHandler,
             AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint,
             LogoutHandler logoutHandler,
-            AuthenticationSuccessHandler authenticationSuccessHandler) throws Exception {
+            AuthenticationSuccessHandler authenticationSuccessHandler,
+            CustomAuthenticationFailureHandler customAuthenticationFailureHandler) throws Exception {
 
         return http.authorizeHttpRequests(x ->
                 x.antMatchers("/login/**", "/resources/**").permitAll()
@@ -98,7 +98,7 @@ public class LocalSecurityConfig {
             .formLogin(x ->
                 x.loginPage("/login")
                 .successHandler(authenticationSuccessHandler)
-                .failureUrl("/login?reason=error"))
+                .failureHandler(customAuthenticationFailureHandler))
             .logout(x -> x.addLogoutHandler(logoutHandler).logoutSuccessUrl("/"))
             .exceptionHandling(x ->
                 x.accessDeniedHandler(customAccessDeniedHandler)

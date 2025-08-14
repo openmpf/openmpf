@@ -334,8 +334,8 @@ AppServices.service('JobStatusNotifier', [
 ($rootScope, NotificationSvc) => {
 
     const handleJobStatusChange = (event, msg) => {
-        const {id, jobStatus, isSessionJob} = msg.content;
-        if (!isSessionJob || !isTerminalState(jobStatus)) {
+        const {id, jobStatus, isSessionJob, progress} = msg.content;
+        if (!isSessionJob || !isTerminalState(jobStatus, progress)) {
             return;
         }
 
@@ -358,13 +358,14 @@ AppServices.service('JobStatusNotifier', [
         }
     }
 
-    const isTerminalState = jobStatus => {
+    const isTerminalState = (jobStatus, progress) => {
         switch (jobStatus) {
             case 'COMPLETE':
             case 'COMPLETE_WITH_WARNINGS':
-            case 'ERROR':
             case 'UNKNOWN':
                 return true;
+            case 'ERROR':
+                return progress > 99;
             default:
                 return false;
         }

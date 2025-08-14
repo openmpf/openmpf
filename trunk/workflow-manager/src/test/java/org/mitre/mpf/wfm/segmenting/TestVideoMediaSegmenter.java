@@ -40,7 +40,6 @@ import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTestDetectio
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTrack;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +50,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -414,9 +414,9 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
 
     private static Media createTestMedia() {
-        URI mediaUri = URI.create("file:///example.avi");
+        var mediaUri = MediaUri.create("file:///example.avi");
         MediaImpl media = new MediaImpl(
-                1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
+                1, mediaUri, UriScheme.get(mediaUri), Paths.get(mediaUri.get()), Map.of(),
                 Map.of(), List.of(), List.of(), List.of(), null, null);
         media.setLength(50);
         media.addMetadata("mediaKey1", "mediaValue1");
@@ -426,9 +426,9 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
     private static Media createTestMediaWithFps(
             List<MediaRange> frameBoundaries,
             List<MediaRange> timeBoundaries) {
-        var mediaUri = TestUtil.findFile("/samples/video_01.mp4");
+        var mediaUri = new MediaUri(TestUtil.findFile("/samples/video_01.mp4"));
         MediaImpl media = new MediaImpl(
-                1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
+                1, mediaUri, UriScheme.get(mediaUri), Paths.get(mediaUri.get()), Map.of(),
                 Map.of(), frameBoundaries, timeBoundaries, List.of(), null, null);
         media.setLength(200);
         var fps = new Fraction(30_000, 1_001);
@@ -437,7 +437,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 -1, -1, fps, OptionalLong.of(200), OptionalLong.empty(), 0,
                 new Fraction(1, 30_000));
         media.setFrameTimeInfo(
-                FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), ffprobeMetadata));
+                FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), ffprobeMetadata, ""));
         return media;
     }
 

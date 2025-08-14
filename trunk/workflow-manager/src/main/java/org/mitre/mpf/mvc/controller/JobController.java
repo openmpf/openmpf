@@ -42,6 +42,7 @@ import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationResponse;
 import org.mitre.mpf.rest.api.JobPageListModel;
 import org.mitre.mpf.rest.api.JobPageModel;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.MessageModel;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.SingleJobInfo;
@@ -130,6 +131,10 @@ public class JobController {
     @ResponseBody
     public MessageModel invalidJobIdHandler(InvalidJobIdException ex) {
         log.error(ex.getMessage(), ex);
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                           LogAuditEventRecord.OpType.READ, 
+                           LogAuditEventRecord.ResType.ERROR, 
+                           "Invalid job ID provided: " + ex.getMessage());
         return new MessageModel(ex.getMessage());
     }
 
@@ -188,6 +193,10 @@ public class JobController {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating job");
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.CREATE, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "Failed to create job via REST API");
             return new ResponseEntity<>(createResponse, HttpStatus.BAD_REQUEST);
         }
     }
@@ -266,6 +275,10 @@ public class JobController {
             if (jobRequest == null) {
                 log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job " +
                                   "with id '{}'", jobId);
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                   LogAuditEventRecord.OpType.READ, 
+                                   LogAuditEventRecord.ResType.ERROR, 
+                                   "Job not found for ID: " + jobId);
                 return ResponseEntity.badRequest().body(null);
             }
             return ResponseEntity.ok(convertToSingleJobInfo(jobRequest));
@@ -290,6 +303,10 @@ public class JobController {
             if (jobRequest == null) {
                 log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job " +
                                   "with id '{}'", jobId);
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                   LogAuditEventRecord.OpType.READ, 
+                                   LogAuditEventRecord.ResType.ERROR, 
+                                   "Job not found for ID: " + jobId);
                 return null;
             }
             return convertToSingleJobInfo(jobRequest);
@@ -327,6 +344,10 @@ public class JobController {
             return ResponseEntity.ok(new InputStreamResource(resultsStream));
         }
         catch (WfmProcessingException e) {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.READ, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "Failed to retrieve detection output for job " + jobId + ": " + e.getMessage());
             return ResponseEntity.internalServerError()
                 .body(new MessageModel(e.getMessage()));
         }
@@ -369,6 +390,10 @@ public class JobController {
             }
             else {
                 log.error("Error resubmitting job with id '{}'", jobId);
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                   LogAuditEventRecord.OpType.MODIFY, 
+                                   LogAuditEventRecord.ResType.ERROR, 
+                                   "Failed to resubmit job with ID: " + jobId);
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -411,6 +436,10 @@ public class JobController {
                 return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
             } else {
                 log.error("Error cancelling job with id '{}'", internalJobId);
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                                   LogAuditEventRecord.OpType.DELETE, 
+                                   LogAuditEventRecord.ResType.ERROR, 
+                                   "Failed to cancel job with ID: " + internalJobId);
                 return new ResponseEntity<>(mpfResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -489,9 +518,9 @@ public class JobController {
         return errBuilder.toString();
     }
 
-    private List<String> getMediaUris(JobRequest job) {
+    private List<MediaUri> getMediaUris(JobRequest job) {
 
-        List<String> mediaUris;
+        List<MediaUri> mediaUris;
         try {
             // Currently, it is not possible for job.getJob() to be null, but in previous
             // versions it was possible. We don't want the jobs page to become unusable if a
@@ -521,7 +550,7 @@ public class JobController {
             float jobProgressVal = jobProgress.getJobProgress(job.getId())
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
-            List<String> mediaUris = getMediaUris(job);
+            var mediaUris = getMediaUris(job);
 
             return new SingleJobInfo(
                     propertiesUtil.getExportedJobId(job.getId()),
@@ -602,6 +631,10 @@ public class JobController {
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.MODIFY, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "Exception during job resubmission for ID " + jobId + ": " + wpe.getMessage());
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
     }
@@ -613,6 +646,10 @@ public class JobController {
             wasCancelled = jobRequestService.cancel(jobId);
         } catch ( WfmProcessingException wpe ) {
             log.error("Failed to cancel Batch Job #{} due to an exception.", jobId, wpe);
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                               LogAuditEventRecord.OpType.DELETE, 
+                               LogAuditEventRecord.ResType.ERROR, 
+                               "Exception during job cancellation for ID " + jobId + ": " + wpe.getMessage());
             wasCancelled = false;
         }
         if (wasCancelled) {
@@ -622,6 +659,10 @@ public class JobController {
         String errorStr = "Failed to cancel the job with id '" + jobId + "'. Please check to make sure the job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                           LogAuditEventRecord.OpType.DELETE, 
+                           LogAuditEventRecord.ResType.ERROR, 
+                           errorStr);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
 }

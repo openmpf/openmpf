@@ -39,8 +39,7 @@ public record LogAuditEventRecord(
     String msg
 ) {
     public enum TagType {
-        SECURITY("&B1E7-FFFF&"),
-        OPERATIONAL("&A29B-FFFF&");
+        SECURITY("&B1E7-FFFF&");
         
         private final String value;
         

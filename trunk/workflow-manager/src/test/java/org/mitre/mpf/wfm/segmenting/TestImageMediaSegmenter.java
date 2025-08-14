@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -37,7 +38,6 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -148,9 +148,9 @@ public class TestImageMediaSegmenter extends MockitoTest.Strict {
 
 
 	private static Media createTestMedia() {
-		URI uri = URI.create("file:///example.jpg");
+		var uri = MediaUri.create("file:///example.jpg");
 		MediaImpl media = new MediaImpl(
-				1, uri.toString(), UriScheme.get(uri), Paths.get(uri),
+				1, uri, UriScheme.get(uri), Paths.get(uri.get()),
 				Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");

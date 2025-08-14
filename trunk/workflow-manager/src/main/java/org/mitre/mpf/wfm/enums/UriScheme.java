@@ -29,20 +29,29 @@ package org.mitre.mpf.wfm.enums;
 import java.net.URI;
 import java.util.stream.Stream;
 
+import org.mitre.mpf.rest.api.MediaUri;
+
 public enum UriScheme {
 
 	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false),
+	UNDEFINED(false, false),
 
-	FILE(false),
-	HTTP(true),
-	HTTPS(true),
-	RTSP(true);
+	FILE(false, false),
+	HTTP(true, true),
+	HTTPS(true, true),
+	RTSP(true, false),
+    DATA(false, true);
 
-	private final boolean remote;
-	public boolean isRemote() { return remote; }
+	private final boolean _remote;
+	public boolean isRemote() { return _remote; }
 
-	UriScheme(boolean remote) { this.remote = remote; }
+    private final boolean _usesTempFile;
+    public boolean usesTempFile() { return _usesTempFile; }
+
+	UriScheme(boolean remote, boolean usesTempFile) {
+        _remote = remote;
+        _usesTempFile = usesTempFile;
+    }
 
 	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
 	public static UriScheme parse(String schemeStr) {
@@ -55,4 +64,8 @@ public enum UriScheme {
 	public static UriScheme get(URI uri) {
 		return parse(uri.getScheme());
 	}
+
+    public static UriScheme get(MediaUri uri) {
+        return get(uri.get());
+    }
 }

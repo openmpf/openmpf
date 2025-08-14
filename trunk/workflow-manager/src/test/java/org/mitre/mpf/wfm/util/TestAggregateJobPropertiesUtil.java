@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.util;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -163,7 +164,7 @@ public class TestAggregateJobPropertiesUtil {
         // Test with batch job
         {
             var media = new MediaImpl(
-                    2, "file:/example.mp4", UriScheme.FILE,
+                    2, MediaUri.create("file:/example.mp4"), UriScheme.FILE,
                     Path.of("remote-media", "example.mp4"), mediaProperties, Map.of(),
                     List.of(), List.of(), List.of(), null, null);
             media.setType(MediaType.VIDEO);

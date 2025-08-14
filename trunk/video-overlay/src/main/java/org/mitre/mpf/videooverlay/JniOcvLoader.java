@@ -24,47 +24,51 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <jni.h>
-#include <libheif/heif_cxx.h>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
+package org.mitre.mpf.videooverlay;
 
-#include "JniHelper.h"
+import java.util.List;
 
-extern "C" {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-JNIEXPORT void JNICALL Java_org_mitre_mpf_heic_HeicConverter_convertNative (
-        JNIEnv *env, jclass clz, jstring inputFile, jstring outputFile) {
+public class JniOcvLoader {
+    private static final Logger log = LoggerFactory.getLogger(JniOcvLoader.class);
 
-    JniHelper jni(env);
-    try {
-        heif::Context ctx;
-        ctx.read_from_file(jni.ToStdString(inputFile));
+    private static boolean _isLoaded;
 
-        heif::ImageHandle handle = ctx.get_primary_image_handle();
-        heif::Image img = handle.decode_image(heif_colorspace_RGB,
-                                              heif_chroma_interleaved_RGB);
+    static {
+        log.info("Loading OpenCV JNI libraries...");
+        try {
+            System.loadLibrary("mpfopencvjni");
+            _isLoaded = true;
+        }
+        catch (UnsatisfiedLinkError ex) {
+            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
+            String libDir = System.getenv("MPF_HOME") + "/lib";
 
-        int stride = cv::Mat::AUTO_STEP;
-        uint8_t* data = img.get_plane(heif_channel_interleaved, &stride);
-        int width = handle.get_width();
-        int height = handle.get_height();
+            var libNames = List.of(
+                    "libmpfDetectionComponentApi.so",
+                    "libmpfopencvjni.so");
 
-        cv::Mat cv_img(height, width, CV_8UC3, data, stride);
-        cv::cvtColor(cv_img, cv_img, cv::COLOR_RGB2BGR);
-        cv::imwrite(jni.ToStdString(outputFile), cv_img);
+            for (var libName : libNames) {
+                var path = libDir + '/' + libName;
+                log.warn("Trying to load library using full path: {}", path);
+                System.load(path);
+            }
+
+            _isLoaded = true;
+        }
     }
-    catch (const std::exception &e) {
-        jni.ReportCppException(e.what());
+
+    private JniOcvLoader() {
     }
-    catch (const heif::Error &e) {
-        jni.ReportCppException("An error occurred in libheif: " + e.get_message());
-    }
-    catch (...) {
-        jni.ReportCppException();
+
+    /**
+     * This method exists to force the static initializer to run when a class with native methods
+     * is first used. This should always return true.
+     * @return true
+     */
+    public static boolean ensureLoaded() {
+        return _isLoaded;
     }
 }
-
-}  // extern "C"
-

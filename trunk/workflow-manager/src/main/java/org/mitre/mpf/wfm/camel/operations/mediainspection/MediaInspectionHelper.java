@@ -48,7 +48,7 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
-import org.mitre.mpf.heic.HeicConverter;
+import org.mitre.mpf.heif.HeifConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -153,7 +153,7 @@ public class MediaInspectionHelper {
                 LOG.error(errorMessage, ioe);
             }
 
-            mimeType = _ioUtils.getMimeType(localPath);
+            mimeType = media.getMimeType().orElseGet(() -> _ioUtils.getMimeType(localPath));
 
             mediaMetadata.put("MIME_TYPE", mimeType);
             mediaType = _mediaTypeUtils.parse(mimeType);
@@ -239,7 +239,8 @@ public class MediaInspectionHelper {
 
         FrameTimeInfo frameTimeInfo;
         try {
-            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata);
+            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata,
+                                                                  mediaMetadata.get("MIME_TYPE"));
         }
         catch (MediaInspectionException e) {
             if (ffprobeMetadata.frameCount().isPresent()) {
@@ -297,11 +298,11 @@ public class MediaInspectionHelper {
         String mimeType = mediaMetadata.get("MIME_TYPE");
 
         Path mediaPath;
-        if (mimeType.equalsIgnoreCase("image/heic")) {
+        if (mimeType.equalsIgnoreCase("image/heic") || mimeType.equalsIgnoreCase("image/avif")) {
             var tempDir = _propertiesUtil.getTemporaryMediaDirectory().toPath();
             mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
-            LOG.info("{} is HEIC image. It will be converted to PNG.", media.getLocalPath());
-            HeicConverter.convert(media.getLocalPath(), mediaPath);
+            LOG.info("{} is HEIF image. It will be converted to PNG.", media.getLocalPath());
+            HeifConverter.convert(media.getLocalPath(), mediaPath);
             _inProgressJobs.addConvertedMediaPath(job.getId(), media.getId(), mediaPath);
         }
         else if (mimeType.equalsIgnoreCase("image/png")

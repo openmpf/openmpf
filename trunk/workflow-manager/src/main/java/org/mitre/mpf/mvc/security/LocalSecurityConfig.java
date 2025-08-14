@@ -28,6 +28,8 @@
 package org.mitre.mpf.mvc.security;
 
 import org.mitre.mpf.wfm.enums.UserRole;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -35,11 +37,34 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @Profile("(!oidc & !jenkins) | test-with-security")
 public class LocalSecurityConfig {
+
+    private final AuditEventLogger auditEventLogger;
+
+    public LocalSecurityConfig(AuditEventLogger auditEventLogger) {
+        this.auditEventLogger = auditEventLogger;
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return (request, response, authentication) -> {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User successfully logged in.");
+            response.sendRedirect("/");
+        };
+    }
+
+    @Bean 
+    public LogoutHandler logoutHandler() {
+        return (request, response, authentication) -> {
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User logged out.");
+        };
+    }
 
     @Bean
     @Order(1)
@@ -59,7 +84,10 @@ public class LocalSecurityConfig {
     public SecurityFilterChain formSecurityFilterChain(
             HttpSecurity http,
             CustomAccessDeniedHandler customAccessDeniedHandler,
-            AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint) throws Exception {
+            AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint,
+            LogoutHandler logoutHandler,
+            AuthenticationSuccessHandler authenticationSuccessHandler,
+            CustomAuthenticationFailureHandler customAuthenticationFailureHandler) throws Exception {
 
         return http.authorizeHttpRequests(x ->
                 x.antMatchers("/login/**", "/resources/**").permitAll()
@@ -67,8 +95,9 @@ public class LocalSecurityConfig {
                 .anyRequest().authenticated())
             .formLogin(x ->
                 x.loginPage("/login")
-                .defaultSuccessUrl("/", true)
-                .failureUrl("/login?reason=error"))
+                .successHandler(authenticationSuccessHandler)
+                .failureHandler(customAuthenticationFailureHandler))
+            .logout(x -> x.addLogoutHandler(logoutHandler).logoutSuccessUrl("/"))
             .exceptionHandling(x ->
                 x.accessDeniedHandler(customAccessDeniedHandler)
                 .defaultAuthenticationEntryPointFor(

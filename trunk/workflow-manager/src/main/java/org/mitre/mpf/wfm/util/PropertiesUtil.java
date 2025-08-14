@@ -845,4 +845,12 @@ public class PropertiesUtil {
     public String getOutputChangedCounter() {
         return _mpfPropertiesConfig.getString("output.changed.counter");
     }
+
+    //
+    // Audit logging settings
+    //
+
+    public boolean isAuditLoggingEnabled() {
+        return _mpfPropertiesConfig.getBoolean("audit.logging.enabled");
+    }
 }

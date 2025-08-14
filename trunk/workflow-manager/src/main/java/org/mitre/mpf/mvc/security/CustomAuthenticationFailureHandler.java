@@ -24,37 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.mvc.security;
 
-package org.mitre.mpf.heif;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import org.mitre.mpf.videooverlay.JniHeifLoader;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-public class HeifConverter {
-    static {
-        JniHeifLoader.ensureLoaded();
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
+
+    private final AuditEventLogger auditEventLogger;
+
+    public CustomAuthenticationFailureHandler(AuditEventLogger auditEventLogger) {
+        this.auditEventLogger = auditEventLogger;
     }
 
-    /**
-     * Converts a HEIF image to another format.
-     * @param inputPath Path to the HEIF file
-     * @param outputPath Path to output file. The image format is determined by the file extension.
-     */
-    public static void convert(Path inputPath, Path outputPath) throws IOException {
-        if (!Files.exists(inputPath)) {
-            throw new FileNotFoundException(inputPath.toAbsolutePath() + " does not exist.");
+    @Override
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+                                      AuthenticationException exception) throws IOException, ServletException {
+        
+        if (exception instanceof BadCredentialsException) {
+            String attemptedUsername = request.getParameter("username");
+            String badCredentialsMessage;
+            if (attemptedUsername != null && !attemptedUsername.trim().isEmpty()) {
+                badCredentialsMessage = "Failed login attempt for user '" + attemptedUsername + "': Invalid username and/or password.";
+            } else {
+                badCredentialsMessage = "Failed login attempt: Invalid username and/or password.";
+            }
+            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, 
+                               LogAuditEventRecord.ResType.DENY, badCredentialsMessage);
         }
-        Files.createDirectories(outputPath.getParent());
-        convertNative(inputPath.toString(), outputPath.toString());
-    }
-
-    private static native void convertNative(String inputFile, String outputFile);
-
-
-    private HeifConverter() {
+        
+        response.sendRedirect("/login?reason=error");
     }
 }

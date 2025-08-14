@@ -24,37 +24,70 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+ 
+package org.mitre.mpf.wfm.util;
 
-package org.mitre.mpf.heif;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-import org.mitre.mpf.videooverlay.JniHeifLoader;
-
-public class HeifConverter {
-    static {
-        JniHeifLoader.ensureLoaded();
-    }
-
-    /**
-     * Converts a HEIF image to another format.
-     * @param inputPath Path to the HEIF file
-     * @param outputPath Path to output file. The image format is determined by the file extension.
-     */
-    public static void convert(Path inputPath, Path outputPath) throws IOException {
-        if (!Files.exists(inputPath)) {
-            throw new FileNotFoundException(inputPath.toAbsolutePath() + " does not exist.");
+public record LogAuditEventRecord(
+    String time,
+    TagType tag,
+    String app,
+    String user,
+    OpType op,
+    ResType res,
+    String msg
+) {
+    public enum TagType {
+        SECURITY("&B1E7-FFFF&");
+        
+        private final String value;
+        
+        TagType( String value) {
+            this.value = value;
         }
-        Files.createDirectories(outputPath.getParent());
-        convertNative(inputPath.toString(), outputPath.toString());
+
+        @JsonValue
+        public String getValue() {
+            return value;
+        }
+
     }
 
-    private static native void convertNative(String inputFile, String outputFile);
+    public enum OpType {
+        CREATE("c"),
+        READ("r"),
+        MODIFY("m"),
+        DELETE("d"),
+        LOGIN("l"),
+        EXTRACT("e");
 
+        private final String value;
+        
+        OpType( String value) {
+            this.value = value;
+        }
 
-    private HeifConverter() {
+        @JsonValue
+        public String getValue() {
+            return value;
+        }
+    }
+
+    public enum ResType {
+        ALLOW("a"),
+        DENY("d"),
+        ERROR("e");
+        
+        private final String value;
+        
+        ResType( String value) {
+            this.value = value;
+        }
+
+        @JsonValue
+        public String getValue() {
+            return value;
+        }
     }
 }

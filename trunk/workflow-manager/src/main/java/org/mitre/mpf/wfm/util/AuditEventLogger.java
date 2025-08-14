@@ -25,36 +25,56 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.heif;
+package org.mitre.mpf.wfm.util;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.mitre.mpf.videooverlay.JniHeifLoader;
+import java.time.Instant;
 
-public class HeifConverter {
-    static {
-        JniHeifLoader.ensureLoaded();
+import org.mitre.mpf.interop.util.TimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+@Component
+public class AuditEventLogger {
+    private static final Logger log = LoggerFactory.getLogger(AuditEventLogger.class);
+    private static final Marker AUDIT_MARKER = MarkerFactory.getMarker("mpf.AUDIT");
+    private final ObjectMapper mapper;
+    private final PropertiesUtil propertiesUtil;
+
+    @Autowired
+    public AuditEventLogger(PropertiesUtil propertiesUtil) {
+        this.mapper = new ObjectMapper();
+        this.propertiesUtil = propertiesUtil;
     }
 
-    /**
-     * Converts a HEIF image to another format.
-     * @param inputPath Path to the HEIF file
-     * @param outputPath Path to output file. The image format is determined by the file extension.
-     */
-    public static void convert(Path inputPath, Path outputPath) throws IOException {
-        if (!Files.exists(inputPath)) {
-            throw new FileNotFoundException(inputPath.toAbsolutePath() + " does not exist.");
+    private void writeToLogger(LogAuditEventRecord event) {
+        // Only log if audit logging is enabled
+        if (!propertiesUtil.isAuditLoggingEnabled()) {
+            return;
         }
-        Files.createDirectories(outputPath.getParent());
-        convertNative(inputPath.toString(), outputPath.toString());
+        
+        try {
+            log.info(AUDIT_MARKER, "{}", mapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Failed to log event: {}", event, e);
+        }
     }
 
-    private static native void convertNative(String inputFile, String outputFile);
-
-
-    private HeifConverter() {
+    private String getCurrentLoggedInUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null ? auth.getName() : "system";
     }
+
+    public AuditEventLogger log (LogAuditEventRecord.TagType tag, LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String msg) {
+        writeToLogger(new LogAuditEventRecord(TimeUtils.toIsoString(Instant.now()), tag, "openmpf", getCurrentLoggedInUser(), op, res, msg));
+        return this;
+    }
+    
 }

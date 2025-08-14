@@ -27,9 +27,13 @@
 package org.mitre.mpf.mvc.security.custom.sso;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -64,16 +68,26 @@ public class CustomSsoBrowserService extends BaseCustomSsoService {
         // We expect that users may arrive without a cookie, so we do not treat that as an error.
         // We return null in that case to indicate that we need to start the authentication process
         // by redirecting the user to the SSO login page.
-        return _customSsoProps.getTokenFromCookie(request)
-            .map(s -> "SSO user")
-            .orElse(null);
+        return getTokenFromCookie(request)
+                .map(s -> "SSO user")
+                .orElse(null);
     }
 
     @Override
     protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
-        return _customSsoProps.getTokenFromCookie(request)
+        return getTokenFromCookie(request)
                 .orElse(null);
     }
+
+    private Optional<String> getTokenFromCookie(HttpServletRequest request) {
+        var tokenProp = _customSsoProps.getTokenProperty();
+        return Stream.ofNullable(request.getCookies())
+            .flatMap(Arrays::stream)
+            .filter(c -> c.getName().equals(tokenProp))
+            .findFirst()
+            .map(Cookie::getValue);
+    }
+
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {

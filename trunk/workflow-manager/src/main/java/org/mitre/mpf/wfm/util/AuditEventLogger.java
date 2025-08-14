@@ -173,7 +173,7 @@ public class AuditEventLogger {
 
     private class EnabledEventBuilder extends AuditEventBuilder {
 
-        private LogAuditEventRecord.OpType _opType;
+        private final LogAuditEventRecord.OpType _opType;
 
         private LogAuditEventRecord.TagType _tagType;
 

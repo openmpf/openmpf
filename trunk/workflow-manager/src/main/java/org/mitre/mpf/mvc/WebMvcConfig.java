@@ -48,7 +48,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final ObjectMapper _objectMapper;
 
-
     @Inject
     public WebMvcConfig(
             ProbingResourceMessageConverter probingResourceMessageConverter,
@@ -59,20 +58,23 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        // The documentation for the base method states that "the order of converter registration
+        // is important". A ListIterator is used ensure that when the default Spring converters
+        // are replaced, the customized version is put in the same position within the list.
         var iter = converters.listIterator();
         var addedResourceConverter = false;
         var addedJacksonConverter = false;
         while (iter.hasNext()) {
-            var next = iter.next();
-            if (next instanceof ResourceHttpMessageConverter) {
+            var converter = iter.next();
+            if (converter instanceof ResourceHttpMessageConverter) {
                 iter.set(_probingResourceConverter);
                 addedResourceConverter = true;
             }
-            else if (next instanceof MappingJackson2HttpMessageConverter) {
+            else if (converter instanceof MappingJackson2HttpMessageConverter) {
                 iter.set(createJacksonConverter());
                 addedJacksonConverter = true;
             }
-            else if (next instanceof MappingJackson2SmileHttpMessageConverter) {
+            else if (converter instanceof MappingJackson2SmileHttpMessageConverter) {
                 // Prevent HTTP responses from using the Smile format.
                 iter.remove();
             }
@@ -85,7 +87,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
             converters.add(createJacksonConverter());
         }
     }
-
 
     private MappingJackson2HttpMessageConverter createJacksonConverter() {
         // Spring automatically configures a MappingJackson2HttpMessageConverter, but it does not

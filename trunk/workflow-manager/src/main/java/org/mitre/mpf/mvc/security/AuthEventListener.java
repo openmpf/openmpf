@@ -33,6 +33,9 @@ import org.springframework.security.authentication.event.AuthenticationSuccessEv
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
 import org.springframework.stereotype.Component;
 
+/**
+ * Receives events from {@link org.mitre.mpf.Application#authenticationEventPublisher}
+ */
 @Component
 public class AuthEventListener {
 

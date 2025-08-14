@@ -148,8 +148,12 @@ public class Application extends SpringBootServletInitializer {
         return servlet;
     }
 
+
+    /**
+     * Publishes events for {@link org.mitre.mpf.mvc.security.AuthEventListener}.
+     */
     @Bean
-    public DefaultAuthenticationEventPublisher defaultAuthenticationEventPublisher() {
+    public DefaultAuthenticationEventPublisher authenticationEventPublisher() {
         var eventPublisher = new DefaultAuthenticationEventPublisher();
         eventPublisher.setAdditionalExceptionMappings(Map.of(
             AuthServerReportedBadCredentialsException.class,

@@ -29,15 +29,11 @@ package org.mitre.mpf.mvc.security.custom.sso;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.apache.http.client.utils.URIBuilder;
@@ -56,12 +52,13 @@ public class CustomSsoProps {
         public static final String VALIDATION_URL = "CUSTOM_SSO_VALIDATION_URL";
         public static final String TOKEN_URL = "CUSTOM_SSO_TOKEN_URL";
         public static final String TOKEN_PROPERTY = "CUSTOM_SSO_TOKEN_PROPERTY";
+        public static final String SSO_LOG_IN_URL = "CUSTOM_SSO_LOG_IN_URL";
+        public static final String SSO_RETURN_URL = "CUSTOM_SSO_RETURN_URL";
+
         public static final String SSO_TOKEN_LIFE_TIME_SECONDS = "CUSTOM_SSO_TOKEN_LIFE_TIME_SECONDS";
         public static final String SSO_USER = "CUSTOM_SSO_USER";
         public static final String SSO_PASSWORD = "CUSTOM_SSO_PASSWORD";
 
-        public static final String SSO_LOG_IN_URL = "CUSTOM_SSO_LOG_IN_URL";
-        public static final String SSO_RETURN_URL = "CUSTOM_SSO_RETURN_URL";
 
         private EnvKeys(){
         }
@@ -139,17 +136,6 @@ public class CustomSsoProps {
     public String getTokenProperty() {
         return getRequiredPropOrEnv(EnvKeys.TOKEN_PROPERTY);
     }
-
-
-    public Optional<String> getTokenFromCookie(HttpServletRequest request) {
-        var tokenProp = getTokenProperty();
-        return Stream.ofNullable(request.getCookies())
-            .flatMap(Arrays::stream)
-            .filter(c -> c.getName().equals(tokenProp))
-            .findFirst()
-            .map(Cookie::getValue);
-    }
-
 
     public String getSsoUser() {
         return getRequiredPropOrEnv(EnvKeys.SSO_USER);

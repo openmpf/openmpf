@@ -118,7 +118,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         Table<Integer, Integer, URI> trackAndFrameToUri;
         try {
             trackAndFrameToUri = _storageService.storeArtifacts(request);
-        } catch (IOException e) {
+        } catch (Exception e) {
             handleException(request, e);
             return;
         }
@@ -176,7 +176,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
                 .collect(DetectionErrorUtil.toFrameRangesString());
     }
 
-    private void handleException(ArtifactExtractionRequest request, IOException e) {
+    private void handleException(ArtifactExtractionRequest request, Exception e) {
         LOG.warn(
                 "Failed to extract the artifacts from Media #{} due to an "
                         + "exception. All detections (including exemplars) produced in this task "

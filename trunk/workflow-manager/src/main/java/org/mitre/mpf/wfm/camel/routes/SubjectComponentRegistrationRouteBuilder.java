@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,14 +26,9 @@
 
 package org.mitre.mpf.wfm.camel.routes;
 
-import java.io.IOException;
-
 import javax.inject.Inject;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.component.InvalidComponentDescriptorException;
 import org.mitre.mpf.wfm.service.component.subject.SubjectComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.subject.SubjectComponentService;
 import org.slf4j.Logger;
@@ -44,50 +39,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 @Component
-public class SubjectComponentRegistrationRouteBuilder extends RouteBuilder {
-
-    public static final String ENTRY_POINT = "activemq:MPF.SUBJECT_COMPONENT_REGISTRATION";
+public class SubjectComponentRegistrationRouteBuilder extends
+        BaseComponentRegistrationRouteBuilder<SubjectComponentDescriptor> {
 
     private static final Logger LOG = LoggerFactory.getLogger(
             SubjectComponentRegistrationRouteBuilder.class);
 
-    private final SubjectComponentService _componentService;
+    private static final String ENTRY_POINT = "activemq:MPF.SUBJECT_COMPONENT_REGISTRATION";
 
-    private final ObjectMapper _objectMapper;
+    private final SubjectComponentService _componentService;
 
     @Inject
     SubjectComponentRegistrationRouteBuilder(
             SubjectComponentService componentService,
             ObjectMapper objectMapper) {
+        super(
+            ENTRY_POINT,
+            "Subject Tracking Component Registration",
+            objectMapper.readerFor(SubjectComponentDescriptor.class));
         _componentService = componentService;
-        _objectMapper = objectMapper;
     }
 
     @Override
-    public void configure() throws Exception {
-        from(ENTRY_POINT + "?concurrentConsumers=1&maxConcurrentConsumers=1")
-            .routeId("Subject Tracking Component Registration")
-            .setExchangePattern(ExchangePattern.InOut)
-            .process(this::processRequest);
+    public String registerComponent(SubjectComponentDescriptor descriptor)
+            throws InvalidComponentDescriptorException {
+        LOG.info(
+                "Received subject component registration request for \"{}\".",
+                descriptor.componentName());
+        return _componentService.registerComponent(descriptor).getDescription();
     }
 
-    private void processRequest(Exchange exchange) {
-        var response = exchange.getOut();
-        try {
-            var descriptor = _objectMapper.readValue(
-                    exchange.getIn().getBody(String.class),
-                    SubjectComponentDescriptor.class);
-            LOG.info(
-                    "Received subject component registration request for \"{}\".",
-                    descriptor.componentName());
-            var registrationResult = _componentService.registerComponent(descriptor);
-            response.setHeader("success", true);
-            response.setHeader("detail", registrationResult.description);
-        }
-        catch (IOException | WfmProcessingException e) {
-            response.setHeader("success", false);
-            response.setHeader("detail", "Failed to register due to: " + e);
-            LOG.error("An error occurred while trying to register component: " + e, e);
-        }
-    }
 }

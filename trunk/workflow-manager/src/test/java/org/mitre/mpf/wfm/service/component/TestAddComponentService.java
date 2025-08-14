@@ -408,8 +408,8 @@ public class TestAddComponentService extends MockitoTest.Strict {
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
 
 
-        boolean wasModified = _addComponentService.registerUnmanagedComponent(descriptor);
-        assertTrue(wasModified);
+        var registrationResult = _addComponentService.registerUnmanagedComponent(descriptor);
+        assertEquals(RegistrationResult.NEW, registrationResult);
 
         verifyNoInteractions(_mockRemoveComponentService, _mockNodeManager);
         verifySuccessfullyAddedUnmanagedComponent(descriptor);
@@ -462,8 +462,8 @@ public class TestAddComponentService extends MockitoTest.Strict {
                 existingDescriptor.pipelines());
 
 
-        boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
-        assertTrue(wasModified);
+        var registrationResult = _addComponentService.registerUnmanagedComponent(newDescriptor);
+        assertEquals(RegistrationResult.UPDATED, registrationResult);
 
         verifyNoInteractions(_mockNodeManager);
         verify(_mockRemoveComponentService)
@@ -508,8 +508,8 @@ public class TestAddComponentService extends MockitoTest.Strict {
                 .thenReturn(existingDescriptor);
 
         JsonComponentDescriptor newDescriptor = TestDescriptorFactory.getWithCustomPipeline();
-        boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
-        assertFalse(wasModified);
+        var registrationResult = _addComponentService.registerUnmanagedComponent(newDescriptor);
+        assertEquals(RegistrationResult.SAME, registrationResult);
 
 
         verifyNoInteractions(_mockRemoveComponentService, _mockDescriptorValidator,

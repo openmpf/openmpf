@@ -63,6 +63,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadataExtractor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
@@ -551,7 +552,7 @@ public class TestMediaInspectionProcessor {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testHeicInspection() {
+    public void testHeifInspection() {
         when(_mockPropertiesUtil.getTemporaryMediaDirectory())
                 .thenReturn(_tempFolder.getRoot());
 
@@ -716,7 +717,7 @@ public class TestMediaInspectionProcessor {
 
     private MediaImpl initMedia(long mediaId, URI mediaUri, Map<String, String> mediaMetadata) {
         return new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                mediaId, new MediaUri(mediaUri), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Map.of(), mediaMetadata, List.of(), List.of(), List.of(), null, null);
     }
 

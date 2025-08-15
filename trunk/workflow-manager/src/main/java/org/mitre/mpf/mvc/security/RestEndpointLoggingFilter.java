@@ -54,31 +54,28 @@ public class RestEndpointLoggingFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         
         if (isRestEndpoint(requestURI)) {
-            long startTime = System.currentTimeMillis();
             
             try {
                 filterChain.doFilter(request, response);
                 
-                long duration = System.currentTimeMillis() - startTime;
                 int statusCode = response.getStatus();
                 
                 LogAuditEventRecord.ResType result = statusCode >= 400 ? 
                     LogAuditEventRecord.ResType.ERROR : LogAuditEventRecord.ResType.ALLOW;
                 
-                String logMessage = String.format("%s %s - %d (%dms)", 
-                    method, requestURI, statusCode, duration);
+                String logMessage = String.format("Method: %s RequestURI: %s Status Code: %d ", 
+                    method, requestURI, statusCode);
                 
-                auditEventLogger.log(LogAuditEventRecord.TagType.OPERATIONAL, 
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
                     getOperationType(method), 
                     result, 
                     logMessage);
                     
             } catch (Exception e) {
-                long duration = System.currentTimeMillis() - startTime;
-                String logMessage = String.format("%s %s - ERROR (%dms): %s", 
-                    method, requestURI, duration, e.getMessage());
+                String logMessage = String.format("Method: %s RequestURI: %s - ERROR : %s", 
+                    method, requestURI, e.getMessage());
                 
-                auditEventLogger.log(LogAuditEventRecord.TagType.OPERATIONAL, 
+                auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
                     getOperationType(method), 
                     LogAuditEventRecord.ResType.ERROR, 
                     logMessage);

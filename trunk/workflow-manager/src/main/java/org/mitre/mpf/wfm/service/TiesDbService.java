@@ -370,15 +370,15 @@ public class TiesDbService {
                     .thenAccept(response -> {
                         int statusCode = response.getStatusLine().getStatusCode();
                         _auditEventLogger.log(
-                            LogAuditEventRecord.TagType.OPERATIONAL,
+                            LogAuditEventRecord.TagType.SECURITY,
                             LogAuditEventRecord.OpType.CREATE,
                             LogAuditEventRecord.ResType.ALLOW,
-                            String.format("TiesDB API call: POST %s - %d", fullUrl, statusCode));
+                            String.format("TiesDB API call: POST %s - Status Code: %d", fullUrl, statusCode));
                         responseChecker.checkResponse(response);
                     })
                     .exceptionallyCompose(err -> {
                         _auditEventLogger.log(
-                            LogAuditEventRecord.TagType.OPERATIONAL,
+                            LogAuditEventRecord.TagType.SECURITY,
                             LogAuditEventRecord.OpType.CREATE,
                             LogAuditEventRecord.ResType.ERROR,
                             String.format("TiesDB API call failed: POST %s : %s", fullUrl, err.getMessage()));

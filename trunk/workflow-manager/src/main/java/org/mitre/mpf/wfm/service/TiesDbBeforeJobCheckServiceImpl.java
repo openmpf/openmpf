@@ -390,10 +390,10 @@ public class TiesDbBeforeJobCheckServiceImpl
             .thenApply(resp -> {
                 int statusCode = resp.getStatusLine().getStatusCode();
                 _auditEventLogger.log(
-                    LogAuditEventRecord.TagType.OPERATIONAL,
+                    LogAuditEventRecord.TagType.SECURITY,
                     LogAuditEventRecord.OpType.READ,
                     LogAuditEventRecord.ResType.ALLOW,
-                    String.format("TiesDB API call: GET %s - %s", uri, statusCode));
+                    String.format("TiesDB API call: GET %s - Status Code: %s", uri, statusCode));
                 return checkResponse(unpagedUri, resp);
             })
             .thenCompose(resp -> {
@@ -409,7 +409,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                             useOidc, lastException);
             }).exceptionally(e -> {
                 _auditEventLogger.log(
-                    LogAuditEventRecord.TagType.OPERATIONAL,
+                    LogAuditEventRecord.TagType.SECURITY,
                     LogAuditEventRecord.OpType.READ,
                     LogAuditEventRecord.ResType.ERROR,
                     String.format("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage()));

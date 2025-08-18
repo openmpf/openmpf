@@ -57,7 +57,6 @@ public class RestEndpointLoggingFilter extends OncePerRequestFilter {
             
             try {
                 filterChain.doFilter(request, response);
-                
                 int statusCode = response.getStatus();
                 
                 LogAuditEventRecord.ResType result = statusCode >= 400 ? 
@@ -93,30 +92,29 @@ public class RestEndpointLoggingFilter extends OncePerRequestFilter {
                requestURI.startsWith("/pipelines") ||
                requestURI.startsWith("/tasks") ||
                requestURI.startsWith("/actions") ||
-               requestURI.startsWith("/algorithms") ||
-               requestURI.startsWith("/nodes") ||
-               requestURI.startsWith("/components") ||
-               requestURI.startsWith("/properties") ||
                requestURI.startsWith("/server/") ||
                requestURI.startsWith("/markup/") ||
-               requestURI.startsWith("/streaming/") ||
-               requestURI.startsWith("/subject/") ||
                requestURI.startsWith("/upload/") ||
                requestURI.startsWith("/saveURL") ||
                requestURI.startsWith("/uploadFile") ||
                requestURI.startsWith("/media/") ||
-               requestURI.startsWith("/system-message") ||
-               requestURI.startsWith("/adminLogs") ||
-               requestURI.startsWith("/adminStatistics") ||
-               requestURI.startsWith("/info") ||
-               requestURI.startsWith("/user/role-info") ||
-               requestURI.startsWith("/actuator/hawtio") ||
-               requestURI.startsWith("/actuator/jolokia") ||
                requestURI.startsWith("/swagger") ||
-               requestURI.startsWith("/v2/api-docs") ||
                requestURI.startsWith("/v3/api-docs") ||
                requestURI.startsWith("/swagger-ui") ||
-               requestURI.startsWith("/swagger-resources");
+               isHawtioEndpoint(requestURI);
+    }
+    
+    private boolean isHawtioEndpoint(String requestURI) {
+        if (!requestURI.startsWith("/actuator/hawtio") && !requestURI.startsWith("/hawtio")) {
+            return false;
+        }
+        
+        return !requestURI.contains("/fonts/") &&
+                           !requestURI.contains("/css/") &&
+                           !requestURI.contains("/js/") &&
+                           !requestURI.contains("/img/") &&
+                           !requestURI.contains("/jolokia/") &&
+                           !requestURI.endsWith(".svg");
     }
     
     private LogAuditEventRecord.OpType getOperationType(String httpMethod) {

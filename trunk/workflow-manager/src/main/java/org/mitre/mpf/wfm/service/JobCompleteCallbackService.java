@@ -146,7 +146,7 @@ public class JobCompleteCallbackService {
                 .thenApplyAsync(response -> {
                     int statusCode = response.getStatusLine().getStatusCode();
                     _auditEventLogger.log(
-                        LogAuditEventRecord.TagType.OPERATIONAL,
+                        LogAuditEventRecord.TagType.SECURITY,
                         LogAuditEventRecord.OpType.CREATE,
                         LogAuditEventRecord.ResType.ALLOW,
                         String.format("Job completion callback: %s %s - %d", 
@@ -155,7 +155,7 @@ public class JobCompleteCallbackService {
                 })
                 .exceptionallyCompose(err -> {
                     _auditEventLogger.log(
-                        LogAuditEventRecord.TagType.OPERATIONAL,
+                        LogAuditEventRecord.TagType.SECURITY,
                         LogAuditEventRecord.OpType.CREATE,
                         LogAuditEventRecord.ResType.ERROR,
                         String.format("Job completion callback failed: %s %s : %s", 

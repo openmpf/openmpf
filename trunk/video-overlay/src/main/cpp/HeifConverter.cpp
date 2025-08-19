@@ -70,6 +70,15 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
         bool success = encoder.Encode(handle.get_raw_image_handle(), image.m_image,
                                        jni.ToStdString(outputFile));
         if (!success) {
+            // If the above call failed, it's likely because libpng rejected the
+            // image color profile for some reason. By calling again without the
+            // image handle, we can force libheif to skip the libpng call that
+            // rejects the color profile.
+            success = encoder.Encode(nullptr, image.m_image,
+                                       jni.ToStdString(outputFile));
+        }
+        if (!success) {
+            // If neither of the above calls worked then fail completely.
             throw std::runtime_error("Could not encode HEIF/AVIF image to PNG image");
         }
 

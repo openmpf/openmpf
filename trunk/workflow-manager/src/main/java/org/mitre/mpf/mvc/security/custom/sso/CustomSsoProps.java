@@ -69,23 +69,22 @@ public class CustomSsoProps {
     @Inject
     CustomSsoProps(PropertiesUtil propertiesUtil) {
         _propertiesUtil = propertiesUtil;
+        validateProps();
     }
 
 
     public static boolean isEnabled() {
-        var optEnvVal = getOptionalEnv(EnvKeys.VALIDATION_URL);
-        if (optEnvVal.isEmpty()) {
-            return false;
-        }
-        try {
-            new URI(optEnvVal.get());
-            return true;
-        }
-        catch (URISyntaxException e) {
-            throw new IllegalArgumentException(
-                "Expected the \"%s\" environment variable to be a valid URI, but it was \"%s\""
-                .formatted(EnvKeys.VALIDATION_URL, optEnvVal.get()), e);
-        }
+        return getOptionalEnv(EnvKeys.VALIDATION_URL).isPresent();
+    }
+
+    private void validateProps() {
+        getValidationUri();
+        getTokenUri();
+        getTokenProperty();
+        getFullRedirectUri();
+        validateTokenLifeTime();
+        getSsoUser();
+        getSsoPassword();
     }
 
 
@@ -129,6 +128,17 @@ public class CustomSsoProps {
                 "Token life time was not an integer. Using default of %s seconds"
                 .formatted(DEFAULT_LIFE_TIME.toSeconds()), e);
             return DEFAULT_LIFE_TIME;
+        }
+    }
+
+    private void validateTokenLifeTime() {
+        var optSecondsString = getOptionalPropOrEnv(EnvKeys.SSO_TOKEN_LIFE_TIME_SECONDS);
+        if (optSecondsString.isPresent()) {
+            getTokenLifeTime();
+        }
+        else {
+            LOG.warn("{} was not provided. Using default of {} seconds.",
+                    EnvKeys.SSO_TOKEN_LIFE_TIME_SECONDS, DEFAULT_LIFE_TIME.toSeconds());
         }
     }
 

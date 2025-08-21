@@ -361,7 +361,7 @@ public class TiesDbService {
                             fullUrl.toString(),
                             err));
         }
-        catch (JsonProcessingException e) {
+        catch (Exception e) {
             return convertError(fullUrl.toString(), e);
         }
     }

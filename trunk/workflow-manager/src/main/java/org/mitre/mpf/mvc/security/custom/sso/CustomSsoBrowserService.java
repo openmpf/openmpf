@@ -37,6 +37,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.core.Authentication;
@@ -52,14 +53,18 @@ public class CustomSsoBrowserService extends BaseCustomSsoService {
 
     private final CustomSsoProps _customSsoProps;
 
+    private final AuditEventLogger _auditLogger;
+
     @Inject
     CustomSsoBrowserService(
             AuthenticationEventPublisher authEventPublisher,
             CustomSsoTokenValidator customSsoTokenValidator,
-            CustomSsoProps customSsoProps) {
+            CustomSsoProps customSsoProps,
+            AuditEventLogger auditLogger) {
         super(authEventPublisher);
         _customSsoTokenValidator = customSsoTokenValidator;
         _customSsoProps = customSsoProps;
+        _auditLogger = auditLogger;
     }
 
 
@@ -104,7 +109,11 @@ public class CustomSsoBrowserService extends BaseCustomSsoService {
             response.sendRedirect("/custom_sso_error");
         }
         else {
-            response.sendRedirect(_customSsoProps.getFullRedirectUri().toString());
+            var redirectDest = _customSsoProps.getFullRedirectUri().toString();
+            _auditLogger.loginEvent()
+                .withSecurityTag()
+                .denied("User does not have an SSO token. Redirecting to %s", redirectDest);
+            response.sendRedirect(redirectDest);
         }
     }
 }

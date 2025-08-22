@@ -26,8 +26,18 @@
 
 package org.mitre.mpf.wfm.camel.operations.mediaretrieval;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+
 import org.apache.camel.Exchange;
-import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -35,18 +45,16 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
-import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+import com.google.common.base.Preconditions;
 
 /** This processor downloads a file from a remote URI to the local filesystem. */
 @Component(RemoteMediaProcessor.REF)
@@ -62,112 +70,112 @@ public class RemoteMediaProcessor extends WfmProcessor {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
+    private final HttpClientUtils _httpClient;
+
+    private final OutgoingRequestTokenService _tokenService;
+
     @Inject
     public RemoteMediaProcessor(
             InProgressBatchJobsService inProgressJobs,
             S3StorageBackend s3Service,
             PropertiesUtil propertiesUtil,
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            HttpClientUtils httpClient,
+            OutgoingRequestTokenService tokenService) {
         _inProgressJobs = inProgressJobs;
         _s3Service = s3Service;
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _httpClient = httpClient;
+        _tokenService = tokenService;
+    }
+
+    private static final Set<UriScheme> SUPPORTED_URI_SCHEMES
+            = EnumSet.of(UriScheme.HTTP, UriScheme.HTTPS);
+
+    public static boolean supports(UriScheme scheme) {
+        return SUPPORTED_URI_SCHEMES.contains(scheme);
     }
 
 
     @Override
-    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-
+    public void wfmProcess(Exchange exchange) {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
-
         BatchJob job = _inProgressJobs.getJob(jobId);
         Media media = job.getMedia(mediaId);
-        log.debug("Retrieving {} and saving it to `{}`.", media.getUri(), media.getLocalPath());
 
-        switch(media.getUriScheme()) {
-            case FILE:
-                // Do nothing.
-                break;
-            case HTTP:
-            case HTTPS:
-                try {
-                    var combinedProperties = _aggregateJobPropertiesUtil
-                            .getCombinedProperties(job, media);
-                    if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-                        _s3Service.downloadFromS3(media, combinedProperties);
-                    }
-                    else {
-                        downloadFile(jobId, media);
-                    }
-                    media.getLocalPath().toFile().deleteOnExit();
-                }
-                catch (StorageException e) {
-                    String message = handleMediaRetrievalException(
-                            media, media.getLocalPath().toFile(), e);
-                    handleMediaRetrievalFailure(jobId, media, message);
-                }
-                break;
-            default:
-                log.error("The UriScheme '{}' was not expected at this time.", media.getUriScheme());
-                _inProgressJobs.addError(jobId, mediaId, IssueCodes.REMOTE_STORAGE_DOWNLOAD, String.format(
-                        "The scheme '%s' was not expected or does not have a handler associated with it.",
-                        media.getUriScheme()));
-                break;
-        }
+        Preconditions.checkArgument(
+            supports(media.getUriScheme()), "Unsupported URI scheme: %s");
+        copyHeaders(exchange);
 
-        exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
-        exchange.getOut().setHeader(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
-        exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
-        exchange.getOut().setHeader(MpfHeaders.MEDIA_ID, mediaId);
-    }
-
-
-    private void downloadFile(long jobId, Media media) {
-        File localFile = null;
-        for (int i = 0; i <= _propertiesUtil.getRemoteMediaDownloadRetries(); i++) {
-            String errorMessage;
-            try {
-                localFile = media.getLocalPath().toFile();
-                FileUtils.copyURLToFile(media.getUri().get().toURL(), localFile);
-                log.debug("Successfully retrieved {} and saved it to '{}'.", media.getUri(), media.getLocalPath());
-                break;
-            } catch (IOException e) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.
-                errorMessage = handleMediaRetrievalException(media, localFile, e);
-            } catch (Exception e) { // specifying "http::" will cause an IllegalArgumentException
-                errorMessage = handleMediaRetrievalException(media, localFile, e);
-                handleMediaRetrievalFailure(jobId, media, errorMessage);
-                break; // exception is not recoverable
-            }
-
-            if (i < _propertiesUtil.getRemoteMediaDownloadRetries()) {
-                try {
-                    int sleepMillisec = _propertiesUtil.getRemoteMediaDownloadSleep() * (i + 1);
-                    log.warn("Sleeping for {} ms before trying to retrieve {} again.", sleepMillisec, media.getUri());
-                    Thread.sleep(sleepMillisec);
-                } catch (InterruptedException e) {
-                    log.warn("Sleep interrupted.");
-                    Thread.currentThread().interrupt();
-                    break; // abort download attempt
-                }
-            } else {
-                handleMediaRetrievalFailure(jobId, media, errorMessage);
-            }
-        }
-    }
-
-
-    private static void deleteOrLeakFile(File file) {
+        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         try {
-            if(file != null) {
-                file.delete();
+            if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
+                _s3Service.downloadFromS3(media, combinedProperties);
             }
-        } catch(Exception exception) {
-            log.warn("Failed to delete the local file '{}'. If it exists, it must be deleted manually.", file);
+            else {
+                downloadMedia(job, media);
+            }
+        }
+        catch (Exception e) {
+            var message = handleMediaRetrievalException(media, media.getLocalPath(), e);
+            handleMediaRetrievalFailure(jobId, media, message);
         }
     }
 
-    private static String handleMediaRetrievalException(Media media, File localFile, Exception e) {
+    private static final List<String> HEADERS_TO_COPY = List.of(
+            MpfHeaders.MEDIA_ID,
+            MpfHeaders.CORRELATION_ID,
+            MpfHeaders.SPLIT_SIZE,
+            MpfHeaders.JMS_PRIORITY
+    );
+
+    private static void copyHeaders(Exchange exchange) {
+        var inHeaders = exchange.getIn().getHeaders();
+        var outHeaders = exchange.getOut().getHeaders();
+        for (var headerName : HEADERS_TO_COPY) {
+            var inValue = inHeaders.get(headerName);
+            if (inValue != null) {
+                outHeaders.put(headerName, inValue);
+            }
+        }
+    }
+
+
+    private void downloadMedia(BatchJob job, Media media) throws IOException {
+        var request = new HttpGet(media.getUri().uri());
+        _tokenService.addTokenToRemoteMediaDownloadRequest(job, media, request);
+
+        var response = _httpClient.downloadResponseSync(
+                request, media.getLocalPath(), _propertiesUtil.getRemoteMediaDownloadRetries());
+        var statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode >= 200 && statusCode <= 299) {
+            log.info(
+                    "Successfully downloaded media from \"{}\" and stored it at \"{}\"",
+                    media.getUri(), media.getLocalPath());
+        }
+        else {
+            throw new WfmProcessingException(
+                    "Received non-200 status code while trying to download: "
+                    + media.getUri());
+        }
+    }
+
+
+    private static void deleteOrLeakFile(Path path) {
+        try {
+            if (path != null) {
+                Files.delete(path);
+            }
+        }
+        catch (Exception exception) {
+            log.warn("Failed to delete the local file '{}'. If it exists, it must be deleted manually.", path);
+        }
+    }
+
+
+    private static String handleMediaRetrievalException(Media media, Path localFile, Exception e) {
         log.warn("Failed to retrieve {}.", media.getUri(), e);
         // Try to delete the local file, but do not throw an exception if this operation fails.
         deleteOrLeakFile(localFile);

@@ -75,7 +75,7 @@ public class RemoteMediaSplitter extends WfmLocalSplitter {
 			for (Media media : job.getMedia()) {
 
 				// Check that the media has not previously failed. This will happen if the input URIs are invalid.
-				if (!media.isFailed() && media.getUriScheme().isRemote()) {
+				if (!media.isFailed() && RemoteMediaProcessor.supports(media.getUriScheme())) {
 					var message = new DefaultMessage(exchange.getContext());
 					message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
 					message.setHeader(MpfHeaders.JOB_ID, jobId);

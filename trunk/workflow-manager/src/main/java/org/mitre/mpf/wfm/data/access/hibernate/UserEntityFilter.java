@@ -31,7 +31,8 @@ import java.io.IOException;
 
 import javax.persistence.Entity;
 
-import org.mitre.mpf.mvc.security.OidcSecurityConfig;
+import org.mitre.mpf.mvc.security.custom.sso.CustomSsoConfig;
+import org.mitre.mpf.mvc.security.oidc.OidcSecurityConfig;
 import org.mitre.mpf.wfm.data.entities.persistent.User;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
@@ -46,6 +47,8 @@ public class UserEntityFilter implements TypeFilter {
 
     private final boolean _oidcEnabled = OidcSecurityConfig.isEnabled();
 
+    private final boolean _customSsoEnabled = CustomSsoConfig.isEnabled();
+
     @Override
     public boolean match(
             MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
@@ -53,8 +56,8 @@ public class UserEntityFilter implements TypeFilter {
         if (!_annotationTypeFilter.match(metadataReader, metadataReaderFactory)) {
             return false;
         }
-        else if (_oidcEnabled) {
-            // Prevent hibernate from creating user table when OIDC is enabled.
+        else if (_oidcEnabled || _customSsoEnabled) {
+            // Prevent hibernate from creating user table when using SSO.
             return !metadataReader.getClassMetadata().getClassName().equals(User.class.getName());
         }
         else {

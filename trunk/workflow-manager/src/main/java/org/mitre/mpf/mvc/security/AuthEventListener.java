@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,41 +24,50 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
+package org.mitre.mpf.mvc.security;
 
-import org.hibernate.SessionFactory;
-import org.mitre.mpf.mvc.security.local.LocalSecurityProfile;
-import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.entities.persistent.User;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.springframework.context.event.EventListener;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
+import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
+import org.springframework.security.authentication.event.LogoutSuccessEvent;
+import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+/**
+ * Receives events from {@link org.mitre.mpf.Application#authenticationEventPublisher}
+ */
+@Component
+public class AuthEventListener {
 
-import javax.inject.Inject;
+    private final AuditEventLogger _auditEventLogger;
 
-@LocalSecurityProfile
-@Repository
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
-
-    @Inject
-    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
-        super(User.class, sessionFactory);
+    AuthEventListener(AuditEventLogger auditEventLogger) {
+        _auditEventLogger = auditEventLogger;
     }
 
-    @Override
-    public Optional<User> findByUserName(final String userName) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(User.class);
-        var root = query.from(User.class);
+    @EventListener
+    public void onSuccess(AuthenticationSuccessEvent success) {
+        _auditEventLogger.loginEvent()
+            .withSecurityTag()
+            .withAuth(success.getAuthentication())
+            .allowed("User successfully logged in.");
+    }
 
-        query.where(cb.equal(root.get("userName"), userName));
 
-        return buildQuery(query)
-                .list()
-                .stream()
-                .findFirst();
+    @EventListener
+    public void onFailure(AbstractAuthenticationFailureEvent event) {
+        _auditEventLogger.loginEvent()
+            .withSecurityTag()
+            .withAuth(event.getAuthentication())
+            .denied("Authentication failed: %s", event.getException().getMessage());
+    }
+
+
+    @EventListener
+    public void onLogout(LogoutSuccessEvent logoutEvent) {
+        _auditEventLogger.loginEvent()
+            .withSecurityTag()
+            .withAuth(logoutEvent.getAuthentication())
+            .allowed("User logged out.");
     }
 }

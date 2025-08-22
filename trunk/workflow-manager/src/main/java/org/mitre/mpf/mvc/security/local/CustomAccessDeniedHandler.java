@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.local;
 
 
 import java.io.IOException;
@@ -42,6 +42,7 @@ import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.stereotype.Service;
 
 @Service("CustomAccessDeniedHandler")
+@LocalSecurityProfile
 public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
 
     private final AuditEventLogger auditEventLogger;

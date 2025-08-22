@@ -24,72 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.mvc.security.custom.sso;
 
-package org.mitre.mpf.wfm.util;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
-import java.time.Instant;
+@Configuration
+@Profile("custom_sso")
+public class CustomSsoConfig {
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
-public record LogAuditEventRecord(
-    Instant time,
-    TagType tag,
-    String app,
-    String user,
-    OpType op,
-    ResType res,
-    String msg
-) {
-    public enum TagType {
-        SECURITY("&B1E7-FFFF&");
-
-        private final String value;
-
-        TagType( String value) {
-            this.value = value;
-        }
-
-        @JsonValue
-        public String getValue() {
-            return value;
-        }
-
+    public static boolean isEnabled() {
+        return CustomSsoProps.isEnabled();
     }
 
-    public enum OpType {
-        CREATE("c"),
-        READ("r"),
-        MODIFY("m"),
-        DELETE("d"),
-        LOGIN("l"),
-        EXTRACT("e");
-
-        private final String value;
-
-        OpType( String value) {
-            this.value = value;
-        }
-
-        @JsonValue
-        public String getValue() {
-            return value;
-        }
+    @Bean
+    @Order(1)
+    public SecurityFilterChain restSecurityFilterChain(
+            HttpSecurity http,
+            CustomSsoRestService ssoService) throws Exception {
+        return http.antMatcher("/rest/**")
+            .authorizeHttpRequests(x -> x.anyRequest().authenticated())
+            .addFilter(ssoService)
+            .exceptionHandling(x -> x.authenticationEntryPoint(ssoService))
+            .csrf(x -> x.disable())
+            .build();
     }
 
-    public enum ResType {
-        ALLOW("a"),
-        DENY("d"),
-        ERROR("e");
 
-        private final String value;
-
-        ResType( String value) {
-            this.value = value;
-        }
-
-        @JsonValue
-        public String getValue() {
-            return value;
-        }
+    @Bean
+    @Order(2)
+    public SecurityFilterChain userLoginSecurityFilterChain(
+            HttpSecurity http,
+            CustomSsoBrowserService ssoService,
+            CustomSsoProps customSsoProps) throws Exception {
+        return http.authorizeRequests(x ->
+                x.antMatchers("/custom_sso_error", "/resources/**", "/favicon.ico").permitAll()
+                .anyRequest().authenticated())
+            .addFilter(ssoService)
+            .exceptionHandling(e -> e.authenticationEntryPoint(ssoService))
+            .logout(x ->
+                x.deleteCookies(customSsoProps.getTokenProperty())
+                .logoutSuccessUrl("/"))
+            // Hawtio requires CookieCsrfTokenRepository.withHttpOnlyFalse().
+            .csrf(x -> x.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+            .build();
     }
 }

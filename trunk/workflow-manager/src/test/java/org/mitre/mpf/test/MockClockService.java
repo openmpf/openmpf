@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,14 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.test;
 
-package org.mitre.mpf.mvc.security;
+import java.time.Duration;
+import java.time.Instant;
 
-import java.util.Optional;
+import org.mitre.mpf.wfm.service.ClockService;
 
-public record OidcClaimConfig(
-        Optional<String> adminClaimName,
-        Optional<String> adminClaimValue,
-        Optional<String> userClaimName,
-        Optional<String> userClaimValue) {
+public class MockClockService extends ClockService {
+
+    private Instant _currentTime;
+
+    public MockClockService(Instant startTime) {
+        _currentTime = startTime;
+    }
+
+    public MockClockService() {
+        this(Instant.now());
+    }
+
+    @Override
+    public Instant now() {
+        return _currentTime;
+    }
+
+    public void advance(Duration duration) {
+        _currentTime = _currentTime.plus(duration);
+    }
+
+    public void set(Instant newTime) {
+        _currentTime = newTime;
+    }
 }

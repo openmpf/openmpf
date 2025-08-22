@@ -33,29 +33,31 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Output Object View</title>
     <script src="../resources/js/lib/jquery-1.11.0.min.js"></script>
-    <script>
-        (function() {
-            var jobId = '${jobId}';
-            $.get(jobId + '/output/detection')
-                .done(function (data) {
-                    $(function () {
-                        $('body').text(JSON.stringify(data, null, 3));
-                    });
-                })
-                .fail(function (evt) {
-                    if (evt.status === 404) {
-                        alert('Output for job with id ' + jobId + ' does not exist.');
-                        return;
-                    }
-                    var alertMsg = 'An error occurred while trying to get the output object for job ' + jobId;
-                    var responseMsg = (evt.responseJSON && evt.responseJSON.message) || evt.responseText;
-                    if (responseMsg) {
-                        alertMsg += ': ' + responseMsg;
-                    }
-                    alert(alertMsg);
-                });
-        })();
-    </script>
 </head>
-<body style="white-space: pre; font-family: monospace;"></body>
+<body>
+    <p id="message"></p>
+    <div id="json" style="white-space: pre; font-family: monospace;"></div>
+
+    <script>
+    (function() {
+        var jobId = '${jobId}';
+        $.get(jobId + '/output/detection')
+            .done(function (data) {
+                $('#json').text(JSON.stringify(data, null, 3));
+            })
+            .fail(function (evt) {
+                if (evt.status === 404) {
+                    $('#message').text('Output for job with id ' + jobId + ' does not exist.');
+                    return;
+                }
+                var alertMsg = 'An error occurred while trying to get the output object for job ' + jobId;
+                var responseMsg = (evt.responseJSON && evt.responseJSON.message) || evt.responseText;
+                if (responseMsg) {
+                    alertMsg += ': ' + responseMsg;
+                }
+                $('#message').text(alertMsg);
+            });
+    })();
+    </script>
+</body>
 </html>

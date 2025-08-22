@@ -143,7 +143,7 @@ public class LoginController {
 
         if (authException instanceof BadCredentialsException) {
             String badCredentialsMessage = "Failed login attempt: Invalid username and/or password.";
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, badCredentialsMessage);
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, badCredentialsMessage);
             model.addObject("error", badCredentialsMessage);
         }
 

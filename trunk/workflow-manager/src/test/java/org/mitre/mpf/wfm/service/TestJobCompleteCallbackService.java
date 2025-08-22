@@ -36,6 +36,7 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -62,6 +63,9 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
     @Mock
     private OutgoingRequestTokenService _mockClientTokenProvider;
 
+    @Mock
+    private AuditEventLogger _mockAuditEventLogger;
+
     private JobCompleteCallbackService _jobCompleteCallbackService;
 
 
@@ -72,7 +76,8 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
                 _objectMapper,
                 _mockPropertiesUtil,
                 _mockAggregateJobPropertiesUtil,
-                _mockClientTokenProvider);
+                _mockClientTokenProvider,
+                _mockAuditEventLogger);
     }
 
 

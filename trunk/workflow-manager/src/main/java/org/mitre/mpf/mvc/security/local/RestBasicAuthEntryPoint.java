@@ -24,46 +24,55 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+
+package org.mitre.mpf.mvc.security.local;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.mitre.mpf.wfm.util.AuditEventLogger;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.mitre.mpf.mvc.CorsFilter;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**
+ * By default Spring returns HTML when authentication fails,
+ * but since this is applied to our REST endpoints JSON is more appropriate.
+ */
 @Component
-public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
+@LocalSecurityProfile
+public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
 
-    private final AuditEventLogger auditEventLogger;
+    private final ObjectMapper _objectMapper;
 
-    public CustomAuthenticationFailureHandler(AuditEventLogger auditEventLogger) {
-        this.auditEventLogger = auditEventLogger;
+    RestBasicAuthEntryPoint(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
     }
 
     @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                      AuthenticationException exception) throws IOException, ServletException {
-        
-        if (exception instanceof BadCredentialsException) {
-            String attemptedUsername = request.getParameter("username");
-            String badCredentialsMessage;
-            if (attemptedUsername != null && !attemptedUsername.trim().isEmpty()) {
-                badCredentialsMessage = "Failed login attempt for user '" + attemptedUsername + "': Invalid username and/or password.";
-            } else {
-                badCredentialsMessage = "Failed login attempt: Invalid username and/or password.";
-            }
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, 
-                               LogAuditEventRecord.ResType.DENY, badCredentialsMessage);
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
+        // This header is what makes the log in box appear when accessing the REST URLs
+        // in a browser such as on the Swagger page.
+        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
+        if (request.getMethod().equals("OPTIONS")
+                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
+            // Handle CORS preflight request
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         }
-        
-        response.sendRedirect("/login?reason=error");
+        else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            var messageObj = Map.of("message", authException.getMessage());
+            try (PrintWriter pw = response.getWriter()) {
+                _objectMapper.writeValue(pw, messageObj);
+            }
+        }
     }
 }

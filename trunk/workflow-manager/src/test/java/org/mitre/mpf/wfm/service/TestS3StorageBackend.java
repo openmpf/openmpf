@@ -27,32 +27,21 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Table;
-import com.google.common.io.ByteStreams;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.rest.api.MediaSelectorType;
-import org.mitre.mpf.rest.api.MediaUri;
-import org.mitre.mpf.interop.subject.CancellationState;
-import org.mitre.mpf.interop.subject.SubjectJobDetails;
-import org.mitre.mpf.interop.subject.SubjectJobRequest;
-import org.mitre.mpf.interop.subject.SubjectJobResult;
-import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import spark.Spark;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,27 +51,81 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.*;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.subject.CancellationState;
+import org.mitre.mpf.interop.subject.SubjectJobDetails;
+import org.mitre.mpf.interop.subject.SubjectJobRequest;
+import org.mitre.mpf.interop.subject.SubjectJobResult;
+import org.mitre.mpf.mvc.security.FailedToGetTokenException;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
+import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.Mock;
 
-public class TestS3StorageBackend {
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Table;
+import com.google.common.io.ByteStreams;
 
-    private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
+import software.amazon.awssdk.http.SdkHttpFullRequest;
+import spark.Spark;
 
-    private final LocalStorageBackend _mockLocalStorageBackend = mock(LocalStorageBackend.class);
+public class TestS3StorageBackend extends MockitoTest.Strict {
 
-    private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
+    @Mock
+    private PropertiesUtil _mockPropertiesUtil;
 
-    private final WorkflowPropertyService _mockWorkflowPropertyService
-            = mock(WorkflowPropertyService.class);
+    @Mock
+    private LocalStorageBackend _mockLocalStorageBackend;
+
+    @Mock
+    private InProgressBatchJobsService _mockInProgressJobs;
+
+    @Mock
+    private WorkflowPropertyService _mockWorkflowPropertyService;
+
+    @Mock
+    private OutgoingRequestTokenService _mockTokenService;
 
     private S3StorageBackend _s3StorageBackend;
 
@@ -139,7 +182,8 @@ public class TestS3StorageBackend {
         _s3StorageBackend = new S3StorageBackendImpl(
                 _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
                 new AggregateJobPropertiesUtil(_mockPropertiesUtil,
-                                               _mockWorkflowPropertyService), null);
+                                               _mockWorkflowPropertyService),
+                _mockTokenService, null);
     }
 
     private static Map<String, String> getS3Properties() {
@@ -335,6 +379,14 @@ public class TestS3StorageBackend {
         verifyThrowsExceptionWhenStoring(s3Properties);
     }
 
+    @Test
+    public void canHandleTokenError() throws IOException {
+        var s3Properties = getS3Properties();
+        when(_mockTokenService.addTokenToS3Request(any(), any()))
+            .thenThrow(new FailedToGetTokenException("test error"));
+        verifyThrowsExceptionWhenStoring(s3Properties);
+    }
+
 
     private void verifyThrowsExceptionWhenStoring(Map<String, String> s3Properties) throws IOException {
         Path filePath = getTestFileCopy();
@@ -347,8 +399,8 @@ public class TestS3StorageBackend {
             _s3StorageBackend.store(outputObject, new MutableObject<>());
             fail("Expected StorageException");
         }
-        catch(StorageException e) {
-            Files.exists(filePath);
+        catch (StorageException e) {
+            assertTrue(Files.exists(filePath));
         }
     }
 
@@ -356,6 +408,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreArtifacts() throws IOException, StorageException {
+        setUpTokenService();
         ArtifactExtractionRequest request = createArtifactExtractionRequest();
 
         Path filePath0 = getTestFileCopy();
@@ -420,6 +473,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreMarkupRequest() throws IOException, StorageException {
+        setUpTokenService();
         long jobId = 534;
         long mediaId = 421;
         Path filePath = getTestFileCopy();
@@ -471,6 +525,10 @@ public class TestS3StorageBackend {
                     eq(MpfConstants.S3_REGION), eq(MediaType.VIDEO), any()))
                 .thenReturn("us-east-1");
 
+        doReturn(null)
+            .when(_mockWorkflowPropertyService)
+            .getPropertyValue(not(eq(MpfConstants.S3_REGION)), eq(MediaType.VIDEO), any());
+
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of());
 
@@ -492,6 +550,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreJsonOutputObject() throws IOException, StorageException {
+        setUpTokenService();
         Path filePath = getTestFileCopy();
 
         JsonOutputObject outputObject = setJobProperties(getS3Properties());
@@ -507,6 +566,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canSetKeyPrefix() throws IOException, StorageException {
+        setUpTokenService();
         Path filePath = getTestFileCopy();
 
         var properties = getS3Properties();
@@ -527,6 +587,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void doesNotStoreDuplicateOutputObject() throws IOException, StorageException {
+        setUpTokenService();
         Path filePath = getTestFileCopy();
 
         Map<String, String> s3Properties = getS3Properties();
@@ -545,6 +606,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canHandleConnectionRefused() throws IOException {
+        setUpTokenService();
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET, "http://localhost:5001/" + RESULTS_BUCKET);
         Path filePath = getTestFileCopy();
@@ -566,6 +628,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryUploadAndFailWhenServerError() throws IOException {
+        setUpTokenService();
         int retryCount = 2;
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(retryCount);
@@ -595,6 +658,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryUploadAndRecoverWhenServerError() throws IOException, StorageException {
+        setUpTokenService();
         REQUESTED_PUT_FAILURES.set(2);
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(2);
@@ -621,6 +685,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canDownloadFromS3() throws IOException, StorageException {
+        setUpTokenService();
         Map<String, String> s3Properties = getS3Properties();
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
@@ -645,6 +710,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryDownloadAndFailWhenServerError() throws IOException {
+        setUpTokenService();
         int retryCount = 2;
         when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
                 .thenReturn(retryCount);
@@ -670,6 +736,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canRetryDownloadAndRecoverWhenServerError() throws IOException, StorageException {
+        setUpTokenService();
         REQUESTED_GET_FAILURES.set(2);
         when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
                 .thenReturn(2);
@@ -699,6 +766,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void throwsStorageExceptionWhenRemoteFileMissing() throws IOException {
+        setUpTokenService();
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
         Media media = mock(Media.class);
@@ -719,6 +787,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreDerivativeMedia() throws IOException, StorageException {
+        setUpTokenService();
         long jobId = 534;
         long parentMediaId = 420;
         long derivativeMediaId = 421;
@@ -735,9 +804,6 @@ public class TestS3StorageBackend {
         when(job.getMedia(parentMediaId))
                 .thenReturn(parentMedia);
 
-        when(job.getMedia(derivativeMediaId))
-                .thenReturn(derivativeMedia);
-
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.copyOf(getS3Properties()));
 
@@ -749,9 +815,6 @@ public class TestS3StorageBackend {
 
         when(derivativeMedia.getLocalPath())
                 .thenReturn(filePath);
-
-        when(_mockInProgressJobs.getJob(jobId))
-                .thenReturn(job);
 
 
         assertTrue(_s3StorageBackend.canStoreDerivativeMedia(job, parentMediaId));
@@ -767,6 +830,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canHandleStoreDerivativeMediaFailure() throws IOException, StorageException {
+        setUpTokenService();
         long jobId = 534;
         long parentMediaId = 420;
         long derivativeMediaId = 421;
@@ -783,9 +847,6 @@ public class TestS3StorageBackend {
         when(job.getMedia(parentMediaId))
                 .thenReturn(parentMedia);
 
-        when(job.getMedia(derivativeMediaId))
-                .thenReturn(derivativeMedia);
-
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.copyOf(getS3Properties()));
 
@@ -797,10 +858,6 @@ public class TestS3StorageBackend {
 
         when(derivativeMedia.getLocalPath())
                 .thenReturn(filePath);
-
-        when(_mockInProgressJobs.getJob(jobId))
-                .thenReturn(job);
-
 
         assertTrue(_s3StorageBackend.canStoreDerivativeMedia(job, parentMediaId));
 
@@ -815,6 +872,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreMediaSelectorOutput() throws StorageException, IOException {
+        setUpTokenService();
         var job = mock(BatchJob.class);
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.copyOf(getS3Properties()));
@@ -847,6 +905,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreSubjectResult() throws IOException, StorageException {
+        setUpTokenService();
         var filePath = getTestFileCopy();
 
         var jobRequest = new SubjectJobRequest(
@@ -886,14 +945,30 @@ public class TestS3StorageBackend {
                 .isEqualTo(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);
     }
 
+    private void setUpTokenService() {
+        when(_mockTokenService.addTokenToS3Request(notNull(), notNull()))
+            .thenAnswer(inv -> inv
+                .getArgument(1, SdkHttpFullRequest.class)
+                .toBuilder()
+                .putHeader("Cookie", "test=value")
+                .build());
+    }
+
 
     private static void startSpark() {
         Spark.port(5000);
         IntUnaryOperator decrementUntilZero = i -> Math.max(i - 1, 0);
 
         Spark.before((req, resp) -> {
-            if (!req.headers("Authorization").contains(ACCESS_KEY)) {
+            var authHeader = req.headers("Authorization");
+            if (!authHeader.contains(ACCESS_KEY)) {
                 Spark.halt(403, "Unauthorized");
+            }
+            if (authHeader.toLowerCase().contains("cookie")) {
+                Spark.halt(400, "Cookie should not be part of Authorization header signature.");
+            }
+            if (!req.cookie("test").equals("value")) {
+                Spark.halt(400, "Cookie missing or invalid");
             }
         });
 

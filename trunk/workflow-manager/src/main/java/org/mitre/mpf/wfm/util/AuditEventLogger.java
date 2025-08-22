@@ -27,41 +27,89 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.time.Instant;
+import java.util.Optional;
 
-import org.mitre.mpf.interop.util.TimeUtils;
+import javax.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class AuditEventLogger {
     private static final Logger log = LoggerFactory.getLogger(AuditEventLogger.class);
     private static final Marker AUDIT_MARKER = MarkerFactory.getMarker("mpf.AUDIT");
-    private final ObjectMapper mapper;
-    private final PropertiesUtil propertiesUtil;
 
-    @Autowired
-    public AuditEventLogger(PropertiesUtil propertiesUtil) {
-        this.mapper = new ObjectMapper();
-        this.propertiesUtil = propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
+
+    private final ObjectMapper _objectMapper;
+
+    @Inject
+    public AuditEventLogger(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) {
+        _propertiesUtil = propertiesUtil;
+        _objectMapper = objectMapper;
     }
 
-    private void writeToLogger(LogAuditEventRecord event) {
-        // Only log if audit logging is enabled
-        if (!propertiesUtil.isAuditLoggingEnabled()) {
-            return;
+    public AuditEventLogger log(
+            LogAuditEventRecord.TagType tag,
+            LogAuditEventRecord.OpType op,
+            LogAuditEventRecord.ResType res,
+            String msg) {
+        return log(tag, op, res, getCurrentLoggedInUser(), msg);
+    }
+
+    private AuditEventLogger log(
+            LogAuditEventRecord.TagType tag,
+            LogAuditEventRecord.OpType op,
+            LogAuditEventRecord.ResType res,
+            String user,
+            String msg) {
+        if (!_propertiesUtil.isAuditLoggingEnabled()) {
+            // Only log if audit logging is enabled
+            return this;
         }
-        
+        var eventRecord = new LogAuditEventRecord(
+                Instant.now(), tag, "openmpf", user, op, res, msg);
+        writeToLogger(eventRecord);
+        return this;
+    }
+
+
+    public BuilderTagStage createEvent() {
+        return getEventBuilder(LogAuditEventRecord.OpType.CREATE);
+    }
+
+    public BuilderTagStage readEvent() {
+        return getEventBuilder(LogAuditEventRecord.OpType.READ);
+    }
+
+    public BuilderTagStage modifyEvent() {
+        return getEventBuilder(LogAuditEventRecord.OpType.MODIFY);
+    }
+
+    public BuilderTagStage deleteEvent() {
+        return getEventBuilder(LogAuditEventRecord.OpType.DELETE);
+    }
+
+    public BuilderTagStage loginEvent() {
+        return getEventBuilder(LogAuditEventRecord.OpType.LOGIN);
+    }
+
+    public BuilderTagStage extractEvent() {
+        return getEventBuilder(LogAuditEventRecord.OpType.EXTRACT);
+    }
+
+
+    private void writeToLogger(LogAuditEventRecord event) {
         try {
-            log.info(AUDIT_MARKER, "{}", mapper.writeValueAsString(event));
+            log.info(AUDIT_MARKER, _objectMapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("Failed to log event: {}", event, e);
         }
@@ -72,9 +120,110 @@ public class AuditEventLogger {
         return auth != null ? auth.getName() : "system";
     }
 
-    public AuditEventLogger log (LogAuditEventRecord.TagType tag, LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String msg) {
-        writeToLogger(new LogAuditEventRecord(TimeUtils.toIsoString(Instant.now()), tag, "openmpf", getCurrentLoggedInUser(), op, res, msg));
-        return this;
+
+    private AuditEventBuilder getEventBuilder(LogAuditEventRecord.OpType opType) {
+        if (_propertiesUtil.isAuditLoggingEnabled()) {
+            return new EnabledEventBuilder(opType);
+        }
+        else {
+            return DISABLED_EVENT_BUILDER;
+        }
     }
-    
+
+
+    // Separate interface so that the caller is forced to set the tag.
+    public static interface BuilderTagStage {
+        AuditEventBuilder withSecurityTag();
+    }
+
+
+    public static class AuditEventBuilder implements BuilderTagStage {
+        private AuditEventBuilder() {
+        }
+
+        /**
+         * Normally setting authentication here is not needed because we can get it from the
+         * SecurityContextHolder. Setting the authentication here is only required when listening
+         * to Spring Security authentication events. Depending on the security configuration, the
+         * events can fire before or after the SecurityContextHolder is set.
+         * @param authentication Authentication info that will be used instead of the content of
+         *                       SecurityContextHolder.
+         * @return this
+         */
+        public AuditEventBuilder withAuth(Authentication authentication) {
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withSecurityTag() {
+            return this;
+        }
+
+        public void allowed(String message, Object... formatArgs) {
+        }
+
+        public void denied(String message, Object... formatArgs) {
+        }
+
+        public void error(String message, Object... formatArgs) {
+        }
+    }
+
+    private static final AuditEventBuilder DISABLED_EVENT_BUILDER = new AuditEventBuilder();
+
+    private class EnabledEventBuilder extends AuditEventBuilder {
+
+        private final LogAuditEventRecord.OpType _opType;
+
+        private LogAuditEventRecord.TagType _tagType;
+
+        private Authentication _auth;
+
+        private EnabledEventBuilder(LogAuditEventRecord.OpType opType) {
+            _opType = opType;
+        }
+
+        @Override
+        public EnabledEventBuilder withAuth(Authentication authentication) {
+            _auth = authentication;
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withSecurityTag() {
+            _tagType = LogAuditEventRecord.TagType.SECURITY;
+            return this;
+        }
+
+        @Override
+        public void allowed(String message, Object... formatArgs) {
+            logEvent(LogAuditEventRecord.ResType.ALLOW, message, formatArgs);
+        }
+
+        @Override
+        public void denied(String message, Object... formatArgs) {
+            logEvent(LogAuditEventRecord.ResType.DENY, message, formatArgs);
+        }
+
+        @Override
+        public void error(String message, Object... formatArgs) {
+            logEvent(LogAuditEventRecord.ResType.ERROR, message, formatArgs);
+        }
+
+        private void logEvent(
+                LogAuditEventRecord.ResType resType,
+                String message,
+                Object... formatArgs) {
+            var formattedMessage = formatArgs != null && formatArgs.length > 0
+                    ? message.formatted(formatArgs)
+                    : message;
+
+            var user = Optional.ofNullable(_auth)
+                    .map(Authentication::getName)
+                    .filter(s -> !s.isEmpty())
+                    .orElseGet(() -> getCurrentLoggedInUser());
+
+            log(_tagType, _opType, resType, user, formattedMessage);
+        }
+    }
 }

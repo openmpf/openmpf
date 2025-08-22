@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,54 +24,50 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Map;
+import java.nio.file.Files;
+import java.util.Optional;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.mitre.mpf.mvc.CorsFilter;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * By default Spring returns HTML when authentication fails,
- * but since this is applied to our REST endpoints JSON is more appropriate.
- */
+// This was added because it was observed that when an HTTP request initiated by an <img> tag was
+// received, the regular ResourceHttpMessageConverter would always set the Content-Type header of
+// the response to "image/avif". It appears that Spring is just picking the first mime type in the
+// request's Accept header, because the request's Accept header was set to:
+// "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8".
 @Component
-public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
-
-    private final ObjectMapper _objectMapper;
-
-    RestBasicAuthEntryPoint(ObjectMapper objectMapper) {
-        _objectMapper = objectMapper;
-    }
+public class ProbingResourceMessageConverter extends ResourceHttpMessageConverter {
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
-        // This header is what makes the log in box appear when accessing the REST URLs
-        // in a browser such as on the Swagger page.
-        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
-        if (request.getMethod().equals("OPTIONS")
-                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
-            // Handle CORS preflight request
-            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+    protected void addDefaultHeaders(
+            HttpHeaders headers,
+            Resource resource,
+            MediaType suggestedContentType) throws IOException {
+        var contentType = Optional.ofNullable(headers.getContentType())
+                .or(() -> probeContentType(resource))
+                .orElse(suggestedContentType);
+        super.addDefaultHeaders(headers, resource, contentType);
+    }
+
+    private static Optional<MediaType> probeContentType(Resource resource) {
+        if (!resource.isFile()) {
+            return Optional.empty();
         }
-        else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            var messageObj = Map.of("message", authException.getMessage());
-            try (PrintWriter pw = response.getWriter()) {
-                _objectMapper.writeValue(pw, messageObj);
-            }
+        try {
+            var path = resource.getFile().toPath();
+            return Optional.ofNullable(Files.probeContentType(path))
+                    .map(MediaType::parseMediaType);
+        }
+        catch (IOException | InvalidMediaTypeException e) {
+            return Optional.empty();
         }
     }
 }

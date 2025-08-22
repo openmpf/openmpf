@@ -53,11 +53,7 @@
                        location="classpath:/META-INF/resources/webjars/springfox-swagger-ui/" />
 
         <!-- Enables the Spring MVC @Controller programming model -->
-        <mvc:annotation-driven>
-            <mvc:message-converters>
-                <bean class="org.mitre.mpf.mvc.CustomJacksonHttpMessageConverter" />
-            </mvc:message-converters>
-        </mvc:annotation-driven>
+        <mvc:annotation-driven />
 
         <!-- added for swagger 2 -->
         <context:annotation-config /> <!-- does not break the xml config -->

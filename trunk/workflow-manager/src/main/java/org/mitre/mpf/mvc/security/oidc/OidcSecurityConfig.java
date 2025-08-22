@@ -25,13 +25,14 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.oidc;
 
 import static java.util.stream.Collectors.toSet;
 
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.mitre.mpf.mvc.security.AjaxAuthenticationEntrypoint;
 import org.mitre.mpf.wfm.enums.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

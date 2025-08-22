@@ -35,11 +35,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -252,13 +250,6 @@ public class IoUtils {
         }
     }
 
-    public static InputStream openStream(String pathOrUri) throws IOException {
-        Optional<Path> localPath = toLocalPath(pathOrUri);
-        if (localPath.isPresent()) {
-            return Files.newInputStream(localPath.get());
-        }
-        return new URL(pathOrUri).openStream();
-    }
 
     public static void deleteEmptyDirectoriesRecursively(Path startDir) {
         if (!Files.exists(startDir)) {
@@ -284,33 +275,6 @@ public class IoUtils {
         try (Stream<Path> paths = Files.list(dir)) {
             return !paths.findAny().isPresent();
         }
-    }
-
-    public void sendBinaryResponse(Path path, HttpServletResponse response)
-            throws IOException {
-        try (InputStream inputStream = Files.newInputStream(path)) {
-            sendBinaryResponse(inputStream, response, getMimeType(path), Files.size(path));
-        }
-    }
-
-    public static void sendBinaryResponse(
-            InputStream inputStream,
-            HttpServletResponse response,
-            String mimeType,
-            long contentLength)
-                throws IOException {
-        if (mimeType == null) {
-            response.setContentType("application/octet-stream");
-        }
-        else {
-            response.setContentType(mimeType);
-        }
-        if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
-            response.setContentLength((int) contentLength);
-        }
-
-        IOUtils.copy(inputStream, response.getOutputStream());
-        response.flushBuffer();
     }
 
     public static String normalizeUri(String uriString) {

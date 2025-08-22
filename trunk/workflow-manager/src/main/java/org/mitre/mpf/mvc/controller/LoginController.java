@@ -27,18 +27,22 @@
 package org.mitre.mpf.mvc.controller;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
+import org.mitre.mpf.mvc.security.custom.sso.CustomSsoProps;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -47,28 +51,36 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.servlet.ModelAndView;
 
 
-@Controller
-@Scope("request")
+@RestController
 public class LoginController {
 
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
-    private final AuditEventLogger auditEventLogger;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
-    
-    public LoginController(AuditEventLogger auditEventLogger) {
-        this.auditEventLogger = auditEventLogger;
+    private final PropertiesUtil _propertiesUtil;
+
+    private final AuditEventLogger _auditEventLogger;
+
+    private final Optional<CustomSsoProps> _customSsoProps;
+
+    @Inject
+    LoginController(
+            PropertiesUtil propertiesUtil,
+            AuditEventLogger auditEventLogger,
+            Optional<CustomSsoProps> customSsoProps) {
+        _propertiesUtil = propertiesUtil;
+        _auditEventLogger = auditEventLogger;
+        _customSsoProps = customSsoProps;
     }
-    
+
+
     public static AuthenticationModel getAuthenticationModel(HttpServletRequest request) {
         // get security context from thread local
         SecurityContext context = SecurityContextHolder.getContext();
@@ -119,22 +131,18 @@ public class LoginController {
             @SessionAttribute(name = WebAttributes.AUTHENTICATION_EXCEPTION, required = false)
             Exception authException,
             Authentication authentication) {
-        
-        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Login page accessed");
+
+        _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, "Login page accessed");
         if (authentication != null && authentication.isAuthenticated()) {
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User is already authenticated.");
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.ALLOW, "User is already authenticated.");
             return "redirect:/";
         }
 
         ModelAndView model = new ModelAndView("login_view");
-        model.addObject("version", propertiesUtil.getSemanticVersion());
+        model.addObject("version", _propertiesUtil.getSemanticVersion());
 
         if (authException instanceof BadCredentialsException) {
             model.addObject("error", "Failed login attempt: Invalid username and/or password.");
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
-                               LogAuditEventRecord.OpType.LOGIN, 
-                               LogAuditEventRecord.ResType.ERROR, 
-                               "Failed login attempt: Invalid username and/or password");
         }
 
         return model;
@@ -143,7 +151,6 @@ public class LoginController {
 
 
     @GetMapping("/user/role-info")
-    @ResponseBody
     public AuthenticationModel getSecurityCredentials(HttpServletRequest request /*needed for UserPrincipal*/) {
         return getAuthenticationModel(request);
     }
@@ -157,7 +164,7 @@ public class LoginController {
         if (accessDeniedException != null) {
             String errorMessage = "A user successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.";
             log.error(errorMessage, accessDeniedException);
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, errorMessage);
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, LogAuditEventRecord.OpType.LOGIN, LogAuditEventRecord.ResType.DENY, errorMessage);
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(
@@ -167,5 +174,33 @@ public class LoginController {
         else {
             return new ModelAndView("access_denied");
         }
+    }
+
+    @GetMapping("/custom_sso_error")
+    public Object customSsoError(
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication) {
+        if (_customSsoProps.isEmpty()) {
+            return "redirect:/login";
+        }
+        clearCustomSsoCookie(request, response, authentication);
+
+        var msg = CustomSsoProps.getStoredErrorMessage(session).orElse("");
+        var ssoRedirectUri = _customSsoProps.get().getFullRedirectUri();
+        return new ModelAndView("custom_sso_error", Map.of(
+            "reason", msg,
+            "loginUrl", ssoRedirectUri
+        ));
+    }
+
+    private void clearCustomSsoCookie(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication) {
+        _customSsoProps
+            .map(props -> new CookieClearingLogoutHandler(props.getTokenProperty()))
+            .ifPresent(c -> c.logout(request, response, authentication));
     }
 }

@@ -27,6 +27,8 @@
 
 package org.mitre.mpf;
 
+import java.util.Map;
+
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -34,7 +36,9 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
-import org.mitre.mpf.mvc.security.OidcSecurityConfig;
+import org.mitre.mpf.mvc.security.custom.sso.AuthServerReportedBadCredentialsException;
+import org.mitre.mpf.mvc.security.custom.sso.CustomSsoConfig;
+import org.mitre.mpf.mvc.security.oidc.OidcSecurityConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -46,6 +50,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
+import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
 
 
 @SpringBootApplication
@@ -59,7 +66,13 @@ public class Application extends SpringBootServletInitializer {
     public static void main(String[] args) {
         var app = new SpringApplication(Application.class);
         if (OidcSecurityConfig.isEnabled()) {
+            if (CustomSsoConfig.isEnabled()) {
+                throw new IllegalStateException("OIDC and Custom SSO can not both be enabled.");
+            }
             app.setAdditionalProfiles("oidc");
+        }
+        else if (CustomSsoConfig.isEnabled()) {
+            app.setAdditionalProfiles("custom_sso");
         }
         app.run(args);
     }
@@ -133,5 +146,21 @@ public class Application extends SpringBootServletInitializer {
         servlet.setLoadOnStartup(0);
         servlet.setAsyncSupported(true);
         return servlet;
+    }
+
+
+    /**
+     * Publishes events for {@link org.mitre.mpf.mvc.security.AuthEventListener}.
+     */
+    @Bean
+    public DefaultAuthenticationEventPublisher authenticationEventPublisher() {
+        var eventPublisher = new DefaultAuthenticationEventPublisher();
+        eventPublisher.setAdditionalExceptionMappings(Map.of(
+            AuthServerReportedBadCredentialsException.class,
+            AuthenticationFailureBadCredentialsEvent.class));
+
+        eventPublisher.setDefaultAuthenticationFailureEvent(
+                AbstractAuthenticationFailureEvent.class);
+        return eventPublisher;
     }
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,41 +24,15 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
+package org.mitre.mpf.mvc.security;
 
-import org.hibernate.SessionFactory;
-import org.mitre.mpf.mvc.security.local.LocalSecurityProfile;
-import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.entities.persistent.User;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.apache.http.client.methods.HttpUriRequest;
 
-import java.util.Optional;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
 
-import javax.inject.Inject;
+public interface ITokenProvider {
 
-@LocalSecurityProfile
-@Repository
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
+    public void addToken(HttpUriRequest request);
 
-    @Inject
-    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
-        super(User.class, sessionFactory);
-    }
-
-    @Override
-    public Optional<User> findByUserName(final String userName) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(User.class);
-        var root = query.from(User.class);
-
-        query.where(cb.equal(root.get("userName"), userName));
-
-        return buildQuery(query)
-                .list()
-                .stream()
-                .findFirst();
-    }
+    public void addToken(SdkHttpFullRequest.Builder requestBuilder);
 }

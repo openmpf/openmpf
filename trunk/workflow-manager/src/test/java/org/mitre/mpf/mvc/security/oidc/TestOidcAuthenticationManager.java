@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.oidc;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.junit.Test;
+import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.enums.UserRole;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;

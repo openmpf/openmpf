@@ -54,7 +54,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.JsonTiming;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.TiesDbRepostResponse;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -106,7 +106,7 @@ public class TiesDbService {
 
     private final HttpClientUtils _httpClientUtils;
 
-    private final OAuthClientTokenProvider _oAuthClientTokenProvider;
+    private final OutgoingRequestTokenService _clientTokenProvider;
 
     private final JobRequestDao _jobRequestDao;
 
@@ -125,7 +125,7 @@ public class TiesDbService {
                   ObjectMapper objectMapper,
                   JsonUtils jsonUtils,
                   HttpClientUtils httpClientUtils,
-                  OAuthClientTokenProvider oAuthClientTokenProvider,
+                  OutgoingRequestTokenService clientTokenProvider,
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs,
                   JobConfigHasher jobConfigHasher,
@@ -135,7 +135,7 @@ public class TiesDbService {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
         _httpClientUtils = httpClientUtils;
-        _oAuthClientTokenProvider = oAuthClientTokenProvider;
+        _clientTokenProvider = clientTokenProvider;
         _jsonUtils = jsonUtils;
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
@@ -355,12 +355,7 @@ public class TiesDbService {
                     .build();
             postRequest.setConfig(requestConfig);
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
-            boolean useOidc = Boolean.parseBoolean(
-                    _aggregateJobPropertiesUtil.getValue(
-                            MpfConstants.TIES_DB_USE_OIDC, job, media));
-            if (useOidc) {
-                _oAuthClientTokenProvider.addToken(postRequest);
-            }
+            _clientTokenProvider.addTokenToTiesDbRequest(job, media, postRequest);
 
             var responseChecker = new ResponseChecker();
             return _httpClientUtils.executeRequest(
@@ -385,7 +380,7 @@ public class TiesDbService {
                         return convertError(fullUrl.toString(), err);
                     });
         }
-        catch (JsonProcessingException e) {
+        catch (Exception e) {
             return convertError(fullUrl.toString(), e);
         }
     }

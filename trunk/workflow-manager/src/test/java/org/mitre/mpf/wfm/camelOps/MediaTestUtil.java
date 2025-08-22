@@ -68,7 +68,7 @@ public class MediaTestUtil {
         when(exchange.getOut())
                 .thenReturn(outMessage);
 
-        doAnswer(invocation -> {
+        lenient().doAnswer(invocation -> {
             media.setFailed(true);
             return null;
         }).when(mockInProgressJobs)

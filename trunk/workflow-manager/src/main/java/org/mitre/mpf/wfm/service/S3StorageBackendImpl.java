@@ -51,8 +51,10 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.http.ConnectionClosedException;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.interop.subject.SubjectJobResult;
+import org.mitre.mpf.mvc.security.FailedToGetTokenException;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
+import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -82,17 +84,21 @@ import com.google.common.collect.Table;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.auth.signer.internal.AbstractAwsS3V4Signer;
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.interceptor.ExecutionAttribute;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.RetryPolicyContext;
 import software.amazon.awssdk.core.retry.backoff.FullJitterBackoffStrategy;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
@@ -121,6 +127,8 @@ public class S3StorageBackendImpl implements S3StorageBackend {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
+    private final OutgoingRequestTokenService _tokenService;
+
     private final ObjectMapper _objectMapper;
 
     @Inject
@@ -128,6 +136,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                                 LocalStorageBackend localStorageBackend,
                                 InProgressBatchJobsService inProgressBatchJobsService,
                                 AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+                                OutgoingRequestTokenService tokenService,
                                 ObjectMapper objectMapper) {
         synchronized (S3StorageBackend.class) {
             _s3ClientCache = createClientCache(propertiesUtil.getS3ClientCacheCount());
@@ -136,6 +145,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         _localStorageBackend = localStorageBackend;
         _inProgressJobs = inProgressBatchJobsService;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _tokenService = tokenService;
         _objectMapper = objectMapper;
     }
 
@@ -380,7 +390,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             }
             return urlUtil.getFullUri(bucketUri, objectName);
         }
-        catch (SdkException e) {
+        catch (SdkException | FailedToGetTokenException e) {
             LOG.error("Failed to upload {} due to S3 error: {}", path, e);
             // Don't include path so multiple failures appear as one issue in JSON output object.
             throw new StorageException("Failed to upload due to S3 error: " + e, e);
@@ -399,8 +409,9 @@ public class S3StorageBackendImpl implements S3StorageBackend {
 
         var sourceClient = _s3ClientCache.getUnchecked(sourceClientConfig);
         var sourceBucketAndKey = sourceUrlUtil.splitBucketAndObjectKey(outputObjectUri.toString());
+        var overrideConfig = getOverrideConfig(copyConfig.sourceCredentials, copyConfig.props);
         var getRequest = GetObjectRequest.builder()
-                .overrideConfiguration(copyConfig.sourceOverrideConfig)
+                .overrideConfiguration(overrideConfig)
                 .bucket(sourceBucketAndKey[0])
                 .key(sourceBucketAndKey[1])
                 .build();
@@ -528,9 +539,10 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         var destinationBucket = copyConfig.getDestinationBucket();
         var destinationKey = copyConfig.getDestinationKey(sourceKey);
         var newUri = urlUtil.getFullUri(copyConfig.destinationBucketUri, destinationKey);
+        var overrideConfig = getOverrideConfig(copyConfig.destinationCredentials, copyConfig.props);
         try {
             var exists = s3Client.objectExists(
-                    destinationBucket, destinationKey, copyConfig.destinationOverrideConfig);
+                    destinationBucket, destinationKey, overrideConfig);
             if (exists) {
                 LOG.info("Did not copy \"{}\" to \"{}\" because it already exists.",
                         itemUri, newUri);
@@ -538,7 +550,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             }
 
             var copyRequest = CopyObjectRequest.builder()
-                    .overrideConfiguration(copyConfig.destinationOverrideConfig)
+                    .overrideConfiguration(overrideConfig)
                     .sourceBucket(sourceBucket)
                     .sourceKey(sourceKey)
                     .destinationBucket(destinationBucket)
@@ -568,7 +580,9 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         var sourceClient = _s3ClientCache.getUnchecked(sourceClientConfig);
 
         var destinationClient = getDestinationClient(copyConfig);
-        var putOverrideConfig = copyConfig.destinationOverrideConfig.toBuilder()
+        var putOverrideBuilder = getOverrideConfigBuilder(
+                copyConfig.destinationCredentials, copyConfig.props);
+        var putOverrideConfig = putOverrideBuilder
                 .putExecutionAttribute(IS_COPY_DESTINATION, true)
                 .build();
 
@@ -601,15 +615,18 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                 copyConfig.destinationBucketUri, destinationKey);
         try {
             var exists = destinationClient.objectExists(
-                        destinationBucket, destinationKey, copyConfig.destinationOverrideConfig);
+                        destinationBucket, destinationKey,
+                        getOverrideConfig(copyConfig.destinationCredentials, copyConfig.props));
             if (exists) {
                 LOG.info("Did not copy \"{}\" to \"{}\" because it already exists.",
                         itemUri, newUri);
                 return newUri;
             }
 
+            var sourceOverrideConfig = getOverrideConfig(
+                    copyConfig.sourceCredentials, copyConfig.props);
             var getRequest = GetObjectRequest.builder()
-                    .overrideConfiguration(copyConfig.sourceOverrideConfig)
+                    .overrideConfiguration(sourceOverrideConfig)
                     .bucket(sourceBucket)
                     .key(sourceKey)
                     .build();
@@ -665,7 +682,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                 objectName,
                 s3Client,
                 copyConfig.destinationUrlUtil,
-                copyConfig.destinationOverrideConfig);
+                getOverrideConfig(copyConfig.destinationCredentials, copyConfig.props));
     }
 
 
@@ -792,7 +809,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                 "Add credentials to request using AwsRequestOverrideConfiguration.");
     }
 
-    private static AwsRequestOverrideConfiguration getOverrideConfig(UnaryOperator<String> properties) {
+    private AwsRequestOverrideConfiguration getOverrideConfig(UnaryOperator<String> properties) {
         AwsCredentials credentials;
         var sessionToken = properties.apply(MpfConstants.S3_SESSION_TOKEN);
         var accessKey = properties.apply(MpfConstants.S3_ACCESS_KEY);
@@ -803,11 +820,37 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         else {
             credentials = AwsBasicCredentials.create(accessKey, secretKey);
         }
+        return getOverrideConfig(StaticCredentialsProvider.create(credentials), properties);
+    }
 
+    private AwsRequestOverrideConfiguration getOverrideConfig(
+            AwsCredentialsProvider credentialsProvider,
+            UnaryOperator<String> properties) {
+        return getOverrideConfigBuilder(credentialsProvider, properties).build();
+    }
+
+    private AwsRequestOverrideConfiguration.Builder getOverrideConfigBuilder(
+            AwsCredentialsProvider credentialsProvider,
+            UnaryOperator<String> properties) {
         return AwsRequestOverrideConfiguration
-                .builder()
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .build();
+            .builder()
+            .credentialsProvider(credentialsProvider)
+            .signer(customSigner(properties));
+    }
+
+    // The default behavior of the S3 library is to include custom headers in the signature
+    // calculation. To avoid this, we use a custom signer to add the headers after signing the
+    // request.
+    private AbstractAwsS3V4Signer customSigner(UnaryOperator<String> properties) {
+        return new AbstractAwsS3V4Signer() {
+            @Override
+            public SdkHttpFullRequest sign(
+                    SdkHttpFullRequest request,
+                    ExecutionAttributes executionAttributes) {
+                var signedRequest = super.sign(request, executionAttributes);
+                return _tokenService.addTokenToS3Request(properties, signedRequest);
+            }
+        };
     }
 
 

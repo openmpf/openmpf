@@ -99,22 +99,8 @@ public class RestEndpointLoggingFilter extends OncePerRequestFilter {
                requestURI.startsWith("/uploadFile") ||
                requestURI.startsWith("/media/") ||
                requestURI.startsWith("/swagger") ||
-               requestURI.startsWith("/v3/api-docs") ||
-               requestURI.startsWith("/swagger-ui") ||
-               isHawtioEndpoint(requestURI);
-    }
-    
-    private boolean isHawtioEndpoint(String requestURI) {
-        if (!requestURI.startsWith("/actuator/hawtio") && !requestURI.startsWith("/hawtio")) {
-            return false;
-        }
-        
-        return !requestURI.contains("/fonts/") &&
-                           !requestURI.contains("/css/") &&
-                           !requestURI.contains("/js/") &&
-                           !requestURI.contains("/img/") &&
-                           !requestURI.contains("/jolokia/") &&
-                           !requestURI.endsWith(".svg");
+               requestURI.startsWith("/v3/api-docs");
+               
     }
     
     private LogAuditEventRecord.OpType getOperationType(String httpMethod) {

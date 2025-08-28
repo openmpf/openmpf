@@ -30,12 +30,14 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.mvc.security.RestAuditLoggingInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.smile.MappingJackson2SmileHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,13 +49,17 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final ProbingResourceMessageConverter _probingResourceConverter;
 
     private final ObjectMapper _objectMapper;
+    
+    private final RestAuditLoggingInterceptor _restAuditLoggingInterceptor;
 
     @Inject
     public WebMvcConfig(
             ProbingResourceMessageConverter probingResourceMessageConverter,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            RestAuditLoggingInterceptor restAuditLoggingInterceptor) {
         _probingResourceConverter = probingResourceMessageConverter;
         _objectMapper = objectMapper;
+        _restAuditLoggingInterceptor = restAuditLoggingInterceptor;
     }
 
     @Override
@@ -92,5 +98,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // Spring automatically configures a MappingJackson2HttpMessageConverter, but it does not
         // let you specify which ObjectMapper to use.
         return new MappingJackson2HttpMessageConverter(_objectMapper);
+    }
+    
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(_restAuditLoggingInterceptor)
+                .addPathPatterns("/rest/**", "/actuator/**", "/actuator/hawtio/");
     }
 }

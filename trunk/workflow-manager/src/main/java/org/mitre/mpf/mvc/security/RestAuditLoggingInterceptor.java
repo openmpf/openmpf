@@ -47,21 +47,16 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
+        String logMessage = String.format("Interceptor Method: %s RequestURI: %s", method, requestURI);
         
-        if (requestURI.contains("/actuator/hawtio")) {
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
-                LogAuditEventRecord.OpType.LOGIN, 
-                LogAuditEventRecord.ResType.ALLOW, 
-                "Interceptor Hawtio accessed");
-        } else {
-            String logMessage = String.format("Interceptor Method: %s RequestURI: %s", 
-                method, requestURI);
-            
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+        if (requestURI.startsWith("/actuator")) {
+            logMessage = String.format("Interceptor Method: %s RequestURI: %s - Hawtio Accessed.", method, requestURI);
+        } 
+        
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
                 getOperationType(method), 
                 LogAuditEventRecord.ResType.ALLOW, 
                 logMessage);
-        }
         
         return true;
     }

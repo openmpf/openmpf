@@ -48,7 +48,7 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
         
-        if (requestURI.equals("/actuator/hawtio") || requestURI.equals("/actuator/hawtio/")) {
+        if (requestURI.contains("/actuator/hawtio")) {
             auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
                 LogAuditEventRecord.OpType.LOGIN, 
                 LogAuditEventRecord.ResType.ALLOW, 

@@ -64,7 +64,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.springframework.core.io.PathResource;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -208,7 +207,8 @@ public class TestUtil {
         var converters = new ArrayList<HttpMessageConverter<?>>();
         new WebMvcConfig(
                 new ProbingResourceMessageConverter(),
-                ObjectMapperFactory.customObjectMapper()
+                ObjectMapperFactory.customObjectMapper(),
+                null
         ).extendMessageConverters(converters);
         setup.setMessageConverters(converters.toArray(HttpMessageConverter[]::new));
         return setup.build();

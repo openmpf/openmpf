@@ -24,42 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.controller;
+package org.mitre.mpf.mvc.security;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Method;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
 
-import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-
-/**
- * Adds the annotated controller method or controller class to the public REST API.
- */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
-public @interface ExposedMapping {
-
-    public static class RequestMappingHandlerMappingImpl extends RequestMappingHandlerMapping {
-        @Override
-        protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
-            var reqMappingInfo = super.getMappingForMethod(method, handlerType);
-            if (reqMappingInfo == null || !isExposed(method, handlerType)) {
-                return reqMappingInfo;
-            }
-            return RequestMappingInfo
-                    .paths("/rest", "/")
-                    .build()
-                    .combine(reqMappingInfo);
-        }
-
-        private static boolean isExposed(Method method, Class<?> handlerType) {
-            return AnnotatedElementUtils.hasAnnotation(method, ExposedMapping.class)
-                ||  AnnotatedElementUtils.hasAnnotation(handlerType, ExposedMapping.class);
-        }
+@Component
+public class RestAuditLoggingInterceptor implements HandlerInterceptor {
+    
+    private final AuditEventLogger auditEventLogger;
+    
+    public RestAuditLoggingInterceptor(AuditEventLogger auditEventLogger) {
+        this.auditEventLogger = auditEventLogger;
+    }
+    
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+        String logMessage = String.format("Method: %s RequestURI: %s", method, requestURI);
+        
+        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
+                getOperationType(method), 
+                LogAuditEventRecord.ResType.ALLOW, 
+                logMessage);
+        
+        return true;
+    }
+    
+    private LogAuditEventRecord.OpType getOperationType(String httpMethod) {
+        return switch (httpMethod.toLowerCase()) {
+            case "get" -> LogAuditEventRecord.OpType.READ;
+            case "post" -> LogAuditEventRecord.OpType.CREATE;
+            case "put" -> LogAuditEventRecord.OpType.MODIFY;
+            case "delete" -> LogAuditEventRecord.OpType.DELETE;
+            default -> LogAuditEventRecord.OpType.READ;
+        };
     }
 }

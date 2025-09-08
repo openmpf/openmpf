@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.oidc;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
 import org.mitre.mpf.wfm.enums.UserRole;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;

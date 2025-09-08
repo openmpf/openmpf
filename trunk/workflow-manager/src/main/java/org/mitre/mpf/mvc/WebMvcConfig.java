@@ -28,28 +28,86 @@ package org.mitre.mpf.mvc;
 
 import java.util.List;
 
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import javax.inject.Inject;
+
+import org.mitre.mpf.mvc.controller.ExposedMapping;
+import org.mitre.mpf.mvc.security.RestAuditLoggingInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.smile.MappingJackson2SmileHttpMessageConverter;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-@EnableWebMvc
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Configuration
-public class WebMvcConfig implements WebMvcConfigurer {
+public class WebMvcConfig extends WebMvcConfigurationSupport {
+
+    private final ProbingResourceMessageConverter _probingResourceConverter;
+
+    private final ObjectMapper _objectMapper;
+
+    private final RestAuditLoggingInterceptor _restAuditLoggingInterceptor;
+
+    @Inject
+    public WebMvcConfig(
+            ProbingResourceMessageConverter probingResourceMessageConverter,
+            ObjectMapper objectMapper,
+            RestAuditLoggingInterceptor restAuditLoggingInterceptor) {
+        _probingResourceConverter = probingResourceMessageConverter;
+        _objectMapper = objectMapper;
+        _restAuditLoggingInterceptor = restAuditLoggingInterceptor;
+    }
 
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        converters.removeIf(
-            // Remove preexisting Jackson so we can register our custom version.
-            c -> c instanceof MappingJackson2HttpMessageConverter
-                        // Prevent HTTP responses from using the Smile format.
-                        || c instanceof MappingJackson2SmileHttpMessageConverter);
+        // The documentation for the base method states that "the order of converter registration
+        // is important". A ListIterator is used ensure that when the default Spring converters
+        // are replaced, the customized version is put in the same position within the list.
+        var iter = converters.listIterator();
+        var addedResourceConverter = false;
+        var addedJacksonConverter = false;
+        while (iter.hasNext()) {
+            var converter = iter.next();
+            if (converter instanceof ResourceHttpMessageConverter) {
+                iter.set(_probingResourceConverter);
+                addedResourceConverter = true;
+            }
+            else if (converter instanceof MappingJackson2HttpMessageConverter) {
+                iter.set(createJacksonConverter());
+                addedJacksonConverter = true;
+            }
+            else if (converter instanceof MappingJackson2SmileHttpMessageConverter) {
+                // Prevent HTTP responses from using the Smile format.
+                iter.remove();
+            }
+        }
 
-        var converter = new MappingJackson2HttpMessageConverter(
-                ObjectMapperFactory.customObjectMapper());
-        converters.add(converter);
+        if (!addedResourceConverter) {
+            converters.add(_probingResourceConverter);
+        }
+        if (!addedJacksonConverter) {
+            converters.add(createJacksonConverter());
+        }
+    }
+
+    private MappingJackson2HttpMessageConverter createJacksonConverter() {
+        // Spring automatically configures a MappingJackson2HttpMessageConverter, but it does not
+        // let you specify which ObjectMapper to use.
+        return new MappingJackson2HttpMessageConverter(_objectMapper);
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(_restAuditLoggingInterceptor)
+                .addPathPatterns("/rest/**");
+    }
+
+    @Override
+    protected RequestMappingHandlerMapping createRequestMappingHandlerMapping() {
+        return new ExposedMapping.RequestMappingHandlerMappingImpl();
     }
 }

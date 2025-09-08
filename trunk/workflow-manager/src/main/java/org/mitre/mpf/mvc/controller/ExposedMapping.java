@@ -33,7 +33,6 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -45,7 +44,6 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface ExposedMapping {
 
-    @Component
     public static class RequestMappingHandlerMappingImpl extends RequestMappingHandlerMapping {
         @Override
         protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {

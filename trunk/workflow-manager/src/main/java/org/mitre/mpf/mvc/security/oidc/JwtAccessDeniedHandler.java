@@ -25,36 +25,47 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc;
+package org.mitre.mpf.mvc.security.oidc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.stereotype.Component;
+import java.io.IOException;
+import java.util.Map;
 
 import javax.inject.Inject;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-// Spring's built-in MappingJackson2HttpMessageConverter does not allow you to configure the ObjectMapper that it uses.
-// Classes annotated with @Controller will use this class. This class ensures that those controllers,
-// and classes that explicitly use ObjectMapper, all use the same ObjectMapper instance.
+import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Component
-public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
+@Profile("oidc")
+public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 
-    // These classes should use the internal Spring HttpMessageConverters.
-    private static final ImmutableList<Class<?>> DENY_LIST
-            = ImmutableList.of(String.class, Resource.class);
+    private final BearerTokenAccessDeniedHandler _bearerTokenAccessDeniedHandler
+            = new BearerTokenAccessDeniedHandler();
+
+    private final ObjectMapper _objectMapper;
 
     @Inject
-    CustomJacksonHttpMessageConverter(ObjectMapper objectMapper) {
-        super(objectMapper);
+    JwtAccessDeniedHandler(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
     }
 
-
     @Override
-    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-        return DENY_LIST.stream().noneMatch(blc -> blc.isAssignableFrom(clazz))
-                && super.canWrite(clazz, mediaType);
+    public void handle(
+            HttpServletRequest request, HttpServletResponse response,
+            AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        _bearerTokenAccessDeniedHandler.handle(request, response, accessDeniedException);
+        if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
+            var messageObj = Map.of("message", accessDeniedException.getMessage());
+            _objectMapper.writeValue(response.getWriter(), messageObj);
+        }
     }
 }

@@ -25,13 +25,54 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.local;
 
-import java.util.Optional;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
 
-public record OidcClaimConfig(
-        Optional<String> adminClaimName,
-        Optional<String> adminClaimValue,
-        Optional<String> userClaimName,
-        Optional<String> userClaimValue) {
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.mitre.mpf.mvc.CorsFilter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**
+ * By default Spring returns HTML when authentication fails,
+ * but since this is applied to our REST endpoints JSON is more appropriate.
+ */
+@Component
+@LocalSecurityProfile
+public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
+
+    private final ObjectMapper _objectMapper;
+
+    RestBasicAuthEntryPoint(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
+    }
+
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
+        // This header is what makes the log in box appear when accessing the REST URLs
+        // in a browser such as on the Swagger page.
+        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
+        if (request.getMethod().equals("OPTIONS")
+                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
+            // Handle CORS preflight request
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
+        else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            var messageObj = Map.of("message", authException.getMessage());
+            try (PrintWriter pw = response.getWriter()) {
+                _objectMapper.writeValue(pw, messageObj);
+            }
+        }
+    }
 }

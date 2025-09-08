@@ -437,7 +437,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 -1, -1, fps, OptionalLong.of(200), OptionalLong.empty(), 0,
                 new Fraction(1, 30_000));
         media.setFrameTimeInfo(
-                FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), ffprobeMetadata));
+                FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), ffprobeMetadata, ""));
         return media;
     }
 

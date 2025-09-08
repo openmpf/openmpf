@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -22,6 +21,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicNameValuePair;
@@ -30,14 +30,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.subject.CallbackMethod;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -62,7 +61,10 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
     private AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil;
 
     @Mock
-    private OAuthClientTokenProvider _mockOAuthClientTokenProvider;
+    private OutgoingRequestTokenService _mockClientTokenProvider;
+
+    @Mock
+    private AuditEventLogger _mockAuditEventLogger;
 
     private JobCompleteCallbackService _jobCompleteCallbackService;
 
@@ -74,7 +76,8 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
                 _objectMapper,
                 _mockPropertiesUtil,
                 _mockAggregateJobPropertiesUtil,
-                _mockOAuthClientTokenProvider);
+                _mockClientTokenProvider,
+                _mockAuditEventLogger);
     }
 
 
@@ -95,14 +98,6 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
         when(_mockPropertiesUtil.getExportedJobId(321))
                 .thenReturn("host-321");
 
-        var media = mock(Media.class);
-        when(job.getMedia())
-                .thenReturn(List.of(media));
-
-        when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.CALLBACK_USE_OIDC, job, media))
-                .thenReturn("true");
-
-
         var outputObjectUri = URI.create("http://localhost:1234/output-object");
 
         var requestCaptor = ArgumentCaptor.forClass(HttpPost.class);
@@ -114,8 +109,8 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
 
         var request = requestCaptor.getValue();
 
-        verify(_mockOAuthClientTokenProvider)
-            .addToken(same(request));
+        verify(_mockClientTokenProvider)
+            .addTokenToJobCompleteCallback(same(job), same(request));
 
         assertThat(request.getURI()).isEqualTo(callbackUri);
 
@@ -153,10 +148,6 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
 
     @Test
     public void testSendSubjectJobWithOidc() {
-        when(_mockAggregateJobPropertiesUtil.getValue(
-                    eq(MpfConstants.CALLBACK_USE_OIDC), any(DbSubjectJob.class)))
-                .thenReturn(Optional.of("true"));
-
         var httpRespFuture = ThreadUtil.<HttpResponse>newFuture();
         var resultFuture = setupSubjectJob(httpRespFuture);
 
@@ -166,8 +157,10 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
 
         assertThat(resultFuture).succeedsWithin(TestUtil.FUTURE_DURATION);
 
-        verify(_mockOAuthClientTokenProvider)
-                .addToken(notNull());
+        verify(_mockClientTokenProvider)
+                .addTokenToJobCompleteCallback(
+                    any(DbSubjectJob.class),
+                    any(HttpUriRequest.class));
     }
 
 

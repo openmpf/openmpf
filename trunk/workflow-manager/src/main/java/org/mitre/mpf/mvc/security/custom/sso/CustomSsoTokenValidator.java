@@ -191,7 +191,9 @@ public class CustomSsoTokenValidator {
         try {
             var request = new HttpGet(_customSsoProps.getValidationUri());
             request.addHeader("Cookie", _customSsoProps.getTokenProperty() + '=' + token);
-            response = _httpClient.executeRequestSync(request, _customSsoProps.getHttpRetryCount());
+            response = _httpClient.executeRequestSync(
+                    request, _customSsoProps.getHttpRetryCount(),
+                    HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS);
         }
         catch (Exception e) {
             throw new AuthServerReportedBadCredentialsException(

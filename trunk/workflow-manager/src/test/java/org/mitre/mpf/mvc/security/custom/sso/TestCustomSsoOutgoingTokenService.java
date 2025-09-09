@@ -102,7 +102,9 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
         var tokenResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "error");
 
         var captor = ArgumentCaptor.forClass(HttpPost.class);
-        when(_mockHttpClient.executeRequestSync(captor.capture(), eq(HTTP_RETRY_COUNT)))
+        when(_mockHttpClient.executeRequestSync(
+                captor.capture(), eq(HTTP_RETRY_COUNT),
+                eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
             .thenReturn(tokenResponse);
 
         var callbackRequest = new HttpGet();
@@ -153,7 +155,9 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
             ContentType.APPLICATION_JSON));
 
         var captor = ArgumentCaptor.forClass(HttpPost.class);
-        when(_mockHttpClient.executeRequestSync(captor.capture(), eq(HTTP_RETRY_COUNT)))
+        when(_mockHttpClient.executeRequestSync(
+                captor.capture(), eq(HTTP_RETRY_COUNT),
+                eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
             .thenReturn(tokenResponse);
 
         {
@@ -215,7 +219,9 @@ public class TestCustomSsoOutgoingTokenService extends MockitoTest.Strict {
             ContentType.APPLICATION_JSON));
 
         var captor = ArgumentCaptor.forClass(HttpPost.class);
-        when(_mockHttpClient.executeRequestSync(captor.capture(), eq(HTTP_RETRY_COUNT)))
+        when(_mockHttpClient.executeRequestSync(
+                captor.capture(), eq(HTTP_RETRY_COUNT),
+                eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
             .thenReturn(tokenResponse);
         return captor;
     }

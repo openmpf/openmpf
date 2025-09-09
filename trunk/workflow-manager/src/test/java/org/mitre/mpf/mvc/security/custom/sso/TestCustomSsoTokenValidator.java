@@ -126,7 +126,9 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "reason");
         response.setEntity(new StringEntity(errorDetails, StandardCharsets.UTF_8));
 
-        when(_mockHttpClient.executeRequestSync(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
+        when(_mockHttpClient.executeRequestSync(
+                argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT),
+                eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
             .thenReturn(response);
 
         assertBadCredentials("Bearer <MY TOKEN>", errorDetails);
@@ -140,7 +142,8 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         {
             var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
             when(_mockHttpClient.executeRequestSync(
-                    argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
+                    argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT),
+                    eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
                 .thenAnswer(a -> {
                     numHttpRequests.incrementAndGet();
                     return response;
@@ -190,7 +193,8 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         var numToken2Requests = new AtomicInteger(0);
 
 
-        when(_mockHttpClient.executeRequestSync(any(), eq(HTTP_RETRY_COUNT)))
+        when(_mockHttpClient.executeRequestSync(
+                    any(), eq(HTTP_RETRY_COUNT), eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
             .thenAnswer(inv -> {
                 HttpUriRequest request = inv.getArgument(0);
                 if (hasTokenCookieSet(request, "<MY TOKEN>")) {
@@ -255,7 +259,9 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
     @Test
     public void testValidationFromBrowser() throws IOException {
         var httpResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
-        when(_mockHttpClient.executeRequestSync(argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT)))
+        when(_mockHttpClient.executeRequestSync(
+                    argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT),
+                    eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
                 .thenReturn(httpResponse);
 
         var authRequest = new PreAuthenticatedAuthenticationToken("n/a", "<MY TOKEN>");

@@ -37,14 +37,14 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.smile.MappingJackson2SmileHttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.DelegatingWebMvcConfiguration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
-public class WebMvcConfig extends WebMvcConfigurationSupport {
+public class WebMvcConfig extends DelegatingWebMvcConfiguration {
 
     private final ProbingResourceMessageConverter _probingResourceConverter;
 
@@ -64,6 +64,7 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
 
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        super.extendMessageConverters(converters);
         // The documentation for the base method states that "the order of converter registration
         // is important". A ListIterator is used ensure that when the default Spring converters
         // are replaced, the customized version is put in the same position within the list.
@@ -102,6 +103,7 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        super.addInterceptors(registry);
         registry.addInterceptor(_restAuditLoggingInterceptor)
                 .addPathPatterns("/rest/**");
     }

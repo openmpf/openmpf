@@ -33,6 +33,7 @@ import javax.inject.Inject;
 import org.mitre.mpf.mvc.controller.ExposedMapping;
 import org.mitre.mpf.mvc.security.RestAuditLoggingInterceptor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.web.ProjectingJackson2HttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -77,7 +78,8 @@ public class WebMvcConfig extends DelegatingWebMvcConfiguration {
                 iter.set(_probingResourceConverter);
                 addedResourceConverter = true;
             }
-            else if (converter instanceof MappingJackson2HttpMessageConverter) {
+            else if (converter instanceof MappingJackson2HttpMessageConverter
+                        && !(converter instanceof ProjectingJackson2HttpMessageConverter)) {
                 iter.set(createJacksonConverter());
                 addedJacksonConverter = true;
             }

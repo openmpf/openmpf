@@ -1,6 +1,6 @@
 Install
 ==================
-* Install [Python 3.8](https://www.python.org/downloads).
+* Install [Python 3.12](https://www.python.org/downloads).
 * Run `sudo pip3 install path/to/mpf-scripts`
 
 Tab Completion (optional)

@@ -154,7 +154,7 @@
       when: ext_component_descriptor is not defined
 
     - name: Run external component pre-registration setup
-      include: "{{ plugins_dir }}/{{ component_tld }}/{{ item.setupFile }}"
+      include_tasks: "{{ plugins_dir }}/{{ component_tld }}/{{ item.setupFile }}"
       when: item.setupFile is defined
       with_items:
         - "{{ ext_component_descriptor }}"
@@ -169,7 +169,7 @@
       debug:
         msg="COMPONENT_DESCRIPTOR_PATH={{ component_descriptor.files[0].path }}"
 
-    - include: setup_python_component_venv.yml
+    - include_tasks: setup_python_component_venv.yml
       vars:
         component_path: "{{ plugins_dir }}/{{ component_tld }}"
         descriptor: "{{ ext_component_descriptor }}"

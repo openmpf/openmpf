@@ -58,7 +58,7 @@ class PythonComponent:
         try:
             distribution = importlib.metadata.distribution(distribution_name)
             if len(distribution.entry_points) == 1:
-                return distribution.entry_points[0].load()
+                return next(iter(distribution.entry_points)).load()
             group_matches = None
             for entry_point in distribution.entry_points:
                 if entry_point.group != 'mpf.exported_component':

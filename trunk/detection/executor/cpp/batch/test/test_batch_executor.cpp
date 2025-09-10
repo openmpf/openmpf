@@ -65,10 +65,10 @@ void init_python_path() {
 
     std::string home_dir = GetEnv("HOME").value_or("/home/mpf");
     python_path += home_dir + "/openmpf-projects/openmpf-python-component-sdk/detection/api:";
-    python_path += home_dir + "/mpf-sdk-install/python/site-packages:";
+    python_path += home_dir + "/mpf-sdk-install/python/venv/lib/python3.12/site-packages:";
 
     if (auto mpf_sdk_install = GetEnv("MPF_SDK_INSTALL_PATH")) {
-        python_path += *mpf_sdk_install + "/python/site-packages:";
+        python_path += *mpf_sdk_install + "/python/venv/lib/python3.12/site-packages:";
     }
 
     std::string mpf_home = GetEnv("MPF_HOME").value_or("/opt/mpf");

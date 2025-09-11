@@ -25,11 +25,14 @@
  ******************************************************************************/
 package org.mitre.mpf.nms;
 
-import org.mitre.mpf.nms.json.Service;
-
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+
+import org.mitre.mpf.nms.json.Service;
 
 /**
  * Simple {@link BaseServiceLauncher} that just sends a {@literal q\n} on STDIN
@@ -46,6 +49,7 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
      * configures the builder.
      *
      * @param pb
+     * @param serviceDescriptor
      */
     @Override public void additionalProcessPreconfig(ProcessBuilder pb, ServiceDescriptor serviceDescriptor) {
         // Add $MPF_HOME/lib to the end of ld library path for the C++ component executor process so that it can link
@@ -68,13 +72,11 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
             env.put(ldLibPathKey, mpfHomeVal + "/lib");
         }
 
-        String pythonPathKey = "PYTHONPATH";
-        String pythonPathVal = env.get(pythonPathKey);
-        String venvSitePackages = mpfHomeVal + "/plugins/" + serviceDescriptor.getService().name() + "/venv/lib/python3.8/site-packages";
-        if (pythonPathVal != null) {
-            env.put(pythonPathKey, pythonPathVal + System.getProperty("path.separator") + venvSitePackages);
-        } else {
-            env.put(pythonPathKey, venvSitePackages);
+        var venvPath = Path.of(
+                mpfHomeVal, "plugins",  serviceDescriptor.getService().name(), "venv/bin");
+        if (Files.isDirectory(venvPath)) {
+            var existingPathEnv = env.getOrDefault("PATH", "");
+            env.put("PATH", venvPath.toString() + File.pathSeparatorChar + existingPathEnv);
         }
     }
 

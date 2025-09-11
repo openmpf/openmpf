@@ -60,6 +60,7 @@
             target/site/jacoco/index.html
         -->
         <extraArgLine/>
+        <pre.integration.test.spring.profiles.active>jenkins,test-with-security</pre.integration.test.spring.profiles.active>
     </properties>
 
     <dependencyManagement>
@@ -865,11 +866,11 @@
                             <arguments>
                                 <!-- The default value for the wait argument is 500ms. Setting
                                      maxAttempts to 360 results in a total maximum wait time of
-                                     3 minutes. -->
-                                <maxAttempts>360</maxAttempts>
+                                     6 minutes. -->
+                                <maxAttempts>720</maxAttempts>
                                 <argument>--server.port=${wfm.port}</argument>
                                 <argument>
-                                    --spring.profiles.active=jenkins,test-with-security
+                                    --spring.profiles.active=${pre.integration.test.spring.profiles.active}
                                 </argument>
                             </arguments>
                         </configuration>

@@ -865,7 +865,7 @@
                             <skip>${skipITs}</skip>
                             <arguments>
                                 <!-- The default value for the wait argument is 500ms. Setting
-                                     maxAttempts to 360 results in a total maximum wait time of
+                                     maxAttempts to 720 results in a total maximum wait time of
                                      6 minutes. -->
                                 <maxAttempts>720</maxAttempts>
                                 <argument>--server.port=${wfm.port}</argument>

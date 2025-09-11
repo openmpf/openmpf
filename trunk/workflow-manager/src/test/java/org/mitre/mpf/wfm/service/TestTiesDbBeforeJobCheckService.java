@@ -108,6 +108,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -149,6 +150,9 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     @Mock
     private S3StorageBackend _mockS3StorageBackend;
 
+    @Mock
+    private AuditEventLogger _mockAuditEventLogger;
+
     private TiesDbBeforeJobCheckServiceImpl _tiesDbBeforeJobCheckService;
 
 
@@ -165,7 +169,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 _mockTokenService,
                 _objectMapper,
                 _mockInProgressJobs,
-                _mockS3StorageBackend);
+                _mockS3StorageBackend,
+                _mockAuditEventLogger);
     }
 
 

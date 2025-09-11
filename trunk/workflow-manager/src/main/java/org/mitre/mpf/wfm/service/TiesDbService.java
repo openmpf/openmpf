@@ -68,8 +68,10 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -114,6 +116,8 @@ public class TiesDbService {
 
     private final TaskMergingManager _taskMergingManager;
 
+    private final AuditEventLogger _auditEventLogger;
+
 
     @Inject
     TiesDbService(PropertiesUtil propertiesUtil,
@@ -125,7 +129,8 @@ public class TiesDbService {
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs,
                   JobConfigHasher jobConfigHasher,
-                  TaskMergingManager taskMergingManager) {
+                  TaskMergingManager taskMergingManager,
+                  AuditEventLogger auditEventLogger) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
@@ -136,6 +141,7 @@ public class TiesDbService {
         _inProgressJobs = inProgressJobs;
         _jobConfigHasher = jobConfigHasher;
         _taskMergingManager = taskMergingManager;
+        _auditEventLogger = auditEventLogger;
     }
 
     public void prepareAssertions(
@@ -356,10 +362,23 @@ public class TiesDbService {
                         postRequest,
                         _propertiesUtil.getHttpCallbackRetryCount(),
                         responseChecker::shouldRetry)
-                    .thenAccept(responseChecker::checkResponse)
-                    .exceptionallyCompose(err -> convertError(
-                            fullUrl.toString(),
-                            err));
+                    .thenAccept(response -> {
+                        int statusCode = response.getStatusLine().getStatusCode();
+                        _auditEventLogger.log(
+                            LogAuditEventRecord.TagType.SECURITY,
+                            LogAuditEventRecord.OpType.CREATE,
+                            LogAuditEventRecord.ResType.ALLOW,
+                            String.format("TiesDB API call: POST %s - Status Code: %d", fullUrl, statusCode));
+                        responseChecker.checkResponse(response);
+                    })
+                    .exceptionallyCompose(err -> {
+                        _auditEventLogger.log(
+                            LogAuditEventRecord.TagType.SECURITY,
+                            LogAuditEventRecord.OpType.CREATE,
+                            LogAuditEventRecord.ResType.ERROR,
+                            String.format("TiesDB API call failed: POST %s : %s", fullUrl, err.getMessage()));
+                        return convertError(fullUrl.toString(), err);
+                    });
         }
         catch (Exception e) {
             return convertError(fullUrl.toString(), e);

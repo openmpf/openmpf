@@ -364,19 +364,15 @@ public class TiesDbService {
                         responseChecker::shouldRetry)
                     .thenAccept(response -> {
                         int statusCode = response.getStatusLine().getStatusCode();
-                        _auditEventLogger.log(
-                            LogAuditEventRecord.TagType.SECURITY,
-                            LogAuditEventRecord.OpType.CREATE,
-                            LogAuditEventRecord.ResType.ALLOW,
-                            String.format("TiesDB API call: POST %s - Status Code: %d", fullUrl, statusCode));
+                        _auditEventLogger.createEvent()
+                            .withSecurityTag()
+                            .allowed("TiesDB API call: POST %s - Status Code: %d", fullUrl, statusCode);
                         responseChecker.checkResponse(response);
                     })
                     .exceptionallyCompose(err -> {
-                        _auditEventLogger.log(
-                            LogAuditEventRecord.TagType.SECURITY,
-                            LogAuditEventRecord.OpType.CREATE,
-                            LogAuditEventRecord.ResType.ERROR,
-                            String.format("TiesDB API call failed: POST %s : %s", fullUrl, err.getMessage()));
+                        _auditEventLogger.createEvent()
+                            .withSecurityTag()
+                            .error("TiesDB API call failed: POST %s : %s", fullUrl, err.getMessage());
                         return convertError(fullUrl.toString(), err);
                     });
         }

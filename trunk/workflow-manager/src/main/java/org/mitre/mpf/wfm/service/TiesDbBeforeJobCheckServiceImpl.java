@@ -384,11 +384,9 @@ public class TiesDbBeforeJobCheckServiceImpl
                 _propertiesUtil.getHttpCallbackRetryCount())
             .thenApply(resp -> {
                 int statusCode = resp.getStatusLine().getStatusCode();
-                _auditEventLogger.log(
-                    LogAuditEventRecord.TagType.SECURITY,
-                    LogAuditEventRecord.OpType.READ,
-                    LogAuditEventRecord.ResType.ALLOW,
-                    String.format("TiesDB API call: GET %s - Status Code: %s", uri, statusCode));
+                _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .allowed("TiesDB API call: GET %s - Status Code: %s", uri, statusCode);
                 return checkResponse(unpagedUri, resp);
             })
             .thenCompose(resp -> {
@@ -403,11 +401,9 @@ public class TiesDbBeforeJobCheckServiceImpl
                             unpagedUri, offset + limit, jobHash, bestMatch, s3CopyEnabled,
                             combinedProps, lastException);
             }).exceptionally(e -> {
-                _auditEventLogger.log(
-                    LogAuditEventRecord.TagType.SECURITY,
-                    LogAuditEventRecord.OpType.READ,
-                    LogAuditEventRecord.ResType.ERROR,
-                    String.format("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage()));
+                _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .error("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage());
                 lastException.set(e.getCause());
                 return prevBest;
             });

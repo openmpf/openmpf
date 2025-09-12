@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.security;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -37,10 +36,10 @@ import javax.servlet.http.HttpServletResponse;
 @Component
 public class RestAuditLoggingInterceptor implements HandlerInterceptor {
     
-    private final AuditEventLogger auditEventLogger;
+    private final AuditEventLogger _auditEventLogger;
     
     public RestAuditLoggingInterceptor(AuditEventLogger auditEventLogger) {
-        this.auditEventLogger = auditEventLogger;
+        this._auditEventLogger = auditEventLogger;
     }
     
     @Override
@@ -48,22 +47,20 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
         String logMessage = String.format("Method: %s RequestURI: %s", method, requestURI);
-        
-        auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
-                getOperationType(method), 
-                LogAuditEventRecord.ResType.ALLOW, 
-                logMessage);
-        
+
+        getAuditEventByHttpMethod(method)
+                .withSecurityTag()
+                .allowed(logMessage);
         return true;
     }
     
-    private LogAuditEventRecord.OpType getOperationType(String httpMethod) {
+    private AuditEventLogger.BuilderTagStage getAuditEventByHttpMethod(String httpMethod) {
         return switch (httpMethod.toLowerCase()) {
-            case "get" -> LogAuditEventRecord.OpType.READ;
-            case "post" -> LogAuditEventRecord.OpType.CREATE;
-            case "put" -> LogAuditEventRecord.OpType.MODIFY;
-            case "delete" -> LogAuditEventRecord.OpType.DELETE;
-            default -> LogAuditEventRecord.OpType.READ;
+            case "get" -> _auditEventLogger.readEvent();
+            case "post" -> _auditEventLogger.createEvent();
+            case "put" -> _auditEventLogger.modifyEvent();
+            case "delete" -> _auditEventLogger.deleteEvent();
+            default -> _auditEventLogger.readEvent();
         };
     }
 }

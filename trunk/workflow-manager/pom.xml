@@ -60,7 +60,6 @@
             target/site/jacoco/index.html
         -->
         <extraArgLine/>
-        <pre.integration.test.spring.profiles.active>jenkins,test-with-security</pre.integration.test.spring.profiles.active>
     </properties>
 
     <dependencyManagement>
@@ -870,7 +869,7 @@
                                 <maxAttempts>720</maxAttempts>
                                 <argument>--server.port=${wfm.port}</argument>
                                 <argument>
-                                    --spring.profiles.active=${pre.integration.test.spring.profiles.active}
+                                    --spring.profiles.active=jenkins,test-with-security
                                 </argument>
                             </arguments>
                         </configuration>

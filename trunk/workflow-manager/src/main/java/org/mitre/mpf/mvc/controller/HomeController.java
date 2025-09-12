@@ -56,18 +56,13 @@ public class HomeController
 	private PropertiesUtil propertiesUtil;
 	
 	@Autowired
-	private AuditEventLogger auditEventLogger;
+	private AuditEventLogger _auditEventLogger;
 
 	@RequestMapping(value = "/", method = RequestMethod.GET)
 	public String getIndexPage() {
-		
-		auditEventLogger.log(
-			LogAuditEventRecord.TagType.SECURITY,
-			LogAuditEventRecord.OpType.READ,
-			LogAuditEventRecord.ResType.ALLOW,
-			"Homepage accessed"
-		);
-		
+		_auditEventLogger.readEvent()
+			.withSecurityTag()
+			.allowed("Homepage Accessed.");
 		return "index";
 	}
 

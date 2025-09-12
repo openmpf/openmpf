@@ -45,11 +45,11 @@ import org.springframework.stereotype.Service;
 @LocalSecurityProfile
 public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
 
-    private final AuditEventLogger auditEventLogger;
+    private final AuditEventLogger _auditEventLogger;
     
     @Autowired
     public CustomAccessDeniedHandler(AuditEventLogger auditEventLogger) {
-        this.auditEventLogger = auditEventLogger;
+        this._auditEventLogger = auditEventLogger;
     }
 
     @Override
@@ -66,20 +66,15 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
         }
         else if ("/login".equals(request.getRequestURI())) {
             // CSRF failures on login page
-            auditEventLogger.log(
-                LogAuditEventRecord.TagType.SECURITY,
-                LogAuditEventRecord.OpType.LOGIN,
-                LogAuditEventRecord.ResType.DENY,
-                "Login attempt failed: Invalid XSRF token"
-            );
-            
+            _auditEventLogger.loginEvent()
+                .withSecurityTag()
+                .denied("Login attempt failed: Invalid XSRF token");
             response.sendRedirect("/");
         }
         else {
             super.handle(request, response, accessDeniedException);
         }
     }
-
 
     private static boolean isAjax(HttpServletRequest request) {
         return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));

@@ -63,7 +63,6 @@ import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.InvalidJobIdException;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

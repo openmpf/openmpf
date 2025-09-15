@@ -56,7 +56,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 
 @Api( value = "Media",
     description = "Media processing")

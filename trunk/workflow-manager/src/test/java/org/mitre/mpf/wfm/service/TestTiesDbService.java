@@ -91,6 +91,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.MediaActionProps;
@@ -135,6 +136,9 @@ public class TestTiesDbService extends MockitoTest.Strict {
     @Mock
     private TaskMergingManager _mockTaskMergingManager;
 
+    @Mock
+    private AuditEventLogger _mockAuditEventLogger;
+
     private TiesDbService _tiesDbService;
 
     private static final Instant PROCESS_DATE = Instant.ofEpochSecond(1622724824);
@@ -172,7 +176,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 _mockJobRequestDao,
                 _mockInProgressJobs,
                 _mockJobConfigHasher,
-                _mockTaskMergingManager);
+                _mockTaskMergingManager,
+                _mockAuditEventLogger);
 
         lenient().when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);

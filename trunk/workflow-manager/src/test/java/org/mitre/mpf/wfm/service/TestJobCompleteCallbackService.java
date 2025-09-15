@@ -66,11 +66,22 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
     @Mock
     private AuditEventLogger _mockAuditEventLogger;
 
+    @Mock
+    private AuditEventLogger.BuilderTagStage _mockBuilderTagStage;
+
+    @Mock
+    private AuditEventLogger.AuditEventBuilder _mockAuditEventBuilder;
+
     private JobCompleteCallbackService _jobCompleteCallbackService;
 
-
+    
     @Before
     public void init() {
+        when(_mockAuditEventLogger.createEvent())
+                .thenReturn(_mockBuilderTagStage);
+        when(_mockBuilderTagStage.withSecurityTag())
+                .thenReturn(_mockAuditEventBuilder);
+        
         _jobCompleteCallbackService = new JobCompleteCallbackService(
                 _mockHttpClientUtils,
                 _objectMapper,

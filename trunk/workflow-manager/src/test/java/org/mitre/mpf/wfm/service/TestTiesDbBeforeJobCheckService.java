@@ -169,6 +169,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         when(_mockAuditEventLogger.createEvent())
                 .thenReturn(_mockBuilderTagStage);
+        when(_mockAuditEventLogger.readEvent())
+                .thenReturn(_mockBuilderTagStage);
         when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
 

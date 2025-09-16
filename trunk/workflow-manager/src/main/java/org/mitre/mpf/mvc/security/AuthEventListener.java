@@ -50,7 +50,7 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(success.getAuthentication())
-            .allowed("User successfully logged in.");
+            .allowed("Authenticated web request");
     }
 
 

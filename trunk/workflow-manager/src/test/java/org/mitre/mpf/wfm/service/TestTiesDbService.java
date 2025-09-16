@@ -173,9 +173,11 @@ public class TestTiesDbService extends MockitoTest.Strict {
         initTestMedia();
         initJob();
         
-        when(_mockAuditEventLogger.createEvent())
+        lenient().when(_mockAuditEventLogger.createEvent())
                 .thenReturn(_mockBuilderTagStage);
-        when(_mockBuilderTagStage.withSecurityTag())
+        lenient().when(_mockAuditEventLogger.readEvent())
+                .thenReturn(_mockBuilderTagStage);
+        lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
         
         _tiesDbService = new TiesDbService(

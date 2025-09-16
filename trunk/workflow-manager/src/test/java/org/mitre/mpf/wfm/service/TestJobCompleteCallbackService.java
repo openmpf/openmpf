@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,9 +78,9 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
     
     @Before
     public void init() {
-        when(_mockAuditEventLogger.createEvent())
+        lenient().when(_mockAuditEventLogger.createEvent())
                 .thenReturn(_mockBuilderTagStage);
-        when(_mockBuilderTagStage.withSecurityTag())
+        lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
         
         _jobCompleteCallbackService = new JobCompleteCallbackService(

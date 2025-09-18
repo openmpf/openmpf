@@ -54,13 +54,17 @@ public class MediaSelectorsSegmenter  {
 
     private final JsonPathService _jsonPathService;
 
+    private final CsvColSelectorService _csvService;
+
     private final MediaSelectorsOutputFileProcessor _mediaSelectorsOutputFileProcessor;
 
     @Inject
     MediaSelectorsSegmenter(
             JsonPathService jsonPathService,
+            CsvColSelectorService csvService,
             MediaSelectorsOutputFileProcessor mediaSelectorsOutputFileProcessor) {
         _jsonPathService = jsonPathService;
+        _csvService = csvService;
         _mediaSelectorsOutputFileProcessor = mediaSelectorsOutputFileProcessor;
     }
 
@@ -109,6 +113,7 @@ public class MediaSelectorsSegmenter  {
         var results = switch (selectorType) {
             case JSON_PATH -> segmentUsingJsonPathSelectors(
                     media, context, media.getMediaSelectors());
+            case CSV_COLS -> segmentUsingCsvSelectors(media, context);
             // No default case so that compilation fails if a new enum value is added and a new
             // case is not added here.
         };
@@ -143,6 +148,17 @@ public class MediaSelectorsSegmenter  {
                 .distinct()
                 .map(s -> createDetectionRequest(s, media, context, selector));
     }
+
+
+    private List<DetectionRequest> segmentUsingCsvSelectors(
+            Media media,
+            DetectionContext context) {
+        return _csvService.extractSelections(media)
+                .stream()
+                .map(er -> createDetectionRequest(er.value(), media, context, er.selector()))
+                .toList();
+    }
+
 
     private static DetectionRequest createDetectionRequest(
                 String evalResult,

@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -147,7 +148,7 @@ public class TestJsonPathService {
 
     private Object getUpdated(String jsonPathExpr, Map<String, String> replacements) throws IOException {
         var evaluator = _jsonPathService.load(createTestJson());
-        evaluator.replaceStrings(jsonPathExpr, x -> replacements.getOrDefault(x, x));
+        evaluator.replaceStrings(jsonPathExpr, x -> Optional.ofNullable(replacements.get(x)));
 
         var outputPath = _tempFolder.newFile().toPath();
         try (var out = Files.newOutputStream(outputPath)) {

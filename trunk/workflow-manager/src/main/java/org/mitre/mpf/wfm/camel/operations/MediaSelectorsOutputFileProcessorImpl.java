@@ -26,19 +26,10 @@
 
 package org.mitre.mpf.wfm.camel.operations;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toMap;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.BinaryOperator;
-import java.util.function.UnaryOperator;
 
 import javax.inject.Inject;
 
@@ -49,11 +40,11 @@ import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaSelectorsDuplicatePolicy;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.CsvColSelectorService;
 import org.mitre.mpf.wfm.service.JsonPathService;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.service.StorageService;
@@ -63,8 +54,6 @@ import org.mitre.mpf.wfm.util.JobPartsIter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import com.google.common.collect.Maps;
 
 @Component(MediaSelectorsOutputFileProcessorImpl.REF)
 public class MediaSelectorsOutputFileProcessorImpl
@@ -83,16 +72,20 @@ public class MediaSelectorsOutputFileProcessorImpl
 
     private final JsonPathService _jsonPathService;
 
+    private final CsvColSelectorService _csvColSelectorService;
+
     @Inject
     MediaSelectorsOutputFileProcessorImpl(
             InProgressBatchJobsService inProgressJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             StorageService storageService,
-            JsonPathService jsonPathService) {
+            JsonPathService jsonPathService,
+            CsvColSelectorService csvColSelectorService) {
         _inProgressJobs = inProgressJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _storageService = storageService;
         _jsonPathService = jsonPathService;
+        _csvColSelectorService = csvColSelectorService;
     }
 
     @Override
@@ -125,10 +118,12 @@ public class MediaSelectorsOutputFileProcessorImpl
 
 
     private void createUpdatedOutputDocument(JobPart jobPart, Collection<Track> tracks) {
+        var mapper = getMapper(jobPart, tracks);
         createOutputDocument(jobPart.id(), jobPart.media().getId(), () -> {
             var selectorType = jobPart.media().getMediaSelectors().get(0).type();
             return switch (selectorType) {
-                case JSON_PATH -> createJsonOutputDocument(jobPart, tracks);
+                case JSON_PATH -> createJsonOutputDocument(jobPart, mapper);
+                case CSV_COLS -> createCsvOutputDocument(jobPart, mapper);
                 // No default case so that compilation fails if a new enum value is added and a new
                 // case is not added here.
             };
@@ -167,22 +162,12 @@ public class MediaSelectorsOutputFileProcessorImpl
     }
 
 
-    private URI createJsonOutputDocument(JobPart jobPart, Collection<Track> tracks)
+    private URI createJsonOutputDocument(JobPart jobPart, MediaSelectorsMapper mapper)
             throws StorageException, IOException {
-        var idToSelector = Maps.uniqueIndex(
-                jobPart.media().getMediaSelectors(), MediaSelector::id);
-        var selectorIdToTrackGroups = tracks.stream()
-                .filter(t -> t.getSelectorId().isPresent())
-                .collect(groupingBy(t -> t.getSelectorId().get()));
-
         var jsonPathEval = _jsonPathService.load(jobPart.media().getProcessingPath());
-        for (var entry : selectorIdToTrackGroups.entrySet()) {
-            var selector = idToSelector.get(entry.getKey());
-            var selectorTracks = entry.getValue();
-            var updater = getSelectionUpdater(jobPart, selectorTracks, selector);
-            jsonPathEval.replaceStrings(selector.expression(), updater);
+        for (var entry : mapper) {
+            jsonPathEval.replaceStrings(entry.selector().expression(), entry);
         }
-
         return _storageService.storeMediaSelectorsOutput(
                 jobPart.job(), jobPart.media(),
                 MediaSelectorType.JSON_PATH,
@@ -190,79 +175,22 @@ public class MediaSelectorsOutputFileProcessorImpl
     }
 
 
-    private UnaryOperator<String> getSelectionUpdater(
-                JobPart jobPart,
-                Collection<Track> tracks,
-                MediaSelector selector) {
-        var multipleOutputsHandler = getMultipleOutputsHandler(jobPart);
-        var inputToOutput = tracks.stream()
-                .filter(t -> t.getSelectedInput().isPresent())
-                .map(t -> Map.entry(
-                        t.getSelectedInput().get(),
-                        getOutput(t, selector, multipleOutputsHandler)))
-                .filter(e -> e.getValue().isPresent())
-                .collect(toMap(Map.Entry::getKey, e -> e.getValue().get(), multipleOutputsHandler));
+    private URI createCsvOutputDocument(JobPart jobPart, MediaSelectorsMapper mapper)
+            throws IOException, StorageException {
+        return _storageService.storeMediaSelectorsOutput(
+                jobPart.job(),
+                jobPart.media(),
+                MediaSelectorType.CSV_COLS,
+                os -> _csvColSelectorService.createOutputDocument(jobPart.media(), os, mapper));
+    }
 
+
+    private MediaSelectorsMapper getMapper(JobPart jobPart, Collection<Track> tracks) {
         var delimeter = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.MEDIA_SELECTORS_DELIMETER, jobPart);
-        if (delimeter == null || delimeter.isEmpty()) {
-            return input -> replaceFieldContent(input, inputToOutput);
-        }
-        else {
-            return input -> appendFieldContent(input, delimeter, inputToOutput);
-        }
+        return new MediaSelectorsMapper(jobPart, tracks, delimeter, getDuplicatePolicy(jobPart));
     }
 
-    private static Optional<String> getOutput(
-            Track track,
-            MediaSelector selector,
-            BinaryOperator<String> multipleOutputsHandler) {
-        var resultProp = selector.resultDetectionProperty();
-        var trackProp = Optional.ofNullable(track.getTrackProperties().get(resultProp));
-        if (trackProp.isPresent()) {
-            return trackProp;
-        }
-
-        var exemplarProp = Optional.ofNullable(track.getExemplar())
-            .map(e -> e.getDetectionProperties().get(resultProp));
-        if (exemplarProp.isPresent()) {
-            return exemplarProp;
-        }
-
-        return track.getDetections().stream()
-            .map(d -> d.getDetectionProperties().get(resultProp))
-            .filter(Objects::nonNull)
-            .reduce(multipleOutputsHandler);
-    }
-
-
-    private BinaryOperator<String> getMultipleOutputsHandler(JobPart jobPart) {
-        var policyHandler = getDuplicatePolicyHandler(jobPart);
-        return (x, y) -> {
-            if (x == null || x.isBlank()) {
-                return y;
-            }
-            else if (y == null || y.isBlank() || x.equals(y)) {
-                return x;
-            }
-            else {
-                return policyHandler.apply(x, y);
-            }
-        };
-    }
-
-    private BinaryOperator<String> getDuplicatePolicyHandler(JobPart jobPart) {
-        return switch (getDuplicatePolicy(jobPart)) {
-            case LONGEST -> BinaryOperator.maxBy(Comparator.comparingInt(String::length));
-            case JOIN -> (x, y) -> x + " | " + y;
-            case ERROR -> (x, y) -> {
-                throw new WfmProcessingException(
-                        "Could not create media selector output because one selected element "
-                        + "produced multiple outputs and %s was set to ERROR"
-                        .formatted(MpfConstants.MEDIA_SELECTORS_DUPLICATE_POLICY));
-            };
-        };
-    }
 
 
     private MediaSelectorsDuplicatePolicy getDuplicatePolicy(JobPart jobPart) {
@@ -272,16 +200,5 @@ public class MediaSelectorsOutputFileProcessorImpl
             return MediaSelectorsDuplicatePolicy.LONGEST;
         }
         return MediaSelectorsDuplicatePolicy.valueOf(duplicatePolicyName.toUpperCase());
-    }
-
-    private static String replaceFieldContent(String input, Map<String, String> inputToOutput) {
-        return inputToOutput.getOrDefault(input, input);
-    }
-
-    private static String appendFieldContent(
-            String input, String delimeter, Map<String, String> inputToOutput) {
-        return Optional.ofNullable(inputToOutput.get(input))
-                .map(o -> "%s %s %s".formatted(input, delimeter, o))
-                .orElse(input);
     }
 }

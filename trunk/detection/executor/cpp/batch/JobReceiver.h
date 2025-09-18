@@ -27,7 +27,6 @@
 #pragma once
 
 #include <exception>
-#include <string>
 #include <string_view>
 
 #include <MPFDetectionObjects.h>
@@ -45,7 +44,7 @@ class JobReceiver {
 
 public:
     JobReceiver(
-            LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue);
+            LoggerWrapper logger, Messenger messenger);
 
     JobContext GetJob();
 

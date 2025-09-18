@@ -153,7 +153,7 @@ public class MediaInspectionHelper {
                 LOG.error(errorMessage, ioe);
             }
 
-            mimeType = _ioUtils.getMimeType(localPath);
+            mimeType = media.getMimeType().orElseGet(() -> _ioUtils.getMimeType(localPath));
 
             mediaMetadata.put("MIME_TYPE", mimeType);
             mediaType = _mediaTypeUtils.parse(mimeType);
@@ -239,7 +239,8 @@ public class MediaInspectionHelper {
 
         FrameTimeInfo frameTimeInfo;
         try {
-            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata);
+            frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, ffprobeMetadata,
+                                                                  mediaMetadata.get("MIME_TYPE"));
         }
         catch (MediaInspectionException e) {
             if (ffprobeMetadata.frameCount().isPresent()) {

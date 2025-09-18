@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2025 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2024 The MITRE Corporation                                       *
+ * Copyright 2025 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,45 +24,19 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.security;
+package org.mitre.mpf.mvc.security.local;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.springframework.context.annotation.Profile;
 
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.csrf.CsrfException;
-import org.springframework.stereotype.Service;
-
-@Service("CustomAccessDeniedHandler")
-public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
-
-    @Override
-    public void handle(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AccessDeniedException accessDeniedException) throws IOException, ServletException {
-
-        if (!(accessDeniedException instanceof CsrfException)) {
-            super.handle(request, response, accessDeniedException);
-        }
-        else if (isAjax(request)) {
-            response.sendError(403, "INVALID_CSRF_TOKEN");
-        }
-        else if ("/login".equals(request.getRequestURI())) {
-            response.sendRedirect("/");
-        }
-        else {
-            super.handle(request, response, accessDeniedException);
-        }
-    }
-
-
-    private static boolean isAjax(HttpServletRequest request) {
-        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Profile("(!oidc & !custom_sso & !jenkins) | test-with-security")
+// Meta-annotation to prevent duplicating the @Profile expression.
+public @interface LocalSecurityProfile {
 }

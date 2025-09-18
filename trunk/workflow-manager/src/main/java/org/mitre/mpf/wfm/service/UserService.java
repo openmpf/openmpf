@@ -30,6 +30,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.mitre.mpf.mvc.security.local.LocalSecurityProfile;
 import org.mitre.mpf.wfm.data.access.UserDao;
 import org.mitre.mpf.wfm.data.entities.persistent.User;
 import org.mitre.mpf.wfm.enums.UserRole;
@@ -51,7 +52,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Profile("!oidc")
+@LocalSecurityProfile
 @Service("mpfUserService")
 public class UserService implements UserDetailsService {
 

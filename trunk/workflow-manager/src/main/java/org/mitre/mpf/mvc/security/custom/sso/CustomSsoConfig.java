@@ -24,51 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.videooverlay;
+package org.mitre.mpf.mvc.security.custom.sso;
 
-import java.util.List;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+@Configuration
+@Profile("custom_sso")
+public class CustomSsoConfig {
 
-public class JniLoader {
-    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
-
-    private static boolean _isLoaded;
-
-    static {
-        log.info("Loading JNI libraries...");
-        try {
-            System.loadLibrary("mpfopencvjni");
-            _isLoaded = true;
-        }
-        catch (UnsatisfiedLinkError ex) {
-            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libDir = System.getenv("MPF_HOME") + "/lib";
-
-            var libNames = List.of(
-                    "libmpfDetectionComponentApi.so",
-                    "libmpfopencvjni.so");
-
-            for (var libName : libNames) {
-                var path = libDir + '/' + libName;
-                log.warn("Trying to load library using full path: {}", path);
-                System.load(path);
-            }
-
-            _isLoaded = true;
-        }
+    public static boolean isEnabled() {
+        return CustomSsoProps.isEnabled();
     }
 
-    private JniLoader() {
+    @Bean
+    @Order(1)
+    public SecurityFilterChain restSecurityFilterChain(
+            HttpSecurity http,
+            CustomSsoRestService ssoService) throws Exception {
+        return http.antMatcher("/rest/**")
+            .authorizeHttpRequests(x -> x.anyRequest().authenticated())
+            .addFilter(ssoService)
+            .exceptionHandling(x -> x.authenticationEntryPoint(ssoService))
+            .csrf(x -> x.disable())
+            .build();
     }
 
-    /**
-     * This method exists to force the static initializer to run when a class with native methods
-     * is first used. This should always return true.
-     * @return true
-     */
-    public static boolean ensureLoaded() {
-        return _isLoaded;
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain userLoginSecurityFilterChain(
+            HttpSecurity http,
+            CustomSsoBrowserService ssoService,
+            CustomSsoProps customSsoProps) throws Exception {
+        return http.authorizeRequests(x ->
+                x.antMatchers("/custom_sso_error", "/resources/**", "/favicon.ico").permitAll()
+                .anyRequest().authenticated())
+            .addFilter(ssoService)
+            .exceptionHandling(e -> e.authenticationEntryPoint(ssoService))
+            .logout(x ->
+                x.deleteCookies(customSsoProps.getTokenProperty())
+                .logoutSuccessUrl("/"))
+            // Hawtio requires CookieCsrfTokenRepository.withHttpOnlyFalse().
+            .csrf(x -> x.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+            .build();
     }
 }

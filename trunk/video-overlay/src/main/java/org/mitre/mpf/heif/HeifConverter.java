@@ -32,11 +32,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.mitre.mpf.videooverlay.JniLoader;
+import org.mitre.mpf.videooverlay.JniHeifLoader;
 
 public class HeifConverter {
     static {
-        JniLoader.ensureLoaded();
+        JniHeifLoader.ensureLoaded();
     }
 
     /**

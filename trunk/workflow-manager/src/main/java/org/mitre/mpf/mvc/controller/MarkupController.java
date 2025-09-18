@@ -27,12 +27,8 @@
 package org.mitre.mpf.mvc.controller;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,12 +37,13 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletResponse;
+import javax.inject.Inject;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.HttpGet;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
-import org.mitre.mpf.rest.api.MarkupResultModel;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
@@ -54,75 +51,95 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.PathResource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import io.swagger.annotations.Api;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
-@Controller
+@RestController
 @Scope("request")
 public class MarkupController {
     private static final Logger log = LoggerFactory.getLogger(MarkupController.class);
 
-    @Autowired
-    private MarkupResultDao markupResultDao;
+    private final MarkupResultDao _markupResultDao;
 
-    @Autowired
-    private JobRequestDao jobRequestDao;
+    private final JobRequestDao _jobRequestDao;
 
-    @Autowired
-    private IoUtils ioUtils;
+    private final JsonUtils _jsonUtils;
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    private final S3StorageBackend _s3StorageBackend;
 
-    @Autowired
-    private S3StorageBackend s3StorageBackend;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final HttpClientUtils _httpClientUtils;
 
+    private final AuditEventLogger _auditEventLogger;
+
+    @Inject
+    MarkupController(
+            MarkupResultDao markupResultDao,
+            JobRequestDao jobRequestDao,
+            JsonUtils jsonUtils,
+            S3StorageBackend s3StorageBackend,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            PropertiesUtil propertiesUtil,
+            InProgressBatchJobsService inProgressJobs,
+            HttpClientUtils httpClientUtils,
+            AuditEventLogger auditEventLogger) {
+        _markupResultDao = markupResultDao;
+        _jobRequestDao = jobRequestDao;
+        _jsonUtils = jsonUtils;
+        _s3StorageBackend = s3StorageBackend;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _propertiesUtil = propertiesUtil;
+        _inProgressJobs = inProgressJobs;
+        _httpClientUtils = httpClientUtils;
+        _auditEventLogger = auditEventLogger;
+    }
 
     @GetMapping("/markup/get-markup-results-filtered")
-    @ResponseBody
     public ResponseEntity<Object> getMarkupResultsFiltered(
             @RequestParam("jobId") String jobId,
             @RequestParam("page") int page,
             @RequestParam("pageLen") int pageLen,
             @RequestParam("search") String search) {
 
-        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(jobId);
+        JobRequest jobRequest = _jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                LogAuditEventRecord.OpType.READ,
+                                LogAuditEventRecord.ResType.ERROR,
+                                "Failed to retrieve markup results: Invalid job ID " + jobId);
             return ResponseEntity.notFound().build();
         }
 
-        BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+        BatchJob job = _jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
-        List<MarkupResult> markupResults = markupResultDao.findByJobId(internalJobId);
+        List<MarkupResult> markupResults = _markupResultDao.findByJobId(internalJobId);
 
         //convert markup objects
         Map<Long, MarkupResultConvertedModel> markupResultModels = new HashMap<>();
@@ -145,19 +162,14 @@ public class MarkupController {
             model.setPipeline(job.getPipelineElements().getName());
             model.setSourceUri(med.getPersistentUri());
             model.setSourceFileAvailable(false);
-            if (!StringUtils.isBlank(med.getPersistentUri())) {
-                Path path = IoUtils.toLocalPath(med.getPersistentUri()).orElse(null);
-                if (path == null || Files.exists(path)) { // if remote media or available local media
-                    String downloadUrl = UriComponentsBuilder.fromPath("server/download")
-                            .queryParam("sourceUri", med.getPersistentUri())
-                            .queryParam("jobId", jobId)
-                            .toUriString();
-                    model.setSourceDownloadUrl(downloadUrl);
-                    model.setSourceFileAvailable(true);
-                    med.getType()
-                        .or(() -> inProgressJobs.getMediaType(internalJobId, med.getId()))
-                        .ifPresent(mt -> model.setSourceMediaType(mt.toString()));
-                }
+
+            if (isRemoteOrLocallyAvailable(med.getPersistentUri())) {
+                getSourceDownloadUrl(internalJobId, med)
+                    .ifPresent(model::setSourceDownloadUrl);
+                model.setSourceFileAvailable(true);
+                med.getType()
+                    .or(() -> _inProgressJobs.getMediaType(internalJobId, med.getId()))
+                    .ifPresent(mt -> model.setSourceMediaType(mt.toString()));
             }
             markupResultModels.put(med.getId(), model);
         }
@@ -171,7 +183,7 @@ public class MarkupController {
                         (markupResult.getParentMediaId() + "").contains(search) ||
                         (markupResult.getMediaId() + "").contains(search) ||
                         (markupResult.getMarkupUri() != null && markupResult.getMarkupUri().toLowerCase().contains(search)) ||
-                        (markupResult.getSourceUri() != null && markupResult.getSourceUri().toLowerCase().contains(search))) {
+                        (markupResult.getSourceUri() != null && markupResult.getSourceUri().fullString().toLowerCase().contains(search))) {
                     markupResultModelsFiltered.add(markupResult);
                 }
             } else {
@@ -209,104 +221,101 @@ public class MarkupController {
     }
 
 
-    @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    public void getFile(@RequestParam("id") long id,
-                        HttpServletResponse response) throws IOException, StorageException {
-        MarkupResult markupResult = markupResultDao.findById(id);
+    @GetMapping("/markup/download")
+    public Object getFile(@RequestParam("id") long id) throws StorageException, IOException {
+        var markupResult = _markupResultDao.findById(id);
         if (markupResult == null) {
-            log.error("Markup with id " + id + " download failed. Invalid id.");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+            log.error("Markup with id {} download failed. Invalid id.", id);
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                LogAuditEventRecord.OpType.EXTRACT,
+                                LogAuditEventRecord.ResType.ERROR,
+                                "Markup download failed: Invalid markup ID " + id);
+            return ResponseEntity.notFound().build();
         }
 
-        Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
-        if (localPath != null) {
-            if (!Files.exists(localPath)) {
-                log.error("Markup with id " + id + " download failed. Invalid path: " + localPath);
-                response.setStatus(404);
-                response.flushBuffer();
-                return;
+        var localPath = IoUtils.toLocalPath(markupResult.getMarkupUri());
+        if (localPath.isPresent()) {
+            if (Files.exists(localPath.get())) {
+                _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                LogAuditEventRecord.OpType.EXTRACT,
+                                LogAuditEventRecord.ResType.ALLOW,
+                                "Downloaded markup file: uri=" + markupResult.getMarkupUri());
+                return new PathResource(localPath.get());
             }
-            ioUtils.sendBinaryResponse(localPath, response);
-            return;
+            log.error("Markup with id {} download failed. Invalid path: {}", id, localPath);
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                    LogAuditEventRecord.OpType.EXTRACT,
+                                    LogAuditEventRecord.ResType.ERROR,
+                                    "Markup download failed: File not found at path " + localPath + " for markup ID " + id);
+            return ResponseEntity.notFound().build();
         }
 
-        BatchJob job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
+        var job = Optional.ofNullable(_jobRequestDao.findById(markupResult.getJobId()))
                 .map(JobRequest::getJob)
-                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
-                .orElse(null);
-        if (job == null) {
-            log.error("Markup with id " + id + " download failed. Invalid job with id " +
-                    markupResult.getJobId() + ".");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+                .map(bytes -> _jsonUtils.deserialize(bytes, BatchJob.class));
+        if (job.isEmpty()) {
+            log.error(
+                    "Markup with id {} download failed. Invalid job with id {}.",
+                    id, markupResult.getJobId());
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                LogAuditEventRecord.OpType.EXTRACT,
+                                LogAuditEventRecord.ResType.ERROR,
+                                "Markup download failed: Invalid job ID " + markupResult.getJobId() + " for markup ID " + id);
+            return ResponseEntity.notFound().build();
         }
 
-        var media = job.getMedia()
+        var media = job.get()
+                .getMedia()
                 .stream()
                 .filter(m -> m.getId() == markupResult.getMediaId())
-                .findAny()
-                .orElse(null);
-        if (media == null) {
-            log.error("Markup with id " + id + " download failed. Invalid media with id " +
-                    markupResult.getMediaId() + ".");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+                .findAny();
+        if (media.isEmpty()) {
+            log.error(
+                    "Markup with id {} download failed. Invalid media with id {}.",
+                    id, markupResult.getMediaId());
+            _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                LogAuditEventRecord.OpType.EXTRACT,
+                                LogAuditEventRecord.ResType.ERROR,
+                                "Markup download failed: Invalid media ID " + markupResult.getMediaId() + " for markup ID " + id);
+            return ResponseEntity.notFound().build();
         }
 
-        var combinedProperties = getProperties(job, media, markupResult);
-
+        var combinedProperties = getProperties(job.get(), media.get(), markupResult);
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             try {
-                try (var s3Stream = s3StorageBackend.getFromS3(
-                        markupResult.getMarkupUri(), combinedProperties)) {
-                    var s3Response = s3Stream.response();
-                    IoUtils.sendBinaryResponse(s3Stream, response,
-                            s3Response.contentType(), s3Response.contentLength());
-                }
-                return;
-            } catch (StorageException e) {
-                log.error("Markup with id " + id + " download failed: " + e.getMessage());
-                response.setStatus(500);
-                response.flushBuffer();
-                return;
+                var s3Stream = _s3StorageBackend.getFromS3(
+                        markupResult.getMarkupUri(), combinedProperties);
+                _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                        LogAuditEventRecord.OpType.EXTRACT,
+                                        LogAuditEventRecord.ResType.ALLOW,
+                                        "Downloaded markup file: uri=" + markupResult.getMarkupUri());
+                return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
+            }
+            catch (StorageException e) {
+                log.error("Markup with id " + id + " download failed: " + e.getMessage(), e);
+                _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                    LogAuditEventRecord.OpType.EXTRACT,
+                                    LogAuditEventRecord.ResType.ERROR,
+                                    "Markup download failed: S3 error for markup ID " + id + " : " + e.getMessage());
+                return ResponseEntity.internalServerError().build();
             }
         }
 
-        try {
-            URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
-            URLConnection urlConnection = mediaUrl.openConnection();
-            try (InputStream inputStream = urlConnection.getInputStream()) {
-                IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
-                        urlConnection.getContentLength());
-            }
-        } catch (IOException e) {
-            log.error("Markup with id " + id + " download failed: " + e.getMessage());
-            response.setStatus(500);
-            response.flushBuffer();
-            return;
-        }
+        var request = new HttpGet(markupResult.getMarkupUri());
+        var markupResponse = _httpClientUtils.executeRequestSync(request, 0);
+        _auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY,
+                                    LogAuditEventRecord.OpType.EXTRACT,
+                                    LogAuditEventRecord.ResType.ALLOW,
+                                    "Downloaded markup file: uri=" + markupResult.getMarkupUri());
+        return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
+
 
     private UnaryOperator<String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
         var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
-        return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
+        return _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }
 
-    private MarkupResultModel convertMarkupResult(MarkupResult markupResult) {
-        boolean isImage = false;
-        if(markupResult.getMarkupUri() != null) {
-            String nonUrlPath = markupResult.getMarkupUri().replace("file:", "");
-            String markupContentType = ioUtils.getPathContentType(Paths.get(nonUrlPath));
-            isImage = (markupContentType != null && StringUtils.startsWithIgnoreCase(markupContentType, "IMAGE"));
-        }
-
-        return new MarkupResultModel(markupResult.getId(), markupResult.getJobId(),
-                                     markupResult.getPipeline(), markupResult.getMarkupUri(), isImage);
-    }
 
     private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
         String markupMediaType = "";
@@ -328,13 +337,9 @@ public class MarkupController {
             }
         }
 
-        Path path = IoUtils.toLocalPath(media.getPersistentUri()).orElse(null);
-        if (path == null || Files.exists(path))  { // if remote media or available local media
-            sourceDownloadUrl = UriComponentsBuilder
-                    .fromPath("server/download")
-                    .queryParam("sourceUri", media.getPersistentUri())
-                    .queryParam("jobId", markupResult.getJobId())
-                    .toUriString();
+        if (isRemoteOrLocallyAvailable(media.getPersistentUri()))  {
+            sourceDownloadUrl = getSourceDownloadUrl(markupResult.getJobId(), media)
+                    .orElse("");
             sourceFileAvailable = true;
             sourceMediaType = media.getType()
                     .map(Enum::toString)
@@ -343,7 +348,7 @@ public class MarkupController {
 
         return new MarkupResultConvertedModel(
                 markupResult.getId(),
-                propertiesUtil.getExportedJobId(markupResult.getJobId()),
+                _propertiesUtil.getExportedJobId(markupResult.getJobId()),
                 markupResult.getMediaId(),
                 media.getParentId(),
                 markupResult.getPipeline(),
@@ -355,5 +360,26 @@ public class MarkupController {
                 sourceMediaType,
                 sourceDownloadUrl,
                 sourceFileAvailable);
+    }
+
+
+    private static Optional<String> getSourceDownloadUrl(long jobId, Media media) {
+        if (media.getUriScheme() == UriScheme.DATA) {
+            return Optional.empty();
+        }
+        var downloadUrl = UriComponentsBuilder.fromPath("server/download")
+                .queryParam("sourceUri", media.getPersistentUri())
+                .queryParam("jobId", jobId)
+                .toUriString();
+        return Optional.of(downloadUrl);
+    }
+
+    private static boolean isRemoteOrLocallyAvailable(MediaUri uri) {
+        if (UriScheme.get(uri) == UriScheme.FILE) {
+            return Files.exists(Path.of(uri.get()));
+        }
+        else {
+            return true;
+        }
     }
 }

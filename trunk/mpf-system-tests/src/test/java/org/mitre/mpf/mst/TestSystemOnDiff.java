@@ -33,8 +33,8 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationMediaSelector;
-import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.MediaSelectorType;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
 import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
@@ -46,6 +46,10 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -380,9 +384,23 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImageWithAutoOrientation() throws Exception {
-        runSystemTest("OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
-                      "output/face/runFaceOcvDetectImageWithAutoOrientation.json",
-                      "/samples/face/meds-aa-S001-01-exif-rotation.jpg");
+        runFaceOcvDetectImageWithAutoOrientation(ioUtils.findFile(
+                "/samples/face/meds-aa-S001-01-exif-rotation.jpg"));
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void runFaceOcvDetectImageWithAutoOrientationDataUri() throws IOException {
+        var pathToUriFile = Path.of(ioUtils.findFile(
+                "/samples/face/meds-aa-S001-01-exif-rotation.jpg.datauri.txt"));
+        var uriStr = Files.readString(pathToUriFile, StandardCharsets.US_ASCII).strip();
+        runFaceOcvDetectImageWithAutoOrientation(URI.create(uriStr));
+    }
+
+    private void runFaceOcvDetectImageWithAutoOrientation(URI mediaUri) throws IOException {
+        runSystemTest(
+                "OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
+                "output/face/runFaceOcvDetectImageWithAutoOrientation.json",
+                toMediaObject(mediaUri));
     }
 
     @Test(timeout = 15 * MINUTES)
@@ -1261,7 +1279,34 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runJsonPathTest() throws IOException {
+    public void runJsonPathTest() throws IOException, URISyntaxException {
+        var mediaUrl = getClass().getResource("/samples/text/test-media-selectors.json");
+        runJsonPathTest(mediaUrl.toURI());
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void runJsonPathWithPercentEncodedDataUri() throws IOException {
+        // mediaUri is the percent encoded version of samples/text/test-media-selectors.json
+        var mediaUri
+                = "data:application/json;,%7B%22otherStuffKey%22%3A%5B%22other%20stuff%20value%22"
+                + "%5D%2C%22spanishMessages%22%3A%5B%7B%22to%22%3A%22spanish%20recipient%201%22%2"
+                + "C%22from%22%3A%22spanish%20sender%201%22%2C%22content%22%3A%22%C2%BFHola%2C%20"
+                + "c%C3%B3mo%20est%C3%A1s%3F%22%7D%2C%7B%22to%22%3A%22spanish%20recipient%202%22%"
+                + "2C%22from%22%3A%22spanish%20sender%202%22%2C%22content%22%3A%22%C2%BFDonde%20e"
+                + "st%C3%A1%20el%20aeropuerto%3F%22%7D%5D%2C%22chineseMessages%22%3A%5B%7B%22to%2"
+                + "2%3A%22chinese%20recipient%201%22%2C%22from%22%3A%22chinese%20sender%201%22%2C"
+                + "%22content%22%3A%22%E7%8E%B0%E5%9C%A8%E6%98%AF%E5%87%A0%E5%A5%8C%EF%BC%9F%22%7"
+                + "D%2C%7B%22to%22%3A%22chinese%20recipient%202%22%2C%22from%22%3A%22chinese%20se"
+                + "nder%202%22%2C%22content%22%3A%22%E4%BD%A0%E5%8F%AB%E4%BB%80%E4%B9%88%E5%90%8D"
+                + "%E5%AD%97%EF%BC%9F%22%7D%2C%7B%22to%22%3A%22chinese%20recipient%203%22%2C%22fr"
+                + "om%22%3A%22chinese%20sender%203%22%2C%22content%22%3A%22%E4%BD%A0%E5%9C%A8%E5%"
+                + "93%AA%E9%87%8C%EF%BC%9F%22%7D%5D%7D";
+        runJsonPathTest(URI.create(mediaUri));
+    }
+
+
+    public void runJsonPathTest(URI mediaUri) throws IOException {
         var pipelineName = "TEST JSON PATH";
         addPipeline(
                 pipelineName,
@@ -1280,9 +1325,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 Map.of(),
                 "TRANSLATION");
 
-        var mediaUrl = getClass().getResource("/samples/text/test-media-selectors.json");
         var media = new JobCreationMediaData(
-                mediaUrl.toString(),
+                new MediaUri(mediaUri),
                 Map.of(),
                 Map.of(),
                 List.of(),
@@ -1290,19 +1334,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 List.of(selector1, selector2),
                 Optional.of("ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION"));
 
-        var job = new JobCreationRequest(
-                List.of(media),
-                Map.of(),
-                Map.of(),
-                null,
-                pipelineName,
-                null,
-                true,
-                4,
-                null,
-                null);
-
-        var outputObject = runSystemTest(job, "output/text/runJsonPathTest.json");
+        var outputObject = runSystemTest(pipelineName, "output/text/runJsonPathTest.json", media);
 
         var actualMediaSelectorsUri = URI.create(
                 outputObject.getMedia().first().getMediaSelectorsOutputUri());

@@ -68,7 +68,7 @@ import org.mitre.mpf.interop.JsonMediaOutputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.interop.util.TimeUtils;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -85,7 +85,9 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -117,7 +119,7 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private final HttpClientUtils _httpClientUtils;
 
-    private final OAuthClientTokenProvider _oAuthClientTokenProvider;
+    private final OutgoingRequestTokenService _clientTokenProvider;
 
     private final ObjectMapper _objectMapper;
 
@@ -125,24 +127,28 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private final S3StorageBackend _s3StorageBackend;
 
+    private final AuditEventLogger _auditEventLogger;
+
     @Inject
     public TiesDbBeforeJobCheckServiceImpl(
             PropertiesUtil propertiesUtil,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             JobConfigHasher jobConfigHasher,
             HttpClientUtils httpClientUtils,
-            OAuthClientTokenProvider oAuthClientTokenProvider,
+            OutgoingRequestTokenService clientTokenProvider,
             ObjectMapper objectMapper,
             InProgressBatchJobsService inProgressJobs,
-            S3StorageBackend s3StorageBackend) {
+            S3StorageBackend s3StorageBackend,
+            AuditEventLogger auditEventLogger) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _jobConfigHasher = jobConfigHasher;
         _httpClientUtils = httpClientUtils;
-        _oAuthClientTokenProvider = oAuthClientTokenProvider;
+        _clientTokenProvider = clientTokenProvider;
         _objectMapper = objectMapper;
         _inProgressJobs = inProgressJobs;
         _s3StorageBackend = s3StorageBackend;
+        _auditEventLogger = auditEventLogger;
     }
 
 
@@ -246,16 +252,13 @@ public class TiesDbBeforeJobCheckServiceImpl
             throw new WfmProcessingException(e);
         }
 
-        boolean useOidc = Boolean.parseBoolean(combinedJobProps.apply(
-                MpfConstants.TIES_DB_USE_OIDC));
-
         // There may be multiple matching supplementals in TiesDb, so we don't want to report
         // an error if there was a problem getting one supplemental, but we were able to get a
         // different matching supplemental. Use an AtomicReference because some errors can occur
         // on threads belonging to the HTTP client.
         var lastException = new AtomicReference<Throwable>(null);
         var optCheckInfo = getCheckInfo(
-                mediaHashToBaseUris, jobHash, s3CopyEnabled, useOidc, lastException);
+                mediaHashToBaseUris, jobHash, s3CopyEnabled, combinedJobProps, lastException);
         if (optCheckInfo.isPresent()) {
             return new TiesDbCheckResult(
                     TiesDbCheckStatus.FOUND_MATCH,
@@ -321,7 +324,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             Multimap<String, String> mediaHashToBaseUris,
             String expectedJobHash,
             boolean s3CopyEnabled,
-            boolean useOidc,
+            UnaryOperator<String> combinedProps,
             AtomicReference<Throwable> lastException) {
         // Need a temporary list so that all of the futures are created before we start calling
         // join on any of the futures.
@@ -329,7 +332,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             .stream()
             .map(u -> getSupplementals(
                         u, 0, expectedJobHash, Optional.empty(), s3CopyEnabled,
-                        useOidc, lastException))
+                        combinedProps, lastException))
             .toList();
         return futures
                 .stream()
@@ -370,18 +373,24 @@ public class TiesDbBeforeJobCheckServiceImpl
             URI unpagedUri, int offset, String jobHash,
             Optional<TiesDbCheckResult.CheckInfo> prevBest,
             boolean s3CopyEnabled,
-            boolean useOidc,
+            UnaryOperator<String> combinedProps,
             AtomicReference<Throwable> lastException) {
         int limit = 100;
         var uri = addPaginationParams(unpagedUri, offset, limit);
         var request = new HttpGet(uri);
-        if (useOidc) {
-            _oAuthClientTokenProvider.addToken(request);
-        }
+        _clientTokenProvider.addTokenToTiesDbRequest(combinedProps, request);
         return _httpClientUtils.executeRequest(
                 request,
                 _propertiesUtil.getHttpCallbackRetryCount())
-            .thenApply(resp -> checkResponse(unpagedUri, resp))
+            .thenApply(resp -> {
+                int statusCode = resp.getStatusLine().getStatusCode();
+                _auditEventLogger.log(
+                    LogAuditEventRecord.TagType.SECURITY,
+                    LogAuditEventRecord.OpType.READ,
+                    LogAuditEventRecord.ResType.ALLOW,
+                    String.format("TiesDB API call: GET %s - Status Code: %s", uri, statusCode));
+                return checkResponse(unpagedUri, resp);
+            })
             .thenCompose(resp -> {
                 var responseJson = parseResponse(resp);
                 var bestMatch = getBestMatchSoFar(
@@ -392,8 +401,13 @@ public class TiesDbBeforeJobCheckServiceImpl
                 }
                 return getSupplementals(
                             unpagedUri, offset + limit, jobHash, bestMatch, s3CopyEnabled,
-                            useOidc, lastException);
+                            combinedProps, lastException);
             }).exceptionally(e -> {
+                _auditEventLogger.log(
+                    LogAuditEventRecord.TagType.SECURITY,
+                    LogAuditEventRecord.OpType.READ,
+                    LogAuditEventRecord.ResType.ERROR,
+                    String.format("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage()));
                 lastException.set(e.getCause());
                 return prevBest;
             });
@@ -668,7 +682,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             var newMedia = JsonMediaOutputObject.factory(
                     oldMedia.getMediaId(),
                     oldMedia.getParentMediaId(),
-                    newMediaUri,
+                    newMediaUri.fullString(),
                     oldMedia.getPath(),
                     oldMedia.getType(),
                     oldMedia.getMimeType(),

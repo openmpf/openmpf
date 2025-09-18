@@ -26,6 +26,21 @@
 
 package org.mitre.mpf.wfm.util;
 
+import static java.util.stream.Collectors.toList;
+
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+
+import javax.inject.Inject;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -36,6 +51,8 @@ import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.nio.client.methods.HttpAsyncMethods;
+import org.apache.http.nio.protocol.HttpAsyncResponseConsumer;
 import org.apache.http.nio.reactor.ConnectingIOReactor;
 import org.apache.http.nio.reactor.IOReactorException;
 import org.mitre.mpf.interop.JsonHealthReportCollection;
@@ -48,32 +65,22 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.io.IOException;
-import java.net.SocketTimeoutException;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-
-import static java.util.stream.Collectors.toList;
 
 
 @Component
 public class HttpClientUtils implements AutoCloseable {
 
+    private static final int INITIAL_DELAY = 100;
+
     private static final Logger log = LoggerFactory.getLogger(HttpClientUtils.class);
 
-    private final JsonUtils jsonUtils;
+    private final JsonUtils _jsonUtils;
 
-    private final CloseableHttpAsyncClient httpAsyncClient;
-
+    private final CloseableHttpAsyncClient _httpAsyncClient;
 
     @Inject
     public HttpClientUtils(PropertiesUtil propertiesUtil, JsonUtils jsonUtils) throws IOReactorException {
-        this.jsonUtils = jsonUtils;
+        _jsonUtils = jsonUtils;
 
         IOReactorConfig ioConfig = IOReactorConfig.custom()
                 .setIoThreadCount(Math.min(8, Runtime.getRuntime().availableProcessors()))
@@ -89,14 +96,17 @@ public class HttpClientUtils implements AutoCloseable {
         cm.setMaxTotal(propertiesUtil.getHttpCallbackConcurrentConnections()); // default is 20
 
 
-        httpAsyncClient = HttpAsyncClients.custom().setConnectionManager(cm).build();
-        httpAsyncClient.start();
+        _httpAsyncClient = HttpAsyncClients.custom()
+                .setConnectionManager(cm)
+                .disableCookieManagement()
+                .build();
+        _httpAsyncClient.start();
     }
 
 
     @Override
     public void close() throws IOException {
-        httpAsyncClient.close();
+        _httpAsyncClient.close();
     }
 
 
@@ -131,10 +141,121 @@ public class HttpClientUtils implements AutoCloseable {
     }
 
 
-    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request) {
+    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries) {
+        return executeRequest(
+                request,
+                retries,
+                r -> true);
+    }
+
+    public HttpResponse executeRequestSync(HttpUriRequest request, int retries) throws IOException {
+        return ThreadUtil.join(executeRequest(request, retries), IOException.class);
+    }
+
+    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries,
+                                                          Predicate<HttpResponse> isRetryable) {
+        return executeRequest(
+                request,
+                HttpAsyncMethods::createConsumer,
+                retries,
+                INITIAL_DELAY,
+                isRetryable);
+    }
+
+    public CompletableFuture<HttpResponse> downloadResponse(
+            HttpUriRequest request,
+            Path targetPath,
+            int retries) {
+        return executeRequest(
+                request,
+                () -> HttpAsyncMethods.createZeroCopyConsumer(targetPath.toFile()),
+                retries,
+                INITIAL_DELAY,
+                r -> true);
+    }
+
+    public HttpResponse downloadResponseSync(
+            HttpUriRequest request,
+            Path targetPath,
+            int retries) throws IOException {
+        return ThreadUtil.join(
+                downloadResponse(request, targetPath, retries),
+                IOException.class);
+    }
+
+    private CompletableFuture<HttpResponse> executeRequest(
+            HttpUriRequest request,
+            Callable<HttpAsyncResponseConsumer<HttpResponse>> consumerCreator,
+            int retries,
+            long delayMs,
+            Predicate<HttpResponse> isRetryable) {
+        try {
+            return throwingExecuteRequest(
+                    request,
+                    consumerCreator,
+                    retries,
+                    delayMs,
+                    isRetryable);
+        }
+        catch (Exception e) {
+            // Instead of reporting error in two ways like the base HTTP client does, we report
+            // all errors through a failed future. We do this so that callers only have to handle
+            // errors in one way.
+            return ThreadUtil.failedFuture(e);
+        }
+    }
+
+    private CompletableFuture<HttpResponse> throwingExecuteRequest(
+            HttpUriRequest request,
+            Callable<HttpAsyncResponseConsumer<HttpResponse>> consumerCreator,
+            int retries,
+            long delayMs,
+            Predicate<HttpResponse> isRetryable) throws Exception {
+
+        log.info("Starting {} request to \"{}\".", request.getMethod(), request.getURI());
+        long nextDelay = Math.min(delayMs * 2, 30_000);
+
+        return throwingExecuteRequest(request, consumerCreator.call()).thenApply(resp -> {
+            int statusCode = resp.getStatusLine().getStatusCode();
+            if ((statusCode >= 200 && statusCode <= 299) || retries <= 0
+                    || !isRetryable.test(resp)) {
+                return resp;
+            }
+            throw new IllegalStateException(
+                    "The server responded with a non-200 status code of " + statusCode);
+        })
+        .exceptionallyCompose(err -> {
+            if (retries <= 0) {
+                log.error(String.format(
+                        "Failed to issue %s request to '%s'. All retry attempts exhausted.",
+                        request.getMethod(), request.getURI()), err);
+                return ThreadUtil.failedFuture(err);
+            }
+            log.error(String.format(
+                    "Failed to issue %s request to '%s'. There are %s attempts remaining " +
+                            "and the next attempt will begin in %s ms.",
+                    request.getMethod(), request.getURI(), retries, nextDelay), err);
+
+            return ThreadUtil.delayAndUnwrap(
+                    nextDelay, TimeUnit.MILLISECONDS,
+                    () -> throwingExecuteRequest(
+                            request, consumerCreator, retries - 1, nextDelay, isRetryable));
+        });
+    }
+
+    // Callers of this method must handle both exceptions thrown synchronously and failed futures.
+    // When an exception is thrown synchronously, we should not retry because the request was not
+    // valid and all future attempts will fail.
+    private CompletableFuture<HttpResponse> throwingExecuteRequest(
+            HttpUriRequest request,
+            HttpAsyncResponseConsumer<HttpResponse> responseConsumer) {
         var future = ThreadUtil.<HttpResponse>newFuture();
         var mdcCtx = MDC.getCopyOfContextMap();
-        httpAsyncClient.execute(request, new FutureCallback<>() {
+        // httpAsyncClient reports errors in two ways. When it can detect an error before network
+        // activity, it throws an exception synchronously. When the error occurs during network
+        // activity, the client reports the error by calling FutureCallback.failed.
+        var asyncRequest = HttpAsyncMethods.create(request);
+        _httpAsyncClient.execute(asyncRequest, responseConsumer, new FutureCallback<>() {
             @Override
             public void completed(HttpResponse result) {
                 MdcUtil.all(mdcCtx, () -> future.complete(result));
@@ -152,64 +273,6 @@ public class HttpClientUtils implements AutoCloseable {
         });
         return future;
     }
-
-
-    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries) {
-        return executeRequest(request, retries, 100, r -> true);
-    }
-
-
-    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries,
-                                                          Predicate<HttpResponse> isRetryable) {
-        return executeRequest(request, retries, 100, isRetryable);
-    }
-
-
-    private CompletableFuture<HttpResponse> executeRequest(
-            HttpUriRequest request,
-            int retries,
-            long delayMs,
-            Predicate<HttpResponse> isRetryable) {
-
-        log.info("Starting {} request to \"{}\".", request.getMethod(), request.getURI());
-        long nextDelay = Math.min(delayMs * 2, 30_000);
-
-        return executeRequest(request).thenApply(resp -> {
-            int statusCode = resp.getStatusLine().getStatusCode();
-            if ((statusCode >= 200 && statusCode <= 299) || retries <= 0
-                    || !isRetryable.test(resp)) {
-                return ThreadUtil.completedFuture(resp);
-            }
-
-            log.warn("\"{}\" responded with a non-200 status code of {}. There are {} " +
-                             "attempts remaining and the next attempt will begin in {} ms.",
-                     request.getURI(),statusCode, retries, nextDelay);
-            return ThreadUtil.<HttpResponse>failedFuture(new IllegalStateException("non-200"));
-        })
-        .exceptionally(err -> {
-            if (retries > 0) {
-                log.error(String.format(
-                        "Failed to issue %s request to '%s'. There are %s attempts remaining " +
-                                "and the next attempt will begin in %s ms.",
-                        request.getMethod(), request.getURI(), retries, nextDelay), err);
-            }
-            else {
-                log.error(String.format(
-                        "Failed to issue %s request to '%s'. All retry attempts exhausted.",
-                        request.getMethod(), request.getURI()), err);
-            }
-            return ThreadUtil.failedFuture(err);
-        })
-        .thenCompose(future -> {
-            if (future.isCompletedExceptionally() && retries > 0) {
-                return ThreadUtil.delayAndUnwrap(
-                        nextDelay, TimeUnit.MILLISECONDS,
-                        () -> executeRequest(request, retries - 1, nextDelay, isRetryable));
-            }
-            return future;
-        });
-    }
-
 
     // TODO: Implement sendGetCallback
 
@@ -234,9 +297,9 @@ public class HttpClientUtils implements AutoCloseable {
              *
              * See https://wiki.apache.org/HttpComponents/HttpEntity#EntityTemplate
              */
-            post.setEntity(new EntityTemplate((outputStream) -> jsonUtils.serialize(json, outputStream)));
+            post.setEntity(new EntityTemplate((outputStream) -> _jsonUtils.serialize(json, outputStream)));
 
-            httpAsyncClient.execute(post, new FutureCallback<HttpResponse>() {
+            _httpAsyncClient.execute(post, new FutureCallback<HttpResponse>() {
                 public void completed(final HttpResponse response) {
                     log.info("Sent {} callback to {} for job ids {}. Response: {}",
                              callbackType, callbackUri, jobIds, response);

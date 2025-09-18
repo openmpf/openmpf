@@ -25,12 +25,25 @@
  ******************************************************************************/
 
 #include <jni.h>
-#include <libheif/heif_cxx.h>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
-
 #include "JniHelper.h"
+#include <libheif/heifio/encoder.h>
+#include <libheif/heifio/encoder_png.h>
+#include <libheif/heif_cxx.h>
+
+class LibHeifInitializer {
+    public:
+    LibHeifInitializer() { heif_init(nullptr); }
+    ~LibHeifInitializer() { heif_deinit(); }
+};
+
+// This class is here to ensure that the heif_image allocated in
+// heif_decode_image() is freed properly.
+class HeifImageHolder {
+    public:
+    HeifImageHolder(heif_image *image) : m_image(image) {}
+    ~HeifImageHolder() {heif_image_release(m_image);}
+    heif_image* m_image;
+};
 
 extern "C" {
 
@@ -38,22 +51,37 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
         JNIEnv *env, jclass clz, jstring inputFile, jstring outputFile) {
 
     JniHelper jni(env);
+
     try {
+        LibHeifInitializer initializer;
         heif::Context ctx;
         ctx.read_from_file(jni.ToStdString(inputFile));
-
         heif::ImageHandle handle = ctx.get_primary_image_handle();
-        heif::Image img = handle.decode_image(heif_colorspace_RGB,
-                                              heif_chroma_interleaved_RGB);
+        HeifImageHolder image(nullptr);
+        struct heif_error err = heif_decode_image(handle.get_raw_image_handle(), &(image.m_image),
+                                                  heif_colorspace_RGB,
+                                                  heif_chroma_interleaved_RGB,
+                                                  nullptr);
+        if (err.code != 0) {
+            throw std::runtime_error(std::string("Could not decode HEIF/AVIF image: ") + std::string(err.message));
+        }
 
-        int stride = cv::Mat::AUTO_STEP;
-        uint8_t* data = img.get_plane(heif_channel_interleaved, &stride);
-        int width = handle.get_width();
-        int height = handle.get_height();
+        PngEncoder encoder;
+        bool success = encoder.Encode(handle.get_raw_image_handle(), image.m_image,
+                                       jni.ToStdString(outputFile));
+        if (!success) {
+            // If the above call failed, it's likely because libpng rejected the
+            // image color profile for some reason. By calling again without the
+            // image handle, we can force libheif to skip the libpng call that
+            // rejects the color profile.
+            success = encoder.Encode(nullptr, image.m_image,
+                                       jni.ToStdString(outputFile));
+        }
+        if (!success) {
+            // If neither of the above calls worked then fail completely.
+            throw std::runtime_error("Could not encode HEIF/AVIF image to PNG image");
+        }
 
-        cv::Mat cv_img(height, width, CV_8UC3, data, stride);
-        cv::cvtColor(cv_img, cv_img, cv::COLOR_RGB2BGR);
-        cv::imwrite(jni.ToStdString(outputFile), cv_img);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());

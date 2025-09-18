@@ -43,12 +43,13 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.subject.CallbackMethod;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
-import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -69,9 +70,9 @@ public class JobCompleteCallbackService {
 
     private final PropertiesUtil _propertiesUtil;
 
-    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+    private final OutgoingRequestTokenService _clientTokenProvider;
 
-    private final OAuthClientTokenProvider _oAuthClientTokenProvider;
+    private final AuditEventLogger _auditEventLogger;
 
     @Inject
     JobCompleteCallbackService(
@@ -79,12 +80,13 @@ public class JobCompleteCallbackService {
             ObjectMapper objectMapper,
             PropertiesUtil propertiesUtil,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            OAuthClientTokenProvider oAuthClientTokenProvider) {
+            OutgoingRequestTokenService clientTokenProvider,
+            AuditEventLogger auditEventLogger) {
         _httpClientUtils = httpClientUtils;
         _objectMapper = objectMapper;
         _propertiesUtil = propertiesUtil;
-        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _oAuthClientTokenProvider = oAuthClientTokenProvider;
+        _clientTokenProvider = clientTokenProvider;
+        _auditEventLogger = auditEventLogger;
     }
 
 
@@ -100,9 +102,7 @@ public class JobCompleteCallbackService {
                     job.getId(),
                     Optional.ofNullable(outputObjectUri),
                     job.getExternalId());
-            if (shouldUseOidc(job)) {
-                _oAuthClientTokenProvider.addToken(request);
-            }
+            _clientTokenProvider.addTokenToJobCompleteCallback(job, request);
             return sendCallback(request);
         }
         catch (Exception e) {
@@ -123,9 +123,7 @@ public class JobCompleteCallbackService {
                     job.getId(),
                     job.getOutputUri(),
                     job.getExternalId());
-            if (shouldUseOidc(job)) {
-                _oAuthClientTokenProvider.addToken(request);
-            }
+            _clientTokenProvider.addTokenToJobCompleteCallback(job, request);
             return sendCallback(request);
         }
         catch (Exception e) {
@@ -137,7 +135,25 @@ public class JobCompleteCallbackService {
         LOG.info("Sending job completion callback to: {}", request.getURI());
         return _httpClientUtils.executeRequest(
                     request, _propertiesUtil.getHttpCallbackRetryCount())
-                .thenApplyAsync(JobCompleteCallbackService::checkResponse);
+                .thenApplyAsync(response -> {
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    _auditEventLogger.log(
+                        LogAuditEventRecord.TagType.SECURITY,
+                        LogAuditEventRecord.OpType.CREATE,
+                        LogAuditEventRecord.ResType.ALLOW,
+                        String.format("Job completion callback: %s %s - %d", 
+                            request.getMethod(), request.getURI(), statusCode ));
+                    return checkResponse(response);
+                })
+                .exceptionallyCompose(err -> {
+                    _auditEventLogger.log(
+                        LogAuditEventRecord.TagType.SECURITY,
+                        LogAuditEventRecord.OpType.CREATE,
+                        LogAuditEventRecord.ResType.ERROR,
+                        String.format("Job completion callback failed: %s %s : %s", 
+                            request.getMethod(), request.getURI(), err.getMessage()));
+                    return ThreadUtil.failedFuture(err);
+                });
     }
 
 
@@ -193,18 +209,6 @@ public class JobCompleteCallbackService {
     }
 
 
-    private boolean shouldUseOidc(BatchJob job) {
-        return job.getMedia()
-            .stream()
-            .map(m -> _aggregateJobPropertiesUtil.getValue(MpfConstants.CALLBACK_USE_OIDC, job, m))
-            .anyMatch(Boolean::parseBoolean);
-    }
-
-    private boolean shouldUseOidc(DbSubjectJob job) {
-        return _aggregateJobPropertiesUtil.getValue(MpfConstants.CALLBACK_USE_OIDC, job)
-                .map(Boolean::parseBoolean)
-                .orElse(false);
-    }
 
     private static HttpResponse checkResponse(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();

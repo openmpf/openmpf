@@ -38,7 +38,7 @@ public class MarkupResultConvertedModel {
     private boolean markupFileAvailable;
     private String markupDownloadUrl;
 
-    private String sourceUri;
+    private MediaUri sourceUri;
     private String sourceMediaType;
     private boolean sourceFileAvailable;
     private String sourceDownloadUrl;
@@ -80,7 +80,7 @@ public class MarkupResultConvertedModel {
     }
 
 
-    public String getSourceUri() {
+    public MediaUri getSourceUri() {
         return sourceUri;
     }
 
@@ -132,7 +132,7 @@ public class MarkupResultConvertedModel {
         this.markupDownloadUrl = markupDownloadUrl;
     }
 
-    public void setSourceUri(String sourceUri) {
+    public void setSourceUri(MediaUri sourceUri) {
         this.sourceUri = sourceUri;
     }
 
@@ -151,7 +151,7 @@ public class MarkupResultConvertedModel {
 	public MarkupResultConvertedModel(long id, String jobId, long mediaId, long parentMediaId,
                                       String pipeline, String markupUri, String markupMediaType,
                                       String markupDownloadUrl, boolean markupFileAvailable,
-                                      String sourceUri, String sourceMediaType,
+                                      MediaUri sourceUri, String sourceMediaType,
                                       String sourceDownloadUrl, boolean sourceFileAvailable) {
 		this.id = id;
 		this.jobId = jobId;

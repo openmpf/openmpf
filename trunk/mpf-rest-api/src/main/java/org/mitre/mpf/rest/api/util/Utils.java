@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.rest.api.util;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -88,5 +89,20 @@ public class Utils {
         return Optional.ofNullable(map)
             .map(ImmutableMap::copyOf)
             .orElseGet(ImmutableMap::of);
+    }
+
+
+    public static URI normalize(URI uri) {
+        var uriStr = uri.toString();
+        if (uriStr.isEmpty()) {
+            throw new IllegalArgumentException("The URI was empty.");
+        }
+        else if (uriStr.startsWith("file:/") && !uriStr.startsWith("file:///")) {
+            var prefixRemoved = uriStr.substring("file:/".length());
+            return URI.create("file:///" + prefixRemoved);
+        }
+        else {
+            return uri;
+        }
     }
 }

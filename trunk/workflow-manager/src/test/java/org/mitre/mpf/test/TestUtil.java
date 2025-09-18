@@ -54,21 +54,22 @@ import org.assertj.core.api.Condition;
 import org.assertj.core.api.FutureAssert;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.mvc.ProbingResourceMessageConverter;
 import org.mitre.mpf.mvc.WebMvcConfig;
 import org.mitre.mpf.wfm.ValidatorConfig;
 import org.mitre.mpf.wfm.service.ConstraintValidationService;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.springframework.core.io.PathResource;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 public class TestUtil {
 
-    public static final Duration FUTURE_DURATION = Duration.ofMillis(30);
+    public static final Duration FUTURE_DURATION = Duration.ofMillis(200);
 
     private TestUtil() {
 
@@ -204,8 +205,11 @@ public class TestUtil {
     public static MockMvc initMockMvc(Object controller) {
         var setup = MockMvcBuilders.standaloneSetup(controller);
         var converters = new ArrayList<HttpMessageConverter<?>>();
-        converters.add(new ResourceHttpMessageConverter());
-        new WebMvcConfig().extendMessageConverters(converters);
+        new WebMvcConfig(
+                new ProbingResourceMessageConverter(),
+                ObjectMapperFactory.customObjectMapper(),
+                null
+        ).extendMessageConverters(converters);
         setup.setMessageConverters(converters.toArray(HttpMessageConverter[]::new));
         return setup.build();
     }

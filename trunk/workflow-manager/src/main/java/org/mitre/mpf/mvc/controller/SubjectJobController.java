@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -146,11 +147,18 @@ public class SubjectJobController {
     })
     public ResponseEntity<Object> getOutput(@PathVariable long jobId) {
         try (var ctx = CloseableMdc.job(jobId)) {
-            return ResponseEntity.of(
-                    _subjectJobRepo
+            var resultStream = _subjectJobRepo
                     .tryFindById(jobId)
-                    .map(_pastJobResultsService::getJobResultsStream)
-                    .map(InputStreamResource::new));
+                    .map(_pastJobResultsService::getJobResultsStream);
+
+            if (resultStream.isPresent()) {
+                return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new InputStreamResource(resultStream.get()));
+            }
+            else {
+                return ResponseEntity.notFound().build();
+            }
         }
     }
 

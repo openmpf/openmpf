@@ -36,6 +36,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Instant;
@@ -125,14 +126,19 @@ public class PropertiesUtil {
             copyResource(userFile, getUserTemplate());
         }
 
-        Set<PosixFilePermission> permissions = new HashSet<>();
-        permissions.add(PosixFilePermission.OWNER_READ);
-        permissions.add(PosixFilePermission.OWNER_WRITE);
-        permissions.add(PosixFilePermission.OWNER_EXECUTE);
+        var permissions = PosixFilePermissions.asFileAttribute(EnumSet.of(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+                PosixFilePermission.GROUP_READ,
+                PosixFilePermission.GROUP_EXECUTE,
+                PosixFilePermission.OTHERS_READ,
+                PosixFilePermission.OTHERS_EXECUTE
+        ));
 
         Path share = Paths.get(getSharePath()).toAbsolutePath();
         if ( !Files.exists(share) ) {
-            share = Files.createDirectories(share, PosixFilePermissions.asFileAttribute(permissions));
+            share = Files.createDirectories(share, permissions);
         }
 
         if ( !Files.exists(share) || !Files.isDirectory(share) ) {
@@ -150,16 +156,7 @@ public class PropertiesUtil {
         mediaSelectorsOutputDir = createOrFail(
                 share, "media-selectors-output", permissions).toPath();
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
-        createOrFail(getPluginDeploymentPath(), "",
-                EnumSet.of(
-                        PosixFilePermission.OWNER_READ,
-                        PosixFilePermission.OWNER_WRITE,
-                        PosixFilePermission.OWNER_EXECUTE,
-                        PosixFilePermission.GROUP_READ,
-                        PosixFilePermission.GROUP_EXECUTE,
-                        PosixFilePermission.OTHERS_READ,
-                        PosixFilePermission.OTHERS_EXECUTE
-                ));
+        createOrFail(getPluginDeploymentPath(), "", permissions);
 
         // create the default models directory, although the user may have set "detection.models.dir.path" to something else
         createOrFail(share, "models", permissions);
@@ -189,11 +186,11 @@ public class PropertiesUtil {
         }
     }
 
-    private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
+    private static File createOrFail(Path parent, String subdirectory, FileAttribute<?> permissions)
                 throws IOException, WfmProcessingException {
         Path child = parent.resolve(subdirectory);
         if ( !Files.exists(child) ) {
-            child = Files.createDirectories(child, PosixFilePermissions.asFileAttribute(permissions));
+            child = Files.createDirectories(child, permissions);
         }
 
         if ( !Files.exists(child) || !Files.isDirectory(child) ) {
@@ -203,7 +200,7 @@ public class PropertiesUtil {
         return child.toAbsolutePath().toFile();
     }
 
-    private static File createOrClear(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
+    private static File createOrClear(Path parent, String subdirectory, FileAttribute<?> permissions)
             throws IOException, WfmProcessingException {
         Path child = parent.resolve(subdirectory);
         if ( Files.exists(child) ) {
@@ -847,5 +844,13 @@ public class PropertiesUtil {
 
     public String getOutputChangedCounter() {
         return _mpfPropertiesConfig.getString("output.changed.counter");
+    }
+
+    //
+    // Audit logging settings
+    //
+
+    public boolean isAuditLoggingEnabled() {
+        return _mpfPropertiesConfig.getBoolean("audit.logging.enabled");
     }
 }

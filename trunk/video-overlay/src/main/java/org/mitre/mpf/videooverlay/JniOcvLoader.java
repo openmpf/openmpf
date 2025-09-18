@@ -24,14 +24,51 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.videooverlay;
 
-package org.mitre.mpf.mvc.security;
+import java.util.List;
 
-import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public record OidcClaimConfig(
-        Optional<String> adminClaimName,
-        Optional<String> adminClaimValue,
-        Optional<String> userClaimName,
-        Optional<String> userClaimValue) {
+public class JniOcvLoader {
+    private static final Logger log = LoggerFactory.getLogger(JniOcvLoader.class);
+
+    private static boolean _isLoaded;
+
+    static {
+        log.info("Loading OpenCV JNI libraries...");
+        try {
+            System.loadLibrary("mpfopencvjni");
+            _isLoaded = true;
+        }
+        catch (UnsatisfiedLinkError ex) {
+            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
+            String libDir = System.getenv("MPF_HOME") + "/lib";
+
+            var libNames = List.of(
+                    "libmpfDetectionComponentApi.so",
+                    "libmpfopencvjni.so");
+
+            for (var libName : libNames) {
+                var path = libDir + '/' + libName;
+                log.warn("Trying to load library using full path: {}", path);
+                System.load(path);
+            }
+
+            _isLoaded = true;
+        }
+    }
+
+    private JniOcvLoader() {
+    }
+
+    /**
+     * This method exists to force the static initializer to run when a class with native methods
+     * is first used. This should always return true.
+     * @return true
+     */
+    public static boolean ensureLoaded() {
+        return _isLoaded;
+    }
 }

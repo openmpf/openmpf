@@ -26,11 +26,25 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import io.swagger.annotations.Api;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.http.client.methods.HttpGet;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
@@ -39,61 +53,68 @@ import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.PathResource;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
+import io.swagger.annotations.Api;
 
-@Api(value = "Server Media",description = "Server media retrieval")
-@Controller
-@Scope("request")
+@Api(value = "Server Media", description = "Server media retrieval")
+@RestController
 public class ServerMediaController {
 
     private static final Logger log = LoggerFactory.getLogger(ServerMediaController.class);
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    @Autowired
-    private ServerMediaService serverMediaService;
+    private final ServerMediaService _serverMediaService;
 
-    @Autowired
-    private JobRequestDao jobRequestDao;
+    private final JobRequestDao _jobRequestDao;
 
-    @Autowired
-    private IoUtils ioUtils;
+    private final JsonUtils _jsonUtils;
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    private final S3StorageBackend _s3StorageBackend;
 
-    @Autowired
-    private S3StorageBackend s3StorageBackend;
+    private final HttpClientUtils _httpClient;
+
+    private final OutgoingRequestTokenService _tokenService;
+
+    private final AuditEventLogger _auditEventLogger;
+
+
+    @Inject
+    ServerMediaController(
+            PropertiesUtil propertiesUtil,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            ServerMediaService serverMediaService,
+            JobRequestDao jobRequestDao,
+            JsonUtils jsonUtils,
+            S3StorageBackend s3StorageBackend,
+            HttpClientUtils httpClient,
+            OutgoingRequestTokenService tokenService,
+            AuditEventLogger auditEventLogger) {
+        _propertiesUtil = propertiesUtil;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _serverMediaService = serverMediaService;
+        _jobRequestDao = jobRequestDao;
+        _jsonUtils = jsonUtils;
+        _s3StorageBackend = s3StorageBackend;
+        _httpClient = httpClient;
+        _tokenService = tokenService;
+        _auditEventLogger = auditEventLogger;
+    }
 
 
     private static class SortAlphabeticalCaseInsensitive implements Comparator<ServerMediaFile> {
@@ -110,30 +131,35 @@ public class ServerMediaController {
         }
     }
 
-    @RequestMapping(value = { "/server/get-all-directories" }, method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping("/server/get-all-directories")
     public DirectoryTreeNode getAllDirectories(HttpServletRequest request, @RequestParam(required = false) Boolean useUploadRoot,
                                                @RequestParam(required = false, defaultValue = "true") boolean useCache){
-        String nodePath = propertiesUtil.getServerMediaTreeRoot();
+        String nodePath = _propertiesUtil.getServerMediaTreeRoot();
 
         // if useUploadRoot is set it will take precedence over nodeFullPath
-        DirectoryTreeNode node = serverMediaService.getAllDirectories(nodePath, request.getServletContext(), useCache,
-                                                                      propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
+        DirectoryTreeNode node = _serverMediaService.getAllDirectories(nodePath, request.getServletContext(), useCache,
+                                                                      _propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
         if(useUploadRoot != null && useUploadRoot){
-            node =  DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
+            node =  DirectoryTreeNode.find(node, _propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
         }
 
         return node;
     }
 
-    @RequestMapping(value = { "/server/get-all-files" }, method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping("/server/get-all-files")
     public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath,
                                           @RequestParam(required = false, defaultValue = "true") boolean useCache) {
         File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+            _auditEventLogger
+                    .readEvent()
+                    .withSecurityTag()
+                    .error("Invalid directory path requested: %s", fullPath);
+            return null; // security check
+        }
 
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, true);
+
+        List<ServerMediaFile> mediaFiles = _serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, true);
         return new ServerMediaListing(mediaFiles);
     }
 
@@ -142,8 +168,7 @@ public class ServerMediaController {
     //length is how many to return
     //start is offset from 0
     //search is string to filter
-    @RequestMapping(value = { "/server/get-all-files-filtered" }, method = RequestMethod.POST)
-    @ResponseBody
+    @PostMapping("/server/get-all-files-filtered")
     public ServerMediaFilteredListing getAllFilesFiltered(HttpServletRequest request, @RequestParam(value="fullPath", required=true) String fullPath,
                                                           @RequestParam(required = false, defaultValue = "true") boolean useCache,
                                                           @RequestParam(value="draw", required=false) int draw,
@@ -153,9 +178,14 @@ public class ServerMediaController {
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
 
         File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+            _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .error("Invalid directory path requested for filtered listing: %s" , fullPath);
+            return null; // security check
+        }
 
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, false);
+        List<ServerMediaFile> mediaFiles = _serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, false);
 
         // handle sort
         Collections.sort(mediaFiles, (new SortAlphabeticalCaseInsensitive()). // make 'A' come before 'B'
@@ -181,67 +211,65 @@ public class ServerMediaController {
     }
 
 
-    @RequestMapping(value = "/server/node-image", method = RequestMethod.GET)
-    @ResponseBody
-    public ResponseEntity<?> serve(@RequestParam("nodeFullPath") String nodeFullPath)
-            throws IOException {
+    @GetMapping("/server/node-image")
+    public Object serve(@RequestParam("nodeFullPath") String nodeFullPath) {
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
-            var contentType= Optional.ofNullable(Files.probeContentType(path))
-                    .map(MediaType::parseMediaType)
-                    .orElse(MediaType.APPLICATION_OCTET_STREAM);
-
-            return ResponseEntity.ok()
-                    .contentType(contentType)
-                    .body(new PathResource(path));
+            _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .allowed("Viewed server node image: path = %s", nodeFullPath);
+            return new PathResource(path);
         }
         else {
+            _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .error("File not readable or not found: %s", nodeFullPath);
             return ResponseEntity.notFound().build();
         }
     }
 
 
-
-    @RequestMapping(value = "/server/download", method = RequestMethod.GET)
-    @ResponseBody
-    public void download(HttpServletResponse response,
-                         @RequestParam("jobId") String jobId,
-                         @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
-
+    @GetMapping("/server/download")
+    public Object download(
+            @RequestParam("jobId") String jobId,
+            @RequestParam("sourceUri") URI sourceUri) throws StorageException, IOException {
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
-            ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
+            _auditEventLogger.extractEvent()
+                    .withSecurityTag()
+                    .allowed("Downloaded media file: jobId = %s, uri = %s", jobId, sourceUri);
+            return new PathResource(sourceUri);
         }
-        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
+
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(jobId);
+        JobRequest jobRequest = _jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
-            log.error("Media for job id " + jobId + " download failed. Invalid job id.");
-            response.setStatus(404);
-            response.flushBuffer();
-            return;
+            log.error("Media for job id {} download failed. Invalid job id.", jobId);
+            _auditEventLogger.extractEvent()
+                    .withSecurityTag()
+                    .error("Media download failed: invalid job ID %s", jobId);
+            return ResponseEntity.notFound().build();
         }
 
-        // If any of the code below throws an uncaught exception it will result in printing a stack trace
-        // to the log and a status code of 500. An image preview in the UI will appear as a broken image link.
 
-        var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+        var job = _jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
         var combinedProperties
-                = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
         var uriScheme = UriScheme.parse(sourceUri.getScheme());
         if ((uriScheme.equals(UriScheme.HTTP) || uriScheme.equals(UriScheme.HTTPS)) &&
                 S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-            try (var s3Stream = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties)) {
-                var s3Response = s3Stream.response();
-                IoUtils.sendBinaryResponse(s3Stream, response, s3Response.contentType(),
-                                           s3Response.contentLength());
-            }
-            return;
+            var s3Stream = _s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
+            _auditEventLogger.extractEvent()
+                    .withSecurityTag()
+                    .allowed("Downloaded media file: uri = %s" , sourceUri);
+            return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
         }
 
-        URL mediaUrl = sourceUri.toURL();
-        URLConnection urlConnection = mediaUrl.openConnection();
-        try (InputStream inputStream = urlConnection.getInputStream()) {
-            IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
-                                       urlConnection.getContentLength());
-        }
+        var request = new HttpGet(sourceUri);
+        _tokenService.addTokenToRemoteMediaDownloadRequest(job, sourceUri, request);
+        var responseToForward = _httpClient.executeRequestSync(request, 0);
+        _auditEventLogger.extractEvent()
+                .withSecurityTag()
+                .allowed("Downloaded media file: uri = %s" , sourceUri);
+        return ForwardHttpResponseUtil.createResponseEntity(responseToForward);
     }
 }

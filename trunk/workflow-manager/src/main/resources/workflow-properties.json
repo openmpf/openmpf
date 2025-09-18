@@ -175,6 +175,13 @@
         "mediaTypes": ["VIDEO"]
     },
     {
+        "name": "SEGMENT_LENGTH_SPECIFICATION",
+        "description": "In the context of videos, the value for determining how to interpret TARGET_SEGMENT_LENGTH, VFR_TARGET_SEGMENT_LENGTH, MIN_SEGMENT_LENGTH, and VFR_MIN_SEGMENT_LENGTH. The value of this property MUST be one of the following choices. FRAME: Segment lengths are specified in number of frames. SECONDS: Segment lengths are specified in number of seconds. When set to SECONDS, the VFR segment lengths use the average video frame rate, not the video PTS values.",
+        "type": "STRING",
+        "propertiesKey": "detection.segment.length.specification",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
         "name": "MERGE_TRACKS",
         "description": "In the context of videos, when set to true, attempt to merge tracks spanning segment boundaries.",
         "type": "BOOLEAN",
@@ -525,17 +532,31 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
-        "name": "CALLBACK_USE_OIDC",
-        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included in the job completion callback.",
+        "name": "REMOTE_MEDIA_ADD_TOKEN",
+        "description": "If Workflow Manager is configured to use SSO and this property is true, a SSO token will be included when downloading media.",
         "type": "BOOLEAN",
-        "propertiesKey": "http.callback.use.oidc",
+        "propertiesKey": "remote.media.add.token",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
-        "name": "TIES_DB_USE_OIDC",
-        "description": "If Workflow Manager is configured to use OIDC and this property is true, an OAuth token will be included when communicating with TiesDb.",
+        "name": "CALLBACK_ADD_TOKEN",
+        "description": "If Workflow Manager is configured to use SSO and this property is true, a SSO token will be included in the job completion callback.",
         "type": "BOOLEAN",
-        "propertiesKey": "ties.db.use.oidc",
+        "propertiesKey": "http.callback.add.token",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "TIES_DB_ADD_TOKEN",
+        "description": "If Workflow Manager is configured to use SSO and this property is true, a SSO token will be included when communicating with TiesDb.",
+        "type": "BOOLEAN",
+        "propertiesKey": "ties.db.add.token",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_ADD_TOKEN",
+        "description": "If Workflow Manager is configured to use SSO and this property is true, a SSO token will be included when communicating with S3.",
+        "type": "BOOLEAN",
+        "propertiesKey": "s3.add.token",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {

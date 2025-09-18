@@ -69,7 +69,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonActionTiming;
 import org.mitre.mpf.interop.JsonTiming;
-import org.mitre.mpf.mvc.security.OAuthClientTokenProvider;
+import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
+import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
@@ -90,6 +91,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.MediaActionProps;
@@ -120,7 +122,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private HttpClientUtils _mockHttpClientUtils;
 
     @Mock
-    private OAuthClientTokenProvider _mockOAuthClientTokenProvider;
+    private OutgoingRequestTokenService _mockTokenService;
 
     @Mock
     private JobRequestDao _mockJobRequestDao;
@@ -133,6 +135,9 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
     @Mock
     private TaskMergingManager _mockTaskMergingManager;
+
+    @Mock
+    private AuditEventLogger _mockAuditEventLogger;
 
     private TiesDbService _tiesDbService;
 
@@ -167,11 +172,12 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 _objectMapper,
                 _jsonUtils,
                 _mockHttpClientUtils,
-                _mockOAuthClientTokenProvider,
+                _mockTokenService,
                 _mockJobRequestDao,
                 _mockInProgressJobs,
                 _mockJobConfigHasher,
-                _mockTaskMergingManager);
+                _mockTaskMergingManager,
+                _mockAuditEventLogger);
 
         lenient().when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);
@@ -312,10 +318,6 @@ public class TestTiesDbService extends MockitoTest.Strict {
         var expectedParentTiesDbInfo = createExpectedParentTiesDbInfo();
         _tiesDbParentMedia.setTiesDbInfo(expectedParentTiesDbInfo);
 
-        when(_mockAggregateJobPropertiesUtil.getValue(
-                MpfConstants.TIES_DB_USE_OIDC, _job, _tiesDbMedia))
-                .thenReturn("true");
-
         var httpRespFuture = ThreadUtil.<HttpResponse>newFuture();
         var httpRespFuture2 = ThreadUtil.<HttpResponse>newFuture();
         var httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
@@ -353,8 +355,9 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 httpRequest.getEntity().getContent(),
                 TiesDbInfo.Assertion.class);
         assertEquals(expectedTiesDbInfo.assertion(), postedAssertion);
-        verify(_mockOAuthClientTokenProvider)
-                .addToken(httpRequest);
+        verify(_mockTokenService)
+                .addTokenToTiesDbRequest(any(), any(), eq(httpRequest));
+
 
 
         var parentHttpRequest = httpRequestCaptor.getAllValues()
@@ -369,8 +372,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 parentHttpRequest.getEntity().getContent(),
                 TiesDbInfo.Assertion.class);
         assertEquals(expectedParentTiesDbInfo.assertion(), parentPostedAssertion);
-        verify(_mockOAuthClientTokenProvider, never())
-                .addToken(parentHttpRequest);
+        verify(_mockTokenService, never())
+                .addTokenToTiesDbRequest(any(), eq(parentHttpRequest));
     }
 
 
@@ -605,7 +608,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private void initTestMedia() {
         _tiesDbMedia = new MediaImpl(
             676,
-            "file:///media-676",
+            MediaUri.create("file:///media-676"),
             UriScheme.FILE,
             null,
             Map.of(),
@@ -619,7 +622,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         _tiesDbParentMedia = new MediaImpl(
             677,
-            "file:///media-677",
+            MediaUri.create("file:///media-677"),
             UriScheme.FILE,
             null,
             Map.of(MpfConstants.LINKED_MEDIA_HASH, "LINKED_MEDIA_HASH"),
@@ -635,7 +638,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             679,
             677,
             1,
-            "file:///media-679",
+            MediaUri.create("file:///media-679"),
             UriScheme.FILE,
             null,
             Map.of(),
@@ -650,7 +653,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         _noTiesDbMedia = new MediaImpl(
             678,
-            "file:///media-678",
+            MediaUri.create("file:///media-678"),
             UriScheme.FILE,
             null,
             Map.of(),

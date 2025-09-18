@@ -165,9 +165,9 @@ public class PastJobResultsService {
             }
             else {
                 var request = new HttpGet(outputUri);
-                var future = _httpClient.executeRequest(
+                var response = _httpClient.executeRequestSync(
                         request, _propertiesUtil.getHttpCallbackRetryCount());
-                return ThreadUtil.join(future).getEntity().getContent();
+                return response.getEntity().getContent();
             }
         }
         catch (StorageException | IOException e) {

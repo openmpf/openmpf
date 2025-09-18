@@ -25,36 +25,54 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.mvc;
+package org.mitre.mpf.mvc.security.local;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.mitre.mpf.mvc.CorsFilter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-// Spring's built-in MappingJackson2HttpMessageConverter does not allow you to configure the ObjectMapper that it uses.
-// Classes annotated with @Controller will use this class. This class ensures that those controllers,
-// and classes that explicitly use ObjectMapper, all use the same ObjectMapper instance.
+/**
+ * By default Spring returns HTML when authentication fails,
+ * but since this is applied to our REST endpoints JSON is more appropriate.
+ */
 @Component
-public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
+@LocalSecurityProfile
+public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
 
-    // These classes should use the internal Spring HttpMessageConverters.
-    private static final ImmutableList<Class<?>> DENY_LIST
-            = ImmutableList.of(String.class, Resource.class);
+    private final ObjectMapper _objectMapper;
 
-    @Inject
-    CustomJacksonHttpMessageConverter(ObjectMapper objectMapper) {
-        super(objectMapper);
+    RestBasicAuthEntryPoint(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
     }
 
-
     @Override
-    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-        return DENY_LIST.stream().noneMatch(blc -> blc.isAssignableFrom(clazz))
-                && super.canWrite(clazz, mediaType);
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
+        // This header is what makes the log in box appear when accessing the REST URLs
+        // in a browser such as on the Swagger page.
+        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
+        if (request.getMethod().equals("OPTIONS")
+                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
+            // Handle CORS preflight request
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
+        else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            var messageObj = Map.of("message", authException.getMessage());
+            try (PrintWriter pw = response.getWriter()) {
+                _objectMapper.writeValue(pw, messageObj);
+            }
+        }
     }
 }

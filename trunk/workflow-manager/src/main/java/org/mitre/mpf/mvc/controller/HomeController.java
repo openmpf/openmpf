@@ -33,7 +33,6 @@ import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.InfoModel;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
@@ -56,18 +55,13 @@ public class HomeController
 	private PropertiesUtil propertiesUtil;
 	
 	@Autowired
-	private AuditEventLogger auditEventLogger;
+	private AuditEventLogger _auditEventLogger;
 
 	@RequestMapping(value = "/", method = RequestMethod.GET)
 	public String getIndexPage() {
-		
-		auditEventLogger.log(
-			LogAuditEventRecord.TagType.SECURITY,
-			LogAuditEventRecord.OpType.READ,
-			LogAuditEventRecord.ResType.ALLOW,
-			"Homepage accessed"
-		);
-		
+		_auditEventLogger.readEvent()
+			.withSecurityTag()
+			.allowed("Homepage Accessed.");
 		return "index";
 	}
 

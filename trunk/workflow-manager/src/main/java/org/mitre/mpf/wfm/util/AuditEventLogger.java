@@ -51,18 +51,23 @@ public class AuditEventLogger {
 
     private final ObjectMapper _objectMapper;
 
+    private String getCurrentLoggedInUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null ? auth.getName() : "system";
+    }
+
     @Inject
     public AuditEventLogger(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) {
         _propertiesUtil = propertiesUtil;
         _objectMapper = objectMapper;
     }
 
-    public AuditEventLogger log(
-            LogAuditEventRecord.TagType tag,
-            LogAuditEventRecord.OpType op,
-            LogAuditEventRecord.ResType res,
-            String msg) {
-        return log(tag, op, res, getCurrentLoggedInUser(), msg);
+    private void writeToLogger(LogAuditEventRecord event) {
+        try {
+            log.info(AUDIT_MARKER, _objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Failed to log event: {}", event, e);
+        }
     }
 
     private AuditEventLogger log(
@@ -71,16 +76,12 @@ public class AuditEventLogger {
             LogAuditEventRecord.ResType res,
             String user,
             String msg) {
-        if (!_propertiesUtil.isAuditLoggingEnabled()) {
-            // Only log if audit logging is enabled
-            return this;
-        }
+
         var eventRecord = new LogAuditEventRecord(
                 Instant.now(), tag, "openmpf", user, op, res, msg);
         writeToLogger(eventRecord);
         return this;
     }
-
 
     public BuilderTagStage createEvent() {
         return getEventBuilder(LogAuditEventRecord.OpType.CREATE);
@@ -106,21 +107,6 @@ public class AuditEventLogger {
         return getEventBuilder(LogAuditEventRecord.OpType.EXTRACT);
     }
 
-
-    private void writeToLogger(LogAuditEventRecord event) {
-        try {
-            log.info(AUDIT_MARKER, _objectMapper.writeValueAsString(event));
-        } catch (Exception e) {
-            log.error("Failed to log event: {}", event, e);
-        }
-    }
-
-    private String getCurrentLoggedInUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null ? auth.getName() : "system";
-    }
-
-
     private AuditEventBuilder getEventBuilder(LogAuditEventRecord.OpType opType) {
         if (_propertiesUtil.isAuditLoggingEnabled()) {
             return new EnabledEventBuilder(opType);
@@ -130,12 +116,10 @@ public class AuditEventLogger {
         }
     }
 
-
     // Separate interface so that the caller is forced to set the tag.
     public static interface BuilderTagStage {
         AuditEventBuilder withSecurityTag();
     }
-
 
     public static class AuditEventBuilder implements BuilderTagStage {
         private AuditEventBuilder() {
@@ -169,7 +153,7 @@ public class AuditEventLogger {
         }
     }
 
-    private static final AuditEventBuilder DISABLED_EVENT_BUILDER = new AuditEventBuilder();
+     private static final AuditEventBuilder DISABLED_EVENT_BUILDER = new AuditEventBuilder();
 
     private class EnabledEventBuilder extends AuditEventBuilder {
 

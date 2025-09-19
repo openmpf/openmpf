@@ -49,7 +49,6 @@ import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -137,21 +136,17 @@ public class JobCompleteCallbackService {
                     request, _propertiesUtil.getHttpCallbackRetryCount())
                 .thenApplyAsync(response -> {
                     int statusCode = response.getStatusLine().getStatusCode();
-                    _auditEventLogger.log(
-                        LogAuditEventRecord.TagType.SECURITY,
-                        LogAuditEventRecord.OpType.CREATE,
-                        LogAuditEventRecord.ResType.ALLOW,
-                        String.format("Job completion callback: %s %s - %d", 
-                            request.getMethod(), request.getURI(), statusCode ));
+                    _auditEventLogger.createEvent()
+                        .withSecurityTag()
+                        .allowed("Job completion callback: %s %s - %d", 
+                            request.getMethod(), request.getURI(), statusCode );
                     return checkResponse(response);
                 })
                 .exceptionallyCompose(err -> {
-                    _auditEventLogger.log(
-                        LogAuditEventRecord.TagType.SECURITY,
-                        LogAuditEventRecord.OpType.CREATE,
-                        LogAuditEventRecord.ResType.ERROR,
-                        String.format("Job completion callback failed: %s %s : %s", 
-                            request.getMethod(), request.getURI(), err.getMessage()));
+                    _auditEventLogger.createEvent()
+                        .withSecurityTag()
+                        .error("Job completion callback failed: %s %s : %s", 
+                            request.getMethod(), request.getURI(), err.getMessage());
                     return ThreadUtil.failedFuture(err);
                 });
     }
@@ -207,8 +202,6 @@ public class JobCompleteCallbackService {
         postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
         return postRequest;
     }
-
-
 
     private static HttpResponse checkResponse(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();

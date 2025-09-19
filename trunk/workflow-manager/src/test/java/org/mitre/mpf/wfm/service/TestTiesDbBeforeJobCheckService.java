@@ -153,6 +153,12 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     @Mock
     private AuditEventLogger _mockAuditEventLogger;
 
+    @Mock
+    private AuditEventLogger.BuilderTagStage _mockBuilderTagStage;
+
+    @Mock
+    private AuditEventLogger.AuditEventBuilder _mockAuditEventBuilder;
+
     private TiesDbBeforeJobCheckServiceImpl _tiesDbBeforeJobCheckService;
 
 
@@ -160,6 +166,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     public void init() {
         when(_mockPropertiesUtil.getHttpCallbackRetryCount())
             .thenReturn(3);
+
+        when(_mockAuditEventLogger.createEvent())
+                .thenReturn(_mockBuilderTagStage);
+        when(_mockAuditEventLogger.readEvent())
+                .thenReturn(_mockBuilderTagStage);
+        when(_mockBuilderTagStage.withSecurityTag())
+                .thenReturn(_mockAuditEventBuilder);
 
         _tiesDbBeforeJobCheckService = new TiesDbBeforeJobCheckServiceImpl(
                 _mockPropertiesUtil,

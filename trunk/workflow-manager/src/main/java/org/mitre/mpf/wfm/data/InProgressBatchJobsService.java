@@ -362,8 +362,8 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized Multimap<Long, JsonIssueDetails> getMergedDetectionErrors(long jobId) {
-        return DetectionErrorUtil.getMergedDetectionErrors(getJob(jobId));
+    public synchronized Multimap<Long, JsonIssueDetails> getAnnotatedDetectionErrors(long jobId) {
+        return DetectionErrorUtil.getAnnotatedDetectionErrors(getJob(jobId));
     }
 
 

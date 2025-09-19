@@ -33,6 +33,7 @@ import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -502,39 +503,6 @@ public class AggregateJobPropertiesUtil {
         return Integer.toString(calcFrameInterval);
     }
 
-
-
-    // Get map of tasks that need to be merged. Values are the previous tasks to merge with.
-    public Map<Integer, Integer> getTasksToMerge(Media media, BatchJob job) {
-        var tasksToMerge = new HashMap<Integer, Integer>();
-
-        for (var jobPart : JobPartsIter.of(job, media)) {
-            if (jobPart.taskIndex() == 0
-                    || jobPart.algorithm().actionType() != ActionType.DETECTION) {
-                continue;
-            }
-
-            boolean shouldMerge = Boolean.parseBoolean(
-                    getValue(MpfConstants.IS_ANNOTATOR_PROPERTY, jobPart));
-            if (!shouldMerge) {
-                continue;
-            }
-
-            for (int prevTaskIndex = jobPart.taskIndex() - 1;
-                 prevTaskIndex > media.getCreationTask();
-                 prevTaskIndex--) {
-                var prevAction = job.getPipelineElements().getAction(prevTaskIndex, 0);
-                if (actionAppliesToMedia(job, media, prevAction)) {
-                    tasksToMerge.put(jobPart.taskIndex(), prevTaskIndex);
-                    break;
-                }
-            }
-
-        }
-
-        return tasksToMerge;
-    }
-
     public String getQualitySelectionProp(BatchJob job, Media media, Action action) {
         String prop = getValue(MpfConstants.QUALITY_SELECTION_PROPERTY, job, media, action);
         if (StringUtils.isEmpty(prop)) {
@@ -543,6 +511,16 @@ public class AggregateJobPropertiesUtil {
         else {
             return prop;
         }
+    }
+
+    public boolean isSuppressTrack(Media media, BatchJob job, Task task) {
+        boolean hasSuppressedTracks = task.actions().stream()
+            .anyMatch(actionName -> {
+                Action action = job.getPipelineElements().getAction(actionName);
+                return isSuppressTrack(media, job, action);
+            });
+
+        return hasSuppressedTracks;
     }
 
     public boolean isSuppressTrack(Media media, BatchJob job, Action action) {

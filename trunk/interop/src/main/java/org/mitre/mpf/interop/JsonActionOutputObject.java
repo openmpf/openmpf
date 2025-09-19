@@ -28,19 +28,22 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static org.mitre.mpf.interop.util.CompareUtils.sortedSetCompare;
+import static org.mitre.mpf.interop.util.CompareUtils.listCompare;
 
 @JsonTypeName("TypeOutputObject")
 public class JsonActionOutputObject implements Comparable<JsonActionOutputObject> {
 
     public static final String NO_TRACKS_TYPE = "NO TRACKS";
     public static final String TRACKS_SUPPRESSED_TYPE = "TRACKS SUPPRESSED";
-    public static final String TRACKS_MERGED_TYPE = "TRACKS MERGED";
+    public static final String TRACKS_ANNOTATED_TYPE = "TRACKS ANNOTATED";
 
     @JsonProperty("action")
     @JsonPropertyDescription("The action name.")
@@ -55,8 +58,8 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     @JsonProperty("annotators")
     @JsonPropertyDescription("The set of annotations for the action.")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private SortedSet<String> annotators;
-    public SortedSet<String> getAnnotators() { return annotators; }
+    private List<String> annotators;
+    public List<String> getAnnotators() { return annotators; }
 
     @JsonProperty("tracks")
     @JsonPropertyDescription("The set of object detection tracks produced in this action for the given medium.")
@@ -67,7 +70,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     public JsonActionOutputObject(String action, String algorithm) {
         this.action = action;
         this.algorithm = algorithm;
-        this.annotators = new TreeSet<>();
+        this.annotators = new ArrayList<>();
         this.tracks = new TreeSet<>();
     }
 
@@ -76,7 +79,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     @JsonCreator
     public static JsonActionOutputObject factory(@JsonProperty("action") String action,
                                                  @JsonProperty("algorithm") String algorithm,
-                                                 @JsonProperty("annotators") SortedSet<String> annotators,
+                                                 @JsonProperty("annotators") List<String> annotators,
                                                  @JsonProperty("tracks") SortedSet<JsonTrackOutputObject> tracks) {
         JsonActionOutputObject trackOutputObject = new JsonActionOutputObject(action, algorithm);
 
@@ -106,7 +109,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
             .nullsFirst(Comparator
                     .comparing(JsonActionOutputObject::getAction)
                     .thenComparing(JsonActionOutputObject::getAlgorithm)
-                    .thenComparing(sortedSetCompare(JsonActionOutputObject::getAnnotators))
+                    .thenComparing(listCompare(JsonActionOutputObject::getAnnotators))
                     .thenComparing(sortedSetCompare(JsonActionOutputObject::getTracks))
             );
 

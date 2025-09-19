@@ -163,7 +163,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private JobCompleteCallbackService jobCompleteCallbackService;
 
     @Autowired
-    private TaskAnnotatorService taskMergingManager;
+    private TaskAnnotatorService taskAnnotatorService;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -387,7 +387,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         job.getWarnings().forEach(jsonOutputObject::addWarnings);
         job.getErrors().forEach(jsonOutputObject::addErrors);
-        inProgressBatchJobs.getMergedDetectionErrors(job.getId())
+        inProgressBatchJobs.getAnnotatedDetectionErrors(job.getId())
                 .asMap()
                 .forEach(jsonOutputObject::addErrors);
 
@@ -445,7 +445,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             Media media,
             JsonMediaOutputObject mediaOutputObject,
             TrackCounter trackCounter) {
-        var prevUnmergedAction = job.getPipelineElements().getAction(0, 0);
+        var prevAnnotatedAction = job.getPipelineElements().getAction(0, 0);
         var noOutputActions = HashMultimap.<String, Action>create();
         var annotatorsMap = new HashMap<String, List<String>>();
 
@@ -466,8 +466,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                 var trackInfo = trackOutputHelper.getTrackInfo(job, media, taskIndex, actionIndex);
                 if (!trackInfo.hadAnyTracks()) {
-                    var noTracksAction = trackInfo.isMergeSource()
-                            ? prevUnmergedAction
+                    var noTracksAction = trackInfo.isAnnotatorAction()
+                            ? prevAnnotatedAction
                             : action;
                     // Always include detection actions in the output object,
                     // even if they do not generate any results.
@@ -476,9 +476,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 else if (trackInfo.isSuppressed()) {
                     noOutputActions.put(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, action);
                 }
-                else if (trackInfo.isMergeTarget()) {
-                    // This task will be merged with one that follows.
-                    noOutputActions.put(JsonActionOutputObject.TRACKS_MERGED_TYPE, action);
+                else if (trackInfo.hasAnnotator()) {
+                    // This task will be annotated with one that follows.
+                    noOutputActions.put(JsonActionOutputObject.TRACKS_ANNOTATED_TYPE, action);
                 }
                 else {
                     trackCounter.add(media, trackInfo.tracksGroupedByAction().size());
@@ -488,10 +488,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             annotatorsMap);
                 }
 
-                if (!trackInfo.isMergeSource()) {
+                if (!trackInfo.isAnnotatorAction()) {
                     // NOTE: If and when we support parallel actions in tasks other then the final
                     // one in a pipeline, this code will need to be updated.
-                    prevUnmergedAction = action;
+                    prevAnnotatedAction = action;
                 }
             }
         }
@@ -501,7 +501,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private List<String> getAnnotators(BatchJob job, Media media, int taskIndex) {
         List<String> annotators = new ArrayList<>();
 
-        boolean hasAnnotator = taskMergingManager.taskHasAnnotator(job, media, taskIndex);
+        boolean hasAnnotator = taskAnnotatorService.taskHasAnnotator(job, media, taskIndex);
         if(hasAnnotator) {
             // search subsequent tasks to determine if they are annotators for this task
             for (int nextTaskIndex = (taskIndex + 1); nextTaskIndex < job.getPipelineElements().getTaskCount(); nextTaskIndex++) {
@@ -510,7 +510,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 // for each task, iterate though the actions list and check to see if the action is an annotator
                 for (int actionIndex = 0; actionIndex < nextTask.actions().size(); actionIndex++) {
                     String actionName = nextTask.actions().get(actionIndex);
-                    boolean isAnnotator = taskMergingManager.isAnnotatorAction(job, media, nextTaskIndex, actionIndex);
+                    boolean isAnnotator = taskAnnotatorService.isAnnotatorAction(job, media, nextTaskIndex, actionIndex);
 
                     // add the action to the list if it's an annotator action
                     if (isAnnotator) {
@@ -529,26 +529,26 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             BatchJob job,
             Media media,
             Action action,
-            Multimap<String, Track> tracksGroupedByMergedAction, 
+            Multimap<String, Track> tracksGroupedByAnnotatedAction,
             HashMap<String, List<String>> annotatorsMap) {
-        for (var entry : tracksGroupedByMergedAction.asMap().entrySet()) {
-            var mergedAction = job.getPipelineElements().getAction(entry.getKey());
-            var mergedAlgo = job.getPipelineElements().getAlgorithm(mergedAction.algorithm());
+        for (var entry : tracksGroupedByAnnotatedAction.asMap().entrySet()) {
+            var annotatedAction = job.getPipelineElements().getAction(entry.getKey());
+            var annotatedAlgo = job.getPipelineElements().getAlgorithm(annotatedAction.algorithm());
             var jsonAction = new JsonActionOutputObject(
-                    mergedAction.name(), mergedAlgo.name());
+                    annotatedAction.name(), annotatedAlgo.name());
             int trackIndex = 0;
             for (var track : entry.getValue()) {
                 var jsonTrackOutputObject = createTrackOutputObject(
-                        track, trackIndex++, mergedAlgo.trackType(), action, media, job);
+                        track, trackIndex++, annotatedAlgo.trackType(), action, media, job);
                 jsonAction.getTracks().add(jsonTrackOutputObject);
             }
 
-            if(annotatorsMap.containsKey(mergedAction.name())) {
-                jsonAction.getAnnotators().addAll(annotatorsMap.get(mergedAction.name()));
+            if(annotatorsMap.containsKey(annotatedAction.name())) {
+                jsonAction.getAnnotators().addAll(annotatorsMap.get(annotatedAction.name()));
             }
 
             mediaOutputObject.getTrackTypes()
-                    .computeIfAbsent(mergedAlgo.trackType(), k -> new TreeSet<>())
+                    .computeIfAbsent(annotatedAlgo.trackType(), k -> new TreeSet<>())
                     .add(jsonAction);
         }
     }
@@ -678,7 +678,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private static final String[] NO_TRACK_REASON_PRIORITY = {
             JsonActionOutputObject.NO_TRACKS_TYPE,
             JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE,
-            JsonActionOutputObject.TRACKS_MERGED_TYPE };
+            JsonActionOutputObject.TRACKS_ANNOTATED_TYPE };
 
     private static void addMissingTrackInfo(
             Multimap<String, Action> noOutputActions, JsonMediaOutputObject mediaOutputObject) {
@@ -693,7 +693,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 if (actionMissing) {
                     Optional.ofNullable(mediaOutputObject.getTrackTypes()
                         .computeIfAbsent(reason, k -> {
-                            if (JsonActionOutputObject.TRACKS_MERGED_TYPE.equals(k)) {
+                            if (JsonActionOutputObject.TRACKS_ANNOTATED_TYPE.equals(k)) {
                                 return null;
                             } else {
                                 return new TreeSet<>();

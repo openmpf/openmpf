@@ -280,7 +280,8 @@ public class TiesDbService {
 
     private SortedSet<String> getTrackTypes(BatchJob job, Media media) {
         var pipelineElements = job.getPipelineElements();
-        Stream<Task> tasks = pipelineElements.getTaskStreamInOrder();
+        Stream<Task> tasks = pipelineElements.getTaskStreamInOrder()
+            .filter(t -> !_aggregateJobPropertiesUtil.isSuppressTrack(media, job, t));
 
         return tasks
                 .flatMap(pipelineElements::getActionStreamInOrder)

@@ -291,12 +291,12 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMergeWithPreviousTextTaskTest() {
+    public void runAnnotatorTextTaskTest() {
         String pipelineName = "TESSERACT OCR TEXT DETECTION ON EAST REGIONS WITH KEYWORD TAGGING PIPELINE";
         addPipeline(pipelineName,
                 "EAST TEXT DETECTION TASK",
                 "TESSERACT OCR TEXT DETECTION (WITH FF REGION) TASK",
-                "KEYWORD TAGGING (WITH FF REGION) TASK");
+                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has IS_ANNOTATOR=TRUE
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/ocr/keyword-tagging.jpg"));
         long jobId = runPipelineOnMedia(pipelineName, media, Map.of());
@@ -332,11 +332,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runMergeWithPreviousSpeechTaskTest() {
+    public void runAnnotatorSpeechTaskTest() {
         String pipelineName = "SPHINX SPEECH DETECTION WITH KEYWORD TAGGING AND MARKUP PIPELINE";
         addPipeline(pipelineName,
                 "SPHINX SPEECH DETECTION TASK",
-                "KEYWORD TAGGING (WITH FF REGION) TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK", // has IS_ANNOTATOR=TRUE
                 "OCV GENERIC MARKUP TASK");
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/green.wav"));

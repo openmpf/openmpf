@@ -76,25 +76,25 @@ public class TrackOutputHelper {
 
     public record TrackInfo(
             boolean isSuppressed,
-            boolean isMergeSource,
-            boolean isMergeTarget,
+            boolean isAnnotatorAction,
+            boolean hasAnnotator,
             boolean hadAnyTracks,
             Multimap<String, Track> tracksGroupedByAction) { }
 
 
     public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
         boolean isSuppressed = isSuppressed(job, media, taskIdx);
-        boolean isMergeTarget = _taskAnnotatorService.taskHasAnnotator(job, media, taskIdx);
+        boolean hasAnnotator = _taskAnnotatorService.taskHasAnnotator(job, media, taskIdx);
         boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean isMergeSource = _taskAnnotatorService.isAnnotatorAction(job, media, taskIdx, actionIdx);
+        boolean isAnnotatorAction = _taskAnnotatorService.isAnnotatorAction(job, media, taskIdx, actionIdx);
 
         boolean canAvoidGettingTracks =
-                isMergeTarget || (isSuppressed && !needToCheckTrackTriggers);
+                hasAnnotator || (isSuppressed && !needToCheckTrackTriggers);
         if (canAvoidGettingTracks) {
             int trackCount = _inProgressBatchJobsService.getTrackCount(
                     job.getId(), media.getId(), taskIdx, actionIdx);
             return new TrackInfo(
-                    isSuppressed, isMergeSource, isMergeTarget, trackCount > 0,
+                    isSuppressed, isAnnotatorAction, hasAnnotator, trackCount > 0,
                     ImmutableMultimap.of());
         }
 
@@ -109,9 +109,9 @@ public class TrackOutputHelper {
                 isSuppressed = false;
             }
         }
-        var indexedTracks = Multimaps.index(tracks, t -> getMergedAction(t, job));
+        var indexedTracks = Multimaps.index(tracks, t -> getAnnotatedAction(t, job));
         return new TrackInfo(
-                isSuppressed, isMergeSource, isMergeTarget,
+                isSuppressed, isAnnotatorAction, hasAnnotator,
                 !indexedTracks.isEmpty(), indexedTracks);
     }
 
@@ -168,12 +168,12 @@ public class TrackOutputHelper {
     }
 
 
-    private String getMergedAction(Track track, BatchJob job) {
+    private String getAnnotatedAction(Track track, BatchJob job) {
         int actionIndex;
-        var trackMergingEnabled = track.getAnnotatedTaskIndex() != track.getTaskIndex();
-        if (trackMergingEnabled) {
-            // When track merging is enabled, the merged task will never be the last task.  Only
-            // the last task can have more than one action, so the merged action has to be the
+        var trackAnnotationEnabled = track.getAnnotatedTaskIndex() != track.getTaskIndex();
+        if (trackAnnotationEnabled) {
+            // When track annotation is enabled, the annotated task will never be the last task.  Only
+            // the last task can have more than one action, so the annotated action has to be the
             // first and only action in the task.
             actionIndex = 0;
         }

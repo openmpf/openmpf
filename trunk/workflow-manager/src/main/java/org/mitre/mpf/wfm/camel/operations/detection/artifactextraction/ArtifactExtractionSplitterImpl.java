@@ -122,7 +122,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             // Artifact extraction will be performed for the next task this one is merged with.
             if (_taskAnnotatorService.taskHasAnnotator(job, media, taskIndex)) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to being merged with a following task.",
+                                " because it is annotated by a following task.",
                         pipelineElements.getTask(taskIndex).name(), media.getId());
                 continue;
             }

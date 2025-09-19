@@ -237,7 +237,6 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private static class TrackTypeComparator implements Comparator<String> {
 		private static final Set<String> _special = new HashSet<>(Arrays.asList(
 				JsonActionOutputObject.NO_TRACKS_TYPE,
-				JsonActionOutputObject.TRACKS_MERGED_TYPE,
 				JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE));
 
 		@Override

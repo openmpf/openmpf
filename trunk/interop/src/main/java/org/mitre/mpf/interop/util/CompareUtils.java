@@ -128,6 +128,42 @@ public class CompareUtils {
     }
 
 
+    public static <T, U extends Comparable<U>> Comparator<T> listCompare(Function<T, List<U>> toListFunc) {
+        return Comparator.nullsFirst(Comparator.comparing(toListFunc, CompareUtils::doListCompare));
+    }
+
+
+    private static <U extends Comparable<U>> int doListCompare(List<U> s1, List<U> s2) {
+        Iterator<U> iter1 = s1.iterator();
+        Iterator<U> iter2 = s2.iterator();
+
+        while (true) {
+            boolean hasNext1 = iter1.hasNext();
+            boolean hasNext2 = iter2.hasNext();
+            if (!hasNext1 && !hasNext2) {
+                return 0;
+            }
+
+            U item1 = hasNext1 ? iter1.next() : null;
+            U item2 = hasNext2 ? iter2.next() : null;
+            if (item1 == null && item2 == null) {
+                continue;
+            }
+
+            if (item1 == null) {
+                return -1;
+            }
+            if (item2 == null) {
+                return 1;
+            }
+
+            int itemCompare = item1.compareTo(item2);
+            if (itemCompare != 0) {
+                return itemCompare;
+            }
+        }
+    }
+
 
     private CompareUtils() {
     }

@@ -1,7 +1,6 @@
 package org.mitre.mpf.mvc.security;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
-import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,10 +13,10 @@ import java.io.IOException;
 @Component
 public class HawtioAuditFilter extends OncePerRequestFilter {
     
-    private final AuditEventLogger auditEventLogger;
+    private final AuditEventLogger _auditEventLogger;
     
     public HawtioAuditFilter(AuditEventLogger auditEventLogger) {
-        this.auditEventLogger = auditEventLogger;
+        this._auditEventLogger = auditEventLogger;
     }
     
     @Override
@@ -26,10 +25,9 @@ public class HawtioAuditFilter extends OncePerRequestFilter {
         
         String requestURI = request.getRequestURI();
         if (requestURI.equals("/actuator/hawtio") || requestURI.equals("/actuator/hawtio/")) {
-            auditEventLogger.log(LogAuditEventRecord.TagType.SECURITY, 
-                LogAuditEventRecord.OpType.LOGIN, 
-                LogAuditEventRecord.ResType.ALLOW, 
-                "Hawtio accessed");
+            _auditEventLogger.loginEvent()
+                .withSecurityTag()
+                .allowed("Hawtio Accessed.");
         }
         filterChain.doFilter(request, response);
     }

@@ -56,6 +56,7 @@ public class CustomSsoProps {
         public static final String TOKEN_PROPERTY = "CUSTOM_SSO_TOKEN_PROPERTY";
         public static final String SSO_LOG_IN_URL = "CUSTOM_SSO_LOG_IN_URL";
         public static final String SSO_RETURN_URL = "CUSTOM_SSO_RETURN_URL";
+        public static final String SSO_LOG_OUT_URL = "CUSTOM_SSO_LOG_OUT_URL";
 
         public static final String SSO_TOKEN_LIFE_TIME_SECONDS = "CUSTOM_SSO_TOKEN_LIFE_TIME_SECONDS";
         public static final String SSO_USER = "CUSTOM_SSO_USER";
@@ -112,6 +113,10 @@ public class CustomSsoProps {
             // Should be impossible because loginUri is already a URI.
             throw new WfmProcessingException("The Custom SSO login uri was invalid.");
         }
+    }
+
+    public URI getLogoutUri() {
+        return getRequiredUriPropOrEnv(EnvKeys.SSO_LOG_OUT_URL);
     }
 
 

@@ -67,9 +67,7 @@ public class CustomSsoConfig {
                 .anyRequest().authenticated())
             .addFilter(ssoService)
             .exceptionHandling(e -> e.authenticationEntryPoint(ssoService))
-            .logout(x ->
-                x.deleteCookies(customSsoProps.getTokenProperty())
-                .logoutSuccessUrl("/"))
+            .logout(x -> x.logoutSuccessUrl(customSsoProps.getLogoutUri().toString()))
             // Hawtio requires CookieCsrfTokenRepository.withHttpOnlyFalse().
             .csrf(x -> x.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
             .build();

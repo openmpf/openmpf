@@ -180,7 +180,7 @@ public class CustomSsoTokenValidator {
 
     private void waitForExistingValidation(CompletableFuture<Void> validationFuture) {
         LOG.info("Incoming SSO token was not in cache or was expired. "
-            + "Waiting for in progres validation to complete.");
+            + "Waiting for in progress validation to complete.");
         ThreadUtil.join(validationFuture);
         LOG.info("Successfully validated incoming SSO token.");
     }

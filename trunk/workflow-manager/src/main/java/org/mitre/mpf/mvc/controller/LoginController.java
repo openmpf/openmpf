@@ -194,7 +194,6 @@ public class LoginController {
         if (_customSsoProps.isEmpty()) {
             return "redirect:/login";
         }
-        clearCustomSsoCookie(request, response, authentication);
 
         var msg = CustomSsoProps.getStoredErrorMessage(session).orElse("");
         var ssoRedirectUri = _customSsoProps.get().getFullRedirectUri();
@@ -202,14 +201,5 @@ public class LoginController {
             "reason", msg,
             "loginUrl", ssoRedirectUri
         ));
-    }
-
-    private void clearCustomSsoCookie(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            Authentication authentication) {
-        _customSsoProps
-            .map(props -> new CookieClearingLogoutHandler(props.getTokenProperty()))
-            .ifPresent(c -> c.logout(request, response, authentication));
     }
 }

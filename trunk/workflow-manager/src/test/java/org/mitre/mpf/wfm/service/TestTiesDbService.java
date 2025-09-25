@@ -139,6 +139,12 @@ public class TestTiesDbService extends MockitoTest.Strict {
     @Mock
     private AuditEventLogger _mockAuditEventLogger;
 
+    @Mock
+    private AuditEventLogger.BuilderTagStage _mockBuilderTagStage;
+
+    @Mock
+    private AuditEventLogger.AuditEventBuilder _mockAuditEventBuilder;
+
     private TiesDbService _tiesDbService;
 
     private static final Instant PROCESS_DATE = Instant.ofEpochSecond(1622724824);
@@ -166,6 +172,14 @@ public class TestTiesDbService extends MockitoTest.Strict {
     public void init() {
         initTestMedia();
         initJob();
+        
+        lenient().when(_mockAuditEventLogger.createEvent())
+                .thenReturn(_mockBuilderTagStage);
+        lenient().when(_mockAuditEventLogger.readEvent())
+                .thenReturn(_mockBuilderTagStage);
+        lenient().when(_mockBuilderTagStage.withSecurityTag())
+                .thenReturn(_mockAuditEventBuilder);
+        
         _tiesDbService = new TiesDbService(
                 _mockPropertiesUtil,
                 _mockAggregateJobPropertiesUtil,

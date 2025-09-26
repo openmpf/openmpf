@@ -116,32 +116,20 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 std::string_view job_name,
                 const Properties& environment_properties) {
             const auto& video_request = detection_request.all_video_tracks_request();
-            if (video_request.feed_forward_tracks_size() > 0) {
-                const auto& pb_ff_tracks = video_request.feed_forward_tracks();
-                std::vector<MPFVideoTrack> ff_tracks;
-                for (const auto& pb_ff_track : pb_ff_tracks) {
-                    ff_tracks.push_back(ConvertFeedForwardTrack(pb_ff_track));
-                }
-                return {
-                    std::string{job_name},
-                    detection_request.media_path(),
-                    video_request.start_frame(),
-                    video_request.stop_frame(),
-                    std::move(ff_tracks),
-                    GetJobProperties(detection_request, environment_properties),
-                    GetMediaProperties(detection_request)
-                };
+            const auto& pb_ff_tracks = video_request.feed_forward_tracks();
+            std::vector<MPFVideoTrack> ff_tracks;
+            for (const auto& pb_ff_track : pb_ff_tracks) {
+                ff_tracks.push_back(ConvertFeedForwardTrack(pb_ff_track));
             }
-            else {
-                return {
-                    std::string{job_name},
-                    detection_request.media_path(),
-                    video_request.start_frame(),
-                    video_request.stop_frame(),
-                    GetJobProperties(detection_request, environment_properties),
-                    GetMediaProperties(detection_request)
-                };
-            }
+            return {
+                std::string{job_name},
+                detection_request.media_path(),
+                video_request.start_frame(),
+                video_request.stop_frame(),
+                std::move(ff_tracks),
+                GetJobProperties(detection_request, environment_properties),
+                GetMediaProperties(detection_request)
+            };
         }
 
 

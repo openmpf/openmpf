@@ -35,35 +35,35 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 
 public record DetectionRequest(
         DetectionProtobuf.DetectionRequest protobuf,
-        Optional<List<Track>> feedForwardTracks,
+        List<Track> feedForwardTracks,
         Map<String, String> headers) {
 
     public DetectionRequest(DetectionProtobuf.DetectionRequest protobuf) {
-        this(protobuf, Optional.empty(), Map.of());
+        this(protobuf, List.of(), Map.of());
     }
 
     public DetectionRequest(
             DetectionProtobuf.DetectionRequest protobuf,
             Track feedForwardTrack) {
-        this(protobuf, Optional.of(List.of(feedForwardTrack)), Map.of());
+        this(protobuf, List.of(feedForwardTrack), Map.of());
     }
 
     public DetectionRequest(
             DetectionProtobuf.DetectionRequest protobuf,
             Track feedForwardTrack,
             Map<String, String> headers) {
-        this(protobuf, Optional.of(List.of(feedForwardTrack)), headers);
+        this(protobuf, List.of(feedForwardTrack), headers);
     }
 
     public DetectionRequest(
             DetectionProtobuf.DetectionRequest protobuf,
             List<Track> feedForwardTracks) {
-        this(protobuf, Optional.of(feedForwardTracks), Map.of());
+        this(protobuf, feedForwardTracks, Map.of());
     }
 
     public DetectionRequest(
             DetectionProtobuf.DetectionRequest protobuf,
             Map<String, String> headers) {
-        this(protobuf, Optional.empty(), headers);
+        this(protobuf, List.of(), headers);
     }
 }

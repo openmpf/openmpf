@@ -120,7 +120,7 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 const auto& pb_ff_tracks = video_request.feed_forward_tracks();
                 std::vector<MPFVideoTrack> ff_tracks;
                 for (const auto& pb_ff_track : pb_ff_tracks) {
-                    ff_tracks.push_back(ConvertFeedForwardTrack(pb_ff_track))
+                    ff_tracks.push_back(ConvertFeedForwardTrack(pb_ff_track));
                 }
                 return {
                     std::string{job_name},

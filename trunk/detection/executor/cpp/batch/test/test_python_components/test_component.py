@@ -80,14 +80,13 @@ class TestComponent(object):
     # Doesn't need to be a instance method, just making sure executor can call instance methods
     def get_detections_from_all_video_tracks(self, video_job):
         logger.info('[%s] Received all video tracks job: %s', video_job.job_name, video_job)
-        if video_job.feed_forward_tracks:
-            return video_job.feed_forward_tracks
 
-        track1 = self.get_echo_video_track1(video_job)
-        track2 = self.get_echo_video_track2(video_job)
+        # Passed-in feed-forward tracks will never be empty
+        tracks = list(video_job.feed_forward_tracks)
+        tracks.append(self.get_echo_video_track1(video_job))
+        tracks.append(self.get_echo_video_track2(video_job))
 
-        # Make sure regular collections are accepted
-        return [track1, track2]
+        return tracks
 
 
     @classmethod  # Doesn't need to be a class method, just making sure executor can call class methods

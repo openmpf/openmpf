@@ -296,33 +296,24 @@ TEST(PythonComponentHandleTest, TestVideoFeedForward) {
 
 TEST(PythonComponentHandleTest, TestAllVideoTracksFeedForward) {
     PythonComponentHandle py_component = get_test_component();
-    {
-        MPFVideoTrack ff_track1(0, 10, .2, { {"prop1_1", "val1_1"}, {"prop1_2", "val1_2"} });
-        ff_track1.frame_locations.emplace(0, MPFImageLocation(1, 2, 3, 4, .5));
-        ff_track1.frame_locations.emplace(5, MPFImageLocation(6, 7, 8, 9, .1, { {"hello", "world"} }));
+ 
+    MPFVideoTrack ff_track1(0, 10, .2, { {"prop1_1", "val1_1"}, {"prop1_2", "val1_2"} });
+    ff_track1.frame_locations.emplace(0, MPFImageLocation(1, 2, 3, 4, .5));
+    ff_track1.frame_locations.emplace(5, MPFImageLocation(6, 7, 8, 9, .1, { {"hello", "world"} }));
 
-        MPFVideoTrack ff_track2(100, 200, .9, { {"prop2_1", "val2_1"}, {"prop2_2", "val2_2"} });
-        ff_track2.frame_locations.emplace(10, MPFImageLocation(10, 20, 30, 40, .7));
-        ff_track2.frame_locations.emplace(50, MPFImageLocation(60, 70, 80, 90, .3, { {"foo", "bar"} }));
+    MPFVideoTrack ff_track2(100, 200, .9, { {"prop2_1", "val2_1"}, {"prop2_2", "val2_2"} });
+    ff_track2.frame_locations.emplace(10, MPFImageLocation(10, 20, 30, 40, .7));
+    ff_track2.frame_locations.emplace(50, MPFImageLocation(60, 70, 80, 90, .3, { {"foo", "bar"} }));
 
-        std::vector<MPFVideoTrack> ff_tracks;
-        ff_tracks.push_back(ff_track1);
-        ff_tracks.push_back(ff_track2);
+    MPFAllVideoTracksJob job("Test Job", "path/to/media", 0, 200, {ff_track1, ff_track2},
+                            { { "job prop 1" , "job val 1" }, job_echo_pair },
+                            { { "media prop 1" , "media val 1" }, media_echo_pair });
 
-        MPFAllVideoTracksJob job("Test Job", "path/to/media", 0, 200, ff_tracks, {}, {});
-
-        std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
-        ASSERT_EQ(results.size(), 2);
-        assert_video_tracks_equal(ff_track1, results.at(0));
-        assert_video_tracks_equal(ff_track2, results.at(1));
-    }
-    {
-        MPFAllVideoTracksJob job("Test Job", "path/to/media", 0, 200, {},
-                                { job_echo_pair }, { media_echo_pair });
-
-        std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
-        assert_echo_video_tracks(results);
-    }
+    std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
+    ASSERT_EQ(results.size(), 4);
+    assert_video_tracks_equal(ff_track1, results.at(0));
+    assert_video_tracks_equal(ff_track2, results.at(1));
+    assert_echo_video_tracks({results.at(2), results.at(3)});
 }
 
 

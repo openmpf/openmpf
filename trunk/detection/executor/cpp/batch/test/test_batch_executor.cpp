@@ -317,7 +317,8 @@ TEST(PythonComponentHandleTest, TestAllVideoTracksFeedForward) {
         assert_video_tracks_equal(ff_track2, results.at(1));
     }
     {
-        MPFAllVideoTracksJob job("Test Job", "path/to/media", 0, 200, {}, {}, {});
+        MPFAllVideoTracksJob job("Test Job", "path/to/media", 0, 200, {},
+                                { job_echo_pair }, { media_echo_pair });
 
         std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
         assert_echo_video_tracks(results);

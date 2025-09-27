@@ -85,7 +85,7 @@ class TestComponent(object):
 
         track1 = self.get_echo_video_track1(video_job)
         track2 = self.get_echo_video_track2(video_job)
-        
+
         # Make sure regular collections are accepted
         return [track1, track2]
 
@@ -122,6 +122,7 @@ class TestComponent(object):
         track.frame_locations[1] = mpf.ImageLocation(5, 6, 7, 8, -1)
         track.frame_locations[1].detection_properties['ECHO_JOB'] = echo_job
         track.frame_locations[1].detection_properties['ECHO_MEDIA'] = echo_media
+        
         track.detection_properties.update(video_job.job_properties)
         track.detection_properties.update(video_job.media_properties)
 

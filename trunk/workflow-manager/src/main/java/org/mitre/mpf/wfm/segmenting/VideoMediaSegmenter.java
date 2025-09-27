@@ -159,11 +159,11 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             return Optional.empty();
         }
 
-        var AllVideoTracksRequestBuilder = AllVideoTracksRequest.newBuilder();
+        var allVideoTracksRequestBuilder = AllVideoTracksRequest.newBuilder();
         for (Track track : tracks) {
             var protobufTrackBuilder = 
                 createFeedForwardTrackBuilder(track, topQualityCount, topQualitySelectionProp, media, context);
-            AllVideoTracksRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
+            allVideoTracksRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
         }
 
         var startFrame = tracks.stream()
@@ -174,7 +174,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .mapToInt(Track::getEndOffsetFrameInclusive)
                 .max();
 
-        AllVideoTracksRequest allVideoTracksRequest = AllVideoTracksRequestBuilder
+        AllVideoTracksRequest allVideoTracksRequest = allVideoTracksRequestBuilder
                 .setStartFrame(startFrame.getAsInt())
                 .setStopFrame(stopFrame.getAsInt())
                 .build();

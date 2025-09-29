@@ -37,6 +37,7 @@ import javax.servlet.http.HttpSession;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
+import org.mitre.mpf.mvc.security.custom.sso.CustomSsoConfig;
 import org.mitre.mpf.mvc.security.custom.sso.CustomSsoProps;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -50,7 +51,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
-import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RestController;
@@ -93,10 +93,13 @@ public class LoginController {
                 authenticated = true;
                 Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
                 admin = authorities.contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                if (CustomSsoConfig.isEnabled() && authentication.getDetails() != null) {
+                    userPrincipalName = authentication.getDetails().toString();
+                }
             }
         }
 
-        if(request != null && request.getUserPrincipal() != null) {
+        if (userPrincipalName == null && request != null && request.getUserPrincipal() != null) {
         	userPrincipalName = request.getUserPrincipal().getName();
         }
 

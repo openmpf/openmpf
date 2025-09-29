@@ -38,12 +38,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.assertj.core.api.Assertions;
@@ -55,11 +57,15 @@ import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.enums.UserRole;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.Mock;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
@@ -73,6 +79,10 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
     private static final int HTTP_RETRY_COUNT = 3;
 
+    private static final String USER_ID = "jsmith@example.com";
+
+    private static final String DISPLAY_NAME = "John Smith";
+
     @Mock
     private CustomSsoProps _mockSsoProps;
 
@@ -81,17 +91,24 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
     private final MockClockService _mockClock = new MockClockService();
 
+    private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
+
     private CustomSsoTokenValidator _tokenValidator;
 
     @Before
     public void init() {
         _tokenValidator = new CustomSsoTokenValidator(
-            _mockSsoProps, _mockHttpClient, _mockClock);
+            _mockSsoProps, _mockHttpClient, _mockClock, _objectMapper);
 
         lenient().when(_mockSsoProps.getValidationUri())
             .thenReturn(VALIDATION_URL);
         lenient().when(_mockSsoProps.getTokenProperty())
             .thenReturn("CUSTOM_TOKEN_PROP");
+        lenient().when(_mockSsoProps.getUserIdProperty())
+            .thenReturn("USER_ID");
+        lenient().when(_mockSsoProps.getDisplayNameProperty())
+            .thenReturn("DISPLAY_NAME");
+
         lenient().when(_mockSsoProps.getTokenLifeTime())
             .thenReturn(TOKEN_LIFETIME);
         lenient().when(_mockSsoProps.getHttpRetryCount())
@@ -140,7 +157,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
         var authHeader = "Bearer <MY TOKEN>";
         var numHttpRequests = new AtomicInteger(0);
         {
-            var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
+            var response = createUserInfoResponse();
             when(_mockHttpClient.executeRequestSync(
                     argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT),
                     eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
@@ -149,14 +166,14 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
                     return response;
                 });
 
-            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
-            assertThat(authResult.isAuthenticated()).isTrue();
+            var authResult = _tokenValidator.authenticateBearer(createAuthRequest(authHeader));
+            assertSuccessfulAuth(authResult, authHeader);
         }
 
         _mockClock.advance(Duration.ofSeconds(3));
         {
-            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
-            assertThat(authResult.isAuthenticated()).isTrue();
+            var authResult = _tokenValidator.authenticateBearer(createAuthRequest(authHeader));
+            assertSuccessfulAuth(authResult, authHeader);
             assertThat(numHttpRequests)
                 .as("Cached value should have been used")
                 .hasValue(1);
@@ -164,8 +181,8 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         _mockClock.advance(Duration.ofSeconds(1));
         {
-            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
-            assertThat(authResult.isAuthenticated()).isTrue();
+            var authResult = _tokenValidator.authenticateBearer(createAuthRequest(authHeader));
+            assertSuccessfulAuth(authResult, authHeader);
             assertThat(numHttpRequests)
                 .as("Cached value should have been used")
                 .hasValue(1);
@@ -173,8 +190,8 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         _mockClock.advance(Duration.ofSeconds(4));
         {
-            var authResult = _tokenValidator.authenticateBearer(createAuth(authHeader));
-            assertThat(authResult.isAuthenticated()).isTrue();
+            var authResult = _tokenValidator.authenticateBearer(createAuthRequest(authHeader));
+            assertSuccessfulAuth(authResult, authHeader);
             assertThat(numHttpRequests)
                 .as("Cached value should not have been used")
                 .hasValue(2);
@@ -213,15 +230,15 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         var authHeader = "Bearer <MY TOKEN>";
         var authFuture1 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticateBearer(createAuth(authHeader)));
+            () -> _tokenValidator.authenticateBearer(createAuthRequest(authHeader)));
         var authFuture2 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticateBearer(createAuth(authHeader)));
+            () -> _tokenValidator.authenticateBearer(createAuthRequest(authHeader)));
 
         var authHeader2 = "Bearer <MY TOKEN2>";
         var authFuture3 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticateBearer(createAuth(authHeader2)));
+            () -> _tokenValidator.authenticateBearer(createAuthRequest(authHeader2)));
         var authFuture4 = ThreadUtil.callAsync(
-            () -> _tokenValidator.authenticateBearer(createAuth(authHeader2)));
+            () -> _tokenValidator.authenticateBearer(createAuthRequest(authHeader2)));
 
         // Verify that both requests have started.
         assertThat(ThreadUtil.allOf(request1Started, request2Started))
@@ -234,22 +251,26 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         // Trigger completion of httpFuture2 before httpFuture1 to simulate HTTP responses being
         // received out of order.
-        httpFuture2.complete(new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok"));
+        httpFuture2.complete(
+                createUserInfoResponse("person2", "person2@example.com"));
 
         // Make sure the requests associated with the second token complete.
         assertThat(authFuture3).succeedsWithin(FUTURE_DURATION)
-            .satisfies(a -> assertThat(a.isAuthenticated()).isTrue());
+            .satisfies(a -> assertSuccessfulAuth(
+                    a, authHeader2, "person2", "person2@example.com"));
         assertThat(authFuture4).succeedsWithin(FUTURE_DURATION)
-            .satisfies(a -> assertThat(a.isAuthenticated()).isTrue());
+            .satisfies(a -> assertSuccessfulAuth(
+                    a, authHeader2, "person2", "person2@example.com"));
+
 
         // Make sure we are still waiting for the first token.
         TestUtil.assertNotDone(CompletableFuture.anyOf(authFuture1, authFuture2));
 
-        httpFuture1.complete(new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok"));
+        httpFuture1.complete(createUserInfoResponse());
         assertThat(authFuture1).succeedsWithin(FUTURE_DURATION)
-            .satisfies(a -> assertThat(a.isAuthenticated()).isTrue());
+            .satisfies(a -> assertSuccessfulAuth(a, authHeader));
         assertThat(authFuture2).succeedsWithin(FUTURE_DURATION)
-            .satisfies(a -> assertThat(a.isAuthenticated()).isTrue());
+            .satisfies(a -> assertSuccessfulAuth(a, authHeader));
 
         assertThat(numToken1Requests).hasValue(1);
         assertThat(numToken2Requests).hasValue(1);
@@ -258,7 +279,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
     @Test
     public void testValidationFromBrowser() throws IOException {
-        var httpResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
+        var httpResponse = createUserInfoResponse();
         when(_mockHttpClient.executeRequestSync(
                     argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT),
                     eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
@@ -266,10 +287,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
         var authRequest = new PreAuthenticatedAuthenticationToken("n/a", "<MY TOKEN>");
         var authResponse = _tokenValidator.authenticateCookie(authRequest);
-        assertThat(authResponse.getAuthorities())
-                .singleElement()
-                .extracting(g -> g.getAuthority())
-                .isEqualTo(UserRole.ADMIN.springName);
+        assertSuccessfulAuth(authResponse, "<MY TOKEN>");
     }
 
 
@@ -291,15 +309,47 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
 
     private void assertBadCredentials(String token, String expectedMsg) {
-        var auth = createAuth(token);
+        var auth = createAuthRequest(token);
         assertThatExceptionOfType(BadCredentialsException.class)
             .isThrownBy(() -> _tokenValidator.authenticateBearer(auth))
             .withMessageContaining(expectedMsg);
         assertThat(auth.isAuthenticated()).isFalse();
     }
 
-
-    private static Authentication createAuth(String authHeader) {
+    private static Authentication createAuthRequest(String authHeader) {
         return new PreAuthenticatedAuthenticationToken("n/a", authHeader);
+    }
+
+
+    private HttpResponse createUserInfoResponse() throws JsonProcessingException {
+        return createUserInfoResponse(USER_ID, DISPLAY_NAME);
+    }
+
+    private HttpResponse createUserInfoResponse(String id, String displayName)
+            throws JsonProcessingException {
+        var body = Map.of("USER_ID", id, "DISPLAY_NAME", displayName);
+        var json = _objectMapper.writeValueAsString(body);
+        var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok");
+        response.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
+        return response;
+    }
+
+    private void assertSuccessfulAuth(Authentication authentication, String expectedToken) {
+        assertSuccessfulAuth(authentication, expectedToken, USER_ID, DISPLAY_NAME);
+    }
+
+    private void assertSuccessfulAuth(
+            Authentication authentication,
+            String expectedToken,
+            String expectedUserId,
+            String expectedDisplayName) {
+        assertThat(authentication.isAuthenticated()).isTrue();
+        assertThat(authentication.getPrincipal()).isEqualTo(expectedUserId);
+        assertThat(authentication.getDetails()).isEqualTo(expectedDisplayName);
+        assertThat(authentication.getCredentials()).isEqualTo(expectedToken);
+        assertThat(authentication.getAuthorities())
+                .singleElement()
+                .extracting(g -> g.getAuthority())
+                .isEqualTo(UserRole.ADMIN.springName);
     }
 }

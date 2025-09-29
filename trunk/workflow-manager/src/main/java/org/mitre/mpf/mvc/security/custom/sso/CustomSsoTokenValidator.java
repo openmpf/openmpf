@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,6 +45,7 @@ import javax.inject.Inject;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.mitre.mpf.mvc.security.custom.sso.CustomSsoTokenValidator.TokenInfo;
 import org.mitre.mpf.wfm.enums.UserRole;
 import org.mitre.mpf.wfm.service.ClockService;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
@@ -60,9 +60,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 @Profile("custom_sso")
 public class CustomSsoTokenValidator {
+
+    public record TokenInfo(
+            String token, Instant expirationTime, String userId, String displayName) {
+    }
 
     private static final Logger LOG = LoggerFactory.getLogger(CustomSsoTokenValidator.class);
 
@@ -74,19 +81,23 @@ public class CustomSsoTokenValidator {
 
     private final ClockService _clock;
 
+    private final ObjectMapper _objectMapper;
+
     private final TokenCache _cache;
 
-    private final Map<String, CompletableFuture<Void>> _inProgressValidations
+    private final Map<String, CompletableFuture<TokenInfo>> _inProgressValidations
             = new ConcurrentHashMap<>();
 
     @Inject
     public CustomSsoTokenValidator(
             CustomSsoProps customSsoProps,
             HttpClientUtils httpClient,
-            ClockService clock) {
+            ClockService clock,
+            ObjectMapper objectMapper) {
         _customSsoProps = customSsoProps;
         _httpClient = httpClient;
         _clock = clock;
+        _objectMapper = objectMapper;
         _cache = new TokenCache(_clock);
     }
 
@@ -125,50 +136,50 @@ public class CustomSsoTokenValidator {
 
 
     private Authentication authenticate(String token, Authentication authenticationRequest) {
-        validateToken(token);
+        var tokenInfo = validateToken(token);
         authenticationRequest.setAuthenticated(true);
 
         var authenticationResult = new PreAuthenticatedAuthenticationToken(
-                authenticationRequest.getPrincipal(),
+                tokenInfo.userId(),
                 authenticationRequest.getCredentials(),
                 List.of(new SimpleGrantedAuthority(UserRole.ADMIN.springName)));
+        authenticationResult.setDetails(tokenInfo.displayName);
         authenticationResult.setAuthenticated(true);
         return authenticationResult;
     }
 
 
-    private void validateToken(String token) {
-        if (_cache.contains(token)) {
+    private TokenInfo validateToken(String token) {
+        var cachedToken = _cache.get(token);
+        if (cachedToken.isPresent()) {
             LOG.info("Incoming SSO token was found in cache.");
-            return;
+            return cachedToken.get();
         }
 
-        var newFuture = ThreadUtil.<Void>newFuture();
+        var newFuture = ThreadUtil.<TokenInfo>newFuture();
         var existingFuture = _inProgressValidations.putIfAbsent(token, newFuture);
         if (existingFuture != null) {
-            waitForExistingValidation(existingFuture);
-            return;
+            return waitForExistingValidation(existingFuture);
         }
 
         // The cache is checked a second time here because there is period of time between the
         // cache being updated and the _inProgressValidations entry being removed.
-        if (_cache.contains(token)) {
-            newFuture.complete(null);
+        cachedToken = _cache.get(token);
+        if (cachedToken.isPresent()) {
+            newFuture.complete(cachedToken.get());
             _inProgressValidations.remove(token);
-            return;
+            return cachedToken.get();
         }
 
         LOG.info("Incoming SSO token was not in cache or was expired. "
             + "Sending token validation request.");
         try {
-            var validationStartTime = _clock.now();
-            validateRemotely(token);
-            _cache.add(
-                    token,
-                    validationStartTime.plus(_customSsoProps.getTokenLifeTime()));
+            var tokenInfo = validateRemotely(token);
+            _cache.add(tokenInfo);
             LOG.info("Successfully validated incoming SSO token.");
             _inProgressValidations.remove(token);
-            newFuture.complete(null);
+            newFuture.complete(tokenInfo);
+            return tokenInfo;
         }
         catch (Exception e) {
             _inProgressValidations.remove(token);
@@ -178,15 +189,17 @@ public class CustomSsoTokenValidator {
     }
 
 
-    private void waitForExistingValidation(CompletableFuture<Void> validationFuture) {
+    private TokenInfo waitForExistingValidation(CompletableFuture<TokenInfo> validationFuture) {
         LOG.info("Incoming SSO token was not in cache or was expired. "
             + "Waiting for in progress validation to complete.");
-        ThreadUtil.join(validationFuture);
+        var tokenInfo = ThreadUtil.join(validationFuture);
         LOG.info("Successfully validated incoming SSO token.");
+        return tokenInfo;
     }
 
 
-    private void validateRemotely(String token) {
+    private TokenInfo validateRemotely(String token) {
+        var validationStartTime = _clock.now();
         HttpResponse response;
         try {
             var request = new HttpGet(_customSsoProps.getValidationUri());
@@ -209,7 +222,41 @@ public class CustomSsoTokenValidator {
                 .orElse(".");
             throw new AuthServerReportedBadCredentialsException(errorPrefix + errorDetails);
         }
+        return processValidationResponse(token, validationStartTime, response);
     }
+
+    private TokenInfo processValidationResponse(
+            String token,
+            Instant validationStartTime,
+            HttpResponse response) {
+        JsonNode responseJson;
+        try (var inputStream = response.getEntity().getContent()) {
+            responseJson = _objectMapper.readTree(inputStream);
+        }
+        catch (IOException e) {
+            throw new AuthServerReportedBadCredentialsException(
+                "Failed to validate token because of an invalid response: " + e, e);
+        }
+
+        var userId = Optional
+                .ofNullable(responseJson.get(_customSsoProps.getUserIdProperty()))
+                .map(JsonNode::asText)
+                .filter(s -> !s.isEmpty())
+                .orElseThrow(() -> new AuthServerReportedBadCredentialsException(
+                        "Could not determine user Id because the %s property was not present in the response."
+                        .formatted(_customSsoProps.getUserIdProperty())));
+
+        var displayName = Optional
+                .ofNullable(responseJson.get(_customSsoProps.getDisplayNameProperty()))
+                .map(JsonNode::asText)
+                .filter(s -> !s.isEmpty())
+                .orElse(userId);
+        return new TokenInfo(
+                token,
+                validationStartTime.plus(_customSsoProps.getTokenLifeTime()),
+                userId, displayName);
+    }
+
 
     private static Optional<String> getBody(HttpResponse response) {
         var entity = response.getEntity();
@@ -229,17 +276,14 @@ public class CustomSsoTokenValidator {
 
 
 class TokenCache {
-    private record CachedToken(String token, Instant expirationTime) {
-    }
-
     private final ClockService _clock;
 
-    private final Set<String> _tokenLookup = ConcurrentHashMap.newKeySet();
+    private final Map<String, TokenInfo> _tokenLookup = new ConcurrentHashMap<>();
 
     private AtomicReference<Instant> _nextExpiration = new AtomicReference<>(Instant.MAX);
 
-    private final PriorityQueue<CachedToken> _expirationQueue = new PriorityQueue<>(
-            Comparator.comparing(CachedToken::expirationTime));
+    private final PriorityQueue<TokenInfo> _expirationQueue = new PriorityQueue<>(
+            Comparator.comparing(TokenInfo::expirationTime));
 
     private final Lock _lock = new ReentrantLock();
 
@@ -247,29 +291,28 @@ class TokenCache {
         _clock = clock;
     }
 
-    public boolean contains(String token) {
+    public Optional<TokenInfo> get(String token) {
         expireItemsIfNeeded();
-        return _tokenLookup.contains(token);
+        return Optional.ofNullable(_tokenLookup.get(token));
     }
 
-    public void add(String token, Instant expirationTime) {
+    public void add(TokenInfo tokenInfo) {
         _lock.lock();
         try {
-            if (_tokenLookup.contains(token)) {
+            if (_tokenLookup.containsKey(tokenInfo.token())) {
                 throw new IllegalStateException(
                         "Caller should not have added a token if it was already present.");
             }
-            _tokenLookup.add(token);
-            _expirationQueue.add(new CachedToken(token, expirationTime));
-            if (expirationTime.isBefore(_nextExpiration.get())) {
-                _nextExpiration.set(expirationTime);
+            _tokenLookup.put(tokenInfo.token(), tokenInfo);
+            _expirationQueue.add(tokenInfo);
+            if (tokenInfo.expirationTime().isBefore(_nextExpiration.get())) {
+                _nextExpiration.set(tokenInfo.expirationTime());
             }
         }
         finally {
             _lock.unlock();
         }
     }
-
 
     private void expireItemsIfNeeded() {
         if (_clock.now().isBefore(_nextExpiration.get())) {
@@ -291,7 +334,7 @@ class TokenCache {
                 _tokenLookup.remove(evictedToken.token());
             }
             var nextExpiration = Optional.ofNullable(_expirationQueue.peek())
-                .map(CachedToken::expirationTime)
+                .map(TokenInfo::expirationTime)
                 .orElse(Instant.MAX);
             _nextExpiration.set(nextExpiration);
         }

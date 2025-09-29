@@ -54,6 +54,9 @@ public class CustomSsoProps {
         public static final String VALIDATION_URL = "CUSTOM_SSO_VALIDATION_URL";
         public static final String TOKEN_URL = "CUSTOM_SSO_TOKEN_URL";
         public static final String TOKEN_PROPERTY = "CUSTOM_SSO_TOKEN_PROPERTY";
+        public static final String USER_ID_PROPERTY = "CUSTOM_SSO_USER_ID_PROPERTY";
+        public static final String DISPLAY_NAME_PROPERTY = "CUSTOM_SSO_DISPLAY_NAME_PROPERTY";
+
         public static final String SSO_LOG_IN_URL = "CUSTOM_SSO_LOG_IN_URL";
         public static final String SSO_RETURN_URL = "CUSTOM_SSO_RETURN_URL";
         public static final String SSO_LOG_OUT_URL = "CUSTOM_SSO_LOG_OUT_URL";
@@ -153,6 +156,16 @@ public class CustomSsoProps {
     public String getTokenProperty() {
         return getRequiredPropOrEnv(EnvKeys.TOKEN_PROPERTY);
     }
+
+    public String getUserIdProperty() {
+        return getRequiredPropOrEnv(EnvKeys.USER_ID_PROPERTY);
+    }
+
+    public String getDisplayNameProperty() {
+        return getOptionalPropOrEnv(EnvKeys.DISPLAY_NAME_PROPERTY)
+            .orElseGet(this::getUserIdProperty);
+    }
+
 
     public String getSsoUser() {
         return getRequiredPropOrEnv(EnvKeys.SSO_USER);

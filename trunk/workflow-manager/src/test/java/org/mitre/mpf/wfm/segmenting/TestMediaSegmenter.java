@@ -472,7 +472,7 @@ public class TestMediaSegmenter {
 
 
     protected static void assertAllHaveFeedForwardTrack(Collection<DetectionRequest> requests) {
-        assertTrue(requests.stream().allMatch(r -> r.feedForwardTracks().isPresent()));
+        assertTrue(requests.stream().allMatch(r -> !r.feedForwardTracks().isEmpty()));
     }
 
     protected static void assertNoneHaveFeedForwardTrack(Collection<DetectionRequest> requests) {

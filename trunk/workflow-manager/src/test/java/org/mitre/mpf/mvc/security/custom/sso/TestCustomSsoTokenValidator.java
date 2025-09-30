@@ -283,7 +283,7 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
     public void testValidationFromBrowser() throws IOException {
         var httpResponse = createUserInfoResponse();
         when(_mockHttpClient.executeRequestSync(
-                    argThat(this::hasTokenCookieSet), eq(HTTP_RETRY_COUNT),
+                    argThat(this::hasTokenCookieSet), eq(0),
                     eq(HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS)))
                 .thenReturn(httpResponse);
 

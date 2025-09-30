@@ -123,7 +123,7 @@ public class CustomSsoTokenValidator {
         }
 
         var token = authHeader.substring(BEARER_PREFIX.length() + 1);
-        return authenticate(token, authenticationRequest);
+        return authenticate(token, authenticationRequest, _customSsoProps.getHttpRetryCount());
     }
 
 
@@ -132,12 +132,15 @@ public class CustomSsoTokenValidator {
         if (token == null) {
             throw new BadCredentialsException("No cookie present.");
         }
-        return authenticate(token, authenticationRequest);
+        return authenticate(token, authenticationRequest, 0);
     }
 
 
-    private Authentication authenticate(String token, Authentication authenticationRequest) {
-        var tokenInfo = validateToken(token);
+    private Authentication authenticate(
+            String token,
+            Authentication authenticationRequest,
+            int numRetries) {
+        var tokenInfo = validateToken(token, numRetries);
         authenticationRequest.setAuthenticated(true);
 
         var authenticationResult = new PreAuthenticatedAuthenticationToken(
@@ -150,7 +153,7 @@ public class CustomSsoTokenValidator {
     }
 
 
-    private TokenInfo validateToken(String token) {
+    private TokenInfo validateToken(String token, int numRetries) {
         var cachedToken = _cache.get(token);
         if (cachedToken.isPresent()) {
             LOG.info("Incoming SSO token was found in cache.");
@@ -175,7 +178,7 @@ public class CustomSsoTokenValidator {
         LOG.info("Incoming SSO token was not in cache or was expired. "
             + "Sending token validation request.");
         try {
-            var tokenInfo = validateRemotely(token);
+            var tokenInfo = validateRemotely(token, numRetries);
             _cache.add(tokenInfo);
             LOG.info("Successfully validated incoming SSO token.");
             _inProgressValidations.remove(token);
@@ -199,14 +202,14 @@ public class CustomSsoTokenValidator {
     }
 
 
-    private TokenInfo validateRemotely(String token) {
+    private TokenInfo validateRemotely(String token, int numRetries) {
         var validationStartTime = _clock.now();
         HttpResponse response;
         try {
             var request = new HttpGet(_customSsoProps.getValidationUri());
             request.addHeader("Cookie", _customSsoProps.getTokenProperty() + '=' + token);
             response = _httpClient.executeRequestSync(
-                    request, _customSsoProps.getHttpRetryCount(),
+                    request, numRetries,
                     HttpClientUtils.ONLY_RETRY_CONNECTION_ERRORS);
         }
         catch (Exception e) {

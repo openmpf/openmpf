@@ -62,6 +62,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 
 @Service
 @Profile("custom_sso")
@@ -98,7 +99,7 @@ public class CustomSsoTokenValidator {
         _httpClient = httpClient;
         _clock = clock;
         _objectMapper = objectMapper;
-        _cache = new TokenCache(_clock);
+        _cache = new TokenCache(_clock, _customSsoProps.getTokenCacheSize());
     }
 
 
@@ -278,6 +279,8 @@ public class CustomSsoTokenValidator {
 class TokenCache {
     private final ClockService _clock;
 
+    private final int _cacheSize;
+
     private final Map<String, TokenInfo> _tokenLookup = new ConcurrentHashMap<>();
 
     private AtomicReference<Instant> _nextExpiration = new AtomicReference<>(Instant.MAX);
@@ -287,8 +290,10 @@ class TokenCache {
 
     private final Lock _lock = new ReentrantLock();
 
-    public TokenCache(ClockService clock) {
+    public TokenCache(ClockService clock, int cacheSize) {
         _clock = clock;
+        Preconditions.checkArgument(cacheSize > 0, "cacheSize must be positive.");
+        _cacheSize = cacheSize;
     }
 
     public Optional<TokenInfo> get(String token) {
@@ -299,15 +304,15 @@ class TokenCache {
     public void add(TokenInfo tokenInfo) {
         _lock.lock();
         try {
-            if (_tokenLookup.containsKey(tokenInfo.token())) {
-                throw new IllegalStateException(
-                        "Caller should not have added a token if it was already present.");
+            Preconditions.checkArgument(
+                    !_tokenLookup.containsKey(tokenInfo.token()),
+                    "Caller should not have added a token if it was already present.");
+            if (_tokenLookup.size() >= _cacheSize) {
+                removeSoonestExpiration();
             }
             _tokenLookup.put(tokenInfo.token(), tokenInfo);
             _expirationQueue.add(tokenInfo);
-            if (tokenInfo.expirationTime().isBefore(_nextExpiration.get())) {
-                _nextExpiration.set(tokenInfo.expirationTime());
-            }
+            updateNextExpiration();
         }
         finally {
             _lock.unlock();
@@ -322,24 +327,29 @@ class TokenCache {
         _lock.lock();
         try {
             var now = _clock.now();
-            if (now.isBefore(_nextExpiration.get())) {
-                // In the time between the initial check and acquiring the lock, a different
-                // thread handled eviction.
-                return;
-            }
-
             while (!_expirationQueue.isEmpty()
                     && now.isAfter(_expirationQueue.peek().expirationTime())) {
-                var evictedToken = _expirationQueue.poll();
-                _tokenLookup.remove(evictedToken.token());
+                removeSoonestExpiration();
             }
-            var nextExpiration = Optional.ofNullable(_expirationQueue.peek())
-                .map(TokenInfo::expirationTime)
-                .orElse(Instant.MAX);
-            _nextExpiration.set(nextExpiration);
         }
         finally {
             _lock.unlock();
+        }
+    }
+
+    private void updateNextExpiration() {
+        var nextExpiration = Optional.ofNullable(_expirationQueue.peek())
+                .map(TokenInfo::expirationTime)
+                .orElse(Instant.MAX);
+        _nextExpiration.set(nextExpiration);
+    }
+
+
+    private void removeSoonestExpiration() {
+        var evicted = _expirationQueue.poll();
+        if (evicted != null) {
+            _tokenLookup.remove(evicted.token());
+            updateNextExpiration();
         }
     }
 }

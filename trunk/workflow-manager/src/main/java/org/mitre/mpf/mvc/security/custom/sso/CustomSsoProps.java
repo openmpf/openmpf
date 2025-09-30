@@ -179,6 +179,24 @@ public class CustomSsoProps {
         return _propertiesUtil.getHttpCallbackRetryCount();
     }
 
+    private static final int DEFAULT_CACHE_SIZE = 10_000;
+
+    public int getTokenCacheSize() {
+        var strVal = _propertiesUtil.lookup("custom.sso.token.cache.size");
+        if (strVal == null) {
+            return DEFAULT_CACHE_SIZE;
+        }
+        try {
+            return Integer.parseInt(strVal);
+        }
+        catch (NumberFormatException e) {
+            LOG.warn(
+                "Using default token cache size of %s because converting the \"custom.sso.token.cache.size\" system property to an integer failed."
+                .formatted(DEFAULT_CACHE_SIZE), e);
+            return DEFAULT_CACHE_SIZE;
+        }
+    }
+
     private static final String SSO_ERROR_ATTR = CustomSsoProps.class.getName() + ".custom-sso-error";
     public static void storeErrorMessage(HttpSession session, String message) {
         session.setAttribute(SSO_ERROR_ATTR, message);

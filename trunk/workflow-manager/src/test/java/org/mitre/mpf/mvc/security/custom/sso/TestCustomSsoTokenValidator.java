@@ -97,9 +97,6 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
 
     @Before
     public void init() {
-        _tokenValidator = new CustomSsoTokenValidator(
-            _mockSsoProps, _mockHttpClient, _mockClock, _objectMapper);
-
         lenient().when(_mockSsoProps.getValidationUri())
             .thenReturn(VALIDATION_URL);
         lenient().when(_mockSsoProps.getTokenProperty())
@@ -113,6 +110,11 @@ public class TestCustomSsoTokenValidator extends MockitoTest.Strict {
             .thenReturn(TOKEN_LIFETIME);
         lenient().when(_mockSsoProps.getHttpRetryCount())
                 .thenReturn(HTTP_RETRY_COUNT);
+        lenient().when(_mockSsoProps.getTokenCacheSize())
+                .thenReturn(100);
+
+        _tokenValidator = new CustomSsoTokenValidator(
+            _mockSsoProps, _mockHttpClient, _mockClock, _objectMapper);
     }
 
 

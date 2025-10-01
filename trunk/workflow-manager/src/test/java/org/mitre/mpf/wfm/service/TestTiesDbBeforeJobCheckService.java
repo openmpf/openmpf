@@ -27,7 +27,7 @@
 package org.mitre.mpf.wfm.service;
 
 import static java.util.stream.Collectors.toMap;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,9 +53,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -97,7 +97,6 @@ import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
@@ -126,6 +125,8 @@ import com.google.common.collect.Streams;
 
 
 public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
+
+    private static final long TEST_JOB_ID = 4892;
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
@@ -205,15 +206,45 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), any()))
             .thenReturn(mockProps);
 
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+
+        verifyNoCheckReason(TiesDbCheckStatus.NOT_REQUESTED, List.of(media), elements);
+    }
+
+    private void verifyNoCheckReason(
+            TiesDbCheckStatus expectedStatus,
+            Collection<Media> media,
+            JobPipelineElements jobPipelineElements) {
+        var noCheckReason = _tiesDbBeforeJobCheckService.getCheckNotPossibleReason(
                 createJobRequest(),
                 null,
-                List.of(media),
-                elements);
-        assertEquals(TiesDbCheckStatus.NOT_REQUESTED, result.status());
-        assertTrue(result.checkInfo().isEmpty());
+                media,
+                jobPipelineElements);
+        assertThat(noCheckReason).contains(expectedStatus);
+
+        createBatchJob(media, jobPipelineElements);
+        var checkResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(TEST_JOB_ID);
+        assertThat(checkResult.status()).isEqualTo(expectedStatus);
+        assertThat(checkResult.checkInfo()).isEmpty();
+
         verifyTokenNotAdded();
     }
+
+
+    private BatchJob createBatchJob(
+            Collection<Media> media,
+            JobPipelineElements jobPipelineElements) {
+        var job = mock(BatchJob.class);
+        when(job.getId())
+            .thenReturn(TEST_JOB_ID);
+        when(job.getMedia())
+            .thenReturn(media);
+        when(job.getPipelineElements())
+            .thenReturn(jobPipelineElements);
+        when(_mockInProgressJobs.getJob(TEST_JOB_ID))
+            .thenReturn(job);
+        return job;
+    }
+
 
 
     @Test
@@ -239,16 +270,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(new MediaActionProps
                 ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
 
-
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
+        verifyNoCheckReason(
+                TiesDbCheckStatus.MEDIA_HASHES_ABSENT,
                 List.of(media1, media2),
                 elements);
-
-        assertEquals(TiesDbCheckStatus.MEDIA_HASHES_ABSENT, result.status());
-        assertTrue(result.checkInfo().isEmpty());
-        verifyTokenNotAdded();
     }
 
 
@@ -275,15 +300,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(new MediaActionProps
                 ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
 
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
+        verifyNoCheckReason(
+                TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT,
                 List.of(media1, media2),
                 elements);
-
-        assertEquals(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT, result.status());
-        assertTrue(result.checkInfo().isEmpty());
-        verifyTokenNotAdded();
     }
 
 
@@ -305,15 +325,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(new MediaActionProps((m, a) -> Map.of()));
 
 
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
-                List.of(media),
-                elements);
-
-        assertEquals(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB, result.status());
-        assertTrue(result.checkInfo().isEmpty());
-        verifyTokenNotAdded();
+        verifyNoCheckReason(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB, List.of(media), elements);
     }
 
 
@@ -322,7 +334,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var action = createAction();
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action));
+                .thenReturn(ImmutableList.of(action));
 
         var media = mock(Media.class);
         when(media.getLinkedHash())
@@ -332,24 +344,31 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         var mockMediaActionProps = mock(MediaActionProps.class);
         when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media, action))
-            .thenReturn(":invalid_uri");
+                .thenReturn(":invalid_uri");
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(mockMediaActionProps);
+                .thenReturn(mockMediaActionProps);
 
         setEmptyCombinedJobProps();
 
-        var ex = TestUtil.assertThrows(
-                WfmProcessingException.class,
-                () -> _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                        createJobRequest(),
-                        null,
-                        List.of(media),
-                        elements));
+        var noCheckReason = _tiesDbBeforeJobCheckService.getCheckNotPossibleReason(
+                createJobRequest(),
+                null,
+                List.of(media),
+                elements);
+        assertThat(noCheckReason).isEmpty();
+        createBatchJob(List.of(media), elements);
 
-        assertThat(ex.getMessage(), containsString("isn't a valid URI"));
-        assertThat(ex.getCause(), instanceOf(URISyntaxException.class));
+
+        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(TEST_JOB_ID);
+        assertThat(result.status()).isEqualTo(TiesDbCheckStatus.FAILED);
+
+        verify(_mockInProgressJobs).addJobWarning(
+                eq(TEST_JOB_ID), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
+                contains("isn't a valid URI"));
+
         verifyTokenNotAdded();
+
     }
 
 
@@ -454,17 +473,21 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         var combinedJobProps = new HashMap<>(defaultJobProps);
         combinedJobProps.putAll(additionalJobProps);
-        when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
+        when(_mockAggJobProps.getCombinedProperties(any(BatchJob.class)))
             .thenReturn(combinedJobProps::get);
 
         when(_mockJobConfigHasher.getJobConfigHash(List.of(media), elements, mockMediaActionProps))
             .thenReturn("JOB_HASH");
 
-        return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+        var checkNotPossibleReason = _tiesDbBeforeJobCheckService.getCheckNotPossibleReason(
                 createJobRequest(),
                 null,
                 List.of(media),
                 elements);
+        createBatchJob(List.of(media), elements);
+        var checkResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(TEST_JOB_ID);
+        assertCheckNotPossibleConsistent(checkNotPossibleReason, checkResult);
+        return checkResult;
     }
 
 
@@ -683,7 +706,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
     @Test
-    public void testPartialFailureNoMatchFound() {
+    public void testPartialFailureNoMatchFound() throws IOException {
         var tiesDbData = List.of(
             Map.of(
                 "assertionId", "s10",
@@ -707,12 +730,11 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             )
         );
 
-        var ex = TestUtil.assertThrows(
-                IllegalStateException.class,
-                () -> testPartialFailure(tiesDbData));
+        testPartialFailure(tiesDbData);
 
-        assertThat(ex.getMessage(), containsString(
-                "TiesDb responded with a non-200 status code of 400 and body: test-error"));
+        verify(_mockInProgressJobs).addJobWarning(
+                eq(TEST_JOB_ID), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
+                contains("TiesDb responded with a non-200 status code of 400 and body: test-error"));
         verifyTokenAdded(2);
     }
 
@@ -762,12 +784,16 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 requestWithUri("http://tiesdb-error:1234/api/db/supplementals?sha256Hash=HASH2&system=OpenMPF&offset=0&limit=100"),
                 eq(3));
 
-
-        return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+        var checkNotPossibleReason = _tiesDbBeforeJobCheckService.getCheckNotPossibleReason(
                 createJobRequest(),
                 null,
                 List.of(media1, media2),
                 elements);
+
+        createBatchJob(List.of(media1, media2), elements);
+        var checkResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(TEST_JOB_ID);
+        assertCheckNotPossibleConsistent(checkNotPossibleReason, checkResult);
+        return checkResult;
     }
 
 
@@ -799,7 +825,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         runAfterMediaInspectionTest();
 
         verify(_mockInProgressJobs)
-            .addFatalError(
+            .addJobWarning(
                         eq(123L), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
                         contains(errorMsg));
         verifyTokenAdded();
@@ -844,6 +870,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var job = mock(BatchJob.class);
         when(_mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
+        when(job.getId())
+                .thenReturn(jobId);
         when(job.getPipelineElements())
                 .thenReturn(pipelineElements);
 
@@ -1362,7 +1390,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     }
 
     private void setEmptyCombinedJobProps() {
-        when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
+        when(_mockAggJobProps.getCombinedProperties(any(BatchJob.class)))
             .thenReturn(s -> null);
     }
 
@@ -1387,5 +1415,21 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     private void verifyTokenNotAdded() {
         verify(_mockTokenService, never())
             .addTokenToTiesDbRequest(notNull(), notNull());
+    }
+
+    private void assertCheckNotPossibleConsistent(
+            Optional<TiesDbCheckStatus> checkNotPossibleReason,
+            TiesDbCheckResult checkResult) {
+        if (checkNotPossibleReason.isPresent()) {
+            assertThat(checkResult.status()).isEqualTo(checkNotPossibleReason.get());
+            assertThat(checkResult.checkInfo()).isEmpty();
+        }
+        else if (checkResult.checkInfo().isEmpty()) {
+            assertThat(checkResult.status())
+                    .isIn(TiesDbCheckStatus.NO_MATCH, TiesDbCheckStatus.FAILED);
+        }
+        else {
+            assertThat(checkResult.status()).isEqualTo(TiesDbCheckStatus.FOUND_MATCH);
+        }
     }
 }

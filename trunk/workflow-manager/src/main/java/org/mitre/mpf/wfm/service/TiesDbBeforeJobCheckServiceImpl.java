@@ -48,6 +48,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
@@ -150,19 +151,60 @@ public class TiesDbBeforeJobCheckServiceImpl
         _auditEventLogger = auditEventLogger;
     }
 
-
-    public TiesDbCheckResult checkTiesDbBeforeJob(
+    @Override
+    public Optional<TiesDbCheckStatus> getCheckNotPossibleReason(
             JobCreationRequest jobCreationRequest,
             SystemPropertiesSnapshot systemPropertiesSnapshot,
             Collection<Media> media,
             JobPipelineElements jobPipelineElements) {
-        return checkIfJobInTiesDb(
-                jobCreationRequest.jobProperties(),
-                jobCreationRequest.algorithmProperties(),
-                systemPropertiesSnapshot,
-                media,
-                jobPipelineElements);
+        try {
+            var mediaActionProps = _aggregateJobPropertiesUtil.getMediaActionProps(
+                    jobCreationRequest.jobProperties(),
+                    jobCreationRequest.algorithmProperties(),
+                    systemPropertiesSnapshot,
+                    jobPipelineElements);
+            return getCheckNotPossibleReason(media, jobPipelineElements, mediaActionProps);
+        }
+        catch (Exception e) {
+            LOG.warn("TiesDb check failed due to: " + e, e);
+            return Optional.of(TiesDbCheckStatus.FAILED);
+        }
     }
+
+
+    private Optional<TiesDbCheckStatus> getCheckNotPossibleReason(
+            Collection<Media> media,
+            JobPipelineElements jobPipelineElements,
+            MediaActionProps mediaActionProps) {
+        if (shouldSkipTiesDbCheck(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
+            return Optional.of(TiesDbCheckStatus.NOT_REQUESTED);
+        }
+        if (!hasTiesDbUrl(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
+            return Optional.of(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB);
+        }
+
+        var allMediaHaveHashes = media.stream()
+                .allMatch(m -> m.getLinkedHash().isPresent());
+        if (!allMediaHaveHashes) {
+            return Optional.of(TiesDbCheckStatus.MEDIA_HASHES_ABSENT);
+        }
+
+        var allMediaHaveMimeTypes = media.stream()
+                .allMatch(m -> m.getMimeType().isPresent());
+        if (!allMediaHaveMimeTypes) {
+            return Optional.of(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT);
+        }
+
+        return Optional.empty();
+    }
+
+
+    @Override
+    public TiesDbCheckResult checkTiesDbBeforeJob(long jobId) {
+        var job = _inProgressJobs.getJob(jobId);
+        return checkIfJobInTiesDb(job);
+    }
+
 
     @Override
     public void wfmProcess(Exchange exchange) {
@@ -172,7 +214,7 @@ public class TiesDbBeforeJobCheckServiceImpl
         }
         catch (Exception e) {
             LOG.error("TiesDb check failed due to: " + e, e);
-            _inProgressJobs.addFatalError(
+            _inProgressJobs.addJobWarning(
                     jobId, IssueCodes.TIES_DB_BEFORE_JOB_CHECK, e.getMessage());
         }
     }
@@ -183,11 +225,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             return;
         }
 
-        var checkResult = checkIfJobInTiesDb(job.getJobProperties(),
-                           job.getOverriddenAlgorithmProperties(),
-                           job.getSystemPropertiesSnapshot(),
-                           job.getMedia(),
-                           job.getPipelineElements());
+        var checkResult = checkIfJobInTiesDb(job);
         checkResult.checkInfo().ifPresent(ci -> {
             exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
             exchange.getOut().setHeader(
@@ -196,66 +234,50 @@ public class TiesDbBeforeJobCheckServiceImpl
         });
     }
 
+    private TiesDbCheckResult checkIfJobInTiesDb(BatchJob job) {
+        try {
+            return tryCheckIfJobInTiesDb(job);
+        }
+        catch (Exception e) {
+            LOG.error("TiesDb check failed due to: " + e, e);
+            _inProgressJobs.addJobWarning(
+                    job.getId(), IssueCodes.TIES_DB_BEFORE_JOB_CHECK, e.getMessage());
+            return TiesDbCheckResult.noResult(TiesDbCheckStatus.FAILED);
+        }
+    }
 
-    private TiesDbCheckResult checkIfJobInTiesDb(
-            Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> algorithmProperties,
-            SystemPropertiesSnapshot systemPropertiesSnapshot,
-            Collection<Media> media,
-            JobPipelineElements jobPipelineElements) {
+
+    private TiesDbCheckResult tryCheckIfJobInTiesDb(BatchJob job) throws Exception {
 
         var mediaActionProps = _aggregateJobPropertiesUtil.getMediaActionProps(
-                jobProperties,
-                algorithmProperties,
-                systemPropertiesSnapshot,
-                jobPipelineElements);
+                job.getJobProperties(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getSystemPropertiesSnapshot(),
+                job.getPipelineElements());
 
-        if (shouldSkipTiesDbCheck(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.NOT_REQUESTED);
-        }
-        if (!hasTiesDbUrl(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB);
-        }
-
-        var allMediaHaveHashes = media.stream()
-                .allMatch(m -> m.getLinkedHash().isPresent());
-        if (!allMediaHaveHashes) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.MEDIA_HASHES_ABSENT);
-        }
-
-        var allMediaHaveMimeTypes = media.stream()
-                .allMatch(m -> m.getMimeType().isPresent());
-        if (!allMediaHaveMimeTypes) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT);
+        var checkNotPossibleReason = getCheckNotPossibleReason(
+                job.getMedia(), job.getPipelineElements(), mediaActionProps);
+        if (checkNotPossibleReason.isPresent()) {
+            return TiesDbCheckResult.noResult(checkNotPossibleReason.get());
         }
 
         var mediaHashToBaseUris = getBaseTiesDbUris(
-                media, jobPipelineElements.getAllActions(), mediaActionProps);
+                job.getMedia(), job.getPipelineElements().getAllActions(), mediaActionProps);
 
         var jobHash = _jobConfigHasher.getJobConfigHash(
-                media,
-                jobPipelineElements,
+                job.getMedia(),
+                job.getPipelineElements(),
                 mediaActionProps);
 
-        var combinedJobProps = _aggregateJobPropertiesUtil.getCombinedProperties(
-                jobProperties,
-                algorithmProperties,
-                systemPropertiesSnapshot,
-                jobPipelineElements);
+        var combinedJobProps = _aggregateJobPropertiesUtil.getCombinedProperties(job);
 
-        boolean s3CopyEnabled;
-        try {
-            s3CopyEnabled = s3CopyEnabled(combinedJobProps);
-        }
-        catch (StorageException e) {
-            throw new WfmProcessingException(e);
-        }
+        boolean s3CopyEnabled = s3CopyEnabled(combinedJobProps);
 
         // There may be multiple matching supplementals in TiesDb, so we don't want to report
         // an error if there was a problem getting one supplemental, but we were able to get a
         // different matching supplemental. Use an AtomicReference because some errors can occur
         // on threads belonging to the HTTP client.
-        var lastException = new AtomicReference<Throwable>(null);
+        var lastException = new AtomicReference<Exception>(null);
         var optCheckInfo = getCheckInfo(
                 mediaHashToBaseUris, jobHash, s3CopyEnabled, combinedJobProps, lastException);
         if (optCheckInfo.isPresent()) {
@@ -266,11 +288,8 @@ public class TiesDbBeforeJobCheckServiceImpl
         else if (lastException.get() == null) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_MATCH);
         }
-        else if (lastException.get() instanceof RuntimeException ex) {
-            throw ex;
-        }
         else {
-            throw new IllegalStateException(lastException.get());
+            throw lastException.get();
         }
     }
 
@@ -324,7 +343,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             String expectedJobHash,
             boolean s3CopyEnabled,
             UnaryOperator<String> combinedProps,
-            AtomicReference<Throwable> lastException) {
+            AtomicReference<Exception> lastException) {
         // Need a temporary list so that all of the futures are created before we start calling
         // join on any of the futures.
         var futures = buildSupplementalUris(mediaHashToBaseUris, lastException)
@@ -343,7 +362,7 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private static Set<URI> buildSupplementalUris(
             Multimap<String, String> tiesDbBaseUris,
-            AtomicReference<Throwable> exception) {
+            AtomicReference<Exception> exception) {
         var supplementalUris = new HashSet<URI>();
         for (var entry : tiesDbBaseUris.entries()) {
             var mediaHash = entry.getKey();
@@ -373,7 +392,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             Optional<TiesDbCheckResult.CheckInfo> prevBest,
             boolean s3CopyEnabled,
             UnaryOperator<String> combinedProps,
-            AtomicReference<Throwable> lastException) {
+            AtomicReference<Exception> lastException) {
         int limit = 100;
         var uri = addPaginationParams(unpagedUri, offset, limit);
         var request = new HttpGet(uri);
@@ -399,11 +418,19 @@ public class TiesDbBeforeJobCheckServiceImpl
                 return getSupplementals(
                             unpagedUri, offset + limit, jobHash, bestMatch, s3CopyEnabled,
                             combinedProps, lastException);
-            }).exceptionally(e -> {
+            }).exceptionally((Throwable t) -> {
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
-                    .error("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage());
-                lastException.set(e.getCause());
+                    .error("TiesDB API call failed: GET %s : %s", uri, t.getCause().getMessage());
+                if (t.getCause() instanceof Exception cause) {
+                    lastException.set(cause);
+                }
+                else if (t instanceof Exception outerEx) {
+                    lastException.set(outerEx);
+                }
+                else {
+                    lastException.set(new CompletionException(t.getCause()));
+                }
                 return prevBest;
             });
     }
@@ -435,7 +462,7 @@ public class TiesDbBeforeJobCheckServiceImpl
     private Optional<TiesDbCheckResult.CheckInfo> getBestMatchSoFar(
             JsonNode json, String expectedJobHash, Optional<TiesDbCheckResult.CheckInfo> prevBest,
             boolean s3CopyEnabled,
-            AtomicReference<Throwable> lastException) {
+            AtomicReference<Exception> lastException) {
 
         Stream<TiesDbCheckResult.CheckInfo> newResults = Streams.stream(json)
                 .map(j -> convertJsonToCheckInfo(j, expectedJobHash, s3CopyEnabled, lastException))
@@ -485,7 +512,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             JsonNode jsonEntry,
             String expectedJobHash,
             boolean s3CopyEnabled,
-            AtomicReference<Throwable> exception) {
+            AtomicReference<Exception> exception) {
         var jobHash = jsonEntry.findPath("dataObject")
                 .findPath("jobConfigHash").asText("");
         if (!expectedJobHash.equals(jobHash)) {

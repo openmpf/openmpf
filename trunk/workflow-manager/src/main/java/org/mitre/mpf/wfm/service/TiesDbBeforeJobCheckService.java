@@ -28,8 +28,10 @@ package org.mitre.mpf.wfm.service;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
@@ -39,11 +41,13 @@ import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 
 public interface TiesDbBeforeJobCheckService extends WfmProcessorInterface {
 
-    public TiesDbCheckResult checkTiesDbBeforeJob(
+    public Optional<TiesDbCheckStatus> getCheckNotPossibleReason(
             JobCreationRequest jobCreationRequest,
             SystemPropertiesSnapshot systemPropertiesSnapshot,
             Collection<Media> media,
             JobPipelineElements jobPipelineElements);
+
+    public TiesDbCheckResult checkTiesDbBeforeJob(long jobId);
 
     public URI updateOutputObject(
             BatchJob job, URI outputObjectUriFromPrevJob, JobRequest jobRequest);

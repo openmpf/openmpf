@@ -247,7 +247,7 @@ public class TestJobRequestService {
         when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
                 .thenReturn(systemPropsSnapshot);
 
-        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(any(), any(), any(), any()))
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(123))
                 .thenReturn(TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_MATCH));
 
         when(_mockJobRequestDao.getNextId())
@@ -510,11 +510,13 @@ public class TestJobRequestService {
                         Instant.ofEpochSecond(1667480850),
                         false)));
 
-        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                        eq(jobCreationRequest),
-                        eq(systemPropsSnapshot),
-                        argThat(x -> x.size() == 2),
-                        eq(pipelineElements)))
+        when(_mockTiesDbBeforeJobCheckService.getCheckNotPossibleReason(
+                    eq(jobCreationRequest),
+                    eq(systemPropsSnapshot),
+                    argThat(x -> x.size() == 2),
+                    eq(pipelineElements)))
+                .thenReturn(Optional.empty());
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(123L))
                 .thenReturn(tiesDbCheckResult);
 
         var creationResult = _jobRequestService.run(jobCreationRequest);
@@ -638,7 +640,13 @@ public class TestJobRequestService {
         when(_mockPipelineService.getBatchPipelineElements(pipeline.getName()))
             .thenReturn(pipeline);
 
-        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(eq(job), any(), any(), any()))
+        when(_mockTiesDbBeforeJobCheckService.getCheckNotPossibleReason(eq(job), any(), any(), any()))
+                .thenReturn(Optional.of(TiesDbCheckStatus.NOT_REQUESTED));
+
+        when(_mockJobRequestDao.getNextId())
+                .thenReturn(123L);
+
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(123L))
                 .thenReturn(TiesDbCheckResult.noResult(TiesDbCheckStatus.NOT_REQUESTED));
 
         when(_mockJobRequestDao.persist(any()))

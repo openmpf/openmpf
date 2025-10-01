@@ -55,6 +55,7 @@ import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
+import org.mitre.mpf.wfm.service.TiesDbCheckResult;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -161,14 +162,15 @@ public class JobRequestServiceImpl implements JobRequestService {
         }
 
         var systemPropertiesSnapshot = _propertiesUtil.createSystemPropertiesSnapshot();
-        var tiesDbCheckResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+        var checkNotPossibleReason = _tiesDbBeforeJobCheckService.getCheckNotPossibleReason(
                 jobCreationRequest,
                 systemPropertiesSnapshot,
                 media,
                 pipelineElements);
-        boolean shouldCheckTiesDbAfterMediaInspection
-                = tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_HASHES_ABSENT
-                        || tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT;
+        var shouldCheckTiesDbAfterMediaInspection = checkNotPossibleReason
+                .filter(r -> r == TiesDbCheckStatus.MEDIA_HASHES_ABSENT
+                        || r == TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT)
+                .isPresent();
 
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
@@ -182,9 +184,20 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobCreationRequest.callbackMethod(),
                 systemPropertiesSnapshot,
                 shouldCheckTiesDbAfterMediaInspection);
-        _jobRequestDao.newJobCreated();
 
         try (var mdc = CloseableMdc.job(jobRequestEntity.getId())) {
+            _jobRequestDao.newJobCreated();
+            if (checkNotPossibleReason.isPresent()
+                    && checkNotPossibleReason.get() != TiesDbCheckStatus.FAILED) {
+                submit(jobRequestEntity);
+                return new CreationResult(
+                        jobRequestEntity.getId(),
+                        TiesDbCheckResult.noResult(checkNotPossibleReason.get()));
+            }
+
+            var tiesDbCheckResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+                    jobRequestEntity.getId());
+
             if (tiesDbCheckResult.checkInfo().isPresent()) {
                 LOG.info("Skipping job processing because compatible job found in TiesDb.");
                 var headers = Map.<String, Object>of(

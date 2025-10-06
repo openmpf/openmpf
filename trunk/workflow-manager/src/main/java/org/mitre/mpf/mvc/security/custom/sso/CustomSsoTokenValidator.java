@@ -247,7 +247,7 @@ public class CustomSsoTokenValidator {
                 .map(JsonNode::asText)
                 .filter(s -> !s.isEmpty())
                 .orElseThrow(() -> new AuthServerReportedBadCredentialsException(
-                        "Could not determine user Id because the %s property was not present in the response."
+                        "Could not determine user Id because the \"%s\" property was not present in the response."
                         .formatted(_customSsoProps.getUserIdProperty())));
 
         var displayName = Optional

@@ -87,7 +87,9 @@ public class CustomSsoProps {
         getValidationUri();
         getTokenUri();
         getTokenProperty();
+        getUserIdProperty();
         getFullRedirectUri();
+        getLogoutUri();
         validateTokenLifeTime();
         getSsoUser();
         getSsoPassword();

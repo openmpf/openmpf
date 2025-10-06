@@ -484,6 +484,6 @@ public class TestMediaSelectorsOutputFileProcessorImpl extends MockitoTest.Stric
                 null,
                 pipelineElements, 0, null, null,
                 List.of(createTestMedia(mediaSelectors)),
-                Map.of(), Map.of(), false);
+                Map.of(), Map.of());
     }
 }

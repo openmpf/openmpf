@@ -172,8 +172,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
             null,
             List.of(media),
             Map.of(),
-            Map.of(),
-            false);
+            Map.of());
         job.setCurrentTaskIndex(1);
 
         when(mockInProgressJobs.containsJob(JOB_ID))

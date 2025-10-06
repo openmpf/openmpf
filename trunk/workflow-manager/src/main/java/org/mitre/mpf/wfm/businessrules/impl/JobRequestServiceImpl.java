@@ -35,7 +35,6 @@ import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationMediaSelector;
 import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
@@ -161,14 +160,6 @@ public class JobRequestServiceImpl implements JobRequestService {
         }
 
         var systemPropertiesSnapshot = _propertiesUtil.createSystemPropertiesSnapshot();
-        var tiesDbCheckResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                jobCreationRequest,
-                systemPropertiesSnapshot,
-                media,
-                pipelineElements);
-        boolean shouldCheckTiesDbAfterMediaInspection
-                = tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_HASHES_ABSENT
-                        || tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT;
 
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
@@ -180,15 +171,17 @@ public class JobRequestServiceImpl implements JobRequestService {
                 priority,
                 jobCreationRequest.callbackURL(),
                 jobCreationRequest.callbackMethod(),
-                systemPropertiesSnapshot,
-                shouldCheckTiesDbAfterMediaInspection);
-        _jobRequestDao.newJobCreated();
+                systemPropertiesSnapshot);
 
-        try (var mdc = CloseableMdc.job(jobRequestEntity.getId())) {
+        long jobId = jobRequestEntity.getId();
+        try (var mdc = CloseableMdc.job(jobId)) {
+            _jobRequestDao.newJobCreated();
+            var tiesDbCheckResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(jobId);
+
             if (tiesDbCheckResult.checkInfo().isPresent()) {
                 LOG.info("Skipping job processing because compatible job found in TiesDb.");
                 var headers = Map.<String, Object>of(
-                        MpfHeaders.JOB_ID, jobRequestEntity.getId(),
+                        MpfHeaders.JOB_ID, jobId,
                         MpfHeaders.JMS_PRIORITY, getPriority(jobRequestEntity),
                         MpfHeaders.JOB_COMPLETE, true,
                         MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB,
@@ -202,7 +195,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             else {
                 submit(jobRequestEntity);
             }
-            return new CreationResult(jobRequestEntity.getId(), tiesDbCheckResult);
+            return new CreationResult(jobId, tiesDbCheckResult);
         }
     }
 
@@ -244,8 +237,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                     priority > 0 ? priority : originalJob.getPriority(),
                     originalJob.getCallbackUrl().orElse(null),
                     originalJob.getCallbackMethod().orElse(null),
-                    _propertiesUtil.createSystemPropertiesSnapshot(),
-                    false);
+                    _propertiesUtil.createSystemPropertiesSnapshot());
 
         // Clean up old job
         _markupResultDao.deleteByJobId(jobId);
@@ -286,8 +278,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             int priority,
             String callbackUrl,
             String callbackMethod,
-            SystemPropertiesSnapshot systemPropertiesSnapshot,
-            boolean shouldCheckTiesDbAfterMediaInspection) {
+            SystemPropertiesSnapshot systemPropertiesSnapshot) {
 
         callbackUrl = StringUtils.trimToNull(callbackUrl);
         callbackMethod = TextUtils.trimToNullAndUpper(callbackMethod);
@@ -318,8 +309,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                     callbackMethod,
                     media,
                     jobProperties,
-                    overriddenAlgoProps,
-                    shouldCheckTiesDbAfterMediaInspection);
+                    overriddenAlgoProps);
 
             try {
                 jobRequestEntity.setId(jobId);

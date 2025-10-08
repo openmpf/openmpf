@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.mvc.security.custom.sso;
 
+import javax.servlet.Filter;
+
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -67,11 +70,30 @@ public class CustomSsoConfig {
                 .anyRequest().authenticated())
             .addFilter(ssoService)
             .exceptionHandling(e -> e.authenticationEntryPoint(ssoService))
-            .logout(x ->
-                x.deleteCookies(customSsoProps.getTokenProperty())
-                .logoutSuccessUrl("/"))
+            .logout(x -> x.logoutSuccessUrl(customSsoProps.getLogoutUri().toString()))
             // Hawtio requires CookieCsrfTokenRepository.withHttpOnlyFalse().
             .csrf(x -> x.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
             .build();
+    }
+
+    @Bean
+    public FilterRegistrationBean<CustomSsoBrowserService> preventFilterChainAddBrowserService(
+                CustomSsoBrowserService ssoService) {
+        return preventFilterChainAdd(ssoService);
+    }
+
+    @Bean
+    public FilterRegistrationBean<CustomSsoRestService> preventFilterChainAddRestService(
+                CustomSsoRestService ssoService) {
+        return preventFilterChainAdd(ssoService);
+    }
+
+    // Spring will automatically add any beans that implement Filter to the filter chain. That
+    // causes beans used in the SecurityFilterChain to be executed twice since the
+    // SecurityFilterChain is executed as part of the overall filter chain.
+    private static <T extends Filter> FilterRegistrationBean<T> preventFilterChainAdd(T filter) {
+        var result = new FilterRegistrationBean<T>(filter);
+        result.setEnabled(false);
+        return result;
     }
 }

@@ -54,8 +54,12 @@ public class CustomSsoProps {
         public static final String VALIDATION_URL = "CUSTOM_SSO_VALIDATION_URL";
         public static final String TOKEN_URL = "CUSTOM_SSO_TOKEN_URL";
         public static final String TOKEN_PROPERTY = "CUSTOM_SSO_TOKEN_PROPERTY";
+        public static final String USER_ID_PROPERTY = "CUSTOM_SSO_USER_ID_PROPERTY";
+        public static final String DISPLAY_NAME_PROPERTY = "CUSTOM_SSO_DISPLAY_NAME_PROPERTY";
+
         public static final String SSO_LOG_IN_URL = "CUSTOM_SSO_LOG_IN_URL";
         public static final String SSO_RETURN_URL = "CUSTOM_SSO_RETURN_URL";
+        public static final String SSO_LOG_OUT_URL = "CUSTOM_SSO_LOG_OUT_URL";
 
         public static final String SSO_TOKEN_LIFE_TIME_SECONDS = "CUSTOM_SSO_TOKEN_LIFE_TIME_SECONDS";
         public static final String SSO_USER = "CUSTOM_SSO_USER";
@@ -83,7 +87,9 @@ public class CustomSsoProps {
         getValidationUri();
         getTokenUri();
         getTokenProperty();
+        getUserIdProperty();
         getFullRedirectUri();
+        getLogoutUri();
         validateTokenLifeTime();
         getSsoUser();
         getSsoPassword();
@@ -112,6 +118,10 @@ public class CustomSsoProps {
             // Should be impossible because loginUri is already a URI.
             throw new WfmProcessingException("The Custom SSO login uri was invalid.");
         }
+    }
+
+    public URI getLogoutUri() {
+        return getRequiredUriPropOrEnv(EnvKeys.SSO_LOG_OUT_URL);
     }
 
 
@@ -149,6 +159,16 @@ public class CustomSsoProps {
         return getRequiredPropOrEnv(EnvKeys.TOKEN_PROPERTY);
     }
 
+    public String getUserIdProperty() {
+        return getRequiredPropOrEnv(EnvKeys.USER_ID_PROPERTY);
+    }
+
+    public String getDisplayNameProperty() {
+        return getOptionalPropOrEnv(EnvKeys.DISPLAY_NAME_PROPERTY)
+            .orElseGet(this::getUserIdProperty);
+    }
+
+
     public String getSsoUser() {
         return getRequiredPropOrEnv(EnvKeys.SSO_USER);
     }
@@ -159,6 +179,24 @@ public class CustomSsoProps {
 
     public int getHttpRetryCount() {
         return _propertiesUtil.getHttpCallbackRetryCount();
+    }
+
+    private static final int DEFAULT_CACHE_SIZE = 10_000;
+
+    public int getTokenCacheSize() {
+        var strVal = _propertiesUtil.lookup("custom.sso.token.cache.size");
+        if (strVal == null) {
+            return DEFAULT_CACHE_SIZE;
+        }
+        try {
+            return Integer.parseInt(strVal);
+        }
+        catch (NumberFormatException e) {
+            LOG.warn(
+                "Using default token cache size of %s because converting the \"custom.sso.token.cache.size\" system property to an integer failed."
+                .formatted(DEFAULT_CACHE_SIZE), e);
+            return DEFAULT_CACHE_SIZE;
+        }
     }
 
     private static final String SSO_ERROR_ATTR = CustomSsoProps.class.getName() + ".custom-sso-error";

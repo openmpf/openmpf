@@ -38,7 +38,7 @@ public class CustomSsoRestService extends BaseCustomSsoService {
     protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
         // We unconditionally return a non-null value here because we have no way to initiate an
         // authentication process like we do when the client is a browser.
-        return "REST Client";
+        return "Unauthenticated REST Client";
     }
 
     @Override

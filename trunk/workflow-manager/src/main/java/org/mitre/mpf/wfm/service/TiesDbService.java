@@ -68,6 +68,7 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -112,7 +113,8 @@ public class TiesDbService {
 
     private final JobConfigHasher _jobConfigHasher;
 
-    private final TaskAnnotatorService _taskAnnotatorService;
+    private final AuditEventLogger _auditEventLogger;
+
 
 
     @Inject
@@ -125,7 +127,7 @@ public class TiesDbService {
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs,
                   JobConfigHasher jobConfigHasher,
-                  TaskAnnotatorService taskAnnotatorService) {
+                  AuditEventLogger auditEventLogger) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
@@ -135,7 +137,7 @@ public class TiesDbService {
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
         _jobConfigHasher = jobConfigHasher;
-        _taskAnnotatorService = taskAnnotatorService;
+        _auditEventLogger = auditEventLogger;
     }
 
     public void prepareAssertions(
@@ -340,10 +342,19 @@ public class TiesDbService {
                         postRequest,
                         _propertiesUtil.getHttpCallbackRetryCount(),
                         responseChecker::shouldRetry)
-                    .thenAccept(responseChecker::checkResponse)
-                    .exceptionallyCompose(err -> convertError(
-                            fullUrl.toString(),
-                            err));
+                    .thenAccept(response -> {
+                        int statusCode = response.getStatusLine().getStatusCode();
+                        _auditEventLogger.createEvent()
+                            .withSecurityTag()
+                            .allowed("TiesDB API call: POST %s - Status Code: %d", fullUrl, statusCode);
+                        responseChecker.checkResponse(response);
+                    })
+                    .exceptionallyCompose(err -> {
+                        _auditEventLogger.createEvent()
+                            .withSecurityTag()
+                            .error("TiesDB API call failed: POST %s : %s", fullUrl, err.getMessage());
+                        return convertError(fullUrl.toString(), err);
+                    });
         }
         catch (Exception e) {
             return convertError(fullUrl.toString(), e);

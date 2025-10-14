@@ -85,6 +85,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -125,6 +126,8 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private final S3StorageBackend _s3StorageBackend;
 
+    private final AuditEventLogger _auditEventLogger;
+
     @Inject
     public TiesDbBeforeJobCheckServiceImpl(
             PropertiesUtil propertiesUtil,
@@ -134,7 +137,8 @@ public class TiesDbBeforeJobCheckServiceImpl
             OutgoingRequestTokenService clientTokenProvider,
             ObjectMapper objectMapper,
             InProgressBatchJobsService inProgressJobs,
-            S3StorageBackend s3StorageBackend) {
+            S3StorageBackend s3StorageBackend,
+            AuditEventLogger auditEventLogger) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _jobConfigHasher = jobConfigHasher;
@@ -143,6 +147,7 @@ public class TiesDbBeforeJobCheckServiceImpl
         _objectMapper = objectMapper;
         _inProgressJobs = inProgressJobs;
         _s3StorageBackend = s3StorageBackend;
+        _auditEventLogger = auditEventLogger;
     }
 
 
@@ -376,7 +381,13 @@ public class TiesDbBeforeJobCheckServiceImpl
         return _httpClientUtils.executeRequest(
                 request,
                 _propertiesUtil.getHttpCallbackRetryCount())
-            .thenApply(resp -> checkResponse(unpagedUri, resp))
+            .thenApply(resp -> {
+                int statusCode = resp.getStatusLine().getStatusCode();
+                _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .allowed("TiesDB API call: GET %s - Status Code: %s", uri, statusCode);
+                return checkResponse(unpagedUri, resp);
+            })
             .thenCompose(resp -> {
                 var responseJson = parseResponse(resp);
                 var bestMatch = getBestMatchSoFar(
@@ -389,6 +400,9 @@ public class TiesDbBeforeJobCheckServiceImpl
                             unpagedUri, offset + limit, jobHash, bestMatch, s3CopyEnabled,
                             combinedProps, lastException);
             }).exceptionally(e -> {
+                _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .error("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage());
                 lastException.set(e.getCause());
                 return prevBest;
             });

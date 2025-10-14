@@ -70,6 +70,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class HttpClientUtils implements AutoCloseable {
 
+    public static final Predicate<HttpResponse> ONLY_RETRY_CONNECTION_ERRORS = r -> false;
+
     private static final int INITIAL_DELAY = 100;
 
     private static final Logger log = LoggerFactory.getLogger(HttpClientUtils.class);
@@ -149,7 +151,15 @@ public class HttpClientUtils implements AutoCloseable {
     }
 
     public HttpResponse executeRequestSync(HttpUriRequest request, int retries) throws IOException {
-        return ThreadUtil.join(executeRequest(request, retries), IOException.class);
+        return executeRequestSync(request, retries, r -> true);
+    }
+
+    public HttpResponse executeRequestSync(
+            HttpUriRequest request,
+            int retries,
+            Predicate<HttpResponse> isRetryable) throws IOException {
+        var future = executeRequest(request, retries, isRetryable);
+        return ThreadUtil.join(future, IOException.class);
     }
 
     public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries,

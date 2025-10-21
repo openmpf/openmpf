@@ -74,7 +74,7 @@ public class CustomSsoBrowserService extends BaseCustomSsoService {
         // We return null in that case to indicate that we need to start the authentication process
         // by redirecting the user to the SSO login page.
         return getTokenFromCookie(request)
-                .map(s -> "SSO user")
+                .map(s -> "Unauthenticated SSO user")
                 .orElse(null);
     }
 

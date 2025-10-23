@@ -31,6 +31,7 @@
 
 #include "BatchExecutorUtil.h"
 #include "ComponentLoadError.h"
+#include "JobContext.h"
 
 #include "PythonComponentHandle.h"
 
@@ -564,19 +565,21 @@ namespace MPF::COMPONENT {
         {
         }
 
-        bool Supports(MPFDetectionDataType data_type) const {
-            switch (data_type) {
-                case UNKNOWN:
-                    return component_.get_detections_from_generic_method.has_value();
-                case VIDEO:
-                    return component_.get_detections_from_video_method.has_value()
-                           || component_.get_detections_from_all_video_tracks_method.has_value();
-                case IMAGE:
-                    return component_.get_detections_from_image_method.has_value();
-                case AUDIO:
-                    return component_.get_detections_from_audio_method.has_value();
-                default:
-                    return false;
+        bool Supports(const JobContext &job_context) const {
+            if (std::holds_alternative<MPFVideoJob>(job_context.job)) {
+                return component_.get_detections_from_video_method.has_value();
+            }
+            else if (std::holds_alternative<MPFAllVideoTracksJob>(job_context.job)) {
+                return component_.get_detections_from_all_video_tracks_method.has_value();
+            }
+            else if (std::holds_alternative<MPFImageJob>(job_context.job)) {
+                return component_.get_detections_from_image_method.has_value();
+            }
+            else if (std::holds_alternative<MPFAudioJob>(job_context.job)) {
+                return component_.get_detections_from_audio_method.has_value();
+            }
+            else {
+                return component_.get_detections_from_generic_method.has_value();
             }
         }
 
@@ -773,8 +776,8 @@ namespace MPF::COMPONENT {
     }
 
 
-    bool PythonComponentHandle::Supports(MPFDetectionDataType data_type) {
-        return impl_->Supports(data_type);
+    bool PythonComponentHandle::Supports(const JobContext &job_context) {
+        return impl_->Supports(job_context);
     }
 
 

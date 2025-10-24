@@ -132,6 +132,8 @@ def delete_folder_contents(mpf_home, delete_uploaded_media, delete_logs, mpf_log
 
 
 def delete_children(folder):
+    if not os.path.exists(folder):
+        return
     for entry in os.listdir(folder):
         path = os.path.join(folder, entry)
         if os.path.isfile(path):

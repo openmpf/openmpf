@@ -43,9 +43,15 @@ namespace MPF::COMPONENT::ProtobufResponseUtil {
         switch (context.job_type) {
             case MPFDetectionDataType::VIDEO: {
                 auto video_response = detection_response.mutable_video_response();
-                const auto& video_job = std::get<MPFVideoJob>(context.job);
-                video_response->set_start_frame(video_job.start_frame);
-                video_response->set_stop_frame(video_job.stop_frame);
+                if (std::holds_alternative<MPFVideoJob>(context.job)) {
+                    const auto& video_job = std::get<MPFVideoJob>(context.job);
+                    video_response->set_start_frame(video_job.start_frame);
+                    video_response->set_stop_frame(video_job.stop_frame);
+                } else {
+                    const auto& video_job = std::get<MPFAllVideoTracksJob>(context.job);
+                    video_response->set_start_frame(video_job.start_frame);
+                    video_response->set_stop_frame(video_job.stop_frame);
+                }
                 break;
             }
             case MPFDetectionDataType::IMAGE: {

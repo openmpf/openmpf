@@ -245,7 +245,7 @@ int run_jobs(LoggerWrapper& logger, Messenger messenger,
     while (true) {
         logger.Info("Waiting for next job.");
         auto job_context = job_receiver.GetJob();
-        if (!component.Supports(job_context)) {
+        if (!component.Supports(job_context.job_type)) {
             job_receiver.ReportUnsupportedDataType(job_context);
             continue;
         }

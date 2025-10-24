@@ -95,73 +95,26 @@ PythonComponentHandle get_generic_only_component() {
     return get_component("generic_only_component.py");
 }
 
-JobContext get_job_context(
-    const job_variant_t &job,
-    const MPFDetectionDataType &job_type,
-    const std::string &job_type_name
-) {
-    return {
-         0,
-        "Test Job Name",
-        job,
-        job_type,
-        job_type_name,
-        std::chrono::steady_clock::time_point(),
-        JobLogContext(
-            "Test Job Name",
-            std::make_shared<std::string>(),
-            std::make_shared<PythonLogger>("DEBUG", "TestComponent")),
-        {},
-        {}       
-    };
-}
-
 
 TEST(PythonComponentHandleTest, TestSupportsCheck) {
-    JobContext image_job_ctx = get_job_context(
-        MPFImageJob("Test Job Name", "path/to/media", {}, {}),
-        MPFDetectionDataType::IMAGE,
-        "IMAGE"
-    );
-    JobContext video_job_ctx = get_job_context(
-        MPFVideoJob("Test Job Name", "path/to/media", 0, 10, {}, {}),
-        MPFDetectionDataType::VIDEO,
-        "VIDEO"
-    );
-    JobContext audio_job_ctx = get_job_context(
-        MPFAudioJob("Test Job Name", "path/to/media", 0, -1, {}, {}),
-        MPFDetectionDataType::AUDIO,
-        "AUDIO"
-    );
-    JobContext generic_job_ctx = get_job_context(
-        MPFGenericJob("Test Job Name", "path/to/media", {}, {}),
-        MPFDetectionDataType::UNKNOWN,
-        "UNKNOWN"
-    );
-
     PythonComponentHandle py_component = get_test_component();
-    ASSERT_TRUE(py_component.Supports(image_job_ctx));
-    ASSERT_TRUE(py_component.Supports(video_job_ctx));
-    ASSERT_TRUE(py_component.Supports(audio_job_ctx));
-    ASSERT_FALSE(py_component.Supports(generic_job_ctx));
+    ASSERT_TRUE(py_component.Supports(IMAGE));
+    ASSERT_TRUE(py_component.Supports(VIDEO));
+    ASSERT_TRUE(py_component.Supports(AUDIO));
+    ASSERT_FALSE(py_component.Supports(UNKNOWN));
 
     PythonComponentHandle generic_only_component = get_generic_only_component();
-    ASSERT_TRUE(generic_only_component.Supports(generic_job_ctx));
-    ASSERT_FALSE(generic_only_component.Supports(image_job_ctx));
-    ASSERT_FALSE(generic_only_component.Supports(video_job_ctx));
-    ASSERT_FALSE(generic_only_component.Supports(audio_job_ctx));
+    ASSERT_TRUE(generic_only_component.Supports(UNKNOWN));
+    ASSERT_FALSE(generic_only_component.Supports(IMAGE));
+    ASSERT_FALSE(generic_only_component.Supports(VIDEO));
+    ASSERT_FALSE(generic_only_component.Supports(AUDIO));
 }
 
 
 TEST(PythonComponentHandleTest, TestUnsupportedJobType) {
-    JobContext generic_job_ctx = get_job_context(
-        MPFGenericJob("Test Job Name", "path/to/media", {}, {}),
-        MPFDetectionDataType::UNKNOWN,
-        "UNKNOWN"
-    );
     PythonComponentHandle py_component = get_test_component();
 
-    ASSERT_FALSE(py_component.Supports(generic_job_ctx));
+    ASSERT_FALSE(py_component.Supports(UNKNOWN));
     MPFGenericJob job("Test", "fake/path", {}, {});
 
     try {

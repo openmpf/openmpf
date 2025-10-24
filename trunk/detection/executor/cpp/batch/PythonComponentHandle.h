@@ -35,7 +35,6 @@
 #include <MPFDetectionObjects.h>
 #include <MPFDetectionComponent.h>
 
-#include "JobContext.h"
 #include "LoggerWrapper.h"
 
 
@@ -54,7 +53,7 @@ namespace MPF::COMPONENT {
 
         bool Init();
 
-        bool Supports(const JobContext &job_context);
+        bool Supports(MPFDetectionDataType data_type);
 
         std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
 

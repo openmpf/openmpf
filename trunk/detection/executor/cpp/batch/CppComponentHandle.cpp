@@ -28,7 +28,6 @@
 #include <log4cxx/xml/domconfigurator.h>
 
 #include "ComponentLoadError.h"
-#include "JobContext.h"
 
 #include "CppComponentHandle.h"
 
@@ -52,8 +51,8 @@ namespace MPF::COMPONENT {
         return component_->Init();
     }
 
-    bool CppComponentHandle::Supports(const JobContext &job_context) {
-        return component_->Supports(job_context.job_type);
+    bool CppComponentHandle::Supports(MPFDetectionDataType data_type) {
+        return component_->Supports(data_type);
     }
 
     std::vector<MPFVideoTrack> CppComponentHandle::GetDetections(const MPFVideoJob &job) {

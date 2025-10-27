@@ -27,7 +27,8 @@ public class HawtioAuditFilter extends OncePerRequestFilter {
         if (requestURI.equals("/actuator/hawtio") || requestURI.equals("/actuator/hawtio/")) {
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
-                .allowed("Hawtio Accessed.");
+                .withUri(requestURI)
+                .allowed("Hawtio Accessed");
         }
         filterChain.doFilter(request, response);
     }

@@ -362,16 +362,17 @@ public class TiesDbService {
                         _propertiesUtil.getHttpCallbackRetryCount(),
                         responseChecker::shouldRetry)
                     .thenAccept(response -> {
-                        int statusCode = response.getStatusLine().getStatusCode();
                         _auditEventLogger.createEvent()
                             .withSecurityTag()
-                            .allowed("TiesDB API call: POST %s - Status Code: %d", fullUrl, statusCode);
+                            .withUri(fullUrl.toString())
+                            .allowed();
                         responseChecker.checkResponse(response);
                     })
                     .exceptionallyCompose(err -> {
                         _auditEventLogger.createEvent()
                             .withSecurityTag()
-                            .error("TiesDB API call failed: POST %s : %s", fullUrl, err.getMessage());
+                            .withUri(fullUrl.toString())
+                            .error("TiesDB API call failed: %s", err.getMessage());
                         return convertError(fullUrl.toString(), err);
                     });
         }

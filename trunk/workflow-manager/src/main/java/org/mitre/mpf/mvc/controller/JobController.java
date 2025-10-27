@@ -482,6 +482,19 @@ public class JobController {
                     .filter(ci -> !ci.s3CopyEnabled())
                     .map(ci -> ci.outputObjectUri())
                     .orElse(null);
+
+            // Log successful job creation with detailed information
+            var mediaUris = jobCreationRequest.media().stream()
+                    .map(media -> media.mediaUri().toString())
+                    .toList();
+            String mediaUrisList = String.join(", ", mediaUris);
+
+            _auditEventLogger.createEvent()
+                    .withSecurityTag()
+                    .allowed("Pipeline: %s, Media URIs: [%s]",
+                             jobCreationRequest.pipelineName(),
+                             mediaUrisList);
+
             // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(
                     exportedJobId,

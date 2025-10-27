@@ -75,12 +75,58 @@ public class AuditEventLogger {
             LogAuditEventRecord.OpType op,
             LogAuditEventRecord.ResType res,
             String user,
+            String uri,
             String msg) {
 
+        int eventId = getEventId(op, res, uri, msg);
         var eventRecord = new LogAuditEventRecord(
-                Instant.now(), tag, "openmpf", user, op, res, msg);
+                Instant.now(), tag, "openmpf", user, op, res, uri, msg, eventId);
         writeToLogger(eventRecord);
         return this;
+    }
+    // These event types are placeholders and should be changed to reflect the type of events better.
+    private int getEventId(LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String uri, String msg) {
+        // Determine event ID based on operation type, result type, and context
+        if (op == LogAuditEventRecord.OpType.LOGIN) {
+            return res == LogAuditEventRecord.ResType.ALLOW
+                ? LogAuditEventRecord.EventIds.LOGIN_SUCCESS
+                : LogAuditEventRecord.EventIds.LOGIN_FAILURE;
+        }
+
+        if (res == LogAuditEventRecord.ResType.DENY) {
+            return LogAuditEventRecord.EventIds.ACCESS_DENIED;
+        }
+
+        if (res == LogAuditEventRecord.ResType.ERROR) {
+            if (msg != null && (msg.contains("TiesDB") || msg.contains("API call failed"))) {
+                return LogAuditEventRecord.EventIds.EXTERNAL_API_ERROR;
+            }
+            if (msg != null && (msg.contains("Invalid") || msg.contains("Malformed") || msg.contains("missing"))) {
+                return LogAuditEventRecord.EventIds.VALIDATION_ERROR;
+            }
+            return LogAuditEventRecord.EventIds.SYSTEM_ERROR;
+        }
+
+        // Success cases based on operation type and context
+        switch (op) {
+            case CREATE:
+                if (msg != null && msg.contains("Job created")) {
+                    return LogAuditEventRecord.EventIds.JOB_CREATE;
+                }
+                if (msg != null && msg.contains("Media file uploaded")) {
+                    return LogAuditEventRecord.EventIds.MEDIA_UPLOAD;
+                }
+                return LogAuditEventRecord.EventIds.JOB_CREATE; // Default for CREATE
+
+            case MODIFY:
+                return LogAuditEventRecord.EventIds.JOB_MODIFY;
+
+            case DELETE:
+                return LogAuditEventRecord.EventIds.JOB_DELETE;
+
+            default:
+                return LogAuditEventRecord.EventIds.REST_API_ACCESS; 
+        }
     }
 
     public BuilderTagStage createEvent() {
@@ -143,6 +189,13 @@ public class AuditEventLogger {
             return this;
         }
 
+        public AuditEventBuilder withUri(String uri, Object... formatArgs) {
+            return this;
+        }
+
+        public void allowed() {
+        }
+
         public void allowed(String message, Object... formatArgs) {
         }
 
@@ -163,6 +216,8 @@ public class AuditEventLogger {
 
         private Authentication _auth;
 
+        private String _uri;
+
         private EnabledEventBuilder(LogAuditEventRecord.OpType opType) {
             _opType = opType;
         }
@@ -177,6 +232,19 @@ public class AuditEventLogger {
         public AuditEventBuilder withSecurityTag() {
             _tagType = LogAuditEventRecord.TagType.SECURITY;
             return this;
+        }
+
+        @Override
+        public AuditEventBuilder withUri(String uri, Object... formatArgs) {
+            _uri = formatArgs != null && formatArgs.length > 0
+                    ? uri.formatted(formatArgs)
+                    : uri;
+            return this;
+        }
+
+        @Override
+        public void allowed() {
+            logEvent(LogAuditEventRecord.ResType.ALLOW, null);
         }
 
         @Override
@@ -198,7 +266,7 @@ public class AuditEventLogger {
                 LogAuditEventRecord.ResType resType,
                 String message,
                 Object... formatArgs) {
-            var formattedMessage = formatArgs != null && formatArgs.length > 0
+            var formattedMessage = message != null && formatArgs != null && formatArgs.length > 0
                     ? message.formatted(formatArgs)
                     : message;
 
@@ -207,7 +275,7 @@ public class AuditEventLogger {
                     .filter(s -> !s.isEmpty())
                     .orElseGet(() -> getCurrentLoggedInUser());
 
-            log(_tagType, _opType, resType, user, formattedMessage);
+            log(_tagType, _opType, resType, user, _uri, formattedMessage);
         }
     }
 }

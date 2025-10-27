@@ -128,7 +128,8 @@ public class MediaController {
                 log.error("The string {} did not translate cleanly to a URI.", enteredURL, incorrectUriTranslation);
                 _auditEventLogger.createEvent()
                     .withSecurityTag()
-                    .error("Invalid URI syntax for %s", enteredURL);
+                    .withUri(enteredURL)
+                    .error("Invalid URI syntax");
                 urlResultMap.put(enteredURL, "String did not cleanly convert to URI");
                 continue;
             }
@@ -172,7 +173,8 @@ public class MediaController {
                 // Log the URL upload
                 _auditEventLogger.createEvent()
                     .withSecurityTag()
-                    .allowed("URL uploaded to file: url=%s, destination=%s", url, newFile.getAbsolutePath());
+                    .withUri(newFile.getAbsolutePath())
+                    .allowed();
 
                 log.info("Completed write of {} to {}", uri.getPath(), newFile.getAbsolutePath());
                 urlResultMap.put(enteredURL, "successful write to: " + newFile.getAbsolutePath());
@@ -181,13 +183,15 @@ public class MediaController {
                 log.error("URI {} could not be converted. ", uri, badUrl);
                 _auditEventLogger.createEvent()
                     .withSecurityTag()
-                    .error("Malformed URL: %s: %s", uri, badUrl.getMessage());
+                    .withUri(uri.toString())
+                    .error("Malformed URL: %s", badUrl.getMessage());
                 urlResultMap.put(enteredURL, "Unable to locate media at the provided address.");
             } catch (IOException badWrite) {
                 log.error("Error writing media to temp file from {}.", enteredURL, badWrite);
                 _auditEventLogger.createEvent()
                     .withSecurityTag()
-                    .error("IO error writing file from: %s: %s", enteredURL, badWrite.getMessage());
+                    .withUri(enteredURL)
+                    .error("IO error writing file: %s", badWrite.getMessage());
                 urlResultMap.put(enteredURL, "Unable to save media from this url. Please view the server logs for more information.");
                 if (newFile != null && newFile.exists()) {
                     newFile.delete();
@@ -197,7 +201,8 @@ public class MediaController {
                 log.error("Exception thrown while saving media from the url {}.", enteredURL, failure);
                 _auditEventLogger.createEvent()
                     .withSecurityTag()
-                    .error("Exception for: %s: %s", enteredURL, failure.getMessage());
+                    .withUri(enteredURL)
+                    .error("Exception: %s", failure.getMessage());
                 urlResultMap.put(enteredURL, "Error while saving media from this url. Please view the server logs for more information.");
             }
         }

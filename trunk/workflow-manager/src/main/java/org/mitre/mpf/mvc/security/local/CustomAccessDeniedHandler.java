@@ -56,6 +56,8 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
             HttpServletRequest request,
             HttpServletResponse response,
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        
+        String uri = request.getRequestURI();
 
         if (!(accessDeniedException instanceof CsrfException)) {
             super.handle(request, response, accessDeniedException);
@@ -63,10 +65,11 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
         else if (isAjax(request)) {
             response.sendError(403, "INVALID_CSRF_TOKEN");
         }
-        else if ("/login".equals(request.getRequestURI())) {
+        else if ("/login".equals(uri)) {
             // CSRF failures on login page
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
+                .withUri(uri)
                 .denied("Login attempt failed: Invalid XSRF token");
             response.sendRedirect("/");
         }

@@ -46,11 +46,11 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
-        String logMessage = String.format("Method: %s RequestURI: %s", method, requestURI);
 
         getAuditEventByHttpMethod(method)
                 .withSecurityTag()
-                .allowed(logMessage);
+                .withUri(requestURI)
+                .allowed();
         return true;
     }
     

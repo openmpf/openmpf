@@ -38,8 +38,34 @@ public record LogAuditEventRecord(
     String user,
     OpType op,
     ResType res,
-    String msg
+    String uri,
+    String msg,
+    int eid
 ) {
+
+    // These event IDs are placeholders and should be changed to reflect the type of events better.
+    public static final class EventIds {
+        // User/Service audit events: 100-1000
+        public static final int LOGIN_SUCCESS = 100;
+        public static final int LOGIN_FAILURE = 101;
+        public static final int JOB_CREATE = 110;
+        public static final int JOB_MODIFY = 112;
+        public static final int JOB_DELETE = 113;
+        public static final int MEDIA_UPLOAD = 120;
+        public static final int MEDIA_URL_SAVE = 121;
+        public static final int REST_API_ACCESS = 200;
+        public static final int ACCESS_DENIED = 300;
+        public static final int TIES_DB_POST = 400;
+
+        // System/Diagnostic operational events: 4001-5000
+        public static final int SYSTEM_ERROR = 4001;
+        public static final int VALIDATION_ERROR = 4002;
+        public static final int EXTERNAL_API_ERROR = 4003;
+
+        private EventIds() {
+            // Utility class
+        }
+    }
     public enum TagType {
         SECURITY("&B1E7-FFFF&");
 

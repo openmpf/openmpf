@@ -59,6 +59,10 @@ namespace MPF::COMPONENT {
         return component_->GetDetections(job);
     }
 
+    std::vector<MPFVideoTrack> CppComponentHandle::GetDetections(const MPFAllVideoTracksJob &job) {
+        throw std::runtime_error{"MPFAllVideoTracksJob is not currently supported."};
+    }
+
     std::vector<MPFImageLocation> CppComponentHandle::GetDetections(const MPFImageJob &job) {
         return component_->GetDetections(job);
     }

@@ -33,14 +33,16 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public record LogAuditEventRecord(
     Instant time,
+    int eid,
     TagType tag,
     String app,
     String user,
     OpType op,
     ResType res,
-    String uri,
     String msg,
-    int eid
+    String uri,
+    String bucket,
+    String bucket_key
 ) {
 
     // These event IDs are placeholders and should be changed to reflect the type of events better.

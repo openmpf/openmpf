@@ -76,11 +76,13 @@ public class AuditEventLogger {
             LogAuditEventRecord.ResType res,
             String user,
             String uri,
-            String msg) {
+            String msg,
+            String bucket,
+            String bucketKey) {
 
         int eventId = getEventId(op, res, uri, msg);
         var eventRecord = new LogAuditEventRecord(
-                Instant.now(), tag, "openmpf", user, op, res, uri, msg, eventId);
+                Instant.now(),  eventId, tag, "openmpf", user, op, res, msg, uri, bucket, bucketKey);
         writeToLogger(eventRecord);
         return this;
     }
@@ -193,6 +195,14 @@ public class AuditEventLogger {
             return this;
         }
 
+        public AuditEventBuilder withBucket(String bucket) {
+            return this;
+        }
+
+        public AuditEventBuilder withBucketKey(String bucketKey) {
+            return this;
+        }
+
         public void allowed() {
         }
 
@@ -218,6 +228,10 @@ public class AuditEventLogger {
 
         private String _uri;
 
+        private String _bucket;
+
+        private String _bucketKey;
+
         private EnabledEventBuilder(LogAuditEventRecord.OpType opType) {
             _opType = opType;
         }
@@ -239,6 +253,18 @@ public class AuditEventLogger {
             _uri = formatArgs != null && formatArgs.length > 0
                     ? uri.formatted(formatArgs)
                     : uri;
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withBucket(String bucket) {
+            _bucket = bucket;
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withBucketKey(String bucketKey) {
+            _bucketKey = bucketKey;
             return this;
         }
 
@@ -275,7 +301,7 @@ public class AuditEventLogger {
                     .filter(s -> !s.isEmpty())
                     .orElseGet(() -> getCurrentLoggedInUser());
 
-            log(_tagType, _opType, resType, user, _uri, formattedMessage);
+            log(_tagType, _opType, resType, user, _uri, formattedMessage, _bucket, _bucketKey);
         }
     }
 }

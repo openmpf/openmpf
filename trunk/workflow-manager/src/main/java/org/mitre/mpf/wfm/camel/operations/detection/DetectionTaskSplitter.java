@@ -226,9 +226,8 @@ public class DetectionTaskSplitter {
                     DetectionResponseRouteBuilder.JMS_DESTINATION);
             media.getType()
                     .ifPresent(mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
-            if (needsBreadCrumb) {
-                request.feedForwardTrack()
-                    .ifPresent(t -> _taskMergingManager.addBreadCrumb(message, t));
+            if (needsBreadCrumb && !request.feedForwardTracks().isEmpty()) {
+                _taskMergingManager.addBreadCrumb(message, request.feedForwardTracks());
             }
             message.getHeaders().putAll(request.headers());
             message.setBody(request.protobuf());

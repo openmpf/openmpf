@@ -179,7 +179,7 @@ public class MediaSelectorsSegmenter  {
         var headers = track.getSelectedInput()
                 .map(in -> addSelectorInfo(requestBuilder, in, track.getSelectorId().orElseThrow()))
                 .orElseGet(Map::of);
-        return new DetectionRequest(requestBuilder.build(), Optional.of(track), headers);
+        return new DetectionRequest(requestBuilder.build(), track, headers);
     }
 
 

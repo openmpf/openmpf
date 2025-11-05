@@ -53,6 +53,8 @@ namespace MPF::COMPONENT {
 
         std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
 
+        std::vector<MPFVideoTrack> GetDetections(const MPFAllVideoTracksJob &job);
+
         std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
 
         std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);

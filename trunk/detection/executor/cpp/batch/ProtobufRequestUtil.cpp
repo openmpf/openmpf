@@ -65,6 +65,22 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             };
         }
 
+        MPFVideoTrack ConvertFeedForwardTrack(
+                const mpf_buffers::VideoTrack& ff_track) {
+            MPFVideoTrack track{
+                ff_track.start_frame(),
+                ff_track.stop_frame(),
+                ff_track.confidence(),
+                GetProperties(ff_track.detection_properties())
+            };
+            auto& frame_locations = track.frame_locations;
+            for (const auto& [frame, frame_location] : ff_track.frame_locations()) {
+                frame_locations.try_emplace(
+                        frame, ConvertFeedForwardLocation(frame_location));
+            }
+            return track;
+        }
+
 
         MPFVideoJob CreateVideoJob(
                 const mpf_buffers::DetectionRequest& detection_request,
@@ -72,24 +88,12 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 const Properties& environment_properties) {
             const auto& video_request = detection_request.video_request();
             if (video_request.has_feed_forward_track()) {
-                const auto& pb_ff_track = video_request.feed_forward_track();
-                MPFVideoTrack ff_track{
-                    pb_ff_track.start_frame(),
-                    pb_ff_track.stop_frame(),
-                    pb_ff_track.confidence(),
-                    GetProperties(pb_ff_track.detection_properties())
-                };
-                auto& ff_frame_locations = ff_track.frame_locations;
-                for (const auto& [frame, frame_location] : pb_ff_track.frame_locations()) {
-                    ff_frame_locations.try_emplace(
-                            frame, ConvertFeedForwardLocation(frame_location));
-                }
                 return {
                     std::string{job_name},
                     detection_request.media_path(),
                     video_request.start_frame(),
                     video_request.stop_frame(),
-                    std::move(ff_track),
+                    ConvertFeedForwardTrack(video_request.feed_forward_track()),
                     GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
@@ -104,6 +108,28 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     GetMediaProperties(detection_request)
                 };
             }
+        }
+
+
+        MPFAllVideoTracksJob CreateAllVideoTracksJob(
+                const mpf_buffers::DetectionRequest& detection_request,
+                std::string_view job_name,
+                const Properties& environment_properties) {
+            const auto& video_request = detection_request.all_video_tracks_request();
+            const auto& pb_ff_tracks = video_request.feed_forward_tracks();
+            std::vector<MPFVideoTrack> ff_tracks;
+            for (const auto& pb_ff_track : pb_ff_tracks) {
+                ff_tracks.push_back(ConvertFeedForwardTrack(pb_ff_track));
+            }
+            return {
+                std::string{job_name},
+                detection_request.media_path(),
+                video_request.start_frame(),
+                video_request.stop_frame(),
+                std::move(ff_tracks),
+                GetJobProperties(detection_request, environment_properties),
+                GetMediaProperties(detection_request)
+            };
         }
 
 
@@ -237,6 +263,9 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             const mpf_buffers::DetectionRequest& detection_request) {
         if (detection_request.has_video_request()) {
             return CreateVideoJob(detection_request, job_name, environment_job_properties);
+        }
+        else if (detection_request.has_all_video_tracks_request()) {
+            return CreateAllVideoTracksJob(detection_request, job_name, environment_job_properties);
         }
         else if (detection_request.has_image_request()) {
             return CreateImageJob(detection_request, job_name, environment_job_properties);

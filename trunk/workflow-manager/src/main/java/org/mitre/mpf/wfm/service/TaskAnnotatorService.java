@@ -27,10 +27,13 @@
 
 package org.mitre.mpf.wfm.service;
 
+import static java.util.stream.Collectors.joining;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -40,7 +43,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.springframework.stereotype.Component;
 
@@ -50,28 +53,36 @@ public class TaskAnnotatorService {
 
     private static final String BREAD_CRUMB_HEADER = "breadcrumbId";
 
+    private static final String IS_ANNOTATOR_PROPERTY = "IS_ANNOTATOR";
+
     // Camel will automatically add a bread crumb if one is not included in the message headers.
     // Adding a prefix to the bread crumb makes it possible to identify which bread crumbs were
     // added by this class.
     private static final String CUSTOM_BREAD_CRUMB_PREFIX = "mpf-";
 
-
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
+    private final TriggerProcessor _triggerProcessor;
 
 
     @Inject
     TaskAnnotatorService(
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            TriggerProcessor triggerProcessor) {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _triggerProcessor = triggerProcessor;
     }
 
+    public boolean actionIsAnnotator(BatchJob job, Media media, int taskIdx, int actionIdx) {
+        if (taskIdx == 0) {
+            return false;
+        }
+        var action = job.getPipelineElements().getAction(taskIdx, actionIdx);
+        return _aggregateJobPropertiesUtil.getBool(IS_ANNOTATOR_PROPERTY, job, media, action);
+    }
 
     public boolean needsBreadCrumb(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        return getTransitiveAnnotatedTasks(job, media, taskIdx, actionIdx)
-                .min()
-                .stream()
-                .mapToObj(ti -> job.getPipelineElements().getAction(ti, 0))
-                .anyMatch(a -> actionHasTrigger(job, media, a));
+        return actionIsAnnotator(job, media, taskIdx, actionIdx);
     }
 
 
@@ -82,119 +93,95 @@ public class TaskAnnotatorService {
     // header.
     public void addBreadCrumb(
             Message message, Track feedForwardTrack) {
+        var joinedIndices = Stream.concat(
+                Stream.of(feedForwardTrack.getTaskIndex()),
+                feedForwardTrack.getAnnotatedTaskIndices().stream())
+            .distinct()
+            .sorted()
+            .map(String::valueOf)
+            .collect(joining(";"));
+
         message.setHeader(
                 BREAD_CRUMB_HEADER,
-                CUSTOM_BREAD_CRUMB_PREFIX + feedForwardTrack.getAnnotatedTaskIndex()
-                        + '-' + UUID.randomUUID());
+                CUSTOM_BREAD_CRUMB_PREFIX + joinedIndices + '-' + UUID.randomUUID());
     }
 
 
-    public int getAnnotatedTaskIndex(
-            BatchJob job,
-            Media media,
-            int taskIdx,
-            int actionIdx,
-            Map<String, Object> headers) {
-        var headerTaskIdx = parseBreadCrumb(headers);
-        if (headerTaskIdx.isPresent()) {
-            return headerTaskIdx.getAsInt();
-        }
-        return getTransitiveAnnotatedTasks(job, media, taskIdx, actionIdx)
-                // Annotator property is enabled, so use the task at the end of the chain.
-                .min()
-                // Annotator property wasn't enabled, so use the actual task.
-                .orElse(taskIdx);
-    }
-
-
-    private OptionalInt parseBreadCrumb(Map<String, Object> headers) {
+    public static List<Integer> getAnnotatedTaskIndices(Map<String, Object> headers) {
         if (!(headers.get(BREAD_CRUMB_HEADER) instanceof String breadcrumbHeader)) {
-            return OptionalInt.empty();
+            return List.of();
         }
         if (!breadcrumbHeader.startsWith(CUSTOM_BREAD_CRUMB_PREFIX)) {
-            return OptionalInt.empty();
+            return List.of();
         }
         var headerNoPrefix = breadcrumbHeader.substring(CUSTOM_BREAD_CRUMB_PREFIX.length());
-        var taskIdxStr = headerNoPrefix.split("-", 2)[0];
+        var taskIndices = headerNoPrefix.split("-", 2)[0];
         try {
-            return OptionalInt.of(Integer.parseInt(taskIdxStr));
+            return Stream.of(taskIndices.split(";"))
+                .map(Integer::parseInt)
+                .toList();
         }
         catch (NumberFormatException e) {
-            return OptionalInt.empty();
+            return List.of();
         }
     }
 
 
-    public boolean isAnnotatorAction(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        if (taskIdx == 0) {
-            return false;
-        }
-        var action = job.getPipelineElements().getAction(taskIdx, actionIdx);
-        return isAnnotatorAction(job, media, action);
+    public Predicate<Track> createIsAnnotatedChecker(BatchJob job, Media media) {
+        var triggerCache = new TriggerCache(job, media);
+        return track -> isAnnotated(job, media, track, triggerCache);
     }
 
 
-    private boolean isAnnotatorAction(BatchJob job, Media media, Action action) {
-        var annotatorProperty = _aggregateJobPropertiesUtil.getValue(
-                MpfConstants.IS_ANNOTATOR_PROPERTY, job, media, action);
-        return Boolean.parseBoolean(annotatorProperty);
+    private boolean isAnnotated(BatchJob job, Media media, Track track, TriggerCache triggerCache) {
+        return getNextActions(job, media, track, triggerCache)
+            .anyMatch(a -> _aggregateJobPropertiesUtil.getBool(
+                    IS_ANNOTATOR_PROPERTY, job, media, a));
     }
 
-
-    public boolean taskHasAnnotator(BatchJob job, Media media, int taskIdx) {
+    private Stream<Action> getNextActions(
+            BatchJob job, Media media, Track track, TriggerCache triggerCache) {
         var pipelineElements = job.getPipelineElements();
         int lastDetectionTaskIdx = pipelineElements.getLastDetectionTaskIdx();
-
-        for (int futureTaskIdx = taskIdx + 1;
-                futureTaskIdx <= lastDetectionTaskIdx;
-                futureTaskIdx++) {
-            var futureTask = pipelineElements.getTask(futureTaskIdx);
-            var taskAppliesToMedia = false;
-            var taskHasTrigger = false;
-            for (var futureAction : pipelineElements.getActionsInOrder(futureTask)) {
-                if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, futureAction)) {
-                    taskAppliesToMedia = true;
-                    if (isAnnotatorAction(job, media, futureAction)) {
-                        return true;
-                    }
-                    taskHasTrigger = taskHasTrigger || actionHasTrigger(job, media, futureAction);
-                }
-            }
-            if (taskAppliesToMedia && !taskHasTrigger) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    private boolean actionHasTrigger(BatchJob job, Media media, Action action) {
-        var trigger = _aggregateJobPropertiesUtil.getValue(
-                MpfConstants.TRIGGER, job, media, action);
-        return trigger != null && !trigger.isBlank();
-    }
-
-    public IntStream getTransitiveAnnotatedTasks(
-            BatchJob job, Media media, int srcTaskIdx, int srcActionIdx) {
-        return Stream.iterate(
-                getDirectAnnotatedTask(job, media, srcTaskIdx, srcActionIdx),
-                OptionalInt::isPresent,
-                p -> getDirectAnnotatedTask(job, media, p.getAsInt(), 0))
-            .mapToInt(OptionalInt::getAsInt);
-    }
-
-
-    private OptionalInt getDirectAnnotatedTask(
-            BatchJob job, Media media, int srcTaskIdx, int srcActionIdx) {
-        if (!isAnnotatorAction(job, media, srcTaskIdx, srcActionIdx)) {
-            return OptionalInt.empty();
+        if (track.getTaskIndex() >= lastDetectionTaskIdx) {
+            return Stream.of();
         }
 
-        for (int prevTaskIdx = srcTaskIdx - 1; prevTaskIdx >= 0; prevTaskIdx--) {
-            var prevAction = job.getPipelineElements().getAction(prevTaskIdx, 0);
-            if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, prevAction)) {
-                return OptionalInt.of(prevTaskIdx);
+
+        Predicate<Action> wasInput = a ->
+                _aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, a)
+                && triggerCache.isTriggered(a, track);
+
+        for (int i = track.getTaskIndex() + 1; i < lastDetectionTaskIdx; i++) {
+            var action = pipelineElements.getAction(i, 0);
+            if (wasInput.test(action)) {
+                return Stream.of(action);
             }
         }
-        return OptionalInt.of(0);
+
+        var lastDetectionTask = pipelineElements.getTask(lastDetectionTaskIdx);
+        return pipelineElements.getActionStreamInOrder(lastDetectionTask)
+            .filter(wasInput);
+    }
+
+    private class TriggerCache {
+
+        private final Map<String, Predicate<Track>> _cache = new HashMap<>();
+
+        private final BatchJob _job;
+
+        private final Media _media;
+
+        public TriggerCache(BatchJob job, Media media) {
+            _job = job;
+            _media = media;
+        }
+
+        public boolean isTriggered(Action action, Track track) {
+            var pred = _cache.computeIfAbsent(
+                    action.name(),
+                    k -> _triggerProcessor.createActionTrigger(_job, _media, action));
+            return pred.test(track);
+        }
     }
 }

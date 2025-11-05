@@ -30,6 +30,8 @@ package org.mitre.mpf.interop.util;
 import java.util.*;
 import java.util.function.Function;
 
+import com.google.common.collect.Streams;
+
 public class CompareUtils {
 
     private static final Comparator<Map.Entry<String, String>> MAP_ENTRY_COMPARATOR =
@@ -87,79 +89,48 @@ public class CompareUtils {
 
 
     private static <T> int doSortedSetCompare(SortedSet<T> s1, SortedSet<T> s2) {
-        //noinspection ObjectEquality - False positive
-        if (s1 == s2) {
-            return 0;
-        }
-
         Comparator<? super T> comparator = s1.comparator();
         if (comparator == null) {
-            comparator = (a, b) -> ((Comparable<T>) a).compareTo(b) ;
+            comparator = (a, b) -> ((Comparable<T>) a).compareTo(b);
         }
-
-        Iterator<T> iter1 = s1.iterator();
-        Iterator<T> iter2 = s2.iterator();
-
-        while (true) {
-            boolean hasNext1 = iter1.hasNext();
-            boolean hasNext2 = iter2.hasNext();
-            if (!hasNext1 && !hasNext2) {
-                return 0;
-            }
-
-            T item1 = hasNext1 ? iter1.next() : null;
-            T item2 = hasNext2 ? iter2.next() : null;
-            if (item1 == null && item2 == null) {
-                continue;
-            }
-
-            if (item1 == null) {
-                return -1;
-            }
-            if (item2 == null) {
-                return 1;
-            }
-
-            int itemCompare = comparator.compare(item1, item2);
-            if (itemCompare != 0) {
-                return itemCompare;
-            }
-        }
+        return doCollectionCompare(s1, s2, comparator);
     }
 
 
     public static <T, U extends Comparable<U>> Comparator<T> listCompare(Function<T, List<U>> toListFunc) {
-        return Comparator.nullsFirst(Comparator.comparing(toListFunc, CompareUtils::doListCompare));
+        return Comparator.nullsFirst(Comparator.comparing(
+                toListFunc,
+                (c1, c2) -> doCollectionCompare(c1, c2, Comparator.naturalOrder())));
     }
 
 
-    private static <U extends Comparable<U>> int doListCompare(List<U> s1, List<U> s2) {
-        Iterator<U> iter1 = s1.iterator();
-        Iterator<U> iter2 = s2.iterator();
+    private static <T> int doCollectionCompare(
+            Collection<T> c1, Collection<T> c2, Comparator<? super T> comparator) {
+        if (c1 == c2) {
+            return 0;
+        }
 
-        while (true) {
-            boolean hasNext1 = iter1.hasNext();
-            boolean hasNext2 = iter2.hasNext();
-            if (!hasNext1 && !hasNext2) {
-                return 0;
+        var iter1 = c1.iterator();
+        var iter2 = c2.iterator();
+        while (true)  {
+            var hasNext1 = iter1.hasNext();
+            var hasNext2 = iter2.hasNext();
+            if (hasNext1 && hasNext2) {
+                var item1 = iter1.next();
+                var item2 = iter2.next();
+                int itemCompare = comparator.compare(item1, item2);
+                if (itemCompare != 0) {
+                    return itemCompare;
+                }
             }
-
-            U item1 = hasNext1 ? iter1.next() : null;
-            U item2 = hasNext2 ? iter2.next() : null;
-            if (item1 == null && item2 == null) {
-                continue;
-            }
-
-            if (item1 == null) {
-                return -1;
-            }
-            if (item2 == null) {
+            else if (hasNext1) {
                 return 1;
             }
-
-            int itemCompare = item1.compareTo(item2);
-            if (itemCompare != 0) {
-                return itemCompare;
+            else if (hasNext2) {
+                return -1;
+            }
+            else {
+                return 0;
             }
         }
     }

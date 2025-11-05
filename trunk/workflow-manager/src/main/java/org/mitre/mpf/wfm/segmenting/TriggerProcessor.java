@@ -138,7 +138,7 @@ public class TriggerProcessor {
             if (algo.actionType() == ActionType.MARKUP) {
                 continue;
             }
-            var actionTrigger = parseTriggerProperty(job, media, action);
+            var actionTrigger = createActionTrigger(job, media, action);
             if (actionTrigger == ALL_MATCH) {
                 return ALL_MATCH;
             }
@@ -148,7 +148,7 @@ public class TriggerProcessor {
     }
 
 
-    private Predicate<Track> parseTriggerProperty(
+    public Predicate<Track> createActionTrigger(
             BatchJob job, Media media, Action action) {
         var trigger = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.TRIGGER, job, media, action);

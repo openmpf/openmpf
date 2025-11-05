@@ -430,7 +430,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 startFrame + 10,
                 _trackId--,
                 -1,
-                -1,
+                List.of(),
                 -1,
                 List.of(),
                 trackProps,

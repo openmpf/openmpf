@@ -43,7 +43,6 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
 
     public static final String NO_TRACKS_TYPE = "NO TRACKS";
     public static final String TRACKS_SUPPRESSED_TYPE = "TRACKS SUPPRESSED";
-    public static final String TRACKS_ANNOTATED_TYPE = "TRACKS ANNOTATED";
 
     @JsonProperty("action")
     @JsonPropertyDescription("The action name.")
@@ -56,8 +55,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
     public String getAlgorithm() { return algorithm; }
 
     @JsonProperty("annotators")
-    @JsonPropertyDescription("The set of annotations for the action.")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonPropertyDescription("The list of actions that annotated this action.")
     private List<String> annotators;
     public List<String> getAnnotators() { return annotators; }
 

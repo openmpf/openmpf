@@ -311,6 +311,10 @@ public class AggregateJobPropertiesUtil {
         return getValue(propertyName, job, media, null);
     }
 
+    public boolean getBool(String propertyName, BatchJob job, Media media, Action action) {
+        return Boolean.parseBoolean(getValue(propertyName, job, media, action));
+    }
+
 
     public UnaryOperator<String> getCombinedProperties(
             Action action,
@@ -513,20 +517,6 @@ public class AggregateJobPropertiesUtil {
         }
     }
 
-    public boolean isSuppressTrack(Media media, BatchJob job, Task task) {
-        boolean hasSuppressedTracks = task.actions().stream()
-            .anyMatch(actionName -> {
-                Action action = job.getPipelineElements().getAction(actionName);
-                return isSuppressTrack(media, job, action);
-            });
-
-        return hasSuppressedTracks;
-    }
-
-    public boolean isSuppressTrack(Media media, BatchJob job, Action action) {
-        return Boolean.parseBoolean(
-                getValue(MpfConstants.SUPPRESS_TRACKS_PROPERTY, job, media, action));
-    }
 
     public boolean isNonVisualObjectType(String type) {
         return _propertiesUtil.getArtifactExtractionNonVisualTypesList().stream()

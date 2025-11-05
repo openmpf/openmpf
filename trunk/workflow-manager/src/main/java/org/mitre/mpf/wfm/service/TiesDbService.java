@@ -282,13 +282,12 @@ public class TiesDbService {
 
     private SortedSet<String> getTrackTypes(BatchJob job, Media media) {
         var pipelineElements = job.getPipelineElements();
-        Stream<Task> tasks = pipelineElements.getTaskStreamInOrder()
-            .filter(t -> !_aggregateJobPropertiesUtil.isSuppressTrack(media, job, t));
-
-        return tasks
-                .flatMap(pipelineElements::getActionStreamInOrder)
-                .map(a -> pipelineElements.getAlgorithm(a.algorithm()).trackType())
-                .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+        return pipelineElements.getAllActions()
+            .stream()
+            .filter(a -> !_aggregateJobPropertiesUtil.getBool(
+                        MpfConstants.SUPPRESS_TRACKS, job, media, a))
+            .map(a -> pipelineElements.getAlgorithm(a.algorithm()).trackType())
+            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
     }
 
 

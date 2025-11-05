@@ -27,161 +27,74 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import static java.util.stream.Collectors.toCollection;
-
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.IntStream;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
 import org.mitre.mpf.wfm.service.TaskAnnotatorService;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JobPartsIter;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 
 
 @Component
 public class TrackOutputHelper {
 
-    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
-
-    private final InProgressBatchJobsService _inProgressBatchJobsService;
-
-    private final TriggerProcessor _triggerProcessor;
+    private final InProgressBatchJobsService _inProgressJobs;
 
     private final TaskAnnotatorService _taskAnnotatorService;
 
     @Inject
     TrackOutputHelper(
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            InProgressBatchJobsService inProgressBatchJobsService,
-            TriggerProcessor triggerProcessor,
+            InProgressBatchJobsService inProgressJobs,
             TaskAnnotatorService taskAnnotatorService) {
-        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _inProgressBatchJobsService = inProgressBatchJobsService;
-        _triggerProcessor = triggerProcessor;
+        _inProgressJobs = inProgressJobs;
         _taskAnnotatorService = taskAnnotatorService;
     }
 
-    public record TrackInfo(
-            boolean isSuppressed,
-            boolean isAnnotatorAction,
-            boolean hasAnnotator,
-            boolean hadAnyTracks,
-            Multimap<String, Track> tracksGroupedByAction) { }
 
-
-    public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        boolean isSuppressed = isSuppressed(job, media, taskIdx);
-        boolean hasAnnotator = _taskAnnotatorService.taskHasAnnotator(job, media, taskIdx);
-        boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean isAnnotatorAction = _taskAnnotatorService.isAnnotatorAction(job, media, taskIdx, actionIdx);
-
-        boolean canAvoidGettingTracks =
-                hasAnnotator || (isSuppressed && !needToCheckTrackTriggers);
-        if (canAvoidGettingTracks) {
-            int trackCount = _inProgressBatchJobsService.getTrackCount(
-                    job.getId(), media.getId(), taskIdx, actionIdx);
-            return new TrackInfo(
-                    isSuppressed, isAnnotatorAction, hasAnnotator, trackCount > 0,
-                    ImmutableMultimap.of());
-        }
-
-        var tracks = _inProgressBatchJobsService.getTracks(
-                job.getId(), media.getId(), taskIdx, actionIdx);
-
-        if (needToCheckTrackTriggers) {
-            tracks = findUntriggered(job, media, taskIdx, tracks);
-            if (!tracks.isEmpty()) {
-                // Since there are un-triggered tracks, this task is the last task that
-                // processed those tracks.
-                isSuppressed = false;
-            }
-        }
-        var indexedTracks = Multimaps.index(tracks, t -> getAnnotatedAction(t, job));
-        return new TrackInfo(
-                isSuppressed, isAnnotatorAction, hasAnnotator,
-                !indexedTracks.isEmpty(), indexedTracks);
+    public record TrackGroupKey(
+            int taskIdx,
+            int actionIdx,
+            ImmutableSet<Annotator> annotators) {
     }
 
-    private boolean isSuppressed(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        return _aggregateJobPropertiesUtil.isSuppressTrack(media, job, 
-            job.getPipelineElements().getAction(taskIdx, actionIdx));
-    }
-
-    private boolean isSuppressed(BatchJob job, Media media, int taskIdx) {
-         for (int taskIndex = taskIdx; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
-            Task task = job.getPipelineElements().getTask(taskIndex);
-
-            for (int actionIndex = 0; actionIndex < task.actions().size(); actionIndex++) {
-                if (isSuppressed(job, media, taskIdx, actionIndex)) {
-                    return true;
-                }
-            }
-         }
-
-        return false;
+    public record Annotator(int taskIdx, int actionIdx) {
     }
 
 
-    private boolean needToCheckSuppressedTriggers(BatchJob job, Media media, int taskIdx) {
-        if (!isSuppressed(job, media, taskIdx)) {
-            return false;
-        }
-
-        var pipelineElements = job.getPipelineElements();
-        // Check if a task later in the pipeline does not have a trigger set. When a trigger is not
-        // set, all tracks are passed as input to the task. That means that all of the tracks
-        // created in current task were input to a task.
-        boolean futureTaskMissingTrigger = IntStream
-            .rangeClosed(taskIdx + 1, pipelineElements.getLastDetectionTaskIdx())
-            .mapToObj(pipelineElements::getTask)
-            .flatMap(pipelineElements::getActionStreamInOrder)
-            .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
-            .anyMatch(t -> t == null || t.isBlank());
-        return !futureTaskMissingTrigger;
+    public ImmutableSetMultimap<TrackGroupKey, Track> getTrackGroups(BatchJob job, Media media) {
+        var isNotAnnotated = _taskAnnotatorService.createIsAnnotatedChecker(job, media).negate();
+        return JobPartsIter.stream(job, media)
+            .flatMap(jp -> _inProgressJobs.getTracksStream(
+                    jp.id(), media.getId(), jp.taskIndex(), jp.actionIndex()))
+            .filter(isNotAnnotated)
+            .collect(ImmutableSetMultimap.toImmutableSetMultimap(
+                    TrackOutputHelper::createTrackGroupKey, Function.identity()));
     }
 
-
-    private SortedSet<Track> findUntriggered(
-            BatchJob job, Media media, int taskIdx, SortedSet<Track> tracks) {
-        int lastDetectionTaskIdx = job.getPipelineElements().getLastDetectionTaskIdx();
-        if (taskIdx == lastDetectionTaskIdx) {
-            return tracks;
+    private static TrackGroupKey createTrackGroupKey(Track track) {
+        if (track.getAnnotatedTaskIndices().isEmpty()) {
+            return new TrackGroupKey(
+                    track.getTaskIndex(), track.getActionIndex(), ImmutableSet.of());
         }
-        var wasTriggeredFilter = _triggerProcessor.createWasEverTriggeredFilter(
-                job, media, taskIdx, lastDetectionTaskIdx);
-        return tracks.stream()
-            .filter(wasTriggeredFilter.negate())
-            .collect(toCollection(TreeSet::new));
-    }
 
+        int originTaskIdx = track.getAnnotatedTaskIndices().first();
+        var prevAnnotators = track.getAnnotatedTaskIndices()
+                .tailSet(originTaskIdx, false)
+                .stream()
+                .map(ti -> new Annotator(ti, 0));
+        var currentAnnotator = new Annotator(track.getTaskIndex(), track.getActionIndex());
 
-    private String getAnnotatedAction(Track track, BatchJob job) {
-        int actionIndex;
-        var trackAnnotationEnabled = track.getAnnotatedTaskIndex() != track.getTaskIndex();
-        if (trackAnnotationEnabled) {
-            // When track annotation is enabled, the annotated task will never be the last task.  Only
-            // the last task can have more than one action, so the annotated action has to be the
-            // first and only action in the task.
-            actionIndex = 0;
-        }
-        else {
-            actionIndex = track.getActionIndex();
-        }
-        return job.getPipelineElements()
-                .getAction(track.getAnnotatedTaskIndex(), actionIndex)
-                .name();
+        var combinedAnnotators = Stream.concat(prevAnnotators, Stream.of(currentAnnotator))
+                .collect(ImmutableSet.toImmutableSet());
+        return new TrackGroupKey(originTaskIdx, 0, combinedAnnotators);
     }
 }

@@ -218,28 +218,38 @@ public class TestTrackMergingProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         Detection detection1a = new Detection(10, 10, 52, 60, 18f, 0, 0, noProps);
         Detection detection1b = new Detection(10, 10, 52, 60, 18f, 199, 0, noProps);
-        Track track1 = new Track(TEST_JOB_ID, mediaId, 0, 0, 0, 199, 0, 0, 0, 18f,
-                                 ImmutableSortedSet.of(detection1a, detection1b), noProps, "", "", null, null);
+        Track track1 = new Track(
+                TEST_JOB_ID, mediaId, 0, 0, 0, 199, 0, 0,
+                List.of(), 18f,
+                ImmutableSortedSet.of(detection1a, detection1b), noProps, "", "", null, null);
 
         Detection detection2a = new Detection(10, 10, 52, 60, 18f, 200, 0, noProps);
         Detection detection2b = new Detection(10, 10, 52, 60, 18f, 399, 0, noProps);
-        Track track2 = new Track(TEST_JOB_ID, mediaId, 0, 0, 200, 399, 0, 0, 0, 18f,
-                                 ImmutableSortedSet.of(detection2a, detection2b), noProps, "", "", null, null);
+        Track track2 = new Track(
+                TEST_JOB_ID, mediaId, 0, 0, 200, 399, 0, 0,
+                List.of(), 18f,
+                ImmutableSortedSet.of(detection2a, detection2b), noProps, "", "", null, null);
 
         Detection detection3a = new Detection(10, 10, 52, 60, 18f, 420, 0, noProps);
         Detection detection3b = new Detection(10, 10, 52, 60, 18f, 599, 0, noProps);
-        Track track3 = new Track(TEST_JOB_ID, mediaId, 0, 0, 470, 477, 0, 0, 0, 18f,
-                                 ImmutableSortedSet.of(detection3a, detection3b), noProps, "", "", null, null);
+        Track track3 = new Track(
+                TEST_JOB_ID, mediaId, 0, 0, 470, 477, 0, 0,
+                List.of(), 18f,
+                ImmutableSortedSet.of(detection3a, detection3b), noProps, "", "", null, null);
 
         Detection detection4a = new Detection(10, 10, 52, 60, 18f, 480, 0, noProps);
         Detection detection4b = new Detection(10, 10, 52, 60, 18f, 599, 0, noProps);
-        Track track4 = new Track(TEST_JOB_ID, mediaId, 0, 0, 480, 599, 0, 0, 0, 18f,
-                                 ImmutableSortedSet.of(detection4a, detection4b), noProps, "", "", null, null);
+        Track track4 = new Track(
+                TEST_JOB_ID, mediaId, 0, 0, 480, 599, 0, 0,
+                List.of(), 18f,
+                ImmutableSortedSet.of(detection4a, detection4b), noProps, "", "", null, null);
 
         Detection detection5a = new Detection(10, 10, 89, 300, 18f, 600, 0, noProps);
         Detection detection5b = new Detection(10, 10, 84, 291, 18f, 610, 0, noProps);
-        Track track5 = new Track(TEST_JOB_ID, mediaId, 0, 0, 600, 610, 0, 0, 0, 18f,
-                                 ImmutableSortedSet.of(detection5a, detection5b), noProps, "", "", null, null);
+        Track track5 = new Track(
+                TEST_JOB_ID, mediaId, 0, 0, 600, 610, 0, 0,
+                List.of(), 18f,
+                ImmutableSortedSet.of(detection5a, detection5b), noProps, "", "", null, null);
 
         tracks.add(track1);
         tracks.add(track2);
@@ -315,15 +325,17 @@ public class TestTrackMergingProcessor {
                 "track1_only_prop", "track1_only_val",
                 "same_value_prop", "same_value_val",
                 "diff_value_prop", "diff_value_val1");
-        Track track1 = new Track(123, 1, 1, 1, 1, 1,
-         0, 0, 1, 0.25f, Collections.emptyList(), track1Props, "", "", null, null);
+        Track track1 = new Track(
+                123, 1, 1, 1, 1, 1, 0, 0,
+                List.of(), 0.25f, Collections.emptyList(), track1Props, "", "", null, null);
 
         Map<String, String> track2Props = ImmutableSortedMap.of(
                 "track2_only_prop", "track2_only_val",
                 "same_value_prop", "same_value_val",
                 "diff_value_prop", "diff_value_val2");
-        Track track2 = new Track(123, 1, 1, 1, 1, 1,
-         0, 0, 1, 0.75f, Collections.emptyList(), track2Props, "", "", null, null);
+        Track track2 = new Track(
+                123, 1, 1, 1, 1, 1, 0, 0,
+                List.of(), 0.75f, Collections.emptyList(), track2Props, "", "", null, null);
 
         Track merged = TrackMergingProcessor.merge(track1, track2);
         assertEquals(0.75, merged.getConfidence(), 0.01);

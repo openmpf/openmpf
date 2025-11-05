@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camelOps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -72,7 +71,6 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
@@ -81,6 +79,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+
+import com.google.common.collect.ImmutableSortedSet;
 
 
 public class TestDetectionResponseProcessor extends MockitoTest.Strict {
@@ -96,9 +96,6 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
 
     @Mock
     private MediaInspectionHelper mockMediaInspectionHelper;
-
-    @Mock
-    private TaskAnnotatorService mockTaskAnnotatorService;
 
     private DetectionResponseProcessor detectionResponseProcessor;
 
@@ -128,8 +125,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         detectionResponseProcessor = new DetectionResponseProcessor(
                 mockAggregateJobPropertiesUtil,
                 mockInProgressJobs,
-                mockMediaInspectionHelper,
-                mockTaskAnnotatorService);
+                mockMediaInspectionHelper);
 
         var algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION, "TEST",
@@ -219,15 +215,9 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
         exchange.getIn().getHeaders().put(MpfHeaders.PROCESSING_TIME, 1234L);
+        exchange.getIn().getHeaders().put(
+                "breadcrumbId", "mpf-0-29d5f5dd-649d-47d4-8667-bda06f63fb76");
         exchange.getIn().setBody(detectionResponse);
-
-        when(mockTaskAnnotatorService.getAnnotatedTaskIndex(
-                argThat(j -> j.getId() == JOB_ID),
-                argThat(m -> m.getId() == MEDIA_ID),
-                eq(0),
-                eq(0),
-                eq(exchange.getIn().getHeaders())))
-                .thenReturn(0);
 
         detectionResponseProcessor.wfmProcess(exchange);
         Assert.assertEquals(JOB_ID, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
@@ -248,7 +238,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Strict {
         var track = trackCaptor.getValue();
         assertEquals(JOB_ID, track.getJobId());
         assertEquals(5, track.getStartOffsetFrameInclusive());
-        assertEquals(0, track.getAnnotatedTaskIndex());
+        assertEquals(ImmutableSortedSet.of(0), track.getAnnotatedTaskIndices());
     }
 
     @Test

@@ -68,18 +68,14 @@ public class DetectionResponseProcessor
 
     private final MediaInspectionHelper _mediaInspectionHelper;
 
-    private final TaskAnnotatorService _taskAnnotatorService;
-
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
-                                      MediaInspectionHelper mediaInspectionHelper,
-                                      TaskAnnotatorService taskAnnotatorService) {
+                                      MediaInspectionHelper mediaInspectionHelper) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
-        _taskAnnotatorService = taskAnnotatorService;
     }
 
     @Override
@@ -99,11 +95,7 @@ public class DetectionResponseProcessor
         var qualityFilter = createQualityFilter(job, media, action);
         var qualitySelectionProp = _aggregateJobPropertiesUtil.getQualitySelectionProp(job, media, action);
         var trackType = job.getPipelineElements().getAlgorithm(action.algorithm()).trackType();
-        var annotatedTaskIdx = _taskAnnotatorService.getAnnotatedTaskIndex(
-                job, media,
-                detectionResponse.getTaskIndex(),
-                detectionResponse.getActionIndex(),
-                headers);
+        var annotatedTaskIndices = TaskAnnotatorService.getAnnotatedTaskIndices(headers);
 
         if (detectionResponse.hasVideoResponse()) {
             var exemplarPolicy = _aggregateJobPropertiesUtil.getValue(
@@ -117,7 +109,7 @@ public class DetectionResponseProcessor
                     media,
                     exemplarPolicy,
                     trackType,
-                    annotatedTaskIdx);
+                    annotatedTaskIndices);
         }
         else if (detectionResponse.hasAudioResponse()) {
             processAudioResponse(
@@ -126,7 +118,7 @@ public class DetectionResponseProcessor
                     detectionResponse.getAudioResponse(),
                     qualityFilter,
                     trackType,
-                    annotatedTaskIdx);
+                    annotatedTaskIndices);
         }
         else if (detectionResponse.hasImageResponse()) {
             processImageResponse(
@@ -135,7 +127,7 @@ public class DetectionResponseProcessor
                     detectionResponse.getImageResponse(),
                     qualityFilter,
                     trackType,
-                    annotatedTaskIdx);
+                    annotatedTaskIndices);
         }
         else if (detectionResponse.hasGenericResponse()) {
             processGenericResponse(
@@ -144,7 +136,7 @@ public class DetectionResponseProcessor
                     detectionResponse.getGenericResponse(),
                     qualityFilter,
                     trackType,
-                    annotatedTaskIdx,
+                    annotatedTaskIndices,
                     headers);
         }
         else {
@@ -164,7 +156,7 @@ public class DetectionResponseProcessor
             Media media,
             String exemplarPolicy,
             String trackType,
-            int annotatedTaskIdx) {
+            Collection<Integer> annotatedTaskIndices) {
         int startFrame = videoResponse.getStartFrame();
         int stopFrame = videoResponse.getStopFrame();
         var frameTimeInfo = media.getFrameTimeInfo();
@@ -223,7 +215,7 @@ public class DetectionResponseProcessor
                             objectTrack.getStopFrame(),
                             startOffsetTime,
                             stopOffsetTime,
-                            annotatedTaskIdx,
+                            annotatedTaskIndices,
                             objectTrack.getConfidence(),
                             detections,
                             trackProperties,
@@ -247,7 +239,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
             QualityFilter qualityFilter,
             String tracktype,
-            int annotatedTaskIdx) {
+            Collection<Integer> annotatedTaskIndices) {
 
         int startTime = audioResponse.getStartTime();
         int stopTime = audioResponse.getStopTime();
@@ -293,7 +285,7 @@ public class DetectionResponseProcessor
                         0,
                         objectTrack.getStartTime(),
                         objectTrack.getStopTime(),
-                        annotatedTaskIdx,
+                        annotatedTaskIndices,
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         trackProperties,
@@ -313,7 +305,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
             QualityFilter qualityFilter,
             String trackType,
-            int annotatedTaskIdx) {
+            Collection<Integer> annotatedTaskIndices) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
         log.debug("Response received for {}.", mediaLabel);
 
@@ -341,7 +333,7 @@ public class DetectionResponseProcessor
                         0,
                         0,
                         0,
-                        annotatedTaskIdx,
+                        annotatedTaskIndices,
                         location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         locationProperties,
@@ -360,7 +352,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
             QualityFilter qualityFilter,
             String trackType,
-            int annotatedTaskIdx,
+            Collection<Integer> annotatedTaskIndices,
             Map<String, Object> headers) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
         log.debug("Response received for {}.", mediaLabel);
@@ -388,7 +380,7 @@ public class DetectionResponseProcessor
 
             if (qualityFilter.meetsThreshold(objectTrack.getConfidence(), trackProperties, true))
                 processGenericTrack(jobId, detectionResponse, objectTrack,
-                                    trackProperties, annotatedTaskIdx, headers);
+                                    trackProperties, annotatedTaskIndices, headers);
         }
     }
 
@@ -398,7 +390,7 @@ public class DetectionResponseProcessor
             DetectionProtobuf.DetectionResponse detectionResponse,
             DetectionProtobuf.GenericTrack objectTrack,
             Map<String, String> trackProperties,
-            int annotatedTaskIdx,
+            Collection<Integer> annotatedTaskIndices,
             Map<String, Object> headers) {
         Detection detection = new Detection(
                 0,
@@ -419,7 +411,7 @@ public class DetectionResponseProcessor
                 0,
                 0,
                 0,
-                annotatedTaskIdx,
+                annotatedTaskIndices,
                 objectTrack.getConfidence(),
                 ImmutableSortedSet.of(detection),
                 trackProperties,

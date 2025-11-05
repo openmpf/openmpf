@@ -258,7 +258,7 @@ public class RollUpProcessor extends WfmProcessor {
                     track.getEndOffsetFrameInclusive(),
                     track.getStartOffsetTimeInclusive(),
                     track.getEndOffsetTimeInclusive(),
-                    track.getAnnotatedTaskIndex(),
+                    track.getAnnotatedTaskIndices(),
                     track.getConfidence(),
                     rolledUpDetections,
                     rolledUpTrackProperties,

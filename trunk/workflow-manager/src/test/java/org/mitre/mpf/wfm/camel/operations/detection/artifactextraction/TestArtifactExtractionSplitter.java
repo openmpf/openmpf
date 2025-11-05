@@ -720,6 +720,9 @@ public class TestArtifactExtractionSplitter {
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 
+        when(_mockTaskAnnotatorService.createIsAnnotatedChecker(job, media))
+                .thenReturn(t -> false);
+
         var algorithm = new Algorithm(
                 "Test Algo", null, ActionType.DETECTION, null, null, null, null, false, false);
         var action = new Action("Test Action", null, algorithm.name(), List.of());
@@ -739,7 +742,6 @@ public class TestArtifactExtractionSplitter {
 
         when(pipelineElements.getAlgorithm(anyInt(), anyInt()))
                 .thenReturn(algorithm);
-
 
         when(_mockAggregateJobPropertiesUtil.getCombinedProperties(job, media, action))
                 .thenReturn(pName -> pName.equals(ArtifactExtractionProcessor.POLICY)

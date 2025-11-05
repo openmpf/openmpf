@@ -85,12 +85,11 @@ public class Track implements Comparable<Track> {
     public int getEndOffsetTimeInclusive() { return _endOffsetTimeInclusive; }
 
     /**
-     * The index of the task that should be reported after the task has been annotated. If task
-     * annotation does not apply to this track, this field will contain the index of the task that
-     * actually generated this track.
+     * The indices of the tasks that annotated this track.
      */
-    private final int _annotatedTaskIndex;
-    public int getAnnotatedTaskIndex() { return _annotatedTaskIndex; }
+    private final ImmutableSortedSet<Integer> _annotatedTaskIndices;
+    public ImmutableSortedSet<Integer> getAnnotatedTaskIndices() { return _annotatedTaskIndices; }
+
 
     private final float _confidence;
     public float getConfidence() { return _confidence; }
@@ -137,7 +136,7 @@ public class Track implements Comparable<Track> {
             @JsonProperty("endOffsetFrameInclusive") int endOffsetFrameInclusive,
             @JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
             @JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
-            @JsonProperty("annotatedTaskIndex") int annotatedTaskIndex,
+            @JsonProperty("annotatedTaskIndices") Iterable<Integer> annotatedTaskIndices,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
             @JsonProperty("trackProperties") Map<String, String> trackProperties,
@@ -153,7 +152,7 @@ public class Track implements Comparable<Track> {
         _endOffsetFrameInclusive = endOffsetFrameInclusive;
         _startOffsetTimeInclusive = startOffsetTimeInclusive;
         _endOffsetTimeInclusive = endOffsetTimeInclusive;
-        _annotatedTaskIndex = annotatedTaskIndex;
+        _annotatedTaskIndices = ImmutableSortedSet.copyOf(annotatedTaskIndices);
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
@@ -176,7 +175,7 @@ public class Track implements Comparable<Track> {
         return Objects.hash(
                 _jobId, _mediaId, _taskIndex, _actionIndex, _startOffsetFrameInclusive,
                 _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
-                _annotatedTaskIndex, _confidence, _selectorId, _selectedInput, _trackProperties,
+                _annotatedTaskIndices, _confidence, _selectorId, _selectedInput, _trackProperties,
                 _exemplar, _detections);
     }
 
@@ -212,7 +211,7 @@ public class Track implements Comparable<Track> {
                 .thenComparingInt(Track::getEndOffsetFrameInclusive)
                 .thenComparingInt(Track::getStartOffsetTimeInclusive)
                 .thenComparingInt(Track::getEndOffsetTimeInclusive)
-                .thenComparingInt(Track::getAnnotatedTaskIndex)
+                .thenComparing(CompareUtils.sortedSetCompare(Track::getAnnotatedTaskIndices))
                 .thenComparingDouble(Track::getConfidence)
                 .thenComparing(Track::getSelectorId, CompareUtils.optionalCompare())
                 .thenComparing(Track::getSelectedInput, CompareUtils.optionalCompare())

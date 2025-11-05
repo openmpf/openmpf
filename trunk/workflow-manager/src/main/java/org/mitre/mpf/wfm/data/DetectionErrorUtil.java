@@ -47,10 +47,10 @@ public class DetectionErrorUtil {
 
     /**
      *
-     * @param job The job whose DetectionProcessingErrors will be annotated by a prior task.
+     * @param job The job whose DetectionProcessingErrors will be merged.
      * @return A multimap with media id keys and the media's errors as the values.
      */
-    public static Multimap<Long, JsonIssueDetails> getAnnotatedDetectionErrors(BatchJob job) {
+    public static Multimap<Long, JsonIssueDetails> getMergedDetectionErrors(BatchJob job) {
         // Index by media id so we can process the message for each piece of media separately.
         Multimap<Long, DetectionProcessingError> errorsIndexedByMedia
                 = Multimaps.index(job.getDetectionProcessingErrors(), DetectionProcessingError::getMediaId);

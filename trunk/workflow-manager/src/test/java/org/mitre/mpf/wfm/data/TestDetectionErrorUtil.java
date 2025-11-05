@@ -126,7 +126,7 @@ public class TestDetectionErrorUtil {
         addError(_VIDEO_1_ID, 10, 19, "ec1", "em1");
         addError(_VIDEO_1_ID, 20, 29, "ec1", "em1");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(1, mergedErrors.size());
 
         JsonIssueDetails issue = mergedErrors.get(_VIDEO_1_ID).iterator().next();
@@ -144,7 +144,7 @@ public class TestDetectionErrorUtil {
         addError(_VIDEO_1_ID, 30, 39, "ec1", "em1");
         addError(_VIDEO_1_ID, 40, 49, "ec1", "em1");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(1, mergedErrors.size());
 
         JsonIssueDetails issue = mergedErrors.get(_VIDEO_1_ID).iterator().next();
@@ -159,7 +159,7 @@ public class TestDetectionErrorUtil {
         addError(_VIDEO_1_ID, 0, 9, "ec1", "em1");
         addError(_VIDEO_2_ID, 10, 19, "ec1", "em1");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(2, mergedErrors.size());
 
         var video1Issue = mergedErrors.get(_VIDEO_1_ID).iterator().next();
@@ -179,7 +179,7 @@ public class TestDetectionErrorUtil {
         addError(_VIDEO_1_ID, 0, 9, "ec1", "em1");
         addError(_VIDEO_1_ID, 10, 19, "ec2", "em1");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(2, mergedErrors.size());
 
         var issue1 = mergedErrors.get(_VIDEO_1_ID)
@@ -206,7 +206,7 @@ public class TestDetectionErrorUtil {
         addError(_VIDEO_1_ID, 0, 9, "ec1", "em1");
         addError(_VIDEO_1_ID, 10, 19, "ec1", "em2");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(2, mergedErrors.size());
 
         var issue1 = mergedErrors.get(_VIDEO_1_ID)
@@ -238,7 +238,7 @@ public class TestDetectionErrorUtil {
 
 
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(2, mergedErrors.size());
 
         var issue1 = mergedErrors.get(_VIDEO_1_ID)
@@ -265,7 +265,7 @@ public class TestDetectionErrorUtil {
         addError(_IMAGE_1_ID, 0, 0, "ec1", "em1");
         addError(_IMAGE_1_ID, 0, 0, "ec1", "em1");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(1, mergedErrors.size());
 
         JsonIssueDetails issue = mergedErrors.get(_IMAGE_1_ID).iterator().next();
@@ -280,7 +280,7 @@ public class TestDetectionErrorUtil {
         addError(_AUDIO_1_ID, 0, 0, "ec1", "em1");
         addError(_AUDIO_1_ID, 0, 0, "ec1", "em1");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(1, mergedErrors.size());
 
         JsonIssueDetails issue = mergedErrors.get(_AUDIO_1_ID).iterator().next();
@@ -295,7 +295,7 @@ public class TestDetectionErrorUtil {
         addError(_GENERIC_1_ID, 0, 0, "ec1", "em1");
         addError(_GENERIC_1_ID, 0, 0, "ec1", "em1");
 
-        var mergedErrors = DetectionErrorUtil.getAnnotatedDetectionErrors(_testJob);
+        var mergedErrors = DetectionErrorUtil.getMergedDetectionErrors(_testJob);
         assertEquals(1, mergedErrors.size());
 
         JsonIssueDetails issue = mergedErrors.get(_GENERIC_1_ID).iterator().next();

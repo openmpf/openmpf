@@ -156,16 +156,23 @@ public class TiesDbBeforeJobCheckServiceImpl
                 .orElseGet(() -> checkIfJobInTiesDb(job));
     }
 
+    @Override
+    public void wfmProcess(Exchange exchange) {
+        checkTiesDbAfterMediaInspection(exchange);
+    }
 
     private static final Set<TiesDbCheckStatus> NEED_MEDIA_INSPECTION_STATUSES = EnumSet.of(
             TiesDbCheckStatus.MEDIA_HASHES_ABSENT,
             TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT);
 
-    @Override
-    public void wfmProcess(Exchange exchange) {
+    private void checkTiesDbAfterMediaInspection(Exchange exchange) {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, long.class);
         var job = _inProgressJobs.getJob(jobId);
         getCheckNotPossibleReason(job)
+                // These statuses indicate that a TiesDb check was requested, but could not be
+                // performed during job creation because the job request did not contain the
+                // necessary media metadata. Since the metadata was not provided, the check has to
+                // be delayed until after media inspection extracts the metadata.
                 .filter(NEED_MEDIA_INSPECTION_STATUSES::contains)
                 .flatMap(s -> checkIfJobInTiesDb(job).checkInfo())
                 .ifPresent(ci -> {

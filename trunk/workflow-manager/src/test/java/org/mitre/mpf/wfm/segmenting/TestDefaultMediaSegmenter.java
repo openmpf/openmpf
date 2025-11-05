@@ -227,7 +227,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
             dr -> {
                 assertThat(dr.headers())
                     .isEqualTo(Map.of(MpfHeaders.MEDIA_SELECTOR_ID, selector1Id.toString()));
-                assertThat(dr.feedForwardTrack()).hasValue(track1);
+                assertThat(dr.feedForwardTracks()).isEqualTo(List.of(track1));
                 assertThat(dr.protobuf().getMediaMetadataMap())
                     .containsOnly(
                         Map.entry("mediaKey1", "mediaValue1"),
@@ -236,7 +236,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
             dr -> {
                 assertThat(dr.headers())
                     .isEqualTo(Map.of(MpfHeaders.MEDIA_SELECTOR_ID, selector2Id.toString()));
-                assertThat(dr.feedForwardTrack()).hasValue(track2);
+                assertThat(dr.feedForwardTracks()).isEqualTo(List.of(track2));
                 assertThat(dr.protobuf().getMediaMetadataMap())
                     .containsOnly(
                         Map.entry("mediaKey1", "mediaValue1"),

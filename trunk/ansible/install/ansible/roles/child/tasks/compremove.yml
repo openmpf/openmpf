@@ -68,7 +68,7 @@
         path="{{ item.path }}"
         state=absent
       with_items: "{{ component_path.files }}"
-      when: pluginst is defined and component_path.files
+      when: pluginst is defined and (component_path.files | length > 0)
       register: component_removed
 
     - name: fail task remove component

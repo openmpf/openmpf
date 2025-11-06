@@ -150,14 +150,15 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runArtifactExtractionLastTaskOnlyTest() {
+    public void runArtifactExtractionSuppressTracksTest() {
 
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
-        Map<String, String> jobProperties = new HashMap<>();
-        jobProperties.put("SUPPRESS_TRACKS", "true");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
+        long jobId = runPipelineOnMedia(
+                pipelineName, media,
+                Map.of("MOG", Map.of("SUPPRESS_TRACKS", "TRUE")),
+                Map.of(), 4);
 
-        long jobId = runPipelineOnMedia(pipelineName, media, jobProperties);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -229,34 +230,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         }
     }
 
-    @Test(timeout = 5 * MINUTES)
-    public void runArtifactExtractionWithMediaProperty() {
-        var media = ImmutableList.of(
-                toMediaObject(
-                        ioUtils.findFile("/samples/face/ff-region-motion-face.avi"),
-                        ImmutableMap.of("SUPPRESS_TRACKS", "true")),
-                toMediaObject(ioUtils.findFile("/samples/face/ff-region-motion-face.avi")));
-
-        String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
-        long jobId = runPipelineOnMedia(pipelineName, media);
-        JsonOutputObject outputObject = getJobOutputObject(jobId);
-
-        // Check that the first task (MOTION) was suppressed for the first media
-        List<JsonMediaOutputObject> mediaOutput = outputObject.getMedia().stream().collect(toList());
-        assertEquals(2, mediaOutput.size());
-        SortedSet<JsonActionOutputObject> firstMediaSuppressed =
-                mediaOutput.get(0).getTrackTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
-        assertNotNull("Output object did not contain TRACKS_SUPPRESSED_TYPE", firstMediaSuppressed);
-        // Make sure that only one action was suppressed
-        assertEquals("Output contained more than one suppressed action", 1, firstMediaSuppressed.size());
-        // Make sure that the suppressed action was MOTION
-        assertEquals("Tracks suppressed for action other than MOTION", "MOG MOTION DETECTION PREPROCESSOR ACTION",
-                firstMediaSuppressed.first().getAction());
-
-        // Check that the second media did not have a suppressed action
-        assertFalse("Found an incorrectly suppressed action",
-                mediaOutput.get(1).getTrackTypes().containsKey(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE));
-    }
 
     @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionWithPolicyNoneTest() {
@@ -1311,7 +1284,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         addPipeline(
                 pipelineName,
                 "FASTTEXT LANGUAGE ID TEXT FILE TASK",
-                "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) TASK",
+                "ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) TASK",
                 "KEYWORD TAGGING (WITH FF REGION) TASK");
 
         var selector1 = new JobCreationMediaSelector(

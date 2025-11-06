@@ -256,6 +256,7 @@
           {
             "action": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
             "algorithm": "TIKATEXT",
+            "annotators": ["KEYWORD TAGGING (WITH FF REGION) ACTION"],
             "tracks": [
               {
                 "index": 0,
@@ -543,6 +544,7 @@
           {
             "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "TESSERACTOCR",
+            "annotators": ["KEYWORD TAGGING (WITH FF REGION) ACTION"],
             "tracks": [
               {
                 "index": 0,
@@ -698,6 +700,7 @@
           {
             "action": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "TESSERACTOCR",
+            "annotators": ["KEYWORD TAGGING (WITH FF REGION) ACTION"],
             "tracks": [
               {
                 "index": 0,

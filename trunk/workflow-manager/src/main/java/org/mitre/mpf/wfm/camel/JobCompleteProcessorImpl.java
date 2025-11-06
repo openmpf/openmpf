@@ -455,9 +455,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .collect(toSet());
 
         var noTracksActions = JobPartsIter.stream(job, media)
-                .filter(jp -> !addedActionNames.contains(jp.action().name()))
-                .filter(jp -> !taskAnnotatorService.actionIsAnnotator(
-                        job, media, jp.taskIndex(), jp.actionIndex()))
+                .filter(jp -> !addedActionNames.contains(jp.action().name())
+                        && !taskAnnotatorService.actionIsAnnotator(
+                            job, media, jp.taskIndex(), jp.actionIndex())
+                        && aggregateJobPropertiesUtil.actionAppliesToMedia(
+                            job, media, jp.action()))
                 .map(jp -> new JsonActionOutputObject(jp.action().name(), jp.algorithm().name()))
                 .collect(toCollection(TreeSet::new));
 
@@ -472,7 +474,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .flatMap(Collection::stream)
                 .mapToInt(a -> a.getTracks().size())
                 .sum();
-
         trackCounter.add(media, trackCount);
     }
 

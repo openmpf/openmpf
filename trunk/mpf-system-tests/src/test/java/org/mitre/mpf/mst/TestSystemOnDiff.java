@@ -1305,7 +1305,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 List.of(),
                 List.of(),
                 List.of(selector1, selector2),
-                Optional.of("ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION"));
+                Optional.of("ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) TASK"));
 
         var outputObject = runSystemTest(pipelineName, "output/text/runJsonPathTest.json", media);
 

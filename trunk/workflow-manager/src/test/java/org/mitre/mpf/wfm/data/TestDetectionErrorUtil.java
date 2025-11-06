@@ -107,7 +107,7 @@ public class TestDetectionErrorUtil {
         _testJob = new BatchJobImpl(
                 753, "ext id", mock(SystemPropertiesSnapshot.class), mockPipelineElements,
                 4, null, null,
-                List.of(video1, video2, image1, audio1, generic1), Map.of(), Map.of(), false);
+                List.of(video1, video2, image1, audio1, generic1), Map.of(), Map.of());
     }
 
 

@@ -146,8 +146,7 @@ public class TestDetectionTaskSplitter {
                 null,
                 List.of(testMedia),
                 Map.of(),
-                Map.of(),
-                false);
+                Map.of());
 
         TestUtil.assertThrows(NoSuchElementException.class,
                               () -> detectionSplitter.performSplit(testJob, task));
@@ -548,8 +547,7 @@ public class TestDetectionTaskSplitter {
                 null,
                 List.of(testMedia),
                 jobProperties,
-                Map.of(),
-                false);
+                Map.of());
         testJob.setCurrentTaskIndex(0);
         return testJob;
     }
@@ -607,8 +605,7 @@ public class TestDetectionTaskSplitter {
                 null,
                 List.of(testMedia),
                 jobProperties,
-                algorithmProperties,
-                false);
+                algorithmProperties);
 
     }
 
@@ -1008,7 +1005,7 @@ public class TestDetectionTaskSplitter {
         BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
-                Map.of(), Map.of(), false);
+                Map.of(), Map.of());
 
         job.setCurrentTaskIndex(0);
         List<Message> responseList = detectionSplitter.performSplit(job, task1);

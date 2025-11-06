@@ -139,8 +139,7 @@ public class InProgressBatchJobsService {
             String callbackMethod,
             Collection<Media> media,
             Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> algorithmProperties,
-            boolean shouldCheckTiesDbAfterMediaInspection) {
+            Map<String, ? extends Map<String, String>> algorithmProperties) {
 
         if (_jobs.containsKey(jobId)) {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
@@ -166,8 +165,7 @@ public class InProgressBatchJobsService {
                 callbackMethod,
                 mediaImpls,
                 jobProperties,
-                algorithmProperties,
-                shouldCheckTiesDbAfterMediaInspection);
+                algorithmProperties);
         _jobs.put(jobId, job);
 
         media.stream()

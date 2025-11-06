@@ -118,7 +118,7 @@ public class TestTaskMergingManager extends MockitoTest.Strict {
         _testJob = new BatchJobImpl(
             123, null, null,
             pipelineElements, 0, null, null,
-            List.of(_testMedia), Map.of(), Map.of(), false);
+            List.of(_testMedia), Map.of(), Map.of());
     }
 
 

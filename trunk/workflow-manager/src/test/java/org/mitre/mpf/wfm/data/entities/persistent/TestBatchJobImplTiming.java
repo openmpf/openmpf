@@ -62,8 +62,7 @@ public class TestBatchJobImplTiming extends MockitoTest.Strict {
                 null,
                 List.of(),
                 Map.of(),
-                Map.of(),
-                false);
+                Map.of());
     }
 
 

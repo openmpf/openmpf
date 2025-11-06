@@ -11,7 +11,7 @@
                 "processingTime": 6
             },
             {
-                "name": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION",
+                "name": "ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) ACTION",
                 "processingTime": 363
             },
             {
@@ -40,12 +40,12 @@
             },
             {
                 "actionType": "DETECTION",
-                "name": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) TASK",
+                "name": "ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) TASK",
                 "description": "Uses Argos Translate to perform translation on feed-forward tracks and detections.",
                 "actions": [
                     {
                         "algorithm": "ARGOSTRANSLATION",
-                        "name": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION",
+                        "name": "ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) ACTION",
                         "description": "Uses Argos Translation to perform translation on feed-forward tracks and detections.",
                         "properties": {
                             "FEED_FORWARD_TYPE": "REGION",
@@ -371,8 +371,9 @@
                 ],
                 "TRANSLATION": [
                     {
-                        "action": "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION",
+                        "action": "ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) ACTION",
                         "algorithm": "ARGOSTRANSLATION",
+                        "annotators": ["KEYWORD TAGGING (WITH FF REGION) ACTION"],
                         "tracks": [
                             {
                                 "index": 0,

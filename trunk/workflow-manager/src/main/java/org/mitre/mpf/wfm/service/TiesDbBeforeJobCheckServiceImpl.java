@@ -39,6 +39,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -69,17 +70,13 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
-import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
-import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -87,7 +84,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
-import org.mitre.mpf.wfm.util.MediaActionProps;
+import org.mitre.mpf.wfm.util.JobPartsIter;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -96,6 +93,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multimap;
@@ -150,106 +148,61 @@ public class TiesDbBeforeJobCheckServiceImpl
         _auditEventLogger = auditEventLogger;
     }
 
-
-    public TiesDbCheckResult checkTiesDbBeforeJob(
-            JobCreationRequest jobCreationRequest,
-            SystemPropertiesSnapshot systemPropertiesSnapshot,
-            Collection<Media> media,
-            JobPipelineElements jobPipelineElements) {
-        return checkIfJobInTiesDb(
-                jobCreationRequest.jobProperties(),
-                jobCreationRequest.algorithmProperties(),
-                systemPropertiesSnapshot,
-                media,
-                jobPipelineElements);
+    @Override
+    public TiesDbCheckResult checkTiesDbBeforeJob(long jobId) {
+        var job = _inProgressJobs.getJob(jobId);
+        return getCheckNotPossibleReason(job)
+                .map(TiesDbCheckResult::noResult)
+                .orElseGet(() -> checkIfJobInTiesDb(job));
     }
 
     @Override
     public void wfmProcess(Exchange exchange) {
+        checkTiesDbAfterMediaInspection(exchange);
+    }
+
+    private static final Set<TiesDbCheckStatus> NEED_MEDIA_INSPECTION_STATUSES = EnumSet.of(
+            TiesDbCheckStatus.MEDIA_HASHES_ABSENT,
+            TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT);
+
+    private void checkTiesDbAfterMediaInspection(Exchange exchange) {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, long.class);
+        var job = _inProgressJobs.getJob(jobId);
+        getCheckNotPossibleReason(job)
+                // These statuses indicate that a TiesDb check was requested, but could not be
+                // performed during job creation because the job request did not contain the
+                // necessary media metadata. Since the metadata was not provided, the check has to
+                // be delayed until after media inspection extracts the metadata.
+                .filter(NEED_MEDIA_INSPECTION_STATUSES::contains)
+                .flatMap(s -> checkIfJobInTiesDb(job).checkInfo())
+                .ifPresent(ci -> {
+                    exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
+                    exchange.getOut().setHeader(
+                            MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB,
+                            ci.outputObjectUri().toString());
+                });
+    }
+
+
+    private TiesDbCheckResult checkIfJobInTiesDb(BatchJob job) {
         try {
-            checkTiesDbAfterMediaInspection(jobId, exchange);
+            return tryCheckIfJobInTiesDb(job);
         }
         catch (Exception e) {
-            LOG.error("TiesDb check failed due to: " + e, e);
-            _inProgressJobs.addFatalError(
-                    jobId, IssueCodes.TIES_DB_BEFORE_JOB_CHECK, e.getMessage());
+            var msg = "TiesDb check failed due to: " + e;
+            LOG.warn(msg, e);
+            _inProgressJobs.addJobWarning(
+                    job.getId(), IssueCodes.TIES_DB_BEFORE_JOB_CHECK, msg);
+            return TiesDbCheckResult.noResult(TiesDbCheckStatus.FAILED);
         }
     }
 
-    private void checkTiesDbAfterMediaInspection(long jobId, Exchange exchange) {
-        var job = _inProgressJobs.getJob(jobId);
-        if (!job.shouldCheckTiesDbAfterMediaInspection()) {
-            return;
-        }
 
-        var checkResult = checkIfJobInTiesDb(job.getJobProperties(),
-                           job.getOverriddenAlgorithmProperties(),
-                           job.getSystemPropertiesSnapshot(),
-                           job.getMedia(),
-                           job.getPipelineElements());
-        checkResult.checkInfo().ifPresent(ci -> {
-            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
-            exchange.getOut().setHeader(
-                    MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB,
-                    ci.outputObjectUri().toString());
-        });
-    }
-
-
-    private TiesDbCheckResult checkIfJobInTiesDb(
-            Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> algorithmProperties,
-            SystemPropertiesSnapshot systemPropertiesSnapshot,
-            Collection<Media> media,
-            JobPipelineElements jobPipelineElements) {
-
-        var mediaActionProps = _aggregateJobPropertiesUtil.getMediaActionProps(
-                jobProperties,
-                algorithmProperties,
-                systemPropertiesSnapshot,
-                jobPipelineElements);
-
-        if (shouldSkipTiesDbCheck(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.NOT_REQUESTED);
-        }
-        if (!hasTiesDbUrl(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB);
-        }
-
-        var allMediaHaveHashes = media.stream()
-                .allMatch(m -> m.getLinkedHash().isPresent());
-        if (!allMediaHaveHashes) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.MEDIA_HASHES_ABSENT);
-        }
-
-        var allMediaHaveMimeTypes = media.stream()
-                .allMatch(m -> m.getMimeType().isPresent());
-        if (!allMediaHaveMimeTypes) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT);
-        }
-
-        var mediaHashToBaseUris = getBaseTiesDbUris(
-                media, jobPipelineElements.getAllActions(), mediaActionProps);
-
-        var jobHash = _jobConfigHasher.getJobConfigHash(
-                media,
-                jobPipelineElements,
-                mediaActionProps);
-
-        var combinedJobProps = _aggregateJobPropertiesUtil.getCombinedProperties(
-                jobProperties,
-                algorithmProperties,
-                systemPropertiesSnapshot,
-                jobPipelineElements);
-
-        boolean s3CopyEnabled;
-        try {
-            s3CopyEnabled = s3CopyEnabled(combinedJobProps);
-        }
-        catch (StorageException e) {
-            throw new WfmProcessingException(e);
-        }
+    private TiesDbCheckResult tryCheckIfJobInTiesDb(BatchJob job) throws StorageException {
+        var mediaHashToBaseUris = getBaseTiesDbUris(job);
+        var jobHash = _jobConfigHasher.getJobConfigHash(job);
+        var combinedJobProps = _aggregateJobPropertiesUtil.getCombinedProperties(job);
+        var s3CopyEnabled = s3CopyEnabled(combinedJobProps);
 
         // There may be multiple matching supplementals in TiesDb, so we don't want to report
         // an error if there was a problem getting one supplemental, but we were able to get a
@@ -266,52 +219,69 @@ public class TiesDbBeforeJobCheckServiceImpl
         else if (lastException.get() == null) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_MATCH);
         }
-        else if (lastException.get() instanceof RuntimeException ex) {
-            throw ex;
-        }
         else {
+            Throwables.throwIfUnchecked(lastException.get());
             throw new IllegalStateException(lastException.get());
         }
     }
 
 
-    private static boolean shouldSkipTiesDbCheck(Iterable<Media> media,
-                                                 Collection<Action> actions,
-                                                 MediaActionProps props) {
-        for (var medium : media) {
-            for (var action : actions) {
-                var skipProp = props.get(MpfConstants.SKIP_TIES_DB_CHECK, medium, action);
-                if (Boolean.parseBoolean(skipProp)) {
-                    return true;
-                }
-            }
+    private Optional<TiesDbCheckStatus> getCheckNotPossibleReason(BatchJob job) {
+        if (skipTiesDbCheckRequested(job)) {
+            return Optional.of(TiesDbCheckStatus.NOT_REQUESTED);
         }
-        return false;
-    }
+        if (!hasTiesDbUrl(job)) {
+            return Optional.of(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB);
+        }
 
-    private static boolean hasTiesDbUrl(
-            Iterable<Media> media, Collection<Action> actions, MediaActionProps props) {
-        for (var medium : media) {
-            for (var action : actions) {
-                var urlProp = props.get(MpfConstants.TIES_DB_URL, medium, action);
-                if (urlProp != null && !urlProp.isBlank()) {
-                    return true;
-                }
-            }
+        var allMediaHaveHashes = job.getMedia().stream()
+                .allMatch(TiesDbBeforeJobCheckServiceImpl::mediaHasProvidedHash);
+        if (!allMediaHaveHashes) {
+            return Optional.of(TiesDbCheckStatus.MEDIA_HASHES_ABSENT);
         }
-        return false;
+
+        var allMediaHaveMimeTypes = job.getMedia().stream()
+                .map(m -> m.getProvidedMetadata().get("MIME_TYPE"))
+                .allMatch(m -> m != null && !m.isBlank());
+        if (!allMediaHaveMimeTypes) {
+            return Optional.of(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT);
+        }
+
+        return Optional.empty();
     }
 
 
-    private static Multimap<String, String> getBaseTiesDbUris(
-            Iterable<Media> media,
-            Collection<Action> actions,
-            MediaActionProps props) {
+    private static boolean mediaHasProvidedHash(Media media) {
+        var linkedHash = media.getMediaSpecificProperty(MpfConstants.LINKED_MEDIA_HASH);
+        if (linkedHash != null && !linkedHash.isBlank()) {
+            return true;
+        }
+        var hash = media.getProvidedMetadata().get("MEDIA_HASH");
+        return hash != null && !hash.isBlank();
+    }
+
+
+    private boolean skipTiesDbCheckRequested(BatchJob job) {
+        return JobPartsIter.stream(job)
+                .map(jp -> _aggregateJobPropertiesUtil.getValue(
+                        MpfConstants.SKIP_TIES_DB_CHECK, jp))
+                .anyMatch(Boolean::parseBoolean);
+    }
+
+
+    private boolean hasTiesDbUrl(BatchJob job) {
+        return JobPartsIter.stream(job)
+            .map(jp -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, jp))
+            .anyMatch(u -> u != null && !u.isBlank());
+    }
+
+
+    private Multimap<String, String> getBaseTiesDbUris(BatchJob job) {
         var mediaHashToBaseUris = HashMultimap.<String, String>create();
-        for (var medium : media) {
+        for (var medium : job.getMedia()) {
             var hash = medium.getLinkedHash().orElseThrow();
-            actions.stream()
-                    .map(a -> props.get(MpfConstants.TIES_DB_URL, medium, a))
+            JobPartsIter.stream(job, medium)
+                    .map(jp -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, jp))
                     .filter(u -> u != null && !u.isBlank())
                     .forEach(u -> mediaHashToBaseUris.put(hash, u));
         }

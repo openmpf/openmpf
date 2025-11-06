@@ -27,7 +27,7 @@
 package org.mitre.mpf.wfm.service;
 
 import static java.util.stream.Collectors.toMap;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,6 +36,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
@@ -53,17 +55,19 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.camel.Exchange;
@@ -74,7 +78,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHttpResponse;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.ThrowingConsumer;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonActionOutputObject;
@@ -91,26 +98,31 @@ import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
-import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.MediaUri;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
-import org.mitre.mpf.wfm.util.MediaActionProps;
+import org.mitre.mpf.wfm.util.JobPart;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -119,13 +131,14 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Streams;
 
 
 public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
+
+    private static final long JOB_ID = 123;
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
@@ -161,6 +174,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     private TiesDbBeforeJobCheckServiceImpl _tiesDbBeforeJobCheckService;
 
+    private boolean _expectWarning = false;
 
     @Before
     public void init() {
@@ -186,170 +200,88 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 _mockAuditEventLogger);
     }
 
+    @After
+    public void after() {
+        if (!_expectWarning) {
+            verify(_mockInProgressJobs, never())
+                    .addJobWarning(anyLong(), any(), any());
+        }
+    }
 
     @Test
     public void testSkipCheckProperty() {
-        var action1 = createAction();
-        var action2 = createAction();
+        var media = createMedia(111, Map.of());
+        createJob(2, media);
 
-        var elements = mock(JobPipelineElements.class);
-        when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action1, action2));
-
-        var media = mock(Media.class);
-
-        var mockProps = mock(MediaActionProps.class);
-        when(mockProps.get(MpfConstants.SKIP_TIES_DB_CHECK, media, action1))
+        when(_mockAggJobProps.getValue(
+                eq(MpfConstants.SKIP_TIES_DB_CHECK),
+                argThat((JobPart jp) -> jp.taskIndex() == 1)))
             .thenReturn("True");
+        setTiesDbUrl();
 
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), any()))
-            .thenReturn(mockProps);
-
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
-                List.of(media),
-                elements);
-        assertEquals(TiesDbCheckStatus.NOT_REQUESTED, result.status());
-        assertTrue(result.checkInfo().isEmpty());
+        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(JOB_ID);
+        assertThat(result).satisfies(noCheckInfoStatus(TiesDbCheckStatus.NOT_REQUESTED));
         verifyTokenNotAdded();
     }
 
 
     @Test
     public void testMediaMissingHash() {
-        var action = createAction();
-        var elements = mock(JobPipelineElements.class);
-        when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action));
+        var media1 = createMedia(111, "HASH", Map.of());
+        var media2 = createMedia(222, Map.of());
+        createJob(1, media1, media2);
+        setTiesDbUrl();
 
-        var media1 = mock(Media.class);
-        when(media1.getId())
-                .thenReturn(111L);
-        when(media1.getLinkedHash())
-                .thenReturn(Optional.of("HASH"));
-
-        var media2 = mock(Media.class);
-        when(media2.getId())
-                .thenReturn(222L);
-        when(media2.getLinkedHash())
-                .thenReturn(Optional.empty());
-
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(new MediaActionProps
-                ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
-
-
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
-                List.of(media1, media2),
-                elements);
-
-        assertEquals(TiesDbCheckStatus.MEDIA_HASHES_ABSENT, result.status());
-        assertTrue(result.checkInfo().isEmpty());
+        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(JOB_ID);
+        assertThat(result).satisfies(noCheckInfoStatus(TiesDbCheckStatus.MEDIA_HASHES_ABSENT));
         verifyTokenNotAdded();
     }
 
 
     @Test
     public void testMediaMissingMimeType() {
-        var action = createAction();
-        var elements = mock(JobPipelineElements.class);
-        when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action));
+        var media1 = createMedia(111, "HASH", Map.of("MIME_TYPE", "image/jpeg"));
+        var media2 = createMedia(222, "HASH2", Map.of());
+        createJob(1, media1, media2);
+        setTiesDbUrl();
 
-        var media1 = mock(Media.class);
-        when(media1.getLinkedHash())
-                .thenReturn(Optional.of("HASH"));
-        when(media1.getMimeType())
-                .thenReturn(Optional.of("image/jpeg"));
-
-        var media2 = mock(Media.class);
-        when(media2.getLinkedHash())
-                .thenReturn(Optional.of("HASH2"));
-        when(media2.getMimeType())
-                .thenReturn(Optional.empty());
-
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(new MediaActionProps
-                ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
-
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
-                List.of(media1, media2),
-                elements);
-
-        assertEquals(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT, result.status());
-        assertTrue(result.checkInfo().isEmpty());
+        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(JOB_ID);
+        assertThat(result).satisfies(noCheckInfoStatus(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT));
         verifyTokenNotAdded();
     }
 
 
+
     @Test
     public void testNoTiesDbUrl() {
-        var action = createAction();
-        var elements = mock(JobPipelineElements.class);
-        when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action));
+        var media = createMedia(111, "HASH", Map.of("MIME_TYPE", "image/jpg"));
+        createJob(1, media);
 
-        var media = mock(Media.class);
-        when(media.getLinkedHash())
-                .thenReturn(Optional.of("HASH"));
-        when(media.getMimeType())
-                .thenReturn(Optional.of("image/jpeg"));
+        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(JOB_ID);
 
-
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(new MediaActionProps((m, a) -> Map.of()));
-
-
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
-                List.of(media),
-                elements);
-
-        assertEquals(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB, result.status());
-        assertTrue(result.checkInfo().isEmpty());
+        assertThat(result).satisfies(noCheckInfoStatus(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB));
         verifyTokenNotAdded();
     }
 
 
     @Test
     public void testInvalidUri() {
-        var action = createAction();
-        var elements = mock(JobPipelineElements.class);
-        when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action));
+        var media = createMedia(111, "HASH", Map.of("MIME_TYPE", "image/jpeg"));
+        var job = createJob(1, media);
+        when(_mockAggJobProps.getValue(eq(MpfConstants.TIES_DB_URL), any(JobPart.class)))
+                .thenReturn(":invalid_uri");
 
-        var media = mock(Media.class);
-        when(media.getLinkedHash())
-                .thenReturn(Optional.of("HASH"));
-        when(media.getMimeType())
-                .thenReturn(Optional.of("image/jpeg"));
+        setEmptyCombinedJobProps(job);
 
-        var mockMediaActionProps = mock(MediaActionProps.class);
-        when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media, action))
-            .thenReturn(":invalid_uri");
+        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(JOB_ID);
 
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(mockMediaActionProps);
-
-        setEmptyCombinedJobProps();
-
-        var ex = TestUtil.assertThrows(
-                WfmProcessingException.class,
-                () -> _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                        createJobRequest(),
-                        null,
-                        List.of(media),
-                        elements));
-
-        assertThat(ex.getMessage(), containsString("isn't a valid URI"));
-        assertThat(ex.getCause(), instanceOf(URISyntaxException.class));
+        assertThat(result).satisfies(noCheckInfoStatus(TiesDbCheckStatus.FAILED));
         verifyTokenNotAdded();
+        verify(_mockInProgressJobs).addJobWarning(
+                eq(JOB_ID),
+                eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
+                contains("isn't a valid URI"));
+        _expectWarning = true;
     }
 
 
@@ -414,57 +346,34 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
             .thenReturn(createHttpResponse(tiesDbData));
 
-        var result = setupSingleTiesDbUriTest();
+        var result = setupSingleTiesDbUriTest(Map.of());
         var request = requestCaptor.getValue();
         assertThat(request, instanceOf(HttpGet.class));
         assertUriIsFirstPageTiesDbUri(request.getURI());
         return result;
     }
 
-    private TiesDbCheckResult setupSingleTiesDbUriTest() throws IOException {
-        return setupSingleTiesDbUriTest(Map.of());
-    }
 
-    private TiesDbCheckResult setupSingleTiesDbUriTest(
-            Map<String, String> additionalJobProps) throws IOException {
-        var action = createAction();
-        var elements = mock(JobPipelineElements.class);
-        when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action));
+    private TiesDbCheckResult setupSingleTiesDbUriTest(Map<String, String> additionalJobProps) {
+        var media = createMedia(111, "MEDIA_HASH", Map.of("MIME_TYPE", "image/jpeg"));
+        var job = createJob(1, media);
 
-        var media = mock(Media.class);
-        when(media.getLinkedHash())
-                .thenReturn(Optional.of("MEDIA_HASH"));
-        when(media.getMimeType())
-                .thenReturn(Optional.of("image/jpeg"));
-
-        var mockMediaActionProps = mock(MediaActionProps.class);
-        when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media, action))
-            .thenReturn("http://tiesdb:1234");
-
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(mockMediaActionProps);
-
-        var defaultJobProps = Map.of(
+        var combinedJobProps = new HashMap<>(Map.of(
             MpfConstants.TIES_DB_S3_COPY_ENABLED, "true",
             MpfConstants.S3_RESULTS_BUCKET, "results bucket",
             MpfConstants.S3_ACCESS_KEY, "access key",
             MpfConstants.S3_SECRET_KEY, "secret key"
-        );
-
-        var combinedJobProps = new HashMap<>(defaultJobProps);
+        ));
         combinedJobProps.putAll(additionalJobProps);
-        when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
+        when(_mockAggJobProps.getCombinedProperties(job))
             .thenReturn(combinedJobProps::get);
 
-        when(_mockJobConfigHasher.getJobConfigHash(List.of(media), elements, mockMediaActionProps))
+        when(_mockJobConfigHasher.getJobConfigHash(job))
             .thenReturn("JOB_HASH");
 
-        return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
-                List.of(media),
-                elements);
+        setTiesDbUrl("http://tiesdb:1234");
+
+        return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(JOB_ID);
     }
 
 
@@ -602,10 +511,9 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         var requestCaptor = ArgumentCaptor.forClass(HttpGet.class);
         when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
-            .thenReturn(
-                createHttpResponse(page1),
-                createHttpResponse(page2),
-                createHttpResponse(page3));
+            .thenReturn(createHttpResponse(page1))
+            .thenReturn(createHttpResponse(page2))
+            .thenReturn(createHttpResponse(page3));
 
         var checkResult = setupSingleTiesDbUriTest(
                 Map.of(MpfConstants.TIES_DB_ADD_TOKEN, "true"));
@@ -683,7 +591,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
     @Test
-    public void testPartialFailureNoMatchFound() {
+    public void testPartialFailureNoMatchFound() throws IOException {
         var tiesDbData = List.of(
             Map.of(
                 "assertionId", "s10",
@@ -707,48 +615,35 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             )
         );
 
-        var ex = TestUtil.assertThrows(
-                IllegalStateException.class,
-                () -> testPartialFailure(tiesDbData));
+        var result = testPartialFailure(tiesDbData);
+        assertThat(result).satisfies(noCheckInfoStatus(TiesDbCheckStatus.FAILED));
 
-        assertThat(ex.getMessage(), containsString(
-                "TiesDb responded with a non-200 status code of 400 and body: test-error"));
+        verify(_mockInProgressJobs).addJobWarning(
+                anyLong(), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
+                contains("TiesDb responded with a non-200 status code of 400 and body: test-error"));
+        _expectWarning = true;
+
         verifyTokenAdded(2);
     }
 
-
     private TiesDbCheckResult testPartialFailure(Object tiesDbData) throws IOException {
-        var action = createAction();
-        var elements = mock(JobPipelineElements.class);
-        when(elements.getAllActions())
-            .thenReturn(ImmutableList.of(action));
+        var media1 = createMedia(111, "HASH", Map.of("MIME_TYPE", "image/jpeg"));
+        var media2 = createMedia(222, "HASH2", Map.of("MIME_TYPE", "image/jpeg"));
+        var job = createJob(1, media1, media2);
 
-        var media1 = mock(Media.class);
-        when(media1.getLinkedHash())
-                .thenReturn(Optional.of("HASH"));
-        when(media1.getMimeType())
-                .thenReturn(Optional.of("image/jpeg"));
-        var media2 = mock(Media.class);
-        when(media2.getLinkedHash())
-                .thenReturn(Optional.of("HASH2"));
-        when(media2.getMimeType())
-                .thenReturn(Optional.of("image/jpeg"));
+        when(_mockAggJobProps.getValue(
+                        eq(MpfConstants.TIES_DB_URL),
+                        argThat((JobPart jp) -> jp.media().equals(media1))))
+                .thenReturn("http://tiesdb:1234");
 
-        var mockMediaActionProps = mock(MediaActionProps.class);
-        when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media1, action))
-            .thenReturn("http://tiesdb:1234");
+        when(_mockAggJobProps.getValue(
+                        eq(MpfConstants.TIES_DB_URL),
+                        argThat((JobPart jp) -> jp.media().equals(media2))))
+                .thenReturn("http://tiesdb-error:1234");
 
-        when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media2, action))
-            .thenReturn("http://tiesdb-error:1234");
-
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(mockMediaActionProps);
-
-        setEmptyCombinedJobProps();
-
-        when(_mockJobConfigHasher.getJobConfigHash(
-                    List.of(media1, media2), elements, mockMediaActionProps))
-            .thenReturn("JOB_HASH");
+        setEmptyCombinedJobProps(job);
+        when(_mockJobConfigHasher.getJobConfigHash(job))
+                .thenReturn("JOB_HASH");
 
         doReturn(createHttpResponse(tiesDbData))
             .when(_mockHttpClientUtils)
@@ -762,19 +657,15 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 requestWithUri("http://tiesdb-error:1234/api/db/supplementals?sha256Hash=HASH2&system=OpenMPF&offset=0&limit=100"),
                 eq(3));
 
-
-        return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                createJobRequest(),
-                null,
-                List.of(media1, media2),
-                elements);
+        return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(JOB_ID);
     }
 
 
     @Test
     public void testCheckAfterMediaInspectionNoMatch() throws IOException {
         var exchange = runSuccessfulAfterMediaInspectionTest("WRONG_JOB_HASH");
-        assertTrue(exchange.getOut().getHeaders().isEmpty());
+        assertThat(exchange.getOut().getHeaders()).doesNotContainKeys(
+                MpfHeaders.JOB_COMPLETE, MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB);
         verifyTokenAdded();
     }
 
@@ -791,19 +682,21 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
     @Test
-    public void testFailureAfterMediaInspection() throws IOException {
+    public void testFailureAfterMediaInspection() {
         var errorMsg = "<custom error message>";
         when(_mockHttpClientUtils.executeRequest(any(), eq(3)))
             .thenReturn(createErrorResponse(errorMsg));
 
-        runAfterMediaInspectionTest();
+        runAfterMediaInspectionTest(Map.of());
 
         verify(_mockInProgressJobs)
-            .addFatalError(
-                        eq(123L), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
+            .addJobWarning(
+                        eq(JOB_ID), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
                         contains(errorMsg));
         verifyTokenAdded();
+        _expectWarning = true;
     }
+
 
     private Exchange runSuccessfulAfterMediaInspectionTest(String tiesDbHash) throws IOException {
         var tiesDbData = List.of(
@@ -822,7 +715,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
                 .thenReturn(createHttpResponse(tiesDbData));
 
-        var exchange = runAfterMediaInspectionTest();
+        var exchange = runAfterMediaInspectionTest(Map.of());
 
         var request = requestCaptor.getValue();
         assertUriIsFirstPageTiesDbUri(request.getURI());
@@ -830,69 +723,33 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     }
 
 
-    private Exchange runAfterMediaInspectionTest() throws IOException {
-        var exchange = TestUtil.createTestExchange();
+    private Exchange runAfterMediaInspectionTest(
+            Map<String, String> providedMetadata) {
+        var media = createMedia(111, "MEDIA_HASH", providedMetadata);
+        media.setMimeType("image/jpeg");
+        var job = createJob(1, media);
 
-        var action = createAction();
-        var pipelineElements = mock(JobPipelineElements.class);
-        when(pipelineElements.getAllActions())
-                .thenReturn(ImmutableList.of(action));
+        setEmptyCombinedJobProps(job);
+        setTiesDbUrl("http://tiesdb:1234");
 
-        long jobId = 123;
-        exchange.getIn().setHeader(MpfHeaders.JOB_ID, jobId);
-
-        var job = mock(BatchJob.class);
-        when(_mockInProgressJobs.getJob(jobId))
-                .thenReturn(job);
-        when(job.getPipelineElements())
-                .thenReturn(pipelineElements);
-
-        var media = mock(Media.class);
-        when(media.getLinkedHash())
-                .thenReturn(Optional.of("MEDIA_HASH"));
-        when(media.getMimeType())
-                .thenReturn(Optional.of("image/jpeg"));
-        when(job.getMedia())
-                .thenReturn(List.of(media));
-        when(job.shouldCheckTiesDbAfterMediaInspection())
-                .thenReturn(true);
-
-        var mockProps = mock(MediaActionProps.class);
-        when(mockProps.get(MpfConstants.TIES_DB_URL, media, action))
-                .thenReturn("http://tiesdb:1234");
-
-        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(pipelineElements)))
-                .thenReturn(mockProps);
-
-        setEmptyCombinedJobProps();
-
-        when(_mockJobConfigHasher.getJobConfigHash(List.of(media), pipelineElements, mockProps))
+        when(_mockJobConfigHasher.getJobConfigHash(job))
                 .thenReturn("JOB_HASH");
 
-        _tiesDbBeforeJobCheckService.wfmProcess(exchange);
+        var exchange = TestUtil.createTestExchange();
+        exchange.getIn().setHeader(MpfHeaders.JOB_ID, JOB_ID);
+        _tiesDbBeforeJobCheckService.process(exchange);
+        assertThat(exchange.getOut().getHeaders()).containsEntry(MpfHeaders.JOB_ID, JOB_ID);
         return exchange;
     }
 
-
-
     @Test
     public void doesNotDoDuplicateTiesDbCheck() {
-        long jobId = 123;
-        var exchange = TestUtil.createTestExchange();
-        exchange.getIn().setHeader(MpfHeaders.JOB_ID, jobId);
+        runAfterMediaInspectionTest(Map.of(
+                "MEDIA_HASH", "HASH",
+                "MIME_TYPE", "image/jpeg"));
 
-        var job = mock(BatchJob.class);
-        when(_mockInProgressJobs.getJob(jobId))
-                .thenReturn(job);
-        when(job.shouldCheckTiesDbAfterMediaInspection())
-            .thenReturn(false);
-
-        _tiesDbBeforeJobCheckService.wfmProcess(exchange);
-
-        assertTrue(exchange.getOut().getHeaders().isEmpty());
         verifyNoInteractions(
                 _mockPropertiesUtil,
-                _mockAggJobProps,
                 _mockJobConfigHasher,
                 _mockHttpClientUtils,
                 _mockTokenService);
@@ -1361,18 +1218,89 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .collect(toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
-    private void setEmptyCombinedJobProps() {
-        when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
+    private void setEmptyCombinedJobProps(BatchJob job) {
+        when(_mockAggJobProps.getCombinedProperties(job))
             .thenReturn(s -> null);
     }
 
-    private static Action createAction() {
-        return new Action("ACTION", null, null, ImmutableList.of());
+
+    private static MediaImpl createMedia(
+            int id,
+            Map<String, String> providedMetadata) {
+        return createMedia(id, null, providedMetadata);
     }
 
-    private static JobCreationRequest createJobRequest() {
-        return new JobCreationRequest(
-                null, null, Map.of(), null, null, null, null, null, null, null);
+    private static MediaImpl createMedia(
+            int id,
+            String linkedHash,
+            Map<String, String> providedMetadata) {
+        var mediaSpecificProps = Optional.ofNullable(linkedHash)
+                .map(s -> Map.of(MpfConstants.LINKED_MEDIA_HASH, linkedHash))
+                .orElseGet(Map::of);
+        return new MediaImpl(
+            id,
+            -1,
+            -1,
+            null,
+            UriScheme.FILE,
+            null,
+            mediaSpecificProps,
+            providedMetadata,
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            null);
+    }
+
+
+    private BatchJobImpl createJob(int numTasks, MediaImpl... media) {
+        var pipelineElements = createPipeline(numTasks);
+        var job = new BatchJobImpl(
+                JOB_ID,
+                "externalId",
+                null,
+                pipelineElements,
+                4,
+                null,
+                null,
+                Arrays.asList(media),
+                Map.of(),
+                Map.of());
+        when(_mockInProgressJobs.getJob(JOB_ID))
+                .thenReturn(job);
+        return job;
+    }
+
+
+    private static JobPipelineElements createPipeline(int numTasks) {
+        var algos = IntStream.range(0, numTasks)
+                .mapToObj(i -> new Algorithm(
+                        "ALGO" + i,
+                        "description",
+                        ActionType.DETECTION,
+                        "trackType",
+                        OptionalInt.of(1),
+                        null,
+                        null,
+                        true,
+                        false))
+                .toList();
+
+        var actions = IntStream.range(0, numTasks)
+                .mapToObj(i -> new Action(
+                        "ACTION" + i, "description", algos.get(i).name(), List.of()))
+                .toList();
+
+        var tasks = IntStream.range(0, numTasks)
+                .mapToObj(i -> new Task("TASK" + i, "description", List.of(actions.get(i).name())))
+                .toList();
+
+        var pipeline = new Pipeline(
+                "TEST PIPELINE",
+                "description",
+                tasks.stream().map(Task::name).toList());
+        return new JobPipelineElements(pipeline, tasks, actions, algos);
     }
 
     private void verifyTokenAdded() {
@@ -1387,5 +1315,22 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
     private void verifyTokenNotAdded() {
         verify(_mockTokenService, never())
             .addTokenToTiesDbRequest(notNull(), notNull());
+    }
+
+
+    private void setTiesDbUrl() {
+        setTiesDbUrl("http://localhost");
+    }
+
+    private void setTiesDbUrl(String url) {
+        when(_mockAggJobProps.getValue(eq(MpfConstants.TIES_DB_URL), any(JobPart.class)))
+                .thenReturn(url);
+    }
+
+    private ThrowingConsumer<TiesDbCheckResult> noCheckInfoStatus(TiesDbCheckStatus expectedStatus) {
+        return Assertions.allOf(
+            cr -> assertThat(cr.status()).isEqualTo(expectedStatus),
+            cr -> assertThat(cr.checkInfo()).isEmpty()
+        );
     }
 }

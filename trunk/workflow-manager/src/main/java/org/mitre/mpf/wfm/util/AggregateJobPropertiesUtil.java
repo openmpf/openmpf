@@ -43,7 +43,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -427,23 +426,6 @@ public class AggregateJobPropertiesUtil {
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot()
         ).getValue();
-    }
-
-
-    public MediaActionProps getMediaActionProps(
-            Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> algorithmProperties,
-            SystemPropertiesSnapshot systemPropertiesSnapshot,
-            JobPipelineElements pipelineElements)  {
-
-        return new MediaActionProps((media, action) -> getPropertyMap(
-                action,
-                media.getMediaSpecificProperties(),
-                media.getType(),
-                algorithmProperties,
-                jobProperties,
-                pipelineElements,
-                systemPropertiesSnapshot));
     }
 
 

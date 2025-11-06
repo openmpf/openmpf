@@ -32,6 +32,7 @@ public enum TiesDbCheckStatus {
     NO_TIES_DB_URL_IN_JOB,
     MEDIA_HASHES_ABSENT,
     MEDIA_MIME_TYPES_ABSENT,
+    FAILED,
     NO_MATCH,
     FOUND_MATCH
 }

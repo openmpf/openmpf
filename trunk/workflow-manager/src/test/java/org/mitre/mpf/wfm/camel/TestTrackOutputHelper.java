@@ -207,7 +207,7 @@ public class TestTrackOutputHelper extends MockitoTest.Strict {
         return new BatchJobImpl(
             123, null, null,
             pipelineElements, 0, null, null,
-            List.of(media), Map.of(), Map.of(), false);
+            List.of(media), Map.of(), Map.of());
     }
 
     private static JobPipelineElements createTestPipeline() {

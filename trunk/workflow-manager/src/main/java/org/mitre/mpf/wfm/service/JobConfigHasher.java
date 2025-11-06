@@ -43,11 +43,12 @@ import javax.inject.Inject;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.util.MediaActionProps;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -68,6 +69,8 @@ public class JobConfigHasher {
 
     private final WorkflowPropertyService _workflowPropertyService;
 
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
     private final IgnorableProperties _ignorableProperties;
 
     private final String _outputVersion;
@@ -76,9 +79,11 @@ public class JobConfigHasher {
     public JobConfigHasher(
             PropertiesUtil propertiesUtil,
             WorkflowPropertyService workflowPropertyService,
-            ObjectMapper objectMapper) throws IOException {
+            ObjectMapper objectMapper,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) throws IOException {
         _propertiesUtil = propertiesUtil;
         _workflowPropertyService = workflowPropertyService;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _outputVersion = getMajorMinorVersion(propertiesUtil.getOutputObjectVersion());
 
         var ignorablePropsResource = propertiesUtil.getTiesDbCheckIgnorablePropertiesResource();
@@ -90,15 +95,12 @@ public class JobConfigHasher {
     }
 
 
-    public String getJobConfigHash(
-            Collection<Media> media,
-            JobPipelineElements pipelineElements,
-            MediaActionProps mediaActionProps) {
-
-        var sortedMedia = media.stream()
+    public String getJobConfigHash(BatchJob job) {
+        var sortedMedia = job.getMedia().stream()
                 .filter(m -> !m.isDerivative())
                 .sorted(Comparator.comparing(m -> m.getLinkedHash().orElseThrow()))
                 .toList();
+        var pipelineElements = job.getPipelineElements();
 
         var hasher = new Hasher();
         hasher.add(_outputVersion);
@@ -122,8 +124,8 @@ public class JobConfigHasher {
                             .ifPresentOrElse(
                                     ov -> hasher.add(String.valueOf(ov)),
                                     () -> hasher.add("none"));
-                    hashProperties(
-                            mediaActionProps.get(medium, action), algorithm, mediaType, hasher);
+                    var props = _aggregateJobPropertiesUtil.getPropertyMap(job, medium, action);
+                    hashProperties(props, algorithm, mediaType, hasher);
 
                 }
                 // Add separator so actions in the same task get a different value from actions in

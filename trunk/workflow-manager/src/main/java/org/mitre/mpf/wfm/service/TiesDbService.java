@@ -77,7 +77,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSortedSet;
@@ -173,7 +172,7 @@ public class TiesDbService {
                     _propertiesUtil.getSemanticVersion(),
                     _propertiesUtil.getHostName(),
                     trackCounter.get(media),
-                    getJobConfigHash(job),
+                    _jobConfigHasher.getJobConfigHash(job),
                     timing);
             var assertion = new TiesDbInfo.Assertion(UUID.randomUUID().toString(), dataObject);
             var tiesDbInfo = new TiesDbInfo(tiesDbUrl, assertion);
@@ -290,17 +289,6 @@ public class TiesDbService {
             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
     }
 
-
-    private String getJobConfigHash(BatchJob job) {
-        var props = _aggregateJobPropertiesUtil.getMediaActionProps(
-                job.getJobProperties(),
-                job.getOverriddenAlgorithmProperties(),
-                job.getSystemPropertiesSnapshot(),
-                job.getPipelineElements());
-
-        return _jobConfigHasher.getJobConfigHash(
-                job.getMedia(), job.getPipelineElements(), props);
-    }
 
 
     private CompletableFuture<Void> postAssertion(BatchJob job, Media media) {

@@ -170,13 +170,6 @@ public class BatchJobImpl implements BatchJob {
     }
 
 
-    private final boolean _shouldCheckTiesDbAfterMediaInspection;
-    @Override
-    public boolean shouldCheckTiesDbAfterMediaInspection() {
-        return _shouldCheckTiesDbAfterMediaInspection;
-    }
-
-
     @JsonProperty("processingTimes")
     private final Map<String, Long> _processingTimes;
     public void addProcessingTime(Action action, long time) {
@@ -211,11 +204,10 @@ public class BatchJobImpl implements BatchJob {
             String callbackMethod,
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
-            boolean shouldCheckTiesDbAfterMediaInspection) {
+            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
              callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
-             List.of(), Map.of(), Map.of(), shouldCheckTiesDbAfterMediaInspection, Map.of());
+             List.of(), Map.of(), Map.of(), Map.of());
     }
 
 
@@ -235,8 +227,6 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors,
             @JsonProperty("errors") Map<Long, Set<JsonIssueDetails>> errors,
             @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings,
-            @JsonProperty("shouldCheckTiesDbAfterMediaInspection")
-                    boolean shouldCheckTiesDbAfterMediaInspection,
             @JsonProperty("processingTimes") Map<String, Long> processingTimes) {
         _id = id;
         _externalId = externalId;
@@ -268,8 +258,6 @@ public class BatchJobImpl implements BatchJob {
         _warnings = new HashMap<>();
         // Can't just pass warnings to HashMap constructor because we also want to copy the sets.
         warnings.forEach((k, v) -> _warnings.put(k, new HashSet<>(v)));
-
-        _shouldCheckTiesDbAfterMediaInspection = shouldCheckTiesDbAfterMediaInspection;
 
         _processingTimes = new HashMap<>(processingTimes);
     }

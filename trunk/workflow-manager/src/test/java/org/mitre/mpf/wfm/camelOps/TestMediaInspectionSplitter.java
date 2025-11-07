@@ -90,8 +90,7 @@ public class TestMediaInspectionSplitter extends MockitoTest.Strict {
                 null,
                 List.of(testMedia),
                 Map.of(),
-                Map.of(),
-                false);
+                Map.of());
         when(mockInProgressJobs.getJob(jobId))
                 .thenReturn(testJob);
 

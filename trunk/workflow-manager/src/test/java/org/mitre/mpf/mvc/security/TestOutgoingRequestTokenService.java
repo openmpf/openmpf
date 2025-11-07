@@ -236,8 +236,7 @@ public class TestOutgoingRequestTokenService extends MockitoTest.Strict {
             null,
             List.of(media),
             Map.of(),
-            Map.of(),
-            false);
+            Map.of());
     }
 
     private static MediaImpl createTestMedia() {

@@ -205,8 +205,7 @@ public class TestTrackMergingProcessor {
                 null,
                 List.of(media),
                 Map.of(),
-                Map.of(),
-                false);
+                Map.of());
 
         inProgressJobs.addMediaInspectionInfo(TEST_JOB_ID, mediaId, "fake_sha", mediaType, mimeType, 1,
                                               Collections.emptyMap());
@@ -291,8 +290,7 @@ public class TestTrackMergingProcessor {
                 null,
                 Collections.singletonList(media),
                 Collections.emptyMap(),
-                Collections.emptyMap(),
-                false);
+                Collections.emptyMap());
 
         SortedSet<Track> tracks = new TreeSet<>();
 

@@ -61,19 +61,26 @@ public interface MediaSegmenter {
 
 
     public static DetectionProtobuf.DetectionRequest.Builder initializeRequest(
-            Media media, DetectionContext context) {
+            Media media,
+            DetectionContext context,
+            Map<String, String> properties) {
         return DetectionProtobuf.DetectionRequest.newBuilder()
                 .setMediaId(media.getId())
                 .setTaskIndex(context.getTaskIndex())
                 .setActionIndex(context.getActionIndex())
                 .setMediaPath(media.getProcessingPath().toString())
-                .putAllAlgorithmProperties(getAlgoProps(context))
+                .putAllAlgorithmProperties(filterAlgoProps(context, properties))
                 .putAllMediaMetadata(media.getMetadata());
     }
 
+    public static DetectionProtobuf.DetectionRequest.Builder initializeRequest(
+            Media media, DetectionContext context) {
+        return initializeRequest(media, context, context.getAlgorithmProperties());
+    }
 
-    static Map<String, String> getAlgoProps(DetectionContext context) {
-        var algoProps = context.getAlgorithmProperties();
+
+    static Map<String, String> filterAlgoProps(
+            DetectionContext context, Map<String, String> algoProps) {
         if (!context.isFirstDetectionTask()) {
             return algoProps;
         }

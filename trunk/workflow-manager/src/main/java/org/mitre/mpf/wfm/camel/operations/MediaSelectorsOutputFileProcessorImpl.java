@@ -181,7 +181,8 @@ public class MediaSelectorsOutputFileProcessorImpl
                 jobPart.job(),
                 jobPart.media(),
                 MediaSelectorType.CSV_COLS,
-                os -> _csvColSelectorService.createOutputDocument(jobPart.media(), os, mapper));
+                os -> _csvColSelectorService.createOutputDocument(
+                        jobPart.job(), jobPart.media(), jobPart.action(), os, mapper));
     }
 
 

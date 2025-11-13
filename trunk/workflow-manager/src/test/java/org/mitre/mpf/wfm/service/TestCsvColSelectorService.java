@@ -28,6 +28,12 @@ package org.mitre.mpf.wfm.service;
 
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,34 +51,72 @@ import java.util.function.BiFunction;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.MediaUri;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.CharsetDetectingReader;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
-public class TestCsvColSelectorService {
+public class TestCsvColSelectorService extends MockitoTest.Strict {
+
+    @Mock
+    private AggregateJobPropertiesUtil _mockAggJobProps;
+
+    @InjectMocks
+    private CsvColSelectorService _csvService;
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
 
-    private final CsvColSelectorService _csvService = new CsvColSelectorService();
+    private static final long TEST_MEDIA_ID = 438;
 
+    private final BatchJob _mockJob = mock(BatchJob.class);
+
+    private final Action _testAction = new Action(null, null, null, null);
+
+    @Before
+    public void init() {
+        var pipelineElements = mock(JobPipelineElements.class);
+        when(pipelineElements.getAction(1, 0))
+            .thenReturn(_testAction);
+        when(_mockJob.getPipelineElements())
+                .thenReturn(pipelineElements);
+    }
 
     @Test
-    public void testExcelCsv() {
+    public void testExcelCsvWithIndicesSelector() {
+        var mediaSelector = createMediaSelector("2,1", true, true);
+        runExcelCsvTest(mediaSelector);
+    }
+
+    @Test
+    public void testExcelCsvWithNameSelector() {
+        var mediaSelector = createMediaSelector("你好吗？,\"¿Hola, cómo estás?\"", false, true);
+        runExcelCsvTest(mediaSelector);
+    }
+
+
+    private void runExcelCsvTest(MediaSelector mediaSelector) {
         var path = TestUtil.findFilePath("/excel-test.csv");
         assertThat(path)
             .content(StandardCharsets.UTF_8)
             .startsWith(CharsetDetectingReader.BYTE_ORDER_MARK);
 
-        var mediaSelector = createMediaSelector("2,1");
         var media = createTestMedia(path, mediaSelector);
 
         var updatedStrings = Map.of(
@@ -111,7 +155,7 @@ public class TestCsvColSelectorService {
             4,5,6
             """;
 
-        var mediaSelector = createMediaSelector("0,1");
+        var mediaSelector = createMediaSelector("0,1", true, true);
         var media = createTestMedia(csvContent, mediaSelector);
 
         var updatedStrings = Map.of(
@@ -141,13 +185,12 @@ public class TestCsvColSelectorService {
             a,b,c,c,b
             1,2,3,4,5
             """;
-        var mediaSelector = createMediaSelector("a,b,1,2");
+        var mediaSelector = createMediaSelector("a,b", false, false);
         var media = createTestMedia(csvContent, mediaSelector);
 
         var updatedStrings = Map.of(
             "1", "I",
             "2", "II",
-            "3", "III",
             "5", "V");
         assertExtractionsEqualTo(media, updatedStrings.keySet());
 
@@ -155,7 +198,7 @@ public class TestCsvColSelectorService {
 
         String[][] expectedOutput = {
             {"a", "b", "c", "c", "b"},
-            {"I", "II", "III", "4", "V"}
+            {"I", "II", "3", "4", "V"}
         };
         assertOutputMatches(resultBytes, expectedOutput);
     }
@@ -170,7 +213,7 @@ public class TestCsvColSelectorService {
             4,5,6
             7,8,9,10""";
 
-        var mediaSelector = createMediaSelector("b,c");
+        var mediaSelector = createMediaSelector("b,c", false, false);
         var media = createTestMedia(csvContent, mediaSelector);
         var updatedStrings = Map.of(
             "3", "III",
@@ -193,6 +236,34 @@ public class TestCsvColSelectorService {
         assertOutputMatches(resultBytes, expectedOutput);
     }
 
+
+    @Test
+    public void handlesWhitespaceInHeader() {
+        var csvContent = """
+            a, a , a,a ,b,c
+            1,2,3,4,5,6""";
+
+        var selector = createMediaSelector("a, c  ", false, false);
+        var media = createTestMedia(csvContent, selector);
+        var updatedStrings = Map.of(
+            "1", "I",
+            "2", "II",
+            "3", "III",
+            "4", "IV",
+            "6", "VI"
+        );
+        assertExtractionsEqualTo(media, updatedStrings.keySet());
+
+        var resultBytes = createOutputDocument(media, updatedStrings);
+
+        String[][] expectedOutput = {
+            {"a", " a ", " a", "a ", "b", "c"},
+            {"I", "II", "III", "IV", "5", "VI"}
+        };
+        assertOutputMatches(resultBytes, expectedOutput);
+    }
+
+
     @Test
     public void testMultipleSelectors() {
         var csvContent = """
@@ -200,8 +271,8 @@ public class TestCsvColSelectorService {
             1,2,3,4
             5,6,7,8
             """;
-        var nameSelector = createMediaSelector("a,c");
-        var indexSelector = createMediaSelector("0,1");
+        var nameSelector = createMediaSelector("a,c", false, false);
+        var indexSelector = createMediaSelector("0,1", true, true);
 
         var media = createTestMedia(csvContent, nameSelector, indexSelector);
 
@@ -223,7 +294,7 @@ public class TestCsvColSelectorService {
             "6", "VI"
         );
 
-        var extractions = _csvService.extractSelections(media);
+        var extractions = _csvService.extractSelections(_mockJob, media, 1, 0);
         assertThat(extractions)
                 .hasSize(nameSelectorUpdates.size() + indexSelectorUpdates.size());
         for (var extraction : extractions) {
@@ -264,36 +335,78 @@ public class TestCsvColSelectorService {
 
 
     private static final String HEADER_TEST_CSV = """
-            a,b,c
-            1,2,3
+            a,b,c,1,2
+            3,4,5,6,7
             """;
 
     @Test
-    public void numericSelectorsAssumesNoHeaders() {
+    public void testNamedWithHeader() {
         assertExtractionsEqualTo(
-                HEADER_TEST_CSV, "0,1",
-                "a", "b", "1", "2");
+            HEADER_TEST_CSV,
+            createMediaSelector("a,2", false, false),
+            "3", "7");
     }
 
     @Test
-    public void nonNumericSelectorsAssumesHeadersPresent() {
+    public void testNamedWithFirstRowData() {
         assertExtractionsEqualTo(
-                HEADER_TEST_CSV, "a,b",
-                "1", "2");
+            HEADER_TEST_CSV,
+            createMediaSelector("a,2", false, true),
+            "a", "2", "3", "7");
     }
 
     @Test
-    public void mixedSelectorsAssumesHeadersPresent() {
+    public void testIndicesWithHeader() {
         assertExtractionsEqualTo(
-                HEADER_TEST_CSV, "a,1",
-                "1", "2");
+            HEADER_TEST_CSV,
+            createMediaSelector("2,3", true, false),
+            "5", "6");
     }
+
+    @Test
+    public void testIndicesWithFirstRowData() {
+        assertExtractionsEqualTo(
+            HEADER_TEST_CSV,
+            createMediaSelector("2,3", true, true),
+            "c", "1", "5", "6");
+    }
+
+    @Test
+    public void testNoHeaderMatch() {
+        var media = createTestMedia(
+            HEADER_TEST_CSV,
+            createMediaSelector("c,d", false, false));
+
+        assertThatExceptionOfType(WfmProcessingException.class)
+            .isThrownBy(() -> _csvService.extractSelections(_mockJob, media, 1, 0))
+            .withMessage("The CSV file does not have a header named \"d\".");
+    }
+
 
     @Test
     public void handlesDuplicateSelectors() {
         assertExtractionsEqualTo(
-                HEADER_TEST_CSV, "a,0,a,0",
-                "1");
+            HEADER_TEST_CSV,
+            createMediaSelector("2,3,2", true, false),
+            "5", "6");
+
+        assertExtractionsEqualTo(
+            HEADER_TEST_CSV,
+            createMediaSelector("2,c,2", false, false),
+            "5", "7");
+    }
+
+    @Test
+    public void handlesWhitespaceInSelector() {
+        assertExtractionsEqualTo(
+            HEADER_TEST_CSV,
+            createMediaSelector("2,3 ,2", true, false),
+            "5", "6");
+
+        assertExtractionsEqualTo(
+            HEADER_TEST_CSV,
+            createMediaSelector("2 ,c,2", false, false),
+            "5", "7");
     }
 
 
@@ -310,13 +423,11 @@ public class TestCsvColSelectorService {
                 .isEqualTo(expectedOutput[idx]);
         }
     }
-
     private void assertExtractionsEqualTo(
             String csvContent,
-            String selectorExpr,
+            MediaSelector selector,
             String... expectedExtractions) {
-        var mediaSelector = createMediaSelector(selectorExpr);
-        var media = createTestMedia(csvContent, mediaSelector);
+        var media = createTestMedia(csvContent, selector);
         assertExtractionsEqualTo(media, Arrays.asList(expectedExtractions));
     }
 
@@ -324,7 +435,7 @@ public class TestCsvColSelectorService {
     private void assertExtractionsEqualTo(
             Media media,
             Iterable<String> expectedExtractions) {
-        var selections = _csvService.extractSelections(media);
+        var selections = _csvService.extractSelections(_mockJob, media, 1, 0);
         assertThat(selections)
             .extracting(er -> er.value())
             .containsExactlyInAnyOrderElementsOf(expectedExtractions);
@@ -343,7 +454,7 @@ public class TestCsvColSelectorService {
     private byte[] createOutputDocument(
             Media media, BiFunction<UUID, String, Optional<String>> updater) {
         var os = new ByteArrayOutputStream();
-        _csvService.createOutputDocument(media, os, updater);
+        _csvService.createOutputDocument(_mockJob, media, _testAction, os, updater);
         return os.toByteArray();
     }
 
@@ -356,7 +467,7 @@ public class TestCsvColSelectorService {
 
     private static MediaImpl createTestMedia(Path path, MediaSelector... selectors) {
         return new MediaImpl(
-            1,
+            TEST_MEDIA_ID,
             MediaUri.create("file:///fake"),
             UriScheme.FILE,
             path,
@@ -401,12 +512,35 @@ public class TestCsvColSelectorService {
         }
     }
 
-    private static MediaSelector createMediaSelector(String expression) {
-        return new MediaSelector(
+
+    private MediaSelector createMediaSelector(
+            String expression,
+            boolean selectorsAreIndices,
+            boolean firstRowIsData) {
+        var selector = new MediaSelector(
                 expression,
                 MediaSelectorType.CSV_COLS,
                 Map.of(),
                 "resultProp");
 
+        if (selectorsAreIndices) {
+            lenient().when(_mockAggJobProps.getValue(
+                    eq("CSV_SELECTORS_ARE_INDICES"),
+                    eq(_mockJob),
+                    argThat(m -> m.getId() == TEST_MEDIA_ID),
+                    eq(_testAction),
+                    eq(selector)))
+                .thenReturn("true");
+        }
+        if (firstRowIsData) {
+            lenient().when(_mockAggJobProps.getValue(
+                    eq("CSV_FIRST_ROW_IS_DATA"),
+                    eq(_mockJob),
+                    argThat(m -> m.getId() == TEST_MEDIA_ID),
+                    eq(_testAction),
+                    eq(selector)))
+                .thenReturn("true");
+        }
+        return selector;
     }
 }

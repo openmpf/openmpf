@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -39,19 +40,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.MediaSelectorType;
 import org.mitre.mpf.rest.api.MediaUri;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.DetectionRequest;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
@@ -61,11 +68,40 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
     private JsonPathService _mockJsonPathService;
 
     @Mock
+    private CsvColSelectorService _mockCsvService;
+
+    @Mock
     private MediaSelectorsOutputFileProcessor _mockOutputFileProcessor;
+
+    @Mock
+    private AggregateJobPropertiesUtil _mockAggJobProps;
+
+    @Mock
+    private InProgressBatchJobsService _mockInProgressJobs;
 
     @InjectMocks
     private MediaSelectorsSegmenter _mediaSelectorsSegmenter;
 
+
+    private static final long JOB_ID = 1021;
+
+    @Mock
+    private BatchJob _mockJob;
+
+    private Action _testAction = new Action(null, null, null, null);
+
+    @Before
+    public void init() {
+        var pipelineElements = mock(JobPipelineElements.class);
+        lenient().when(pipelineElements.getAction(1, 0))
+            .thenReturn(_testAction);
+
+        when(_mockInProgressJobs.getJob(JOB_ID))
+                .thenReturn(_mockJob);
+        lenient().when(_mockJob.getPipelineElements())
+            .thenReturn(pipelineElements);
+
+    }
 
     @Test
     public void testSegmentMediaNoMatchesIsError() {
@@ -113,13 +149,16 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
 
 
     @Test
-    public void testSegmentMedia() {
+    public void testSegmentJson() {
         var selector = new MediaSelector(
                 "expr", MediaSelectorType.JSON_PATH,
                 Map.of("SELECTION_PROP", "SELECTION_VALUE"),
                 null);
 
         var media = createTestMedia(List.of(selector));
+        when(_mockAggJobProps.getPropertyMap(_mockJob, media, _testAction, selector))
+                .thenAnswer(inv ->
+                        inv.getArgument(3, MediaSelector.class).selectionProperties());
 
         var mockEvaluator = mock(JsonPathEvaluator.class);
         when(_mockJsonPathService.load(media.getProcessingPath()))
@@ -128,9 +167,33 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
         when(mockEvaluator.evalAndExtractStrings("expr"))
                 .thenAnswer(i -> Set.of("match1", "match2").stream());
 
+        verifyMediaSegmented(media, selector);
+    }
+
+
+    @Test
+    public void testSegmentCsv() {
+        var selector = new MediaSelector(
+                "expr", MediaSelectorType.CSV_COLS,
+                Map.of("SELECTION_PROP", "SELECTION_VALUE"),
+                null);
+
+        var media = createTestMedia(List.of(selector));
+        when(_mockAggJobProps.getPropertyMap(_mockJob, media, _testAction, selector))
+                .thenAnswer(inv ->
+                        inv.getArgument(3, MediaSelector.class).selectionProperties());
+
+        when(_mockCsvService.extractSelections(_mockJob, media, 1, 0))
+            .thenReturn(Set.of(
+                new CsvColSelectorService.ExtractionResult("match1", selector),
+                new CsvColSelectorService.ExtractionResult("match2", selector)));
+        verifyMediaSegmented(media, selector);
+    }
+
+
+    private void verifyMediaSegmented(Media media, MediaSelector selector) {
         var context = createDetectionContext();
         var results = _mediaSelectorsSegmenter.segmentMedia(media, context);
-
         assertThat(results)
             .hasSize(2)
             .extracting(DetectionRequest::headers)
@@ -149,7 +212,6 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
             .allSatisfy(p -> assertThat(p).isEqualTo(selector.selectionProperties()));
     }
 
-
     private static Media createTestMedia(Collection<MediaSelector> mediaSelectors) {
         return new MediaImpl(
             428,
@@ -167,7 +229,7 @@ public class TestMediaSelectorsSegmenter extends MockitoTest.Strict {
 
     private static DetectionContext createDetectionContext(Map<String, String> properties) {
         return new DetectionContext(
-                0, 0, null, 0, null, false,
+                JOB_ID, 1, null, 0, null, false,
                 properties, null, null, null);
     }
 }

@@ -29,6 +29,8 @@ package org.mitre.mpf.wfm.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -137,6 +139,11 @@ public class TestS3Copy extends MockitoTest.Strict {
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withBucket(anyString()))
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withBucketKey(anyString()))
         when(_mockPropertiesUtil.getS3ClientCacheCount())
                 .thenReturn(20);
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())

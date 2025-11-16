@@ -144,6 +144,7 @@ public class TestS3Copy extends MockitoTest.Strict {
         lenient().when(_mockAuditEventBuilder.withBucket(anyString()))
                 .thenReturn(_mockAuditEventBuilder);
         lenient().when(_mockAuditEventBuilder.withBucketKey(anyString()))
+                .thenReturn(_mockAuditEventBuilder);
         when(_mockPropertiesUtil.getS3ClientCacheCount())
                 .thenReturn(20);
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())

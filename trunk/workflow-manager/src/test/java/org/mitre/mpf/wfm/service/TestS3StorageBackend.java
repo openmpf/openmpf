@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -98,6 +99,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.Mock;
 
@@ -126,6 +128,15 @@ public class TestS3StorageBackend extends MockitoTest.Strict {
 
     @Mock
     private OutgoingRequestTokenService _mockTokenService;
+
+    @Mock
+    private AuditEventLogger _mockAuditEventLogger;
+
+    @Mock
+    private AuditEventLogger.BuilderTagStage _mockBuilderTagStage;
+
+    @Mock
+    private AuditEventLogger.AuditEventBuilder _mockAuditEventBuilder;
 
     private S3StorageBackend _s3StorageBackend;
 
@@ -168,6 +179,10 @@ public class TestS3StorageBackend extends MockitoTest.Strict {
 
     @Before
     public void init() {
+        lenient().when(_mockAuditEventLogger.createEvent())
+                .thenReturn(_mockBuilderTagStage);
+        lenient().when(_mockBuilderTagStage.withSecurityTag())
+                .thenReturn(_mockAuditEventBuilder);
         EXPECTED_OBJECT_KEY = "5e/ac/" + EXPECTED_HASH;
         _expectedUri = URI.create(S3_HOST + RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);
 
@@ -183,7 +198,7 @@ public class TestS3StorageBackend extends MockitoTest.Strict {
                 _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
                 new AggregateJobPropertiesUtil(_mockPropertiesUtil,
                                                _mockWorkflowPropertyService),
-                _mockTokenService, null);
+                _mockTokenService, null, _mockAuditEventLogger);
     }
 
     private static Map<String, String> getS3Properties() {

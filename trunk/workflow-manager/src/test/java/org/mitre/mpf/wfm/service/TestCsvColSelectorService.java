@@ -265,6 +265,31 @@ public class TestCsvColSelectorService extends MockitoTest.Strict {
 
 
     @Test
+    public void handlesDuplicateContent() {
+        var csvContent = """
+            a,b,c,c,b
+            1,1,1,1,1
+            1,1,1,1,1
+            """;
+        var mediaSelector = createMediaSelector("a,b", false, false);
+        var media = createTestMedia(csvContent, mediaSelector);
+
+        var updatedStrings = Map.of(
+            "1", "I");
+        assertExtractionsEqualTo(media, updatedStrings.keySet());
+
+        var resultBytes = createOutputDocument(media, updatedStrings);
+
+        String[][] expectedOutput = {
+            {"a", "b", "c", "c", "b"},
+            {"I", "I", "1", "1", "I"},
+            {"I", "I", "1", "1", "I"}
+        };
+        assertOutputMatches(resultBytes, expectedOutput);
+    }
+
+
+    @Test
     public void testMultipleSelectors() {
         var csvContent = """
             a,b,c,d

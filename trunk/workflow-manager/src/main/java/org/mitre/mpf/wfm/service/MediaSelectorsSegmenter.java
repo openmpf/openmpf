@@ -39,6 +39,8 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.MediaSelectorsOutputFileProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
@@ -47,6 +49,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.DetectionRequest;
 import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,14 +57,26 @@ public class MediaSelectorsSegmenter  {
 
     private final JsonPathService _jsonPathService;
 
+    private final CsvColSelectorService _csvService;
+
     private final MediaSelectorsOutputFileProcessor _mediaSelectorsOutputFileProcessor;
+
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
+    private final InProgressBatchJobsService _inProgressJobs;
 
     @Inject
     MediaSelectorsSegmenter(
             JsonPathService jsonPathService,
-            MediaSelectorsOutputFileProcessor mediaSelectorsOutputFileProcessor) {
+            CsvColSelectorService csvService,
+            MediaSelectorsOutputFileProcessor mediaSelectorsOutputFileProcessor,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            InProgressBatchJobsService inProgressJobs) {
         _jsonPathService = jsonPathService;
+        _csvService = csvService;
         _mediaSelectorsOutputFileProcessor = mediaSelectorsOutputFileProcessor;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _inProgressJobs = inProgressJobs;
     }
 
 
@@ -106,9 +121,10 @@ public class MediaSelectorsSegmenter  {
 
     public List<DetectionRequest> segmentMedia(Media media, DetectionContext context) {
         var selectorType = media.getMediaSelectors().get(0).type();
+        var job = _inProgressJobs.getJob(context.getJobId());
         var results = switch (selectorType) {
-            case JSON_PATH -> segmentUsingJsonPathSelectors(
-                    media, context, media.getMediaSelectors());
+            case JSON_PATH -> segmentUsingJsonPathSelectors(job, media, context);
+            case CSV_COLS -> segmentUsingCsvSelectors(job, media, context);
             // No default case so that compilation fails if a new enum value is added and a new
             // case is not added here.
         };
@@ -127,30 +143,48 @@ public class MediaSelectorsSegmenter  {
 
 
     private List<DetectionRequest> segmentUsingJsonPathSelectors(
-            Media media, DetectionContext context, Collection<MediaSelector> selectors) {
+            BatchJob job, Media media, DetectionContext context) {
         var jsonPathEvaluator = _jsonPathService.load(media.getProcessingPath());
-        return selectors.stream()
-                .flatMap(ms -> createDetectionRequests(jsonPathEvaluator, media, context, ms))
+        return media.getMediaSelectors().stream()
+                .flatMap(ms -> createDetectionRequests(jsonPathEvaluator, job, media, context, ms))
                 .toList();
     }
 
-    private static Stream<DetectionRequest> createDetectionRequests(
+    private Stream<DetectionRequest> createDetectionRequests(
             JsonPathEvaluator jsonPathEvaluator,
+            BatchJob job,
             Media media,
             DetectionContext context,
             MediaSelector selector) {
         return jsonPathEvaluator.evalAndExtractStrings(selector.expression())
                 .distinct()
-                .map(s -> createDetectionRequest(s, media, context, selector));
+                .map(s -> createDetectionRequest(s, job, media, context, selector));
     }
 
-    private static DetectionRequest createDetectionRequest(
+
+    private List<DetectionRequest> segmentUsingCsvSelectors(
+            BatchJob job,
+            Media media,
+            DetectionContext context) {
+        return _csvService.extractSelections(
+                    job, media, context.getTaskIndex(), context.getActionIndex())
+                .stream()
+                .map(er -> createDetectionRequest(er.value(), job, media, context, er.selector()))
+                .toList();
+    }
+
+
+    private DetectionRequest createDetectionRequest(
                 String evalResult,
+                BatchJob job,
                 Media media,
                 DetectionContext context,
                 MediaSelector selector) {
-        var pbDetectionRequest = MediaSegmenter.initializeRequest(media, context)
-                .putAllAlgorithmProperties(selector.selectionProperties());
+        var action = job.getPipelineElements().getAction(
+                context.getTaskIndex(), context.getActionIndex());
+        var properties = _aggregateJobPropertiesUtil.getPropertyMap(job, media, action, selector);
+
+        var pbDetectionRequest = MediaSegmenter.initializeRequest(media, context, properties);
         pbDetectionRequest.getGenericRequestBuilder().build();
         var headers = addSelectorInfo(pbDetectionRequest, evalResult, selector.id());
         return new DetectionRequest(pbDetectionRequest.build(), headers);

@@ -31,7 +31,8 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.UnaryOperator;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,7 +78,9 @@ public class JsonPathEvaluator {
     }
 
 
-    public void replaceStrings(String jsonPathExpression, UnaryOperator<String> stringMapper) {
+    public void replaceStrings(
+            String jsonPathExpression,
+            Function<String, Optional<String>> stringMapper) {
         if (jsonPathExpression.equals("$")) {
             // The JSON path library does not allow you to call .map() when the expression is just
             // "$".
@@ -85,15 +88,16 @@ public class JsonPathEvaluator {
         }
         else {
             _parsedJson.map(
-                    jsonPathExpression, (obj, config) -> replaceStringsInternal(obj, stringMapper));
+                    jsonPathExpression,
+                    (obj, config) -> replaceStringsInternal(obj, stringMapper));
         }
     }
 
     private static Object replaceStringsInternal(
             Object current,
-            UnaryOperator<String> stringMapper) {
+            Function<String, Optional<String>> stringMapper) {
         if (current instanceof String string) {
-            return stringMapper.apply(string);
+            return stringMapper.apply(string).orElse(string);
         }
         else if (current instanceof List<?> list) {
             asObjList(list).replaceAll(o -> replaceStringsInternal(o, stringMapper));

@@ -41,8 +41,6 @@ import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -56,7 +54,6 @@ import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.TiesDbRepostResponse;
-import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -283,6 +280,7 @@ public class TiesDbService {
         var pipelineElements = job.getPipelineElements();
         return pipelineElements.getAllActions()
             .stream()
+            .filter(a -> _aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, a))
             .filter(a -> !_aggregateJobPropertiesUtil.getBool(
                         MpfConstants.SUPPRESS_TRACKS, job, media, a))
             .map(a -> pipelineElements.getAlgorithm(a.algorithm()).trackType())

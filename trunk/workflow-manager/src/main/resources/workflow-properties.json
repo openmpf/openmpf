@@ -36,14 +36,14 @@
     },
     {
         "name": "IS_ANNOTATOR",
-        "description": "Components with this property set to true will take the feed-forward track passed to it and adds some additional detection properties",
+        "description": "Actions with this property set to true will take the feed-forward track passed to it and add some additional detection properties",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
         "name": "SUPPRESS_TRACKS",
-        "description": "Tasks with this property set to true will hide the tracks so they don't appear in the JSON output. The action will be listed in the TRACKS SUPPRESSED section of the JSON.",
+        "description": "When an action has this property set to TRUE, the tracks it produces will not appear in the JSON output object. The action will be listed in the TRACKS SUPPRESSED section of the JSON output.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

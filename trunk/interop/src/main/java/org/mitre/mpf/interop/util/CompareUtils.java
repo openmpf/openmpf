@@ -30,8 +30,6 @@ package org.mitre.mpf.interop.util;
 import java.util.*;
 import java.util.function.Function;
 
-import com.google.common.collect.Streams;
-
 public class CompareUtils {
 
     private static final Comparator<Map.Entry<String, String>> MAP_ENTRY_COMPARATOR =

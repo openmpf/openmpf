@@ -195,6 +195,7 @@ public class LocalStorageBackendImpl implements LocalStorageBackend {
     private static String getExtension(MediaSelectorType selectorType) {
         return switch (selectorType) {
             case JSON_PATH -> ".json";
+            case CSV_COLS -> ".csv";
         };
     }
 }

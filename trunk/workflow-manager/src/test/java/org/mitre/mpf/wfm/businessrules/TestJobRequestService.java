@@ -36,7 +36,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -247,7 +246,7 @@ public class TestJobRequestService {
         when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
                 .thenReturn(systemPropsSnapshot);
 
-        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(any(), any(), any(), any()))
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(123))
                 .thenReturn(TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_MATCH));
 
         when(_mockJobRequestDao.getNextId())
@@ -342,8 +341,7 @@ public class TestJobRequestService {
                                       Paths.get("temp"), Map.of("media_prop1", "media_val1"), Map.of(),
                                       List.of(), List.of(), List.of(), null, "error")),
                 Map.of("job_prop1", "job_val1"),
-                Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")),
-                false);
+                Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")));
         originalJob.addDetectionProcessingError(
             new DetectionProcessingError(321, 1, 0, 0, 0, 10, 0, 10,
                                              "error", "errorMessage"));
@@ -454,7 +452,7 @@ public class TestJobRequestService {
                 3, null, null,
                 List.of(new MediaImpl(323, MediaUri.create("http://example.mp4"), UriScheme.HTTP, Path.of("temp"),
                                       Map.of(), Map.of(), List.of(), List.of(), List.of(), null, null)),
-                Map.of(), Map.of(), false);
+                Map.of(), Map.of());
 
         jobRequestEntity.setStatus(BatchJobStatusType.IN_PROGRESS);
 
@@ -510,11 +508,7 @@ public class TestJobRequestService {
                         Instant.ofEpochSecond(1667480850),
                         false)));
 
-        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
-                        eq(jobCreationRequest),
-                        eq(systemPropsSnapshot),
-                        argThat(x -> x.size() == 2),
-                        eq(pipelineElements)))
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(123L))
                 .thenReturn(tiesDbCheckResult);
 
         var creationResult = _jobRequestService.run(jobCreationRequest);
@@ -638,7 +632,9 @@ public class TestJobRequestService {
         when(_mockPipelineService.getBatchPipelineElements(pipeline.getName()))
             .thenReturn(pipeline);
 
-        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(eq(job), any(), any(), any()))
+        when(_mockJobRequestDao.getNextId())
+                .thenReturn(123L);
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(123L))
                 .thenReturn(TiesDbCheckResult.noResult(TiesDbCheckStatus.NOT_REQUESTED));
 
         when(_mockJobRequestDao.persist(any()))

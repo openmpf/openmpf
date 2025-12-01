@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -43,7 +45,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -55,11 +56,12 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.rest.api.pipelines.ValueType;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaSelector;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.util.MediaActionProps;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -81,6 +83,9 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
     @Mock
     private WorkflowPropertyService _mockWfPropSvc;
 
+    @Mock
+    private AggregateJobPropertiesUtil _mockAggJobProps;
+
 
     private JobConfigHasher _jobConfigHasher;
 
@@ -95,7 +100,11 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         when(_mockPropsUtil.getOutputChangedCounter())
             .thenReturn("1");
 
-        _jobConfigHasher = new JobConfigHasher(_mockPropsUtil, _mockWfPropSvc, objectMapper);
+        _jobConfigHasher = new JobConfigHasher(
+                _mockPropsUtil,
+                _mockWfPropSvc,
+                objectMapper,
+                _mockAggJobProps);
     }
 
     @Test
@@ -657,17 +666,15 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
         private Map<String, OptionalInt> _algoNameToOutputCounter = new HashMap<>();
 
-        private Table<Integer, Integer, Map<String, String>> _properties = HashBasedTable.create();
+        private Table<Integer, Integer, Map<String, String>> _actionProps = HashBasedTable.create();
 
         private Map<String, String> _jobProperties = new HashMap<>();
 
-        @SuppressWarnings("unchecked")
-        private BiFunction<Media, Action, Map<String, String>> _mockPropMapGetter
-                = mock(BiFunction.class);
 
         public String getHash() {
             var pipelineElements = mock(JobPipelineElements.class);
 
+            var fullPropTable = HashBasedTable.<Long, String, Map<String, String>>create();
             var tasks = new ArrayList<Task>();
             int actionIdx = -1;
             var algoToPropNames = HashMultimap.<String, String>create();
@@ -687,7 +694,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                         firstAlgoName = action.algorithm();
                     }
                     for (var mediaIdx = 0; mediaIdx < _media.size(); mediaIdx++) {
-                        var map = _properties.get(mediaIdx, actionIdx);
+                        var map = _actionProps.get(mediaIdx, actionIdx);
                         if (map == null) {
                             map = _jobProperties;
                         }
@@ -695,8 +702,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                             map.putAll(_jobProperties);
                             algoToPropNames.putAll(action.algorithm(), map.keySet());
                         }
-                        when(_mockPropMapGetter.apply(_media.get(mediaIdx), action))
-                            .thenReturn(map);
+                        fullPropTable.put(_media.get(mediaIdx).getId(), action.name(), map);
                     }
                 }
             }
@@ -723,8 +729,19 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                 }
             }
 
-            return _jobConfigHasher.getJobConfigHash(
-                    _media, pipelineElements, new MediaActionProps(_mockPropMapGetter));
+            var job = mock(BatchJob.class);
+            when(job.getMedia())
+                    .thenReturn(_media);
+            when(job.getPipelineElements())
+                    .thenReturn(pipelineElements);
+
+            when(_mockAggJobProps.getPropertyMap(eq(job), notNull(), notNull()))
+                    .thenAnswer(inv -> {
+                        var media = inv.getArgument(1, Media.class);
+                        var action = inv.getArgument(2, Action.class);
+                        return fullPropTable.get(media.getId(), action.name());
+                    });
+            return _jobConfigHasher.getJobConfigHash(job);
         }
 
         public JobBuilder addMedia(MediaType mediaType) {
@@ -802,10 +819,10 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         }
 
         public JobBuilder setProperty(String name, int mediaIdx, int actionIdx, String value) {
-            var map = _properties.get(mediaIdx, actionIdx);
+            var map = _actionProps.get(mediaIdx, actionIdx);
             if (map == null) {
                 map = new HashMap<String, String>();
-                _properties.put(mediaIdx, actionIdx, map);
+                _actionProps.put(mediaIdx, actionIdx, map);
             }
             map.put(name, value);
 

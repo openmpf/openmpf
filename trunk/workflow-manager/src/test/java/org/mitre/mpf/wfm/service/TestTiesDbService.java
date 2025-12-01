@@ -94,7 +94,6 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -172,14 +171,14 @@ public class TestTiesDbService extends MockitoTest.Strict {
     public void init() {
         initTestMedia();
         initJob();
-        
+
         lenient().when(_mockAuditEventLogger.createEvent())
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockAuditEventLogger.readEvent())
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
-        
+
         _tiesDbService = new TiesDbService(
                 _mockPropertiesUtil,
                 _mockAggregateJobPropertiesUtil,
@@ -248,16 +247,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
         when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
                 .thenReturn(IntStream.of(2, 1));
 
-        var pipelineElements = _job.getPipelineElements();
-        var mediaActionProps = new MediaActionProps((m, a) -> Map.of());
-        when(_mockAggregateJobPropertiesUtil.getMediaActionProps(
-                    any(), any(), any(), eq(pipelineElements)))
-                .thenReturn(mediaActionProps);
-
-        when(_mockJobConfigHasher.getJobConfigHash(
-                    argThat(m -> m.containsAll(_job.getMedia())),
-                    eq(pipelineElements),
-                    eq(mediaActionProps)))
+        when(_mockJobConfigHasher.getJobConfigHash(_job))
                 .thenReturn("FAKE_JOB_CONFIG_HASH");
 
 
@@ -498,8 +488,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 null,
                 List.of(),
                 Map.of(),
-                Map.of(),
-                false);
+                Map.of());
 
         var jobRequest = new JobRequest();
         jobRequest.setJob(_jsonUtils.serialize(job));
@@ -692,8 +681,7 @@ public class TestTiesDbService extends MockitoTest.Strict {
             null,
             _allMedia,
             Map.of(),
-            Map.of(),
-            false);
+            Map.of());
         _job.addError(
                 _tiesDbParentMedia.getId(),
                 "src",

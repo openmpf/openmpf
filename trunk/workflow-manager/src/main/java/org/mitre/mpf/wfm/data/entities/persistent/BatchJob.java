@@ -72,8 +72,6 @@ public interface BatchJob {
 
     public List<DetectionProcessingError> getDetectionProcessingErrors();
 
-    public boolean shouldCheckTiesDbAfterMediaInspection();
-
     public long getTotalProcessingTime();
 
     public long getProcessingTime(Action action);

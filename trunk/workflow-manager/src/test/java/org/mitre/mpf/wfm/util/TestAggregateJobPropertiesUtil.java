@@ -174,8 +174,7 @@ public class TestAggregateJobPropertiesUtil {
             var job = new BatchJobImpl(1, null, new SystemPropertiesSnapshot(snapshotContent),
                                        pipelineElements, 1, null,
                                        null, List.of(media), jobProperties,
-                                       Map.of(algorithm.name(), overriddenAlgoProperties),
-                                       false);
+                                       Map.of(algorithm.name(), overriddenAlgoProperties));
 
 
             var aggregateJobPropertiesUtil = getAggregateJobPropertiesUtil(workflowProperties, propertiesUtilContent);

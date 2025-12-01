@@ -30,8 +30,10 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -62,14 +64,6 @@ public class CharsetDetectingReader extends InputStreamReader {
         _hasBom = hasBom;
     }
 
-    public static CharsetDetectingReader from(InputStream inputStream) throws IOException {
-        var markableStream = inputStream.markSupported()
-                ? inputStream
-                : new BufferedInputStream(inputStream);
-        var charset = detectCharset(markableStream);
-        var hasBom = removeBomIfPresent(markableStream, charset);
-        return new CharsetDetectingReader(markableStream, charset, hasBom);
-    }
 
     public static CharsetDetectingReader from(Path path) throws IOException {
         var inputStream = Files.newInputStream(path);
@@ -82,6 +76,23 @@ public class CharsetDetectingReader extends InputStreamReader {
         }
     }
 
+    private static final int TIKA_DEFAULT_MARK_LENGTH = 12_000;
+
+    public static CharsetDetectingReader from(InputStream inputStream) throws IOException {
+        var markableStream = inputStream.markSupported()
+                ? inputStream
+                : new BufferedInputStream(inputStream);
+
+        markableStream.mark(TIKA_DEFAULT_MARK_LENGTH);
+        byte[] leadingBytes = markableStream.readNBytes(TIKA_DEFAULT_MARK_LENGTH);
+        markableStream.reset();
+
+        var charset = detectCharset(leadingBytes);
+        var hasBom = removeBomIfPresent(leadingBytes, markableStream, charset);
+        return new CharsetDetectingReader(markableStream, charset, hasBom);
+    }
+
+
     public Charset getCharset() {
         return _charset;
     }
@@ -90,23 +101,94 @@ public class CharsetDetectingReader extends InputStreamReader {
         return _hasBom;
     }
 
+    private static Charset detectCharset(byte[] bytes) throws IOException {
+        if (isUtf8(bytes)) {
+            return StandardCharsets.UTF_8;
+        }
+        else {
+            return detectCharsetTika(bytes);
+        }
+    }
 
-    private static Charset detectCharset(InputStream markableStream) throws IOException {
+    private static boolean isUtf8(byte[] bytes) {
+        var buf = ByteBuffer.wrap(bytes);
+        while (buf.hasRemaining()) {
+            byte b = buf.get();
+            if (b == 0) {
+                return false;
+            }
+            else if (Utf8ByteTypes.SINGLE_BYTE_CHAR.matches(b)) {
+                continue;
+            }
+
+            int numTrailingBytes;
+            if (Utf8ByteTypes.BEGIN_2_BYTE_CHAR.matches(b)) {
+                numTrailingBytes = 1;
+            }
+            else if (Utf8ByteTypes.BEGIN_3_BYTE_CHAR.matches(b)) {
+                numTrailingBytes = 2;
+            }
+            else if (Utf8ByteTypes.BEGIN_4_BYTE_CHAR.matches(b)) {
+                numTrailingBytes = 3;
+            }
+            else {
+                return false;
+            }
+
+            for (int i = 0; i < numTrailingBytes && buf.hasRemaining(); i++) {
+                if (!Utf8ByteTypes.CONTINUATION.matches(buf.get())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private enum Utf8ByteTypes {
+        SINGLE_BYTE_CHAR(0),
+        CONTINUATION(1),
+        BEGIN_2_BYTE_CHAR(2),
+        BEGIN_3_BYTE_CHAR(3),
+        BEGIN_4_BYTE_CHAR(4);
+
+        private final byte _mask;
+
+        private final byte _cmpVal;
+
+        Utf8ByteTypes(int numLeadingOnes) {
+            _mask = (byte) (~0 << (7 - numLeadingOnes));
+            _cmpVal = (byte) (_mask << 1);
+        }
+
+        public boolean matches(byte b) {
+            return (b & _mask) == _cmpVal;
+        }
+    }
+
+
+    public static Charset detectCharsetTika(byte[] bytes) throws IOException {
         var matches = new CharsetDetector()
                 // Prefer UTF-8 when input is compatible. This was necessary because for small
                 // sequences of ASCII characters, it would sometimes report IBM500.
                 .setDeclaredEncoding(StandardCharsets.UTF_8.name())
-                .setText(markableStream)
+                .setText(bytes)
                 .detectAll();
-        return Stream.of(matches)
-                .map(cm -> Charset.availableCharsets().get(cm.getNormalizedName()))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElseThrow(() -> new IOException("Could not determine charset."));
+
+        for (var match : matches) {
+            try {
+                return Charset.forName(match.getNormalizedName());
+            }
+            catch (UnsupportedCharsetException ignored) {
+                // Try a lower confidence Charset
+            }
+        }
+        throw new IOException("Could not determine file Charset.");
     }
 
 
+
     private static boolean removeBomIfPresent(
+            byte[] leadingBytes,
             InputStream markableStream,
             Charset charset) throws IOException {
         var bomBytes = CHARSET_BOM_BYTES.get(charset);
@@ -114,15 +196,15 @@ public class CharsetDetectingReader extends InputStreamReader {
             // This Charset does not use a BOM.
             return false;
         }
+        if (leadingBytes.length < bomBytes.length) {
+            return false;
+        }
 
-        // Mark the stream since we might not read a BOM.
-        markableStream.mark(bomBytes.length);
-        var fileBegin = markableStream.readNBytes(bomBytes.length);
-        var hasBom = Arrays.equals(bomBytes, fileBegin);
-        if (!hasBom) {
-            // Since there was not a BOM, regular characters were removed from stream.
-            // Those characters need to be put back in the stream.
-            markableStream.reset();
+        var hasBom = Arrays.equals(
+                bomBytes, 0, bomBytes.length,
+                leadingBytes, 0, bomBytes.length);
+        if (hasBom) {
+            markableStream.skipNBytes(bomBytes.length);
         }
         return hasBom;
     }

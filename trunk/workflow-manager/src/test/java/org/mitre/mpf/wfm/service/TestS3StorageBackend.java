@@ -182,6 +182,8 @@ public class TestS3StorageBackend extends MockitoTest.Strict {
     public void init() {
         lenient().when(_mockAuditEventLogger.createEvent())
                 .thenReturn(_mockBuilderTagStage);
+        lenient().when(_mockAuditEventLogger.readEvent())
+                .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
         lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))

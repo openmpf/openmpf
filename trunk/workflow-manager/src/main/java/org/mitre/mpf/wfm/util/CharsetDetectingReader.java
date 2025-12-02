@@ -38,7 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -102,7 +102,7 @@ public class CharsetDetectingReader extends InputStreamReader {
     }
 
     private static Charset detectCharset(byte[] bytes) throws IOException {
-        if (isUtf8(bytes)) {
+        if (allBytesAreValidUtf8(bytes)) {
             return StandardCharsets.UTF_8;
         }
         else {
@@ -110,11 +110,15 @@ public class CharsetDetectingReader extends InputStreamReader {
         }
     }
 
-    private static boolean isUtf8(byte[] bytes) {
+    private static boolean allBytesAreValidUtf8(byte[] bytes) {
         var buf = ByteBuffer.wrap(bytes);
         while (buf.hasRemaining()) {
             byte b = buf.get();
             if (b == 0) {
+                // 0 is technically a valid UTF-8 byte representing the null character, but the
+                // null byte is rarely used. A zero byte is more likely to occur in the high bytes
+                // of ASCII characters encoded with UTF-16 or UTF-32. Since there is a high chance
+                // that the text is not UTF-8, we will rely on Tika's Charset detection.
                 return false;
             }
             else if (Utf8ByteTypes.SINGLE_BYTE_CHAR.matches(b)) {
@@ -145,6 +149,8 @@ public class CharsetDetectingReader extends InputStreamReader {
     }
 
     private enum Utf8ByteTypes {
+        // https://www.unicode.org/versions/Unicode16.0.0/core-spec/chapter-3/#G27288 has a table
+        // explaining the UTF-8 byte patterns.
         SINGLE_BYTE_CHAR(0),
         CONTINUATION(1),
         BEGIN_2_BYTE_CHAR(2),
@@ -156,6 +162,8 @@ public class CharsetDetectingReader extends InputStreamReader {
         private final byte _cmpVal;
 
         Utf8ByteTypes(int numLeadingOnes) {
+            // The mask has an extra 1 bit set so that we can verify that after the leading 1's,
+            // there is a 0.
             _mask = (byte) (~0 << (7 - numLeadingOnes));
             _cmpVal = (byte) (_mask << 1);
         }
@@ -174,17 +182,11 @@ public class CharsetDetectingReader extends InputStreamReader {
                 .setText(bytes)
                 .detectAll();
 
-        for (var match : matches) {
-            try {
-                return Charset.forName(match.getNormalizedName());
-            }
-            catch (UnsupportedCharsetException ignored) {
-                // Try a lower confidence Charset
-            }
-        }
-        throw new IOException("Could not determine file Charset.");
+        return Stream.of(matches)
+            .flatMap(m -> getCharset(m.getNormalizedName()).stream())
+            .findFirst()
+            .orElseThrow(() -> new IOException("Could not determine file Charset."));
     }
-
 
 
     private static boolean removeBomIfPresent(
@@ -217,10 +219,18 @@ public class CharsetDetectingReader extends InputStreamReader {
                 StandardCharsets.UTF_16LE);
 
         var nonStandardCharsets = Stream.of("UTF-32", "UTF-32BE", "UTF-32LE")
-                .map(Charset.availableCharsets()::get)
-                .filter(Objects::nonNull);
+                .flatMap(n -> getCharset(n).stream());
 
         return Stream.concat(standardCharsets, nonStandardCharsets)
             .collect(ImmutableMap.toImmutableMap(Function.identity(), BYTE_ORDER_MARK::getBytes));
+    }
+
+    private static Optional<Charset> getCharset(String name) {
+        try {
+            return Optional.of(Charset.forName(name));
+        }
+        catch (UnsupportedCharsetException e) {
+            return Optional.empty();
+        }
     }
 }

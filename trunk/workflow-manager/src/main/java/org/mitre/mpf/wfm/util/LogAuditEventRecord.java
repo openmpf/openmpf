@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.util;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public record LogAuditEventRecord(
@@ -40,8 +41,11 @@ public record LogAuditEventRecord(
     OpType op,
     ResType res,
     String msg,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     String uri,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     String bucket,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     String bucket_key
 ) {
 

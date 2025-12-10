@@ -24,8 +24,11 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <jni.h>
 #include "JniHelper.h"
+
+#include <stdexcept>
+
+#include <jni.h>
 #include <libheif/heifio/encoder.h>
 #include <libheif/heifio/encoder_png.h>
 #include <libheif/heif_cxx.h>
@@ -95,4 +98,3 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heif_HeifConverter_convertNative (
 }
 
 }  // extern "C"
-

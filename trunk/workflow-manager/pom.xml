@@ -314,17 +314,6 @@
             <version>${hibernate.framework.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-hibernate-cache-v53</artifactId>
-            <version>12.0.2.Final</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jgroups</groupId>
-                    <artifactId>jgroups</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
             <version>${hibernate.validator.version}</version>
@@ -444,9 +433,9 @@
         </dependency>
 
         <dependency>
-         <groupId>org.aspectj</groupId>
+            <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
-            <version>1.8.6</version>
+            <version>1.9.25</version>
         </dependency>
 
         <dependency>

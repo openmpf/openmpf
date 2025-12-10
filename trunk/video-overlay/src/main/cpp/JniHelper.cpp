@@ -26,6 +26,8 @@
 
 #include "JniHelper.h"
 
+#include <utility>
+
 
 JniHelper::JniHelper(JNIEnv *env)
     : env_(env) {

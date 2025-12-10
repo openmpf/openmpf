@@ -84,7 +84,7 @@ namespace MPF { namespace COMPONENT {
             return;
         }
 
-        LOG4CXX_WARN(logger_, "Failed to read frame. Will retry forever.")
+        LOG4CXX_WARN(logger_, "Failed to read frame. Will retry forever.");
         ExecutorUtils::RetryWithBackOff(
                 [this, &frame] {
                     return DoReadRetry(frame);

@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import static org.mockito.Mockito.withSettings;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;

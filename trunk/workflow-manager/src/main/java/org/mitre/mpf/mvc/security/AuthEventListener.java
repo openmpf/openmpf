@@ -34,8 +34,6 @@ import org.springframework.security.authentication.event.AuthenticationSuccessEv
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
 import org.springframework.stereotype.Component;
 
-import com.jayway.jsonpath.internal.filter.LogicalOperator;
-
 /**
  * Receives events from {@link org.mitre.mpf.Application#authenticationEventPublisher}
  */

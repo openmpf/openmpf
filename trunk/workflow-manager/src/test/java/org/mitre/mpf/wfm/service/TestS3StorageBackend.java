@@ -193,7 +193,7 @@ public class TestS3StorageBackend extends MockitoTest.Strict {
                 .thenReturn(_mockAuditEventBuilder);
         lenient().when(_mockAuditEventBuilder.withBucket(anyString()))
                 .thenReturn(_mockAuditEventBuilder);
-        lenient().when(_mockAuditEventBuilder.withBucketKey(anyString()))
+        lenient().when(_mockAuditEventBuilder.withObjectKey(anyString()))
                 .thenReturn(_mockAuditEventBuilder);
         EXPECTED_OBJECT_KEY = "5e/ac/" + EXPECTED_HASH;
         _expectedUri = URI.create(S3_HOST + RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);

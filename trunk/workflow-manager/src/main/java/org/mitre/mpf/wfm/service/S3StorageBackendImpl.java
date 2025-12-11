@@ -342,7 +342,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                     .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD)
                     .withUri(uri)
                     .withBucket(bucket)
-                    .withBucketKey(objectKey)
+                    .withObjectKey(objectKey)
                     .allowed();
             return result;
         }
@@ -352,7 +352,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                     .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD_ERROR)
                     .withUri(uri)
                     .withBucket(bucket)
-                    .withBucketKey(objectKey)
+                    .withObjectKey(objectKey)
                     .error("Failed to retrieve object from S3");
             throw new StorageException(
                     String.format("Failed to download \"%s\" due to %s", uri, e),
@@ -415,7 +415,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                         .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD)
                         .withUri(bucketUri)
                         .withBucket(bucketName)
-                        .withBucketKey(objectName)
+                        .withObjectKey(objectName)
                         .allowed();
             }
             return urlUtil.getFullUri(bucketUri, objectName);
@@ -427,7 +427,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                     .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD_ERROR)
                     .withUri(bucketUri)
                     .withBucket(bucketName)
-                    .withBucketKey(objectName)
+                    .withObjectKey(objectName)
                     .error("Failed to store object in S3.");
             // Don't include path so multiple failures appear as one issue in JSON output object.
             throw new StorageException("Failed to upload due to S3 error: " + e, e);

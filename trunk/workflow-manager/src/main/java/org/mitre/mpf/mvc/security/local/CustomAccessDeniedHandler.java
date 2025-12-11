@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
@@ -70,6 +71,7 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
                 .withUri(uri)
+                .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED)
                 .denied("Login attempt failed: Invalid XSRF token");
             response.sendRedirect("/");
         }

@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import static org.mockito.Mockito.withSettings;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -57,6 +59,7 @@ import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,6 +157,7 @@ public class ServerMediaController {
             _auditEventLogger
                     .readEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.INVALID_PARAMETER_ERROR)
                     .error("Invalid directory path requested: %s", fullPath);
             return null; // security check
         }
@@ -181,6 +185,7 @@ public class ServerMediaController {
         if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
             _auditEventLogger.readEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.INVALID_PARAMETER_ERROR)
                     .error("Invalid directory path requested for filtered listing: %s" , fullPath);
             return null; // security check
         }
@@ -217,12 +222,14 @@ public class ServerMediaController {
         if (Files.isReadable(path)) {
             _auditEventLogger.readEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.VIEW_FILES)
                     .allowed("Viewed server node image: path = %s", nodeFullPath);
             return new PathResource(path);
         }
         else {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.FILE_ACCESS_ERROR)
                 .error("File not readable or not found: %s", nodeFullPath);
             return ResponseEntity.notFound().build();
         }
@@ -236,6 +243,7 @@ public class ServerMediaController {
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
             _auditEventLogger.extractEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_MEDIA)
                     .allowed("Downloaded media file: jobId = %s, uri = %s", jobId, sourceUri);
             return new PathResource(sourceUri);
         }
@@ -246,6 +254,7 @@ public class ServerMediaController {
             log.error("Media for job id {} download failed. Invalid job id.", jobId);
             _auditEventLogger.extractEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.INVALID_JOB_ID_ERROR)
                     .error("Media download failed: invalid job ID %s", jobId);
             return ResponseEntity.notFound().build();
         }
@@ -260,6 +269,7 @@ public class ServerMediaController {
             var s3Stream = _s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
             _auditEventLogger.extractEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD)
                     .allowed("Downloaded media file: uri = %s" , sourceUri);
             return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
         }
@@ -269,6 +279,7 @@ public class ServerMediaController {
         var responseToForward = _httpClient.executeRequestSync(request, 0);
         _auditEventLogger.extractEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_MEDIA)
                 .allowed("Downloaded media file: uri = %s" , sourceUri);
         return ForwardHttpResponseUtil.createResponseEntity(responseToForward);
     }

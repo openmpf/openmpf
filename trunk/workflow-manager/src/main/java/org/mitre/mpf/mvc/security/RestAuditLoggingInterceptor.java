@@ -27,6 +27,7 @@
 package org.mitre.mpf.mvc.security;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -49,6 +50,7 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
 
         getAuditEventByHttpMethod(method)
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.REST_API_ACCESS)
                 .withUri(requestURI)
                 .allowed();
         return true;

@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.core.Authentication;
@@ -112,6 +113,7 @@ public class CustomSsoBrowserService extends BaseCustomSsoService {
             var redirectDest = _customSsoProps.getFullRedirectUri().toString();
             _auditLogger.loginEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED)
                 .denied("User does not have an SSO token. Redirecting to %s", redirectDest);
             response.sendRedirect(redirectDest);
         }

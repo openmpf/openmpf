@@ -60,6 +60,7 @@ import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +132,7 @@ public class MarkupController {
         if (jobRequest == null) {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.INVALID_JOB_ID_ERROR)
                 .error("Failed to retrieve markup results: Invalid job ID %s", jobId);
             return ResponseEntity.notFound().build();
         }
@@ -226,6 +228,7 @@ public class MarkupController {
             log.error("Markup with id {} download failed. Invalid id.", id);
             _auditEventLogger.extractEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
                 .error("Markup download failed: Invalid markup ID %s", id);
             return ResponseEntity.notFound().build();
         }
@@ -235,12 +238,14 @@ public class MarkupController {
             if (Files.exists(localPath.get())) {
                 _auditEventLogger.extractEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_FILE)
                     .allowed("Downloaded markup file: uri=%s", markupResult.getMarkupUri());
                 return new PathResource(localPath.get());
             }
             log.error("Markup with id {} download failed. Invalid path: {}", id, localPath);
             _auditEventLogger.extractEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
                 .error("Markup download failed: File not found at path %s for markup ID %s", localPath, id);
             return ResponseEntity.notFound().build();
         }
@@ -254,6 +259,7 @@ public class MarkupController {
                     id, markupResult.getJobId());
             _auditEventLogger.extractEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
                 .error("Markup download failed: Invalid job ID %s for markup ID %s", markupResult.getJobId(), id);
             return ResponseEntity.notFound().build();
         }
@@ -269,6 +275,7 @@ public class MarkupController {
                     id, markupResult.getMediaId());
             _auditEventLogger.extractEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
                 .error("Markup download failed: Invalid media ID %s for markup ID %s", markupResult.getMediaId(), id);
             return ResponseEntity.notFound().build();
         }
@@ -280,6 +287,7 @@ public class MarkupController {
                         markupResult.getMarkupUri(), combinedProperties);
                 _auditEventLogger.extractEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_FILE)
                     .allowed("Downloaded markup file: uri=%s", markupResult.getMarkupUri());
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
@@ -287,6 +295,7 @@ public class MarkupController {
                 log.error("Markup with id " + id + " download failed: " + e.getMessage(), e);
                 _auditEventLogger.extractEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD_ERROR)
                     .error("Markup download failed: S3 error for markup ID %s : %s", id, e.getMessage());
                 return ResponseEntity.internalServerError().build();
             }
@@ -296,6 +305,7 @@ public class MarkupController {
         var markupResponse = _httpClientUtils.executeRequestSync(request, 0);
         _auditEventLogger.extractEvent()
             .withSecurityTag()
+            .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_FILE)
             .allowed("Downloaded markup file: uri=%s", markupResult.getMarkupUri());
         return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }

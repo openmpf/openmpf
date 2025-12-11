@@ -74,62 +74,63 @@ public class AuditEventLogger {
             LogAuditEventRecord.TagType tag,
             LogAuditEventRecord.OpType op,
             LogAuditEventRecord.ResType res,
+            LogAuditEventRecord.EventId eid,
             String user,
             String uri,
             String msg,
             String bucket,
             String bucketKey) {
 
-        int eventId = getEventId(op, res, uri, msg);
+        //int eventId = getEventId(op, res, uri, msg);
         var eventRecord = new LogAuditEventRecord(
-                Instant.now(),  eventId, tag, "openmpf", user, op, res, msg, uri, bucket, bucketKey);
+                Instant.now(), eid, tag, "openmpf", user, op, res, msg, uri, bucket, bucketKey);
         writeToLogger(eventRecord);
         return this;
     }
     // These event types are placeholders and should be changed to reflect the type of events better.
-    private int getEventId(LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String uri, String msg) {
+    //private int getEventId(LogAuditEventRecord.OpType op, LogAuditEventRecord.ResType res, String uri, String msg) {
         // Determine event ID based on operation type, result type, and context
-        if (op == LogAuditEventRecord.OpType.LOGIN) {
-            return res == LogAuditEventRecord.ResType.ALLOW
-                ? LogAuditEventRecord.EventIds.LOGIN_SUCCESS
-                : LogAuditEventRecord.EventIds.LOGIN_FAILURE;
-        }
+    //    if (op == LogAuditEventRecord.OpType.LOGIN) {
+    //        return res == LogAuditEventRecord.ResType.ALLOW
+    //            ? LogAuditEventRecord.EventIds.LOGIN_SUCCESS
+    //            : LogAuditEventRecord.EventIds.LOGIN_FAILURE;
+    //    }
 
-        if (res == LogAuditEventRecord.ResType.DENY) {
-            return LogAuditEventRecord.EventIds.ACCESS_DENIED;
-        }
+    //    if (res == LogAuditEventRecord.ResType.DENY) {
+    //        return LogAuditEventRecord.EventIds.ACCESS_DENIED;
+    //    }
 
-        if (res == LogAuditEventRecord.ResType.ERROR) {
-            if (msg != null && (msg.contains("TiesDB") || msg.contains("API call failed"))) {
-                return LogAuditEventRecord.EventIds.EXTERNAL_API_ERROR;
-            }
-            if (msg != null && (msg.contains("Invalid") || msg.contains("Malformed") || msg.contains("missing"))) {
-                return LogAuditEventRecord.EventIds.VALIDATION_ERROR;
-            }
-            return LogAuditEventRecord.EventIds.SYSTEM_ERROR;
-        }
+    //    if (res == LogAuditEventRecord.ResType.ERROR) {
+    //        if (msg != null && (msg.contains("TiesDB") || msg.contains("API call failed"))) {
+   //             return LogAuditEventRecord.EventIds.EXTERNAL_API_ERROR;
+    //        }
+    //        if (msg != null && (msg.contains("Invalid") || msg.contains("Malformed") || msg.contains("missing"))) {
+    //            return LogAuditEventRecord.EventIds.VALIDATION_ERROR;
+    //        }
+    //        return LogAuditEventRecord.EventIds.SYSTEM_ERROR;
+    //    }
 
         // Success cases based on operation type and context
-        switch (op) {
-            case CREATE:
-                if (msg != null && msg.contains("Job created")) {
-                    return LogAuditEventRecord.EventIds.JOB_CREATE;
-                }
-                if (msg != null && msg.contains("Media file uploaded")) {
-                    return LogAuditEventRecord.EventIds.MEDIA_UPLOAD;
-                }
-                return LogAuditEventRecord.EventIds.JOB_CREATE; // Default for CREATE
+    //     switch (op) {
+    //         case CREATE:
+    //             if (msg != null && msg.contains("Job created")) {
+    //                 return LogAuditEventRecord.EventIds.JOB_CREATE;
+    //             }
+    //             if (msg != null && msg.contains("Media file uploaded")) {
+    //                 return LogAuditEventRecord.EventIds.MEDIA_UPLOAD;
+    //             }
+    //             return LogAuditEventRecord.EventIds.JOB_CREATE; // Default for CREATE
 
-            case MODIFY:
-                return LogAuditEventRecord.EventIds.JOB_MODIFY;
+    //         case MODIFY:
+    //             return LogAuditEventRecord.EventIds.JOB_MODIFY;
 
-            case DELETE:
-                return LogAuditEventRecord.EventIds.JOB_DELETE;
+    //         case DELETE:
+    //             return LogAuditEventRecord.EventIds.JOB_DELETE;
 
-            default:
-                return LogAuditEventRecord.EventIds.REST_API_ACCESS; 
-        }
-    }
+    //         default:
+    //             return LogAuditEventRecord.EventIds.REST_API_ACCESS; 
+    //     }
+    // }
 
     public BuilderTagStage createEvent() {
         return getEventBuilder(LogAuditEventRecord.OpType.CREATE);
@@ -191,6 +192,10 @@ public class AuditEventLogger {
             return this;
         }
 
+        public AuditEventBuilder withEventId(LogAuditEventRecord.EventId eid) {
+            return this;
+        }
+
         public AuditEventBuilder withUri(String uri, Object... formatArgs) {
             return this;
         }
@@ -224,6 +229,8 @@ public class AuditEventLogger {
 
         private LogAuditEventRecord.TagType _tagType;
 
+        private LogAuditEventRecord.EventId _eventId;
+
         private Authentication _auth;
 
         private String _uri;
@@ -245,6 +252,11 @@ public class AuditEventLogger {
         @Override
         public AuditEventBuilder withSecurityTag() {
             _tagType = LogAuditEventRecord.TagType.SECURITY;
+            return this;
+        }
+
+        public AuditEventBuilder withEventId(LogAuditEventRecord.EventId eid) {
+            _eventId = eid;
             return this;
         }
 
@@ -301,7 +313,7 @@ public class AuditEventLogger {
                     .filter(s -> !s.isEmpty())
                     .orElseGet(() -> getCurrentLoggedInUser());
 
-            log(_tagType, _opType, resType, user, _uri, formattedMessage, _bucket, _bucketKey);
+            log(_tagType, _opType, resType, _eventId, user, _uri, formattedMessage, _bucket, _bucketKey);
         }
     }
 }

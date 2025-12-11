@@ -71,6 +71,7 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -352,6 +353,7 @@ public class TiesDbService {
                     .thenAccept(response -> {
                         _auditEventLogger.createEvent()
                             .withSecurityTag()
+                            .withEventId(LogAuditEventRecord.EventId.TIES_DB_POST)
                             .withUri(fullUrl.toString())
                             .allowed();
                         responseChecker.checkResponse(response);
@@ -359,8 +361,9 @@ public class TiesDbService {
                     .exceptionallyCompose(err -> {
                         _auditEventLogger.createEvent()
                             .withSecurityTag()
+                            .withEventId(LogAuditEventRecord.EventId.TIESDB_POST_ERROR)
                             .withUri(fullUrl.toString())
-                            .error("TiesDB API call failed: %s", err.getMessage());
+                            .error("TiesDB post assertion failed: %s", err.getMessage());
                         return convertError(fullUrl.toString(), err);
                     });
         }

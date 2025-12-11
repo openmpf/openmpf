@@ -40,6 +40,7 @@ import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
 import org.mitre.mpf.mvc.security.custom.sso.CustomSsoConfig;
 import org.mitre.mpf.mvc.security.custom.sso.CustomSsoProps;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,10 +137,12 @@ public class LoginController {
 
         _auditEventLogger.loginEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.LOGIN_PAGE_ACCESS)
                 .allowed("Login page accessed.");
         if (authentication != null && authentication.isAuthenticated()) {
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.LOGIN_SUCCESS)
                 .allowed("User is already authenticated.");
             return "redirect:/";
         }
@@ -151,6 +154,7 @@ public class LoginController {
             String badCredentialsMessage = "Failed login attempt: Invalid username and/or password.";
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED)
                 .denied(badCredentialsMessage);
             model.addObject("error", badCredentialsMessage);
         }
@@ -176,6 +180,7 @@ public class LoginController {
             log.error(errorMessage, accessDeniedException);
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED)
                 .denied(errorMessage);
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {

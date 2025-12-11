@@ -63,6 +63,7 @@ import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.InvalidJobIdException;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,6 +133,7 @@ public class JobController {
         log.error(ex.getMessage(), ex);
         _auditEventLogger.readEvent()
             .withSecurityTag()
+            .withEventId(LogAuditEventRecord.EventId.INVALID_JOB_ID_ERROR)
             .error("Invalid job ID provided: %s", ex.getMessage());
         return new MessageModel(ex.getMessage());
     }
@@ -188,11 +190,24 @@ public class JobController {
         JobCreationResponse createResponse = createJobInternal(
                 jobCreationRequest, false, session);
         if (createResponse.mpfResponse().isSuccessful()) {
+            // Log successful job creation with detailed information
+            var mediaUris = jobCreationRequest.media().stream()
+                    .map(media -> media.mediaUri().toString())
+                    .toList();
+            String mediaUrisList = String.join(", ", mediaUris);
+
+            _auditEventLogger.createEvent()
+                    .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.CREATE_JOB)
+                    .allowed("Pipeline: %s, Media URIs: [%s]",
+                             jobCreationRequest.pipelineName(),
+                             mediaUrisList);
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating job");
             _auditEventLogger.createEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.JOB_CREATE_ERROR)
                 .error("Failed to create job via REST API");
             return new ResponseEntity<>(createResponse, HttpStatus.BAD_REQUEST);
         }
@@ -274,10 +289,17 @@ public class JobController {
                                   "with id '{}'", jobId);
                 _auditEventLogger.readEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.GET_JOB_INFO_ERROR)
                 .error("Job not found for ID: %s", jobId);
                 return ResponseEntity.badRequest().body(null);
             }
-            return ResponseEntity.ok(convertToSingleJobInfo(jobRequest));
+            else {
+                _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.GET_JOB_INFO)
+                .allowed(String.format("User retrieved job info for job id = {}", jobId));
+                return ResponseEntity.ok(convertToSingleJobInfo(jobRequest));
+            }
         }
     }
 
@@ -301,6 +323,7 @@ public class JobController {
                                   "with id '{}'", jobId);
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.GET_JOB_INFO_ERROR)
                     .error("Job not found for ID: %s", jobId);
                 return null;
             }
@@ -329,10 +352,15 @@ public class JobController {
             //return 200 for successful GET and object; 404 for bad id
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
             if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
+                _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.GET_JOB_OUTPUT_ERROR)
+                .error("Failed to read detection output for job id {}", jobId);
                 return ResponseEntity.notFound().build();
             }
             _auditEventLogger.readEvent()
                 .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.GET_JOB_OUTPUT)
                 .allowed("User retrieved JSON output object for job %s", jobId);
             var resultsStream = pastJobResultsService.getDetectionJobResultsStream(internalJobId);
             return ResponseEntity.ok(new InputStreamResource(resultsStream));
@@ -340,7 +368,8 @@ public class JobController {
         catch (WfmProcessingException e) {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
-                .error("Failed to retrieve detection output for job %s : %s", jobId, e.getMessage());
+                .withEventId(LogAuditEventRecord.EventId.GET_JOB_OUTPUT_ERROR)
+                .error("Failed to read detection output for job %s : %s", jobId, e.getMessage());
             return ResponseEntity.internalServerError()
                 .body(new MessageModel(e.getMessage()));
         }
@@ -352,9 +381,6 @@ public class JobController {
     public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) String idParam) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(idParam);
         return MdcUtil.job(internalJobId, () -> {
-            _auditEventLogger.readEvent()
-                .withSecurityTag()
-                .allowed("User clicked to view JSON output object for job: %s", idParam);
             return new ModelAndView("output_object", "jobId", idParam);
         });
     }
@@ -378,12 +404,17 @@ public class JobController {
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobCreationResponse resubmitResponse = resubmitJobInternal(internalJobId, jobPriorityParam);
             if (resubmitResponse.mpfResponse().isSuccessful()) {
+                _auditEventLogger.modifyEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.RESUBMIT_JOB)
+                .allowed("User resubmitted job with id %s", jobId);
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
             }
             else {
                 log.error("Error resubmitting job with id '{}'", jobId);
                 _auditEventLogger.modifyEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.JOB_RESUBMIT_ERROR)
                     .error("Failed to resubmit job with ID: %s", jobId);
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.BAD_REQUEST);
             }
@@ -424,11 +455,16 @@ public class JobController {
         try (var mdc = CloseableMdc.job(internalJobId)) {
             MpfResponse mpfResponse = cancelJobInternal(internalJobId);
             if (mpfResponse.isSuccessful()) {
+                _auditEventLogger.deleteEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.CANCEL_JOB)
+                .allowed("User resubmitted job with id %s", jobId);
                 return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
             } else {
                 log.error("Error cancelling job with id '{}'", internalJobId);
                 _auditEventLogger.deleteEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.JOB_CANCEL_ERROR)
                     .error("Failed to cancel job with ID: %s", internalJobId);
                 return new ResponseEntity<>(mpfResponse, HttpStatus.BAD_REQUEST);
             }
@@ -458,9 +494,17 @@ public class JobController {
     public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds) {
         var tiesDbResult = tiesDbService.repost(jobIds);
         if (tiesDbResult.failures().isEmpty()) {
+            _auditEventLogger.createEvent()
+            .withSecurityTag()
+            .withEventId(LogAuditEventRecord.EventId.TIES_DB_POST)
+            .allowed("Reposted job results to TiesDB");
             return ResponseEntity.ok(tiesDbResult);
         }
         else {
+            _auditEventLogger.createEvent()
+            .withSecurityTag()
+            .withEventId(LogAuditEventRecord.EventId.TIESDB_POST_ERROR)
+            .error("Failed to repost job results for at least one job");
             return ResponseEntity.internalServerError().body(tiesDbResult);
         }
     }
@@ -483,17 +527,6 @@ public class JobController {
                     .map(ci -> ci.outputObjectUri())
                     .orElse(null);
 
-            // Log successful job creation with detailed information
-            var mediaUris = jobCreationRequest.media().stream()
-                    .map(media -> media.mediaUri().toString())
-                    .toList();
-            String mediaUrisList = String.join(", ", mediaUris);
-
-            _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .allowed("Pipeline: %s, Media URIs: [%s]",
-                             jobCreationRequest.pipelineName(),
-                             mediaUrisList);
 
             // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(
@@ -634,9 +667,6 @@ public class JobController {
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);
-            _auditEventLogger.modifyEvent()
-                .withSecurityTag()
-                .error("Exception during job resubmission for ID %s: %s", jobId, wpe.getMessage());
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
     }
@@ -648,9 +678,6 @@ public class JobController {
             wasCancelled = jobRequestService.cancel(jobId);
         } catch ( WfmProcessingException wpe ) {
             log.error("Failed to cancel Batch Job #{} due to an exception.", jobId, wpe);
-            _auditEventLogger.deleteEvent()
-                .withSecurityTag()
-                .error("Exception during job cancellation for ID %s: %s", jobId, wpe.getMessage());
             wasCancelled = false;
         }
         if (wasCancelled) {
@@ -660,9 +687,6 @@ public class JobController {
         String errorStr = "Failed to cancel the job with id '" + jobId + "'. Please check to make sure the job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
-        _auditEventLogger.deleteEvent()
-            .withSecurityTag()
-            .error(errorStr);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
 }

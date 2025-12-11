@@ -66,6 +66,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.RetryUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -338,6 +339,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             T result = s3Client.getObject(getRequest, responseTransformer);
             _auditEventLogger.readEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD)
                     .withUri(uri)
                     .withBucket(bucket)
                     .withBucketKey(objectKey)
@@ -347,6 +349,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         catch (SdkException e) {
             _auditEventLogger.readEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD_ERROR)
                     .withUri(uri)
                     .withBucket(bucket)
                     .withBucketKey(objectKey)
@@ -409,6 +412,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                         path, bucketUri, objectName);
                 _auditEventLogger.createEvent()
                         .withSecurityTag()
+                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD)
                         .withUri(bucketUri)
                         .withBucket(bucketName)
                         .withBucketKey(objectName)
@@ -420,6 +424,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             LOG.error("Failed to upload {} due to S3 error: {}", path, e);
             _auditEventLogger.createEvent()
                     .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD_ERROR)
                     .withUri(bucketUri)
                     .withBucket(bucketName)
                     .withBucketKey(objectName)

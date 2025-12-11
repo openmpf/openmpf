@@ -179,6 +179,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withEventId(any()))
+                .thenReturn(_mockAuditEventBuilder);
         lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))
                 .thenReturn(_mockAuditEventBuilder);
 

@@ -49,6 +49,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectJob;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -138,6 +139,7 @@ public class JobCompleteCallbackService {
                     int statusCode = response.getStatusLine().getStatusCode();
                     _auditEventLogger.createEvent()
                         .withSecurityTag()
+                        .withEventId(LogAuditEventRecord.EventId.JOB_CALLBACK_SENT)
                         .allowed("Job completion callback: %s %s - %d", 
                             request.getMethod(), request.getURI(), statusCode );
                     return checkResponse(response);
@@ -145,6 +147,7 @@ public class JobCompleteCallbackService {
                 .exceptionallyCompose(err -> {
                     _auditEventLogger.createEvent()
                         .withSecurityTag()
+                        .withEventId(LogAuditEventRecord.EventId.JOB_CALLBACK_ERROR)
                         .error("Job completion callback failed: %s %s : %s", 
                             request.getMethod(), request.getURI(), err.getMessage());
                     return ThreadUtil.failedFuture(err);

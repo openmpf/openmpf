@@ -27,11 +27,14 @@
 package org.mitre.mpf.mvc.security;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
 import org.springframework.stereotype.Component;
+
+import com.jayway.jsonpath.internal.filter.LogicalOperator;
 
 /**
  * Receives events from {@link org.mitre.mpf.Application#authenticationEventPublisher}
@@ -50,6 +53,7 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(success.getAuthentication())
+            .withEventId(LogAuditEventRecord.EventId.AUTHENTICATED_WEB_REQUEST)
             .allowed("Authenticated web request");
     }
 
@@ -59,6 +63,7 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(event.getAuthentication())
+            .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED)
             .denied("Authentication failed: %s", event.getException().getMessage());
     }
 
@@ -68,6 +73,7 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(logoutEvent.getAuthentication())
+            .withEventId(LogAuditEventRecord.EventId.USER_LOGOUT)
             .allowed("User logged out.");
     }
 }

@@ -707,7 +707,7 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "confidence": 90.0,
+                "confidence": 91.0,
                 "trackProperties": {
                   "MISSING_LANGUAGE_MODELS": "",
                   "ROTATE_AND_DETECT_PASS": "0",
@@ -725,7 +725,7 @@
                   "y": 3,
                   "width": 60,
                   "height": 83,
-                  "confidence": 90.0,
+                  "confidence": 91.0,
                   "detectionProperties": {
                     "MISSING_LANGUAGE_MODELS": "",
                     "ROTATE_AND_DETECT_PASS": "0",
@@ -747,7 +747,7 @@
                     "y": 3,
                     "width": 60,
                     "height": 83,
-                    "confidence": 90.0,
+                    "confidence": 91.0,
                     "detectionProperties": {
                       "MISSING_LANGUAGE_MODELS": "",
                       "ROTATE_AND_DETECT_PASS": "0",

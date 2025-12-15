@@ -1,22 +1,22 @@
 {
     "openmpfVersion": "9.0",
-    "jobId": "ubuntu-118",
+    "jobId": "0a606d994272-40",
     "errors": [],
     "warnings": [],
     "timing": {
-        "processingTime": 195151,
+        "processingTime": 88416,
         "actions": [
             {
                 "name": "OCV FACE DETECTION ACTION",
-                "processingTime": 95876
+                "processingTime": 50568
             },
             {
                 "name": "OCV TINY YOLO OBJECT DETECTION ACTION",
-                "processingTime": 99275
+                "processingTime": 37848
             }
         ]
     },
-    "objectId": "5bf498d5-af89-44dd-9cf1-4dd01e687a14",
+    "objectId": "bd6e59a0-4a6a-4dc8-b827-71f0e8c2769a",
     "pipeline": {
         "name": "TEST MULTIPLE-ACTION TASK PIPELINE 2",
         "description": "TEST MULTIPLE-ACTION TASK PIPELINE 2",
@@ -47,18 +47,18 @@
     },
     "priority": 4,
     "siteId": "mpf1",
-    "externalJobId": "5a112751-9c71-4391-a83b-9ea33124b30c",
-    "timeStart": "2024-04-10T08:30:00.53-04:00",
-    "timeStop": "2024-04-10T08:30:56.963-04:00",
+    "externalJobId": "8b1827e4-55a5-4612-929d-fc72099ca768",
+    "timeStart": "2025-12-15T18:32:42.121Z",
+    "timeStop": "2025-12-15T18:33:20.8Z",
     "status": "COMPLETE",
     "algorithmProperties": {},
     "jobProperties": {},
     "environmentVariableProperties": {},
     "media": [
         {
-            "mediaId": 1,
+            "mediaId": 43,
             "parentMediaId": -1,
-            "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/video_02.mp4",
+            "path": "file:///opt/mpf/share/samples/person/video_02.mp4",
             "sha256": "6d794a2d5be1645b605c61d89c26d00b4e326fea2cf62035d78ceda82539d32a",
             "mimeType": "video/mp4",
             "mediaType": "VIDEO",
@@ -79,6 +79,7 @@
             "status": "COMPLETE",
             "detectionProcessingErrors": {},
             "markupResult": null,
+            "mediaSelectorsOutputUri": null,
             "output": {
                 "CLASS": [
                     {
@@ -111,7 +112,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/0/frame-0.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/0/frame-0.png"
                                 },
                                 "detections": [
                                     {
@@ -128,7 +129,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/0/frame-0.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/0/frame-0.png"
                                     },
                                     {
                                         "offsetFrame": 1,
@@ -238,7 +239,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/1/frame-23.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/1/frame-23.png"
                                 },
                                 "detections": [
                                     {
@@ -623,7 +624,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/1/frame-23.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/1/frame-23.png"
                                     },
                                     {
                                         "offsetFrame": 24,
@@ -1165,7 +1166,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/2/frame-35.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/2/frame-35.png"
                                 },
                                 "detections": [
                                     {
@@ -1742,7 +1743,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/2/frame-35.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/2/frame-35.png"
                                     },
                                     {
                                         "offsetFrame": 36,
@@ -2556,7 +2557,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/3/frame-61.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/3/frame-61.png"
                                 },
                                 "detections": [
                                     {
@@ -3549,7 +3550,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/3/frame-61.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/3/frame-61.png"
                                     },
                                     {
                                         "offsetFrame": 62,
@@ -4395,7 +4396,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/4/frame-74.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/4/frame-74.png"
                                 },
                                 "detections": [
                                     {
@@ -5596,7 +5597,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/4/frame-74.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/4/frame-74.png"
                                     },
                                     {
                                         "offsetFrame": 75,
@@ -6442,7 +6443,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/5/frame-62.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/5/frame-62.png"
                                 },
                                 "detections": [
                                     {
@@ -7435,7 +7436,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/5/frame-62.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/5/frame-62.png"
                                     },
                                     {
                                         "offsetFrame": 63,
@@ -9193,7 +9194,7 @@
                                         "CLASSIFICATION LIST": "backpack"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/6/frame-3.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/6/frame-3.png"
                                 },
                                 "detections": [
                                     {
@@ -9210,7 +9211,7 @@
                                             "CLASSIFICATION LIST": "backpack"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/6/frame-3.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/6/frame-3.png"
                                     }
                                 ]
                             },
@@ -9240,7 +9241,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/7/frame-44.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/7/frame-44.png"
                                 },
                                 "detections": [
                                     {
@@ -9737,7 +9738,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/7/frame-44.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/7/frame-44.png"
                                     },
                                     {
                                         "offsetFrame": 45,
@@ -9959,7 +9960,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/8/frame-19.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/8/frame-19.png"
                                 },
                                 "detections": [
                                     {
@@ -9976,7 +9977,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/8/frame-19.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/8/frame-19.png"
                                     }
                                 ]
                             },
@@ -10006,7 +10007,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/9/frame-26.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/9/frame-26.png"
                                 },
                                 "detections": [
                                     {
@@ -10039,7 +10040,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/9/frame-26.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/9/frame-26.png"
                                     },
                                     {
                                         "offsetFrame": 27,
@@ -10117,7 +10118,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/10/frame-134.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/10/frame-134.png"
                                 },
                                 "detections": [
                                     {
@@ -11526,7 +11527,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/10/frame-134.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/10/frame-134.png"
                                     },
                                     {
                                         "offsetFrame": 135,
@@ -12596,7 +12597,7 @@
                                         "CLASSIFICATION LIST": "car"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/11/frame-70.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/11/frame-70.png"
                                 },
                                 "detections": [
                                     {
@@ -12629,7 +12630,7 @@
                                             "CLASSIFICATION LIST": "car"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/11/frame-70.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/11/frame-70.png"
                                     }
                                 ]
                             },
@@ -12659,7 +12660,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/12/frame-86.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/12/frame-86.png"
                                 },
                                 "detections": [
                                     {
@@ -12788,7 +12789,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/12/frame-86.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/12/frame-86.png"
                                     },
                                     {
                                         "offsetFrame": 87,
@@ -12978,7 +12979,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/13/frame-185.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/13/frame-185.png"
                                 },
                                 "detections": [
                                     {
@@ -14307,7 +14308,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/13/frame-185.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/13/frame-185.png"
                                     },
                                     {
                                         "offsetFrame": 186,
@@ -14561,7 +14562,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/14/frame-94.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/14/frame-94.png"
                                 },
                                 "detections": [
                                     {
@@ -14578,7 +14579,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/14/frame-94.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/14/frame-94.png"
                                     },
                                     {
                                         "offsetFrame": 95,
@@ -14624,7 +14625,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/15/frame-155.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/15/frame-155.png"
                                 },
                                 "detections": [
                                     {
@@ -15345,7 +15346,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/15/frame-155.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/15/frame-155.png"
                                     },
                                     {
                                         "offsetFrame": 156,
@@ -16063,7 +16064,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/16/frame-199.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/16/frame-199.png"
                                 },
                                 "detections": [
                                     {
@@ -17504,7 +17505,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/16/frame-199.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/16/frame-199.png"
                                     }
                                 ]
                             },
@@ -17534,7 +17535,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/17/frame-109.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/17/frame-109.png"
                                 },
                                 "detections": [
                                     {
@@ -17551,7 +17552,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/17/frame-109.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/17/frame-109.png"
                                     },
                                     {
                                         "offsetFrame": 110,
@@ -17597,7 +17598,7 @@
                                         "CLASSIFICATION LIST": "backpack"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/18/frame-126.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/18/frame-126.png"
                                 },
                                 "detections": [
                                     {
@@ -17662,7 +17663,7 @@
                                             "CLASSIFICATION LIST": "backpack"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/18/frame-126.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/18/frame-126.png"
                                     },
                                     {
                                         "offsetFrame": 127,
@@ -17724,7 +17725,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/19/frame-126.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/19/frame-126.png"
                                 },
                                 "detections": [
                                     {
@@ -17741,7 +17742,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/19/frame-126.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/19/frame-126.png"
                                     }
                                 ]
                             },
@@ -17771,7 +17772,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/20/frame-129.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/20/frame-129.png"
                                 },
                                 "detections": [
                                     {
@@ -17788,7 +17789,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/20/frame-129.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/20/frame-129.png"
                                     },
                                     {
                                         "offsetFrame": 130,
@@ -17850,7 +17851,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/21/frame-135.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/21/frame-135.png"
                                 },
                                 "detections": [
                                     {
@@ -17899,7 +17900,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/21/frame-135.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/21/frame-135.png"
                                     },
                                     {
                                         "offsetFrame": 136,
@@ -18217,7 +18218,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/22/frame-138.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/22/frame-138.png"
                                 },
                                 "detections": [
                                     {
@@ -18250,7 +18251,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/22/frame-138.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/22/frame-138.png"
                                     }
                                 ]
                             },
@@ -18280,7 +18281,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/23/frame-146.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/23/frame-146.png"
                                 },
                                 "detections": [
                                     {
@@ -18313,7 +18314,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/23/frame-146.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/23/frame-146.png"
                                     },
                                     {
                                         "offsetFrame": 147,
@@ -18359,7 +18360,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/24/frame-149.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/24/frame-149.png"
                                 },
                                 "detections": [
                                     {
@@ -18392,7 +18393,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/24/frame-149.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/24/frame-149.png"
                                     },
                                     {
                                         "offsetFrame": 150,
@@ -18518,7 +18519,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/25/frame-150.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/25/frame-150.png"
                                 },
                                 "detections": [
                                     {
@@ -18535,7 +18536,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/25/frame-150.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/25/frame-150.png"
                                     },
                                     {
                                         "offsetFrame": 151,
@@ -18741,7 +18742,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/26/frame-158.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/26/frame-158.png"
                                 },
                                 "detections": [
                                     {
@@ -18758,7 +18759,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/26/frame-158.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/26/frame-158.png"
                                     }
                                 ]
                             },
@@ -18788,7 +18789,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/27/frame-170.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/27/frame-170.png"
                                 },
                                 "detections": [
                                     {
@@ -18821,7 +18822,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/27/frame-170.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/27/frame-170.png"
                                     },
                                     {
                                         "offsetFrame": 172,
@@ -18867,7 +18868,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/28/frame-190.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/28/frame-190.png"
                                 },
                                 "detections": [
                                     {
@@ -19028,7 +19029,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/28/frame-190.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/28/frame-190.png"
                                     },
                                     {
                                         "offsetFrame": 191,
@@ -19090,7 +19091,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/29/frame-190.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/29/frame-190.png"
                                 },
                                 "detections": [
                                     {
@@ -19107,7 +19108,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/29/frame-190.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/29/frame-190.png"
                                     },
                                     {
                                         "offsetFrame": 191,
@@ -19169,7 +19170,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/30/frame-298.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/30/frame-298.png"
                                 },
                                 "detections": [
                                     {
@@ -20754,7 +20755,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/30/frame-298.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/30/frame-298.png"
                                     },
                                     {
                                         "offsetFrame": 299,
@@ -21200,7 +21201,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/31/frame-216.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/31/frame-216.png"
                                 },
                                 "detections": [
                                     {
@@ -21473,7 +21474,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/31/frame-216.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/31/frame-216.png"
                                     },
                                     {
                                         "offsetFrame": 217,
@@ -23263,7 +23264,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/33/frame-278.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/33/frame-278.png"
                                 },
                                 "detections": [
                                     {
@@ -24528,7 +24529,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/33/frame-278.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/33/frame-278.png"
                                     },
                                     {
                                         "offsetFrame": 279,
@@ -26494,7 +26495,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/32/frame-394.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/32/frame-394.png"
                                 },
                                 "detections": [
                                     {
@@ -29615,7 +29616,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/32/frame-394.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/32/frame-394.png"
                                     },
                                     {
                                         "offsetFrame": 395,
@@ -29725,7 +29726,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/34/frame-203.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/34/frame-203.png"
                                 },
                                 "detections": [
                                     {
@@ -29742,7 +29743,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/34/frame-203.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/34/frame-203.png"
                                     }
                                 ]
                             },
@@ -29772,7 +29773,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/35/frame-211.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/35/frame-211.png"
                                 },
                                 "detections": [
                                     {
@@ -29821,7 +29822,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/35/frame-211.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/35/frame-211.png"
                                     }
                                 ]
                             },
@@ -29851,7 +29852,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/36/frame-217.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/36/frame-217.png"
                                 },
                                 "detections": [
                                     {
@@ -29868,7 +29869,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/36/frame-217.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/36/frame-217.png"
                                     }
                                 ]
                             },
@@ -29898,7 +29899,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/37/frame-236.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/37/frame-236.png"
                                 },
                                 "detections": [
                                     {
@@ -30155,7 +30156,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/37/frame-236.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/37/frame-236.png"
                                     },
                                     {
                                         "offsetFrame": 237,
@@ -30297,7 +30298,7 @@
                                         "CLASSIFICATION LIST": "backpack"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/38/frame-245.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/38/frame-245.png"
                                 },
                                 "detections": [
                                     {
@@ -30314,7 +30315,7 @@
                                             "CLASSIFICATION LIST": "backpack"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/38/frame-245.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/38/frame-245.png"
                                     }
                                 ]
                             },
@@ -30344,7 +30345,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/39/frame-303.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/39/frame-303.png"
                                 },
                                 "detections": [
                                     {
@@ -31129,7 +31130,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/39/frame-303.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/39/frame-303.png"
                                     },
                                     {
                                         "offsetFrame": 304,
@@ -31271,7 +31272,7 @@
                                         "CLASSIFICATION LIST": "backpack"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/40/frame-314.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/40/frame-314.png"
                                 },
                                 "detections": [
                                     {
@@ -31288,7 +31289,7 @@
                                             "CLASSIFICATION LIST": "backpack"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/40/frame-314.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/40/frame-314.png"
                                     }
                                 ]
                             },
@@ -31318,7 +31319,7 @@
                                         "CLASSIFICATION LIST": "dog"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/41/frame-325.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/41/frame-325.png"
                                 },
                                 "detections": [
                                     {
@@ -31335,7 +31336,7 @@
                                             "CLASSIFICATION LIST": "dog"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/41/frame-325.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/41/frame-325.png"
                                     }
                                 ]
                             },
@@ -31365,7 +31366,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/42/frame-379.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/42/frame-379.png"
                                 },
                                 "detections": [
                                     {
@@ -32182,7 +32183,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/42/frame-379.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/42/frame-379.png"
                                     },
                                     {
                                         "offsetFrame": 380,
@@ -32516,7 +32517,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/43/frame-354.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/43/frame-354.png"
                                 },
                                 "detections": [
                                     {
@@ -32677,7 +32678,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/43/frame-354.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/43/frame-354.png"
                                     },
                                     {
                                         "offsetFrame": 355,
@@ -32931,7 +32932,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/44/frame-387.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/44/frame-387.png"
                                 },
                                 "detections": [
                                     {
@@ -32964,7 +32965,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/44/frame-387.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/44/frame-387.png"
                                     },
                                     {
                                         "offsetFrame": 388,
@@ -33090,7 +33091,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/45/frame-413.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/45/frame-413.png"
                                 },
                                 "detections": [
                                     {
@@ -33315,7 +33316,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/45/frame-413.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/45/frame-413.png"
                                     },
                                     {
                                         "offsetFrame": 414,
@@ -33553,7 +33554,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/46/frame-426.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/46/frame-426.png"
                                 },
                                 "detections": [
                                     {
@@ -33986,7 +33987,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/46/frame-426.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/46/frame-426.png"
                                     },
                                     {
                                         "offsetFrame": 427,
@@ -34848,7 +34849,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/47/frame-406.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/47/frame-406.png"
                                 },
                                 "detections": [
                                     {
@@ -34961,7 +34962,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/47/frame-406.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/47/frame-406.png"
                                     },
                                     {
                                         "offsetFrame": 407,
@@ -36351,7 +36352,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/48/frame-446.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/48/frame-446.png"
                                 },
                                 "detections": [
                                     {
@@ -36368,7 +36369,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/48/frame-446.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/48/frame-446.png"
                                     }
                                 ]
                             },
@@ -36398,7 +36399,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/49/frame-455.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/49/frame-455.png"
                                 },
                                 "detections": [
                                     {
@@ -36431,7 +36432,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/49/frame-455.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/49/frame-455.png"
                                     },
                                     {
                                         "offsetFrame": 459,
@@ -36477,7 +36478,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/50/frame-465.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/50/frame-465.png"
                                 },
                                 "detections": [
                                     {
@@ -36494,7 +36495,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/50/frame-465.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/50/frame-465.png"
                                     }
                                 ]
                             },
@@ -36524,7 +36525,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/51/frame-466.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/51/frame-466.png"
                                 },
                                 "detections": [
                                     {
@@ -36541,7 +36542,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/51/frame-466.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/51/frame-466.png"
                                     }
                                 ]
                             },
@@ -36571,7 +36572,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/52/frame-469.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/52/frame-469.png"
                                 },
                                 "detections": [
                                     {
@@ -36620,7 +36621,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/52/frame-469.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/52/frame-469.png"
                                     },
                                     {
                                         "offsetFrame": 470,
@@ -36682,7 +36683,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/53/frame-487.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/53/frame-487.png"
                                 },
                                 "detections": [
                                     {
@@ -36699,7 +36700,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/53/frame-487.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/53/frame-487.png"
                                     },
                                     {
                                         "offsetFrame": 489,
@@ -36745,7 +36746,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/54/frame-491.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/54/frame-491.png"
                                 },
                                 "detections": [
                                     {
@@ -36762,7 +36763,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/54/frame-491.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/54/frame-491.png"
                                     }
                                 ]
                             },
@@ -36792,7 +36793,7 @@
                                         "CLASSIFICATION LIST": "person"
                                     },
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/55/frame-517.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/55/frame-517.png"
                                 },
                                 "detections": [
                                     {
@@ -36889,7 +36890,7 @@
                                             "CLASSIFICATION LIST": "person"
                                         },
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/1/55/frame-517.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/1/55/frame-517.png"
                                     },
                                     {
                                         "offsetFrame": 518,
@@ -36969,7 +36970,7 @@
                                     "confidence": 52.0,
                                     "detectionProperties": {},
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/0/frame-115.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/0/frame-115.png"
                                 },
                                 "detections": [
                                     {
@@ -37570,7 +37571,7 @@
                                         "confidence": 52.0,
                                         "detectionProperties": {},
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/0/frame-115.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/0/frame-115.png"
                                     },
                                     {
                                         "offsetFrame": 116,
@@ -37738,7 +37739,7 @@
                                     "confidence": 35.0,
                                     "detectionProperties": {},
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/1/frame-113.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/1/frame-113.png"
                                 },
                                 "detections": [
                                     {
@@ -37871,7 +37872,7 @@
                                         "confidence": 35.0,
                                         "detectionProperties": {},
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/1/frame-113.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/1/frame-113.png"
                                     },
                                     {
                                         "offsetFrame": 114,
@@ -37979,7 +37980,7 @@
                                     "confidence": 29.0,
                                     "detectionProperties": {},
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/2/frame-426.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/2/frame-426.png"
                                 },
                                 "detections": [
                                     {
@@ -38196,7 +38197,7 @@
                                         "confidence": 29.0,
                                         "detectionProperties": {},
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/2/frame-426.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/2/frame-426.png"
                                     },
                                     {
                                         "offsetFrame": 427,
@@ -38408,9 +38409,9 @@
                                 "index": 3,
                                 "id": "d0fbf1bb2500ac8f9007b48a9dd64febe0fce0a2cb8b8d89b6f8ec44446bb6c7",
                                 "startOffsetFrame": 442,
-                                "stopOffsetFrame": 467,
+                                "stopOffsetFrame": 471,
                                 "startOffsetTime": 14748,
-                                "stopOffsetTime": 15582,
+                                "stopOffsetTime": 15715,
                                 "type": "FACE",
                                 "confidence": 16.0,
                                 "trackProperties": {},
@@ -38424,7 +38425,7 @@
                                     "confidence": 16.0,
                                     "detectionProperties": {},
                                     "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/3/frame-445.png"
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/3/frame-445.png"
                                 },
                                 "detections": [
                                     {
@@ -38473,7 +38474,7 @@
                                         "confidence": 16.0,
                                         "detectionProperties": {},
                                         "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/118/1/0/0/3/frame-445.png"
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/40/43/0/0/3/frame-445.png"
                                     },
                                     {
                                         "offsetFrame": 446,
@@ -38732,6 +38733,54 @@
                                         "offsetTime": 15582,
                                         "x": 315,
                                         "y": 73,
+                                        "width": 79,
+                                        "height": 79,
+                                        "confidence": 0.0,
+                                        "detectionProperties": {},
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    },
+                                    {
+                                        "offsetFrame": 468,
+                                        "offsetTime": 15615,
+                                        "x": 317,
+                                        "y": 73,
+                                        "width": 79,
+                                        "height": 79,
+                                        "confidence": 0.0,
+                                        "detectionProperties": {},
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    },
+                                    {
+                                        "offsetFrame": 469,
+                                        "offsetTime": 15648,
+                                        "x": 318,
+                                        "y": 75,
+                                        "width": 79,
+                                        "height": 79,
+                                        "confidence": 0.0,
+                                        "detectionProperties": {},
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    },
+                                    {
+                                        "offsetFrame": 470,
+                                        "offsetTime": 15682,
+                                        "x": 319,
+                                        "y": 78,
+                                        "width": 79,
+                                        "height": 79,
+                                        "confidence": 0.0,
+                                        "detectionProperties": {},
+                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
+                                        "artifactPath": null
+                                    },
+                                    {
+                                        "offsetFrame": 471,
+                                        "offsetTime": 15715,
+                                        "x": 322,
+                                        "y": 81,
                                         "width": 79,
                                         "height": 79,
                                         "confidence": 0.0,

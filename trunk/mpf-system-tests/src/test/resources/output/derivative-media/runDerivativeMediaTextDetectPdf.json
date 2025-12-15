@@ -1,9 +1,38 @@
 {
   "openmpfVersion": "9.0",
-  "jobId": "580e4c521e3b-13",
+  "jobId": "0a606d994272-13",
   "errors": [],
   "warnings": [],
-  "objectId": "8e38cd33-ca62-402a-a262-eac57c657fff",
+  "timing": {
+    "processingTime": 8937,
+    "actions": [
+      {
+        "name": "TIKA IMAGE DETECTION ACTION",
+        "processingTime": 1780
+      },
+      {
+        "name": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
+        "processingTime": 2259
+      },
+      {
+        "name": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+        "processingTime": 3602
+      },
+      {
+        "name": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+        "processingTime": 1179
+      },
+      {
+        "name": "KEYWORD TAGGING (WITH FF REGION) ACTION",
+        "processingTime": 22
+      },
+      {
+        "name": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+        "processingTime": 95
+      }
+    ]
+  },
+  "objectId": "a09a75b8-cde0-4e86-b9f8-2987a28bf390",
   "pipeline": {
     "name": "TIKA IMAGE DETECTION WITH DERIVATIVE MEDIA TESSERACT OCR (WITH EAST REGIONS) AND KEYWORD TAGGING AND MARKUP PIPELINE",
     "description": "Performs Tika image detection followed by Tika text detection on source media. Performs Tesseract OCR and markup on feed-forward regions from EAST on derivative media. Keyword tagging is performed on all TEXT results.",
@@ -108,21 +137,21 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "7ad0b1d7-81a0-463f-876d-bdd76bac3dd5",
-  "timeStart": "2024-01-19T16:15:32.583Z",
-  "timeStop": "2024-01-19T16:15:40.3Z",
+  "externalJobId": "7e45efc8-cb36-4b6b-a038-84ea0ac5f5ea",
+  "timeStart": "2025-12-15T18:30:02.262Z",
+  "timeStop": "2025-12-15T18:30:10.997Z",
   "status": "COMPLETE",
   "algorithmProperties": {
     "TESSERACTOCR": {
       "TESSERACT_LANGUAGE": "eng",
       "ENABLE_OSD_AUTOMATION": "false"
     },
-      "EAST": {
-          "QUALITY_SELECTION_PROPERTY": "CONFIDENCE",
-      "QUALITY_SELECTION_THRESHOLD": "0.2",
+    "EAST": {
       "TEMPORARY_PADDING_Y": "1.0",
       "TEMPORARY_PADDING_X": "1.0",
-      "FINAL_PADDING": "0.5"
+      "FINAL_PADDING": "0.5",
+      "QUALITY_SELECTION_PROPERTY": "CONFIDENCE",
+      "QUALITY_SELECTION_THRESHOLD": "0.2"
     }
   },
   "jobProperties": {},
@@ -145,6 +174,7 @@
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
       "markupResult": null,
+      "mediaSelectorsOutputUri": null,
       "output": {
         "MEDIA": [
           {
@@ -162,7 +192,7 @@
                 "confidence": -1.0,
                 "trackProperties": {
                   "DERIVATIVE_MEDIA_ID": "10",
-                  "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/53dbba4f-c42a-47d6-9f07-20f1797417ac/image1.jpeg",
+                  "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/ebeb52c0-6bee-4e8d-9c7c-f2519277d1cb/image1.jpeg",
                   "PAGE_NUM": "2"
                 },
                 "exemplar": {
@@ -175,7 +205,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {
                     "DERIVATIVE_MEDIA_ID": "10",
-                    "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/53dbba4f-c42a-47d6-9f07-20f1797417ac/image1.jpeg",
+                    "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/ebeb52c0-6bee-4e8d-9c7c-f2519277d1cb/image1.jpeg",
                     "PAGE_NUM": "2"
                   },
                   "artifactExtractionStatus": "NOT_ATTEMPTED",
@@ -192,7 +222,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {
                       "DERIVATIVE_MEDIA_ID": "10",
-                      "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/53dbba4f-c42a-47d6-9f07-20f1797417ac/image1.jpeg",
+                      "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/ebeb52c0-6bee-4e8d-9c7c-f2519277d1cb/image1.jpeg",
                       "PAGE_NUM": "2"
                     },
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
@@ -211,7 +241,7 @@
                 "confidence": -1.0,
                 "trackProperties": {
                   "DERIVATIVE_MEDIA_ID": "9",
-                  "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/53dbba4f-c42a-47d6-9f07-20f1797417ac/image0.png",
+                  "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/ebeb52c0-6bee-4e8d-9c7c-f2519277d1cb/image0.png",
                   "PAGE_NUM": "1"
                 },
                 "exemplar": {
@@ -224,7 +254,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {
                     "DERIVATIVE_MEDIA_ID": "9",
-                    "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/53dbba4f-c42a-47d6-9f07-20f1797417ac/image0.png",
+                    "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/ebeb52c0-6bee-4e8d-9c7c-f2519277d1cb/image0.png",
                     "PAGE_NUM": "1"
                   },
                   "artifactExtractionStatus": "NOT_ATTEMPTED",
@@ -241,7 +271,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {
                       "DERIVATIVE_MEDIA_ID": "9",
-                      "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/53dbba4f-c42a-47d6-9f07-20f1797417ac/image0.png",
+                      "DERIVATIVE_MEDIA_TEMP_PATH": "/opt/mpf/share/tmp/derivative-media/13/tika-extracted/ebeb52c0-6bee-4e8d-9c7c-f2519277d1cb/image0.png",
                       "PAGE_NUM": "1"
                     },
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
@@ -509,7 +539,7 @@
     {
       "mediaId": 9,
       "parentMediaId": 8,
-      "path": "file:///opt/mpf/share/derivative-media/13/8/6423e599-2e0e-45d9-bbe4-f67dfb655fd1.png",
+      "path": "file:///opt/mpf/share/derivative-media/13/8/561cad21-da53-4e2e-a418-35b1d164d125.png",
       "sha256": "71a64f6419a531c7a279e46ccf365fd7b6db9a88dd2a2a81deb5a44d4a66b830",
       "mimeType": "image/png",
       "mediaType": "IMAGE",
@@ -527,11 +557,12 @@
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
       "markupResult": {
-        "id": 5,
-        "path": "file:///opt/mpf/share/markup/13/9/3d9848e1-901d-4293-b839-8ad7bde04cf2.png",
+        "id": 6,
+        "path": "file:///opt/mpf/share/markup/13/9/08997b20-5e13-424f-b230-be489e73bae2.png",
         "status": "COMPLETE",
         "message": null
       },
+      "mediaSelectorsOutputUri": null,
       "output": {
         "NO TRACKS": [
           {
@@ -552,7 +583,7 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "confidence": 90.0,
+                "confidence": 91.0,
                 "trackProperties": {
                   "MISSING_LANGUAGE_MODELS": "",
                   "ROTATE_AND_DETECT_PASS": "0",
@@ -568,7 +599,7 @@
                   "y": 20,
                   "width": 525,
                   "height": 236,
-                  "confidence": 90.0,
+                  "confidence": 91.0,
                   "detectionProperties": {
                     "MISSING_LANGUAGE_MODELS": "",
                     "ROTATE_AND_DETECT_PASS": "0",
@@ -588,7 +619,7 @@
                     "y": 20,
                     "width": 525,
                     "height": 236,
-                    "confidence": 90.0,
+                    "confidence": 91.0,
                     "detectionProperties": {
                       "MISSING_LANGUAGE_MODELS": "",
                       "ROTATE_AND_DETECT_PASS": "0",
@@ -620,7 +651,7 @@
                 "type": "TEXT REGION",
                 "confidence": 0.9999901,
                 "trackProperties": {
-                  "ROTATION": "0.70848894",
+                  "ROTATION": "0.70848846",
                   "TEXT_TYPE": "STRUCTURED"
                 },
                 "exemplar": {
@@ -632,7 +663,7 @@
                   "height": 236,
                   "confidence": 0.9999901,
                   "detectionProperties": {
-                    "ROTATION": "0.70848894",
+                    "ROTATION": "0.70848846",
                     "TEXT_TYPE": "STRUCTURED"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -648,7 +679,7 @@
                     "height": 236,
                     "confidence": 0.9999901,
                     "detectionProperties": {
-                      "ROTATION": "0.70848894",
+                      "ROTATION": "0.70848846",
                       "TEXT_TYPE": "STRUCTURED"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -664,7 +695,7 @@
     {
       "mediaId": 10,
       "parentMediaId": 8,
-      "path": "file:///opt/mpf/share/derivative-media/13/8/d24f2639-bdb7-4329-a007-2c9c60304804.jpeg",
+      "path": "file:///opt/mpf/share/derivative-media/13/8/d27edd34-d437-4b72-ab4c-7e760c06b13d.jpeg",
       "sha256": "e94d35a2a0792e9868c9a3340a76012f0f1e878fbfa0e405b3f5a851577fe8d5",
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
@@ -682,11 +713,12 @@
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
       "markupResult": {
-        "id": 6,
-        "path": "file:///opt/mpf/share/markup/13/10/c8148917-f14b-4a1b-9680-92d630a54a81.png",
+        "id": 5,
+        "path": "file:///opt/mpf/share/markup/13/10/f9f3aff2-7174-4d0a-b7ba-52f648811303.png",
         "status": "COMPLETE",
         "message": null
       },
+      "mediaSelectorsOutputUri": null,
       "output": {
         "NO TRACKS": [
           {
@@ -707,7 +739,7 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "TEXT",
-                "confidence": 91.0,
+                "confidence": 90.0,
                 "trackProperties": {
                   "MISSING_LANGUAGE_MODELS": "",
                   "ROTATE_AND_DETECT_PASS": "0",
@@ -725,7 +757,7 @@
                   "y": 3,
                   "width": 60,
                   "height": 83,
-                  "confidence": 91.0,
+                  "confidence": 90.0,
                   "detectionProperties": {
                     "MISSING_LANGUAGE_MODELS": "",
                     "ROTATE_AND_DETECT_PASS": "0",
@@ -747,7 +779,7 @@
                     "y": 3,
                     "width": 60,
                     "height": 83,
-                    "confidence": 91.0,
+                    "confidence": 90.0,
                     "detectionProperties": {
                       "MISSING_LANGUAGE_MODELS": "",
                       "ROTATE_AND_DETECT_PASS": "0",
@@ -891,7 +923,7 @@
                 "type": "TEXT REGION",
                 "confidence": 0.99991477,
                 "trackProperties": {
-                  "ROTATION": "0.81548893",
+                  "ROTATION": "0.8154888",
                   "TEXT_TYPE": "STRUCTURED"
                 },
                 "exemplar": {
@@ -903,7 +935,7 @@
                   "height": 86,
                   "confidence": 0.99991477,
                   "detectionProperties": {
-                    "ROTATION": "0.81548893",
+                    "ROTATION": "0.8154888",
                     "TEXT_TYPE": "STRUCTURED"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -919,7 +951,7 @@
                     "height": 86,
                     "confidence": 0.99991477,
                     "detectionProperties": {
-                      "ROTATION": "0.81548893",
+                      "ROTATION": "0.8154888",
                       "TEXT_TYPE": "STRUCTURED"
                     },
                     "artifactExtractionStatus": "COMPLETED",

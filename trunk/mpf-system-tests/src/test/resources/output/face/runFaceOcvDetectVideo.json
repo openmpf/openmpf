@@ -1,9 +1,18 @@
 {
   "openmpfVersion": "9.0",
-  "jobId": 15,
+  "jobId": "0a606d994272-17",
   "errors": [],
   "warnings": [],
-  "objectId": "df7ef246-c3c0-4db3-bef5-645e73cb2bdb",
+  "timing": {
+    "processingTime": 71881,
+    "actions": [
+      {
+        "name": "OCV FACE DETECTION ACTION",
+        "processingTime": 71881
+      }
+    ]
+  },
+  "objectId": "1e8f877b-7c60-4a51-92b0-51ff96940ddb",
   "pipeline": {
     "name": "OCV FACE DETECTION PIPELINE",
     "description": "Performs OpenCV face detection.",
@@ -25,21 +34,24 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "f9a335dd-ae53-4898-a739-5b5207e3e222",
-  "timeStart": "2021-09-27T17:57:13.795Z",
-  "timeStop": "2021-09-27T17:57:48.906Z",
+  "externalJobId": "ce79683f-1724-4e1a-a228-eff68b072dba",
+  "timeStart": "2025-12-15T18:30:11.833Z",
+  "timeStop": "2025-12-15T18:30:51.215Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
   "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 12,
+      "mediaId": 16,
+      "parentMediaId": -1,
       "path": "file:///opt/mpf/share/samples/face/new_face_video.avi",
       "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
       "mimeType": "video/x-msvideo",
       "mediaType": "VIDEO",
       "length": 510,
+      "frameRanges": [],
+      "timeRanges": [],
       "mediaMetadata": {
         "DURATION": "17067",
         "FPS": "29.97002997002997",
@@ -53,6 +65,7 @@
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
       "markupResult": null,
+      "mediaSelectorsOutputUri": null,
       "output": {
         "FACE": [
           {
@@ -60,6 +73,7 @@
             "algorithm": "FACECV",
             "tracks": [
               {
+                "index": 0,
                 "id": "6b12af261dfee9abd108594f1a0f2cda272e7acb8f0dec97a22b6e5665a943e4",
                 "startOffsetFrame": 44,
                 "stopOffsetFrame": 69,
@@ -78,7 +92,7 @@
                   "confidence": 34.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/0/frame-48.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/0/frame-48.png"
                 },
                 "detections": [
                   {
@@ -139,7 +153,7 @@
                     "confidence": 34.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/0/frame-48.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/0/frame-48.png"
                   },
                   {
                     "offsetFrame": 49,
@@ -396,6 +410,7 @@
                 ]
               },
               {
+                "index": 1,
                 "id": "f69c749f3aadaeecfc495bd0fa0ab1bdf9536c28ebea543caed207ffa88e060a",
                 "startOffsetFrame": 73,
                 "stopOffsetFrame": 103,
@@ -414,7 +429,7 @@
                   "confidence": 46.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/1/frame-77.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/1/frame-77.png"
                 },
                 "detections": [
                   {
@@ -475,7 +490,7 @@
                     "confidence": 46.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/1/frame-77.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/1/frame-77.png"
                   },
                   {
                     "offsetFrame": 78,
@@ -792,6 +807,7 @@
                 ]
               },
               {
+                "index": 2,
                 "id": "7e1f3d7b801ce88d3226b6dd3b424baa00327c545dc10bd5e905bb4efa8831fa",
                 "startOffsetFrame": 109,
                 "stopOffsetFrame": 136,
@@ -810,7 +826,7 @@
                   "confidence": 40.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/2/frame-130.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/2/frame-130.png"
                 },
                 "detections": [
                   {
@@ -1075,7 +1091,7 @@
                     "confidence": 40.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/2/frame-130.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/2/frame-130.png"
                   },
                   {
                     "offsetFrame": 131,
@@ -1152,11 +1168,12 @@
                 ]
               },
               {
+                "index": 3,
                 "id": "eef6b1c969895fff61d1e8e7b5831dc331e3d2d8f93273fe111f1744a349d57e",
                 "startOffsetFrame": 138,
-                "stopOffsetFrame": 168,
+                "stopOffsetFrame": 169,
                 "startOffsetTime": 4637,
-                "stopOffsetTime": 5638,
+                "stopOffsetTime": 5672,
                 "type": "FACE",
                 "confidence": 15.0,
                 "trackProperties": {},
@@ -1170,7 +1187,7 @@
                   "confidence": 15.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/3/frame-138.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/3/frame-138.png"
                 },
                 "detections": [
                   {
@@ -1183,7 +1200,7 @@
                     "confidence": 15.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/3/frame-138.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/3/frame-138.png"
                   },
                   {
                     "offsetFrame": 139,
@@ -1544,10 +1561,23 @@
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 169,
+                    "offsetTime": 5672,
+                    "x": 202,
+                    "y": 50,
+                    "width": 171,
+                    "height": 171,
+                    "confidence": 0.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
                   }
                 ]
               },
               {
+                "index": 4,
                 "id": "25bcb89ffd99bd13262ac80a32c90ea7d9606940f602c4d924655a27bd1db8ee",
                 "startOffsetFrame": 221,
                 "stopOffsetFrame": 226,
@@ -1566,7 +1596,7 @@
                   "confidence": 38.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/4/frame-226.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/4/frame-226.png"
                 },
                 "detections": [
                   {
@@ -1639,11 +1669,12 @@
                     "confidence": 38.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/4/frame-226.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/4/frame-226.png"
                   }
                 ]
               },
               {
+                "index": 5,
                 "id": "c1b88704c3416cd028f3861055904c42072287d5d4e87a7601d5c8f0d9adc9a6",
                 "startOffsetFrame": 231,
                 "stopOffsetFrame": 255,
@@ -1662,7 +1693,7 @@
                   "confidence": 52.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/5/frame-246.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/5/frame-246.png"
                 },
                 "detections": [
                   {
@@ -1855,7 +1886,7 @@
                     "confidence": 52.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/5/frame-246.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/5/frame-246.png"
                   },
                   {
                     "offsetFrame": 247,
@@ -1968,6 +1999,7 @@
                 ]
               },
               {
+                "index": 6,
                 "id": "05b50c6c367e9e40b001f8a6fe3ac92a2baf4d814dafcb2b180a8557467093f9",
                 "startOffsetFrame": 261,
                 "stopOffsetFrame": 283,
@@ -1986,7 +2018,7 @@
                   "confidence": 34.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/6/frame-275.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/6/frame-275.png"
                 },
                 "detections": [
                   {
@@ -2167,7 +2199,7 @@
                     "confidence": 34.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/6/frame-275.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/6/frame-275.png"
                   },
                   {
                     "offsetFrame": 276,
@@ -2268,6 +2300,7 @@
                 ]
               },
               {
+                "index": 7,
                 "id": "80482bf9d4b9849955bf886385727fdbf2c9b0062840b3fe78d50ec8e293b612",
                 "startOffsetFrame": 286,
                 "stopOffsetFrame": 323,
@@ -2286,7 +2319,7 @@
                   "confidence": 16.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/7/frame-286.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/7/frame-286.png"
                 },
                 "detections": [
                   {
@@ -2299,7 +2332,7 @@
                     "confidence": 16.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/12/0/0/7/frame-286.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/16/0/0/7/frame-286.png"
                   },
                   {
                     "offsetFrame": 287,
@@ -2753,12 +2786,15 @@
       }
     },
     {
-      "mediaId": 13,
+      "mediaId": 17,
+      "parentMediaId": -1,
       "path": "file:///opt/mpf/share/samples/person/video_02.mp4",
       "sha256": "6d794a2d5be1645b605c61d89c26d00b4e326fea2cf62035d78ceda82539d32a",
       "mimeType": "video/mp4",
       "mediaType": "VIDEO",
       "length": 521,
+      "frameRanges": [],
+      "timeRanges": [],
       "mediaMetadata": {
         "DURATION": "17415",
         "FPS": "29.97002997002997",
@@ -2773,6 +2809,7 @@
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
       "markupResult": null,
+      "mediaSelectorsOutputUri": null,
       "output": {
         "FACE": [
           {
@@ -2780,6 +2817,7 @@
             "algorithm": "FACECV",
             "tracks": [
               {
+                "index": 0,
                 "id": "8aff2bbab6da6437131052aaf5d9005b8ef9072d99718a83e8cb362708670e6e",
                 "startOffsetFrame": 66,
                 "stopOffsetFrame": 127,
@@ -2798,7 +2836,7 @@
                   "confidence": 52.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/0/frame-115.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/0/frame-115.png"
                 },
                 "detections": [
                   {
@@ -3399,7 +3437,7 @@
                     "confidence": 52.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/0/frame-115.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/0/frame-115.png"
                   },
                   {
                     "offsetFrame": 116,
@@ -3548,6 +3586,7 @@
                 ]
               },
               {
+                "index": 1,
                 "id": "d730345b6b3cfbed62ada78731463a3bfc0539aafd94912978ff608b57a38cf8",
                 "startOffsetFrame": 103,
                 "stopOffsetFrame": 120,
@@ -3566,7 +3605,7 @@
                   "confidence": 35.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/1/frame-113.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/1/frame-113.png"
                 },
                 "detections": [
                   {
@@ -3699,7 +3738,7 @@
                     "confidence": 35.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/1/frame-113.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/1/frame-113.png"
                   },
                   {
                     "offsetFrame": 114,
@@ -3788,6 +3827,7 @@
                 ]
               },
               {
+                "index": 2,
                 "id": "36a73646196acd8dd311bd74c2a335523ade8b45a936e076dca8d29ed0180704",
                 "startOffsetFrame": 409,
                 "stopOffsetFrame": 443,
@@ -3806,7 +3846,7 @@
                   "confidence": 29.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/2/frame-426.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/2/frame-426.png"
                 },
                 "detections": [
                   {
@@ -4023,7 +4063,7 @@
                     "confidence": 29.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/2/frame-426.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/2/frame-426.png"
                   },
                   {
                     "offsetFrame": 427,
@@ -4232,11 +4272,12 @@
                 ]
               },
               {
+                "index": 3,
                 "id": "d0fbf1bb2500ac8f9007b48a9dd64febe0fce0a2cb8b8d89b6f8ec44446bb6c7",
                 "startOffsetFrame": 442,
-                "stopOffsetFrame": 467,
+                "stopOffsetFrame": 471,
                 "startOffsetTime": 14748,
-                "stopOffsetTime": 15582,
+                "stopOffsetTime": 15715,
                 "type": "FACE",
                 "confidence": 16.0,
                 "trackProperties": {},
@@ -4250,7 +4291,7 @@
                   "confidence": 16.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/3/frame-445.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/3/frame-445.png"
                 },
                 "detections": [
                   {
@@ -4299,7 +4340,7 @@
                     "confidence": 16.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/13/0/0/3/frame-445.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/17/0/0/3/frame-445.png"
                   },
                   {
                     "offsetFrame": 446,
@@ -4564,6 +4605,54 @@
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 468,
+                    "offsetTime": 15615,
+                    "x": 317,
+                    "y": 73,
+                    "width": 79,
+                    "height": 79,
+                    "confidence": 0.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 469,
+                    "offsetTime": 15648,
+                    "x": 318,
+                    "y": 75,
+                    "width": 79,
+                    "height": 79,
+                    "confidence": 0.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 470,
+                    "offsetTime": 15682,
+                    "x": 319,
+                    "y": 78,
+                    "width": 79,
+                    "height": 79,
+                    "confidence": 0.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 471,
+                    "offsetTime": 15715,
+                    "x": 322,
+                    "y": 81,
+                    "width": 79,
+                    "height": 79,
+                    "confidence": 0.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
                   }
                 ]
               }
@@ -4573,12 +4662,15 @@
       }
     },
     {
-      "mediaId": 14,
+      "mediaId": 18,
+      "parentMediaId": -1,
       "path": "file:///opt/mpf/share/samples/face/video_01.mp4",
       "sha256": "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
       "mimeType": "video/mp4",
       "mediaType": "VIDEO",
       "length": 90,
+      "frameRanges": [],
+      "timeRanges": [],
       "mediaMetadata": {
         "DURATION": "3042",
         "FPS": "29.97002997002997",
@@ -4593,6 +4685,7 @@
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
       "markupResult": null,
+      "mediaSelectorsOutputUri": null,
       "output": {
         "FACE": [
           {
@@ -4600,6 +4693,7 @@
             "algorithm": "FACECV",
             "tracks": [
               {
+                "index": 0,
                 "id": "27ea626031fe8bce1a4e800b56a4c5d00453473d475788218aa1a73aed4dc4a4",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 89,
@@ -4618,7 +4712,7 @@
                   "confidence": 24.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/14/0/0/0/frame-5.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/18/0/0/0/frame-5.png"
                 },
                 "detections": [
                   {
@@ -4691,7 +4785,7 @@
                     "confidence": 24.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/14/0/0/0/frame-5.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/18/0/0/0/frame-5.png"
                   },
                   {
                     "offsetFrame": 6,
@@ -5704,6 +5798,7 @@
                 ]
               },
               {
+                "index": 1,
                 "id": "8b70aaa740113acb158777d435ed75722e1a36830351c4ce7b71dfb3cc012436",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 89,
@@ -5722,7 +5817,7 @@
                   "confidence": 59.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/15/14/0/0/1/frame-89.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/17/18/0/0/1/frame-89.png"
                 },
                 "detections": [
                   {
@@ -6803,7 +6898,7 @@
                     "confidence": 59.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/15/14/0/0/1/frame-89.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/17/18/0/0/1/frame-89.png"
                   }
                 ]
               }

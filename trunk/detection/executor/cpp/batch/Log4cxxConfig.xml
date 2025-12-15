@@ -28,9 +28,10 @@
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
 
     <!-- Output the log message to log file-->
-    <appender name="MPF-AMQ-DETECTION-FILE" class="org.apache.log4j.DailyRollingFileAppender">
-        <param name="file" value="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/${COMPONENT_NAME}.log"/>
-        <param name="DatePattern" value="'.'yyyy-MM-dd"/>
+    <appender name="MPF-AMQ-DETECTION-FILE" class="org.apache.log4j.rolling.RollingFileAppender">
+        <rollingPolicy class="org.apache.log4j.rolling.TimeBasedRollingPolicy">
+            <param name="FileNamePattern" value="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/${COMPONENT_NAME}.%d.log"/>
+        </rollingPolicy>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %X{job}%m%n"/>
         </layout>

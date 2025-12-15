@@ -50,7 +50,7 @@ public class TestIoUtils {
     public static void initClass() {
         // The "file" command will silently ignore missing files as long as one of the files provided when using the
         // --magic-file option is available. Ensure that the default Linux magic file is installed.
-        assertTrue(Files.exists(Paths.get(IoUtils.LINUX_MAGIC_PATH)));
+        assertTrue(Files.exists(Paths.get("/usr/share/misc/magic.mgc")));
         ThreadUtil.start();
     }
 

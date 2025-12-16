@@ -31,7 +31,6 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.mitre.mpf.mvc.controller.ExposedMapping;
-import org.mitre.mpf.mvc.security.RestAuditLoggingInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.ProjectingJackson2HttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -51,16 +50,14 @@ public class WebMvcConfig extends DelegatingWebMvcConfiguration {
 
     private final ObjectMapper _objectMapper;
 
-    private final RestAuditLoggingInterceptor _restAuditLoggingInterceptor;
+    //private final RestAuditLoggingInterceptor _restAuditLoggingInterceptor;
 
     @Inject
     public WebMvcConfig(
             ProbingResourceMessageConverter probingResourceMessageConverter,
-            ObjectMapper objectMapper,
-            RestAuditLoggingInterceptor restAuditLoggingInterceptor) {
+            ObjectMapper objectMapper) {
         _probingResourceConverter = probingResourceMessageConverter;
         _objectMapper = objectMapper;
-        _restAuditLoggingInterceptor = restAuditLoggingInterceptor;
     }
 
     @Override
@@ -106,8 +103,6 @@ public class WebMvcConfig extends DelegatingWebMvcConfiguration {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         super.addInterceptors(registry);
-        registry.addInterceptor(_restAuditLoggingInterceptor)
-                .addPathPatterns("/rest/**");
     }
 
     @Override

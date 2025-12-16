@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Predicate;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -185,9 +186,10 @@ public class JobController {
     public ResponseEntity<JobCreationResponse> createJobRest(
             @ApiParam(required = true, value = "JobCreationRequest") @RequestBody
                     JobCreationRequest jobCreationRequest,
+                    HttpServletRequest request,
                     HttpSession session) {
 
-        JobCreationResponse createResponse = createJobInternal(
+        JobCreationResponse createResponse = createJobInternal(request,
                 jobCreationRequest, false, session);
         if (createResponse.mpfResponse().isSuccessful()) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
@@ -202,8 +204,9 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public JobCreationResponse createJob(
             @RequestBody JobCreationRequest jobCreationRequest,
+            HttpServletRequest request,
             HttpSession session) {
-        return createJobInternal(jobCreationRequest, true, session);
+        return createJobInternal(request, jobCreationRequest, true, session);
     }
 
     /*
@@ -263,8 +266,11 @@ public class JobController {
             @ApiResponse(code = 200, message = "Successful response"),
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
-    public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") String jobId) {
+    public ResponseEntity<SingleJobInfo> getJobStatusRest(
+                                            @ApiParam(required = true, value = "Job Id") @PathVariable("id") String jobId,
+                                            HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        var requestUri = request.getRequestURI();
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
             if (jobRequest == null) {
@@ -273,6 +279,7 @@ public class JobController {
                 _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.GET_JOB_INFO_ERROR)
+                .withUri(requestUri)
                 .error("Job not found for ID: %s", jobId);
                 return ResponseEntity.badRequest().body(null);
             }
@@ -280,7 +287,8 @@ public class JobController {
                 _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.GET_JOB_INFO)
-                .allowed(String.format("User retrieved job info for job id = {}", jobId));
+                .withUri(requestUri)
+                .allowed(String.format("User retrieved job info for job id = %s", jobId));
                 return ResponseEntity.ok(convertToSingleJobInfo(jobRequest));
             }
         }
@@ -292,8 +300,10 @@ public class JobController {
     public SingleJobInfo getJobStatus(
             @PathVariable("id") String jobId,
             @RequestParam(value = "useSession", required = false) boolean useSession,
-            HttpSession session) {
+            HttpSession session,
+            HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        var requestUri = request.getRequestURI();
 
         try (var mdc = CloseableMdc.job(internalJobId)) {
             if (useSession && !SessionUtil.containsJob(session, internalJobId)) {
@@ -307,9 +317,15 @@ public class JobController {
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
                     .withEventId(LogAuditEventRecord.EventId.GET_JOB_INFO_ERROR)
+                    .withUri(requestUri)
                     .error("Job not found for ID: %s", jobId);
                 return null;
             }
+            _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.GET_JOB_INFO)
+                .withUri(requestUri)
+                .allowed("Job info for job id %s", jobId);
             return convertToSingleJobInfo(jobRequest);
         }
     }
@@ -329,8 +345,10 @@ public class JobController {
     public ResponseEntity<Object> getSerializedDetectionOutputRest(
                 @ApiParam(required = true, value = "Job id")
                 @PathVariable("id")
-                String jobId) {
+                String jobId,
+                HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        var requestUri = request.getRequestURI();
         try (var mdc = CloseableMdc.job(internalJobId)) {
             //return 200 for successful GET and object; 404 for bad id
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
@@ -338,12 +356,14 @@ public class JobController {
                 _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.GET_JOB_OUTPUT_ERROR)
+                .withUri(requestUri)
                 .error("Failed to read detection output for job id {}", jobId);
                 return ResponseEntity.notFound().build();
             }
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.GET_JOB_OUTPUT)
+                .withUri(requestUri)
                 .allowed("User retrieved JSON output object for job %s", jobId);
             var resultsStream = pastJobResultsService.getDetectionJobResultsStream(internalJobId);
             return ResponseEntity.ok(new InputStreamResource(resultsStream));
@@ -352,6 +372,7 @@ public class JobController {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.GET_JOB_OUTPUT_ERROR)
+                .withUri(requestUri)
                 .error("Failed to read detection output for job %s : %s", jobId, e.getMessage());
             return ResponseEntity.internalServerError()
                 .body(new MessageModel(e.getMessage()));
@@ -361,8 +382,15 @@ public class JobController {
 
     //INTERNAL
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
-    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) String idParam) {
+    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) String idParam,
+                                        HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(idParam);
+        var requestUri = request.getRequestURI();
+        _auditEventLogger.readEvent()
+            .withSecurityTag()
+            .withEventId(LogAuditEventRecord.EventId.GET_JOB_OUTPUT)
+            .withUri(requestUri)
+            .allowed("Read output object for job id %s", idParam);
         return MdcUtil.job(internalJobId, () -> {
             return new ModelAndView("output_object", "jobId", idParam);
         });
@@ -382,10 +410,11 @@ public class JobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId,
-                                                               @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
+                                                               @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam,
+                                                                HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
-            JobCreationResponse resubmitResponse = resubmitJobInternal(internalJobId, jobPriorityParam);
+            JobCreationResponse resubmitResponse = resubmitJobInternal(internalJobId, jobPriorityParam, request);
             if (resubmitResponse.mpfResponse().isSuccessful()) {
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
             }
@@ -403,10 +432,11 @@ public class JobController {
     public JobCreationResponse resubmitJob(
             @PathVariable("id") String jobId,
             @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam,
-            HttpSession session) {
+            HttpSession session,
+            HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
-            JobCreationResponse response = resubmitJobInternal(internalJobId, jobPriorityParam);
+            JobCreationResponse response = resubmitJobInternal(internalJobId, jobPriorityParam, request);
             SessionUtil.addJob(session, internalJobId);
             return response;
         }
@@ -425,18 +455,16 @@ public class JobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<MpfResponse> cancelJobRest(
-            @ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId) {
+            @ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId,
+            HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        var requestUri = request.getRequestURI();
         try (var mdc = CloseableMdc.job(internalJobId)) {
-            MpfResponse mpfResponse = cancelJobInternal(internalJobId);
+            MpfResponse mpfResponse = cancelJobInternal(internalJobId, request);
             if (mpfResponse.isSuccessful()) {
                 return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
             } else {
                 log.error("Error cancelling job with id '{}'", internalJobId);
-                _auditEventLogger.deleteEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.JOB_CANCEL_ERROR)
-                    .error("Failed to cancel job with ID: %s", internalJobId);
                 return new ResponseEntity<>(mpfResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -446,9 +474,10 @@ public class JobController {
     @RequestMapping(value = "/jobs/{id}/cancel", method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public MpfResponse cancelJob(@PathVariable("id") String jobId) {
+    public MpfResponse cancelJob(@PathVariable("id") String jobId,
+                                 HttpServletRequest request) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        return MdcUtil.job(internalJobId, this::cancelJobInternal);
+        return MdcUtil.job(internalJobId, () -> { return cancelJobInternal(internalJobId, request);});
     }
 
 
@@ -462,12 +491,15 @@ public class JobController {
                 contain a list of failures along with a list of successes. Each failure will \
                 contain the job id and associated error message. The success list will only \
                 contain the job ids.""")
-    public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds) {
+    public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds,
+                                                             HttpServletRequest request) {
+        var requestUri = request.getRequestURI();
         var tiesDbResult = tiesDbService.repost(jobIds);
         if (tiesDbResult.failures().isEmpty()) {
             _auditEventLogger.createEvent()
             .withSecurityTag()
             .withEventId(LogAuditEventRecord.EventId.TIES_DB_POST)
+            .withUri(requestUri)
             .allowed("Reposted job results to TiesDB");
             return ResponseEntity.ok(tiesDbResult);
         }
@@ -475,14 +507,16 @@ public class JobController {
             _auditEventLogger.createEvent()
             .withSecurityTag()
             .withEventId(LogAuditEventRecord.EventId.TIESDB_POST_ERROR)
+            .withUri(requestUri)
             .error("Failed to repost job results for at least one job");
             return ResponseEntity.internalServerError().body(tiesDbResult);
         }
     }
 
 
-    private JobCreationResponse createJobInternal(
+    private JobCreationResponse createJobInternal(HttpServletRequest request,
             JobCreationRequest jobCreationRequest, boolean useSession, HttpSession session) {
+            var requestUri = request.getRequestURI();
         try {
             var jobCreationResult = jobRequestService.run(jobCreationRequest);
             long jobId = jobCreationResult.jobId();
@@ -507,6 +541,7 @@ public class JobController {
             _auditEventLogger.createEvent()
                     .withSecurityTag()
                     .withEventId(LogAuditEventRecord.EventId.CREATE_JOB)
+                    .withUri(requestUri)
                     .allowed("Pipeline: %s, Media URIs: [%s]",
                              jobCreationRequest.pipelineName(),
                              mediaUrisList);
@@ -524,7 +559,8 @@ public class JobController {
             _auditEventLogger.createEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.JOB_CREATE_ERROR)
-                .error("Failed to create job via REST API");
+                .withUri(requestUri)
+                .error(err);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         }
     }
@@ -575,7 +611,6 @@ public class JobController {
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
             var mediaUris = getMediaUris(job);
-
             return new SingleJobInfo(
                     propertiesUtil.getExportedJobId(job.getId()),
                     job.getPipeline(),
@@ -640,10 +675,11 @@ public class JobController {
     }
 
 
-    private JobCreationResponse resubmitJobInternal(long jobId, Integer jobPriorityParam) {
+    private JobCreationResponse resubmitJobInternal(long jobId, Integer jobPriorityParam, HttpServletRequest request) {
         log.debug("Attempting to resubmit job with id: {}.", jobId);
         //if there is a priority param passed then use it, if not, use the default
         int jobPriority = (jobPriorityParam != null) ? jobPriorityParam : propertiesUtil.getJmsPriority();
+        var requestUri = request.getRequestURI();
         try {
             jobRequestService.resubmit(jobId, jobPriority);
             //make sure to reset the value in the job progress map to handle manual refreshes that will display
@@ -653,6 +689,7 @@ public class JobController {
             _auditEventLogger.modifyEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.RESUBMIT_JOB)
+                .withUri(requestUri)
                 .allowed("User resubmitted job with id %s", jobId);
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
             return new JobCreationResponse(exportedJobId, TiesDbCheckStatus.NOT_REQUESTED, null);
@@ -662,14 +699,16 @@ public class JobController {
                 _auditEventLogger.modifyEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.JOB_RESUBMIT_ERROR)
+                .withUri(requestUri)
                 .error("Failed to resubmit job with ID: %s", jobId);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
     }
 
-    private MpfResponse cancelJobInternal(long jobId) {
+    private MpfResponse cancelJobInternal(long jobId, HttpServletRequest request) {
         log.debug("Attempting to cancel job with id: {}.", jobId);
         boolean wasCancelled;
+        var requestUri = request.getRequestURI();
         try {
             wasCancelled = jobRequestService.cancel(jobId);
         } catch ( WfmProcessingException wpe ) {
@@ -681,6 +720,7 @@ public class JobController {
             _auditEventLogger.deleteEvent()
                 .withSecurityTag()
                 .withEventId(LogAuditEventRecord.EventId.CANCEL_JOB)
+                .withUri(requestUri)
                 .allowed("User canceled job with id %s", jobId);
             return new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, null);
         }
@@ -690,6 +730,7 @@ public class JobController {
         _auditEventLogger.deleteEvent()
             .withSecurityTag()
             .withEventId(LogAuditEventRecord.EventId.JOB_CANCEL_ERROR)
+            .withUri(requestUri)
             .error("Job cancellation for job id {} failed.", jobId);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }

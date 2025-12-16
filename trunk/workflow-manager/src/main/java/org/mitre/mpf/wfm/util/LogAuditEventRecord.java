@@ -40,14 +40,13 @@ public record LogAuditEventRecord(
     String user,
     OpType op,
     ResType res,
-    String msg,
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String uri,
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String bucket,
-    // TODO: Rename bucket_key to object_key
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    String bucket_key) {
+    String object_key,
+    String msg) {
 
     // Event IDS:
     //   100 through 999: successful events
@@ -60,12 +59,10 @@ public record LogAuditEventRecord(
         AUTHENTICATED_WEB_REQUEST(103),
         USER_LOGOUT(104),
         CREATE_JOB(200),
-        MODIFY_JOB(201),
-        DELETE_JOB(202),
-        RESUBMIT_JOB(203),
-        CANCEL_JOB(204),
-        GET_JOB_INFO(205),
-        GET_JOB_OUTPUT(206),
+        RESUBMIT_JOB(202),
+        CANCEL_JOB(203),
+        GET_JOB_INFO(204),
+        GET_JOB_OUTPUT(205),
         JOB_CALLBACK_SENT(210),
         UPLOAD_MEDIA(300),
         DOWNLOAD_MEDIA(301),
@@ -78,18 +75,17 @@ public record LogAuditEventRecord(
         TIES_DB_POST(501),
         S3_UPLOAD(600),
         S3_DOWNLOAD(601),
+        S3_UPLOAD_SKIPPED(602),
         HAWTIO_ACCESS(700),
         REST_API_ACCESS(800),
         // Failure/error events
         ACCESS_DENIED(4100),
         LOGIN_FAILURE(4102),
         JOB_CREATE_ERROR(4200),
-        JOB_MODIFY_ERROR(4201),
-        JOB_DELETE_ERROR(4202),
-        JOB_RESUBMIT_ERROR(4203),
-        JOB_CANCEL_ERROR(4204),
-        GET_JOB_INFO_ERROR(4205),
-        GET_JOB_OUTPUT_ERROR(4206),
+        JOB_RESUBMIT_ERROR(4202),
+        JOB_CANCEL_ERROR(4203),
+        GET_JOB_INFO_ERROR(4204),
+        GET_JOB_OUTPUT_ERROR(4205),
         JOB_CALLBACK_ERROR(4210),
         MEDIA_UPLOAD_ERROR(4300),
         MEDIA_DOWNLOAD_ERROR(4301),

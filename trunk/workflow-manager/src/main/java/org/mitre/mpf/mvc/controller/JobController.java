@@ -190,25 +190,8 @@ public class JobController {
         JobCreationResponse createResponse = createJobInternal(
                 jobCreationRequest, false, session);
         if (createResponse.mpfResponse().isSuccessful()) {
-            // Log successful job creation with detailed information
-            var mediaUris = jobCreationRequest.media().stream()
-                    .map(media -> media.mediaUri().toString())
-                    .toList();
-            String mediaUrisList = String.join(", ", mediaUris);
-
-            _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.CREATE_JOB)
-                    .allowed("Pipeline: %s, Media URIs: [%s]",
-                             jobCreationRequest.pipelineName(),
-                             mediaUrisList);
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
-            log.error("Error creating job");
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.JOB_CREATE_ERROR)
-                .error("Failed to create job via REST API");
             return new ResponseEntity<>(createResponse, HttpStatus.BAD_REQUEST);
         }
     }
@@ -404,18 +387,10 @@ public class JobController {
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobCreationResponse resubmitResponse = resubmitJobInternal(internalJobId, jobPriorityParam);
             if (resubmitResponse.mpfResponse().isSuccessful()) {
-                _auditEventLogger.modifyEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.RESUBMIT_JOB)
-                .allowed("User resubmitted job with id %s", jobId);
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
             }
             else {
                 log.error("Error resubmitting job with id '{}'", jobId);
-                _auditEventLogger.modifyEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.JOB_RESUBMIT_ERROR)
-                    .error("Failed to resubmit job with ID: %s", jobId);
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -455,10 +430,6 @@ public class JobController {
         try (var mdc = CloseableMdc.job(internalJobId)) {
             MpfResponse mpfResponse = cancelJobInternal(internalJobId);
             if (mpfResponse.isSuccessful()) {
-                _auditEventLogger.deleteEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.CANCEL_JOB)
-                .allowed("User resubmitted job with id %s", jobId);
                 return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
             } else {
                 log.error("Error cancelling job with id '{}'", internalJobId);
@@ -527,6 +498,18 @@ public class JobController {
                     .map(ci -> ci.outputObjectUri())
                     .orElse(null);
 
+            // Log successful job creation with detailed information
+            var mediaUris = jobCreationRequest.media().stream()
+                    .map(media -> media.mediaUri().toString())
+                    .toList();
+            String mediaUrisList = String.join(", ", mediaUris);
+
+            _auditEventLogger.createEvent()
+                    .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.CREATE_JOB)
+                    .allowed("Pipeline: %s, Media URIs: [%s]",
+                             jobCreationRequest.pipelineName(),
+                             mediaUrisList);
 
             // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(
@@ -537,6 +520,11 @@ public class JobController {
         catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
             log.error(err, ex);
+            log.error("Error creating job");
+            _auditEventLogger.createEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.JOB_CREATE_ERROR)
+                .error("Failed to create job via REST API");
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         }
     }
@@ -662,11 +650,19 @@ public class JobController {
             //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
             jobProgress.setJobProgress(jobId, 0);
             log.debug("Successful resubmission of Job Id: {}", jobId);
+            _auditEventLogger.modifyEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.RESUBMIT_JOB)
+                .allowed("User resubmitted job with id %s", jobId);
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
             return new JobCreationResponse(exportedJobId, TiesDbCheckStatus.NOT_REQUESTED, null);
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);
+                _auditEventLogger.modifyEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.JOB_RESUBMIT_ERROR)
+                .error("Failed to resubmit job with ID: %s", jobId);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
     }
@@ -682,11 +678,19 @@ public class JobController {
         }
         if (wasCancelled) {
             log.debug("Successful cancellation of job with id: {}", jobId);
+            _auditEventLogger.deleteEvent()
+                .withSecurityTag()
+                .withEventId(LogAuditEventRecord.EventId.CANCEL_JOB)
+                .allowed("User canceled job with id %s", jobId);
             return new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, null);
         }
         String errorStr = "Failed to cancel the job with id '" + jobId + "'. Please check to make sure the job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
+        _auditEventLogger.deleteEvent()
+            .withSecurityTag()
+            .withEventId(LogAuditEventRecord.EventId.JOB_CANCEL_ERROR)
+            .error("Job cancellation for job id {} failed.", jobId);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
 }

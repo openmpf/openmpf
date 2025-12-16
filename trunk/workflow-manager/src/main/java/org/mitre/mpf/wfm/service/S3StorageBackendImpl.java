@@ -400,6 +400,13 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                         "Did not upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" "
                                 + "because a file with the same SHA-256 hash was already there.",
                         path, bucketUri, objectName);
+                _auditEventLogger.createEvent()
+                        .withSecurityTag()
+                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD_SKIPPED)
+                        .withUri(bucketUri)
+                        .withBucket(bucketName)
+                        .withObjectKey(objectName)
+                        .allowed();
             }
             else {
                 var putRequest = PutObjectRequest.builder()

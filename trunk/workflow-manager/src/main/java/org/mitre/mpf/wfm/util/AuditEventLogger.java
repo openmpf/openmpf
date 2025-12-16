@@ -79,10 +79,10 @@ public class AuditEventLogger {
             String uri,
             String msg,
             String bucket,
-            String ObjectKey) {
+            String objectKey) {
 
         var eventRecord = new LogAuditEventRecord(
-                Instant.now(), eid, tag, "openmpf", user, op, res, msg, uri, bucket, ObjectKey);
+                Instant.now(), eid, tag, "openmpf", user, op, res, uri, bucket, objectKey, msg);
         writeToLogger(eventRecord);
         return this;
     }

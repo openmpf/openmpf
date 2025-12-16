@@ -207,8 +207,7 @@ public class TestUtil {
         var converters = new ArrayList<HttpMessageConverter<?>>();
         new WebMvcConfig(
                 new ProbingResourceMessageConverter(),
-                ObjectMapperFactory.customObjectMapper(),
-                null
+                ObjectMapperFactory.customObjectMapper()
         ).extendMessageConverters(converters);
         setup.setMessageConverters(converters.toArray(HttpMessageConverter[]::new));
         return setup.build();

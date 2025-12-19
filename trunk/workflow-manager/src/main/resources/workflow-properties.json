@@ -36,7 +36,7 @@
     },
     {
         "name": "IS_ANNOTATOR",
-        "description": "Actions with this property set to true will take the feed-forward track passed to it and add some additional detection properties",
+        "description": "An action with this property set to true declares that it will produce tracks containing the same content as the feed forward track passed to it with some additional properties set.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

@@ -26,7 +26,9 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -38,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -95,9 +98,11 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbCheckResult;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
@@ -141,11 +146,13 @@ public class TestJobRequestService {
 
     private final ProducerTemplate _mockProducerTemplate = mock(ProducerTemplate.class);
 
+    private final TaskAnnotatorService _mockTaskAnnotatorService = mock(TaskAnnotatorService.class);
+
     private final JobRequestService _jobRequestService = new JobRequestServiceImpl(
                     _mockPropertiesUtil, _aggregateJobPropertiesUtil, _mockPipelineService,
                     _jsonUtils, _mockJmsUtils, _inProgressJobs, _mockJobRequestDao,
                     _mockMarkupResultDao, _mockTiesDbBeforeJobCheckService, _mockProducerTemplate,
-                    TestUtil.createConstraintValidator());
+                    TestUtil.createConstraintValidator(), _mockTaskAnnotatorService);
 
     @Rule
     public TemporaryFolder _temporaryFolder = new TemporaryFolder();
@@ -161,7 +168,9 @@ public class TestJobRequestService {
         return createTestJobCreationRequest(null);
     }
 
-    private static JobCreationRequest createTestJobCreationRequest(Integer priority) {
+    private static JobCreationRequest createTestJobCreationRequest(
+            Integer priority,
+            Map<String, Map<String, String>> algoProps) {
         var jobCreationMedia1 = new JobCreationMediaData(
                 MediaUri.create("http://my_media1.mp4"),
                 Map.of("media_prop1", "media_val1"),
@@ -183,7 +192,7 @@ public class TestJobRequestService {
         return new JobCreationRequest(
             List.of(jobCreationMedia1, jobCreationMedia2),
             Map.of("job_prop1", "job_val1"),
-            Map.of("TEST ALGO", Map.of("algo_prop1", "algo_val1")),
+            algoProps,
             "external_id",
             "TEST PIPELINE",
             null,
@@ -193,17 +202,41 @@ public class TestJobRequestService {
             "GET");
     }
 
+    private static JobCreationRequest createTestJobCreationRequest(Integer priority) {
+        return createTestJobCreationRequest(
+            priority,
+            Map.of("TEST ALGO", Map.of("algo_prop1", "algo_val1")));
+    }
+
 
     private static JobPipelineElements createJobPipelineElements() {
-        var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION, "TEST",
-                                      OptionalInt.empty(),
-                                      new Algorithm.Requires(List.of()),
-                                      new Algorithm.Provides(List.of(), List.of()),
-                                      true, true);
-        var action = new Action("TEST ACTION", "descr", algorithm.name(), List.of());
-        var task = new Task("Test Task", "desc", List.of(action.name()));
-        var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.name()));
-        return new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
+        return createJobPipelineElements(1);
+    }
+
+    private static JobPipelineElements createJobPipelineElements(int numTasks) {
+        var algos = new ArrayList<Algorithm>();
+        var actions = new ArrayList<Action>();
+        var tasks = new ArrayList<Task>();
+        for (int i = 0; i < numTasks; i++) {
+            var algorithm = new Algorithm("TEST ALGO" + i, "desc", ActionType.DETECTION, "TEST",
+                                        OptionalInt.empty(),
+                                        new Algorithm.Requires(List.of()),
+                                        new Algorithm.Provides(List.of(), List.of()),
+                                        true, true);
+            algos.add(algorithm);
+
+            var action = new Action("TEST ACTION" + i, "descr", algorithm.name(), List.of());
+            actions.add(action);
+
+            var task = new Task("Test Task" + i, "desc", List.of(action.name()));
+            tasks.add(task);
+        }
+
+        var taskNames = tasks.stream()
+            .map(Task::name)
+            .toList();
+        var pipeline = new Pipeline("TEST PIPELINE", "desc", taskNames);
+        return new JobPipelineElements(pipeline, tasks, actions, algos);
     }
 
 
@@ -548,6 +581,116 @@ public class TestJobRequestService {
             .isThrownBy(() -> _jobRequestService.run(job))
             .withMessageContaining("media[0].mediaSelectors[0].expression=\"\": may not be empty");
         verifyNoInteractions(_mockProducerTemplate);
+    }
+
+
+    @Test
+    public void testSuppressTracksValidationWhenNothingSuppressed() {
+        setupSuppressTracksTest();
+
+        var jobCreationRequest = createTestJobCreationRequest(
+            5, Map.of());
+        var creationResult = _jobRequestService.run(jobCreationRequest);
+        assertThat(creationResult.jobId()).isEqualTo(123);
+    }
+
+
+    @Test
+    public void testSuppressTracksValidationWhenEarlyStageSuppressed() {
+        setupSuppressTracksTest();
+
+        var jobCreationRequest = createTestJobCreationRequest(
+            5,
+            Map.of(
+                "TEST ALGO0", Map.of(MpfConstants.SUPPRESS_TRACKS, "true"),
+                "TEST ALGO1",  Map.of(MpfConstants.SUPPRESS_TRACKS, "true")));
+        var creationResult = _jobRequestService.run(jobCreationRequest);
+        assertThat(creationResult.jobId()).isEqualTo(123);
+    }
+
+    @Test
+    public void testSuppressTracksValidationWhenLastStageSuppressed() {
+        setupSuppressTracksTest();
+
+        var jobCreationRequest = createTestJobCreationRequest(
+            5,
+            Map.of("TEST ALGO2", Map.of(MpfConstants.SUPPRESS_TRACKS, "true")));
+
+        assertThatThrownBy(() -> _jobRequestService.run(jobCreationRequest))
+                .isInstanceOf(WfmProcessingException.class)
+                .hasMessageContaining("with SUPPRESS_TRACKS=true")
+                .hasMessageContaining("TEST ACTION2");
+    }
+
+
+    @Test
+    public void testSuppressTracksValidationWhenAllStagesSuppressed() {
+        setupSuppressTracksTest();
+
+        var jobCreationRequest = createTestJobCreationRequest(
+            5,
+            Map.of(
+                "TEST ALGO0", Map.of(MpfConstants.SUPPRESS_TRACKS, "true"),
+                "TEST ALGO1",  Map.of(MpfConstants.SUPPRESS_TRACKS, "true"),
+                "TEST ALGO2", Map.of(MpfConstants.SUPPRESS_TRACKS, "true")));
+
+        assertThatThrownBy(() -> _jobRequestService.run(jobCreationRequest))
+                .isInstanceOf(WfmProcessingException.class)
+                .hasMessageContaining("with SUPPRESS_TRACKS=true")
+                .hasMessageContaining("TEST ACTION2");
+    }
+
+
+    @Test
+    public void testSuppressTracksValidationFailureWithAnnotator() {
+        setupSuppressTracksTest();
+
+        when(_mockTaskAnnotatorService.actionIsAnnotator(notNull(), notNull(), eq(2), eq(0)))
+            .thenReturn(true);
+
+        var jobCreationRequest = createTestJobCreationRequest(
+            5,
+            Map.of(
+                "TEST ALGO1",  Map.of(MpfConstants.SUPPRESS_TRACKS, "true"),
+                "TEST ALGO2", Map.of(MpfConstants.SUPPRESS_TRACKS, "true")));
+
+        assertThatThrownBy(() -> _jobRequestService.run(jobCreationRequest))
+                .isInstanceOf(WfmProcessingException.class)
+                .hasMessageContaining("with SUPPRESS_TRACKS=true")
+                .hasMessageContaining("TEST ACTION1");
+    }
+
+    @Test
+    public void testSuppressTracksValidationSuccessWithAnnotator() {
+        setupSuppressTracksTest();
+
+        when(_mockTaskAnnotatorService.actionIsAnnotator(notNull(), notNull(), eq(2), eq(0)))
+            .thenReturn(true);
+
+        var jobCreationRequest = createTestJobCreationRequest(
+            5,
+            Map.of(
+                "TEST ALGO1",  Map.of(MpfConstants.SUPPRESS_TRACKS, "false"),
+                "TEST ALGO2", Map.of(MpfConstants.SUPPRESS_TRACKS, "true")));
+        var creationResult = _jobRequestService.run(jobCreationRequest);
+        assertThat(creationResult.jobId()).isEqualTo(123);
+    }
+
+
+    private void setupSuppressTracksTest() {
+        var pipelineElements = createJobPipelineElements(3);
+        when(_mockPipelineService.getBatchPipelineElements("TEST PIPELINE"))
+                .thenReturn(pipelineElements);
+
+        var jobRequestEntityCaptor = ArgumentCaptor.forClass(JobRequest.class);
+        when(_mockJobRequestDao.persist(jobRequestEntityCaptor.capture()))
+                .thenAnswer(i -> i.getArgument(0));
+
+        when(_mockJobRequestDao.getNextId())
+                .thenReturn(123L);
+
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(123L))
+                .thenReturn(TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_MATCH));
     }
 
 

@@ -87,6 +87,8 @@ public class CompareUtils {
 
 
     private static <T> int doSortedSetCompare(SortedSet<T> s1, SortedSet<T> s2) {
+        // s1 and s2 are expected to have the same comparator. Passing in sets with different
+        // comparators is not supported.
         Comparator<? super T> comparator = s1.comparator();
         if (comparator == null) {
             comparator = (a, b) -> ((Comparable<T>) a).compareTo(b);

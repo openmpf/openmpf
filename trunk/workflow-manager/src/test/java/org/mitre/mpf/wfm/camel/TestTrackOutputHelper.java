@@ -117,6 +117,7 @@ public class TestTrackOutputHelper extends MockitoTest.Strict {
     @Test
     public void testWithAnnotators() {
         var t0AnnotatedTrack = createTrack(0, 0);
+
         var t1TransitiveAnnotatedTrack = createTrack(1, 0);
         var t1SingleAnnotatedTrack = createTrack(1, 0);
 

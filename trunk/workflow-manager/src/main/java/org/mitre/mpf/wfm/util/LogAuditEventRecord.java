@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public record LogAuditEventRecord(
     Instant time,
-    EventId eid,
+    int  event_id,
     TagType tag,
     String app,
     String user,
@@ -48,68 +48,63 @@ public record LogAuditEventRecord(
     String object_key,
     String msg) {
 
-    // Event IDS:
-    //   100 through 999: successful events
-    //   4000 through 4999: failure/error events
+ 
     public enum EventId {
-        // Successful events
-        ACCESS_HOMEPAGE(100),
-        LOGIN_PAGE_ACCESS(101),
-        LOGIN_SUCCESS(102),
-        AUTHENTICATED_WEB_REQUEST(103),
-        USER_LOGOUT(104),
-        CREATE_JOB(200),
-        RESUBMIT_JOB(202),
-        CANCEL_JOB(203),
-        GET_JOB_INFO(204),
-        GET_JOB_OUTPUT(205),
-        JOB_CALLBACK_SENT(210),
-        UPLOAD_MEDIA(300),
-        DOWNLOAD_MEDIA(301),
-        UPLOAD_FILE(302),
-        DOWNLOAD_FILE(303),
-        CREATE_FILE(304),
-        CREATE_DIRECTORY(305),
-        VIEW_FILES(306),
-        TIES_DB_GET(500),
-        TIES_DB_POST(501),
-        S3_UPLOAD(600),
-        S3_DOWNLOAD(601),
-        S3_UPLOAD_SKIPPED(602),
-        HAWTIO_ACCESS(700),
-        REST_API_ACCESS(800),
-        // Failure/error events
-        ACCESS_DENIED(4100),
-        LOGIN_FAILURE(4102),
-        JOB_CREATE_ERROR(4200),
-        JOB_RESUBMIT_ERROR(4202),
-        JOB_CANCEL_ERROR(4203),
-        GET_JOB_INFO_ERROR(4204),
-        GET_JOB_OUTPUT_ERROR(4205),
-        JOB_CALLBACK_ERROR(4210),
-        MEDIA_UPLOAD_ERROR(4300),
-        MEDIA_DOWNLOAD_ERROR(4301),
-        FILE_UPLOAD_ERROR(4302),
-        FILE_DOWNLOAD_ERROR(4303),
-        FILE_CREATE_ERROR(4304),
-        DIRECTORY_CREATE_ERROR(4305),
-        FILE_ACCESS_ERROR(4306),
-        TIESDB_GET_ERROR(4500),
-        TIESDB_POST_ERROR(4501),
-        S3_UPLOAD_ERROR(4600),
-        S3_DOWNLOAD_ERROR(4601),
-        INVALID_PARAMETER_ERROR(5000),
-        INVALID_JOB_ID_ERROR(5001),
-        URI_SYNTAX_ERROR(5002);
+        ACCESS_HOMEPAGE(100, 4100, "homepage access"),
+        LOGIN_PAGE_ACCESS(101, 4101, "login page access"),
+        USER_LOGIN(102, 4102, "user login"),
+        USER_LOGOUT(103, 4103, "user logout"),
+        AUTHENTICATED_WEB_REQUEST(104, 4104, "authenticated web request"),
+        ACCESS_DENIED(105, 4105, "access denied"),
+        SSO_ACCESS(106,4106, "SSO access"),
+        CREATE_JOB(200, 4200, "create job"),
+        RESUBMIT_JOB(201, 4201, "resubmit job"),
+        CANCEL_JOB(202, 4202, "cancel job"),
+        GET_JOB_INFO(203, 4203, "get job info"),
+        GET_JOB_OUTPUT(204, 4204, "get job output"),
+        GET_JOB_STATUS(205,4205, "get job status"),
+        JOB_CALLBACK(206, 4206, "job completion callback"),
+        JOB_ID_VALIDATION(207,4207, "job id validation"),
+        COMPONENT_REGISTRATION(300, 4300, "component registration"),
+        SUBJECT_TRACKING_COMPONENTS(301, 4301, "get subject tracking component info"),
+        CREATE_SUBJECT_TRACKING_JOB(302, 4302, "create subject tracking job"),
+        CANCEL_SUBJECT_TRACKING_JOB(303, 4303, "cancel subject tracking job"),
+        GET_SUBJECT_TRACKING_JOB_INFO(304, 4304, "get subject tracking job info"),
+        GET_SUBJECT_TRACKING_JOB_OUTPUT(305, 4305, "get subject tracking job output"),
+        REST_PIPELINES(400, 4400, "get pipeline info"),
+        REST_QUEUES(410, 4410, "get queue info"),
+        VIEW_MEDIA(500, 4500, "view media"),
+        UPLOAD_MEDIA(501, 4501, "upload media"),
+        DOWNLOAD_MEDIA(502, 4502, "download media"),
+        VIEW_MARKUP(503,4503, "view markup"),
+        DOWNLOAD_MARKUP(504,4504, "download markup"),
+        UPLOAD_FILE(505, 4505, "upload file"),
+        DOWNLOAD_FILE(506, 4506, "download file"),
+        CREATE_FILE(507, 4507, "create file"),
+        CREATE_DIRECTORY(508, 4508, "create directory"),
+        VIEW_FILES(509, 4509, "view files"),
+        TIESDB_GET(600, 4600, "TiesDB get"),
+        TIESDB_POST(601, 4601, "TiesDB post"),
+        TIESDB_REPOST(602, 4602, "TiesDB repost"),
+        S3_UPLOAD(700, 4700, "upload to S3"),
+        S3_DOWNLOAD(701, 4701, " download from S3"),
+        S3_UPLOAD_SKIPPED(702, 4702, "skipped upload to S3"),
+        HAWTIO_ACCESS(800, 4800, "Hawtio access"),
+        ADMIN_LOGS(1000,5000, "admin logs access"),
+        ADMIN_STATISTICS(1001, 5001, "admin statistics access"),
+        ADMIN_PROPERTY_SETTINGS(1002, 5002, "admin property settings access");
 
-        private final int value;
-        EventId(int value) {
-            this.value = value;
+        public final int success;
+        public final int fail;
+        public final String message;
+
+        EventId(int success, int fail, String message) {
+            this.success = success;
+            this.fail = fail;
+            this.message = message;
         }
-        @JsonValue
-        public int getValue() {
-            return value;
-        }
+
+
     }
 
     public enum TagType {

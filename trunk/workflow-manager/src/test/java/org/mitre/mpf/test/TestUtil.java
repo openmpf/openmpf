@@ -27,6 +27,7 @@
 package org.mitre.mpf.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -56,6 +57,7 @@ import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.mvc.ProbingResourceMessageConverter;
 import org.mitre.mpf.mvc.WebMvcConfig;
+import org.mitre.mpf.mvc.security.RestAuditLoggingInterceptor;
 import org.mitre.mpf.wfm.ValidatorConfig;
 import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -205,10 +207,12 @@ public class TestUtil {
     public static MockMvc initMockMvc(Object controller) {
         var setup = MockMvcBuilders.standaloneSetup(controller);
         var converters = new ArrayList<HttpMessageConverter<?>>();
+        var mockRestAuditLogInterceptor = mock(RestAuditLoggingInterceptor.class);
         new WebMvcConfig(
                 new ProbingResourceMessageConverter(),
-                ObjectMapperFactory.customObjectMapper()
-        ).extendMessageConverters(converters);
+                ObjectMapperFactory.customObjectMapper(),
+                mockRestAuditLogInterceptor)
+            .extendMessageConverters(converters);
         setup.setMessageConverters(converters.toArray(HttpMessageConverter[]::new));
         return setup.build();
     }

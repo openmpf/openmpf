@@ -33,6 +33,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.inject.Inject;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -71,6 +73,7 @@ public class BasicAdminComponentRegistrationController {
 
 
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.GET)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     public List<RegisterComponentModel> getComponentsRest() {
         return withReadLock(_componentState::get);
@@ -84,6 +87,7 @@ public class BasicAdminComponentRegistrationController {
     })
     @RequestMapping(value = {"/components/{componentName}", "/rest/components/{componentName}"},
             method = RequestMethod.DELETE)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     // Prevents Swagger from automatically adding 200 as a response status.
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -98,8 +102,8 @@ public class BasicAdminComponentRegistrationController {
                 return ResponseEntity.noContent().build();
             }
             catch (ManagedComponentsUnsupportedException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Managed components are not supported in Docker deployments.");
+                String err = "Managed components are not supported in Docker deployments.";
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
             }
         });
     }

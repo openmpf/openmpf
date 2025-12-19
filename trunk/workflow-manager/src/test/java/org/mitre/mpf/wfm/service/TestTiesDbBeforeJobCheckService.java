@@ -36,6 +36,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
@@ -187,7 +188,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 .thenReturn(_mockBuilderTagStage);
         when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
-        when(_mockAuditEventBuilder.withEventId(any()))
+        when(_mockAuditEventBuilder.withEventId(anyInt()))
                 .thenReturn(_mockAuditEventBuilder);
         when(_mockAuditEventBuilder.withUri(any()))
                 .thenReturn(_mockAuditEventBuilder);

@@ -3,6 +3,7 @@ package org.mitre.mpf.wfm.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.lenient;
@@ -82,7 +83,7 @@ public class TestJobCompleteCallbackService extends MockitoTest.Strict  {
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
-        lenient().when(_mockAuditEventBuilder.withEventId(any()))
+        lenient().when(_mockAuditEventBuilder.withEventId(anyInt()))
                 .thenReturn(_mockAuditEventBuilder);
         
         _jobCompleteCallbackService = new JobCompleteCallbackService(

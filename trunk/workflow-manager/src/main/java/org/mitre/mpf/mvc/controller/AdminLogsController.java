@@ -30,6 +30,7 @@ package org.mitre.mpf.mvc.controller;
 import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;
 import org.mitre.mpf.mvc.util.tailer.MpfLogTailer;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.*;
@@ -68,7 +68,7 @@ public class AdminLogsController
     private PropertiesUtil propertiesUtil;
 
 	@RequestMapping(value = "/adminLogs", method = RequestMethod.GET)
-	public ModelAndView adminLogs(HttpServletRequest request) throws WfmProcessingException {
+	public ModelAndView adminLogs() throws WfmProcessingException {
 		return new ModelAndView("admin_logs");
 	}
 
@@ -81,6 +81,7 @@ public class AdminLogsController
     }
 
     @RequestMapping(value = "/adminLogsUpdate", method = RequestMethod.GET)
+    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_LOGS)
     @ResponseBody
     public Map<String, Object> updateLog(@RequestParam(value = "nodeSelection") String nodeSelection,
                                          @RequestParam(value = "logSelection") String logSelection,

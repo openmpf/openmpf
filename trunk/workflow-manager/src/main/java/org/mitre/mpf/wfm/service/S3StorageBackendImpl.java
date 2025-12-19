@@ -329,6 +329,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         String bucket = pathParts[0];
         String objectKey = pathParts[1];
 
+        var eventId = LogAuditEventRecord.EventId.S3_DOWNLOAD;
         try {
             var s3Client = getS3DownloadClient(uri, s3UrlUtil, properties);
             var getRequest = GetObjectRequest.builder()
@@ -339,21 +340,21 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             T result = s3Client.getObject(getRequest, responseTransformer);
             _auditEventLogger.readEvent()
                     .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD)
+                    .withEventId(eventId.success)
                     .withUri(uri)
                     .withBucket(bucket)
                     .withObjectKey(objectKey)
-                    .allowed();
+                    .allowed(eventId.message + " succeeded");
             return result;
         }
         catch (SdkException e) {
             _auditEventLogger.readEvent()
                     .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD_ERROR)
+                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD.fail)
                     .withUri(uri)
                     .withBucket(bucket)
                     .withObjectKey(objectKey)
-                    .error("Failed to retrieve object from S3");
+                    .error(eventId.message + " failed");
             throw new StorageException(
                     String.format("Failed to download \"%s\" due to %s", uri, e),
                     e);
@@ -402,11 +403,11 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                         path, bucketUri, objectName);
                 _auditEventLogger.createEvent()
                         .withSecurityTag()
-                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD_SKIPPED)
+                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD_SKIPPED.success)
                         .withUri(bucketUri)
                         .withBucket(bucketName)
                         .withObjectKey(objectName)
-                        .allowed();
+                        .allowed(LogAuditEventRecord.EventId.S3_UPLOAD_SKIPPED.message + " succeeded");
             }
             else {
                 var putRequest = PutObjectRequest.builder()
@@ -419,11 +420,11 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                         path, bucketUri, objectName);
                 _auditEventLogger.createEvent()
                         .withSecurityTag()
-                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD)
+                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD.success)
                         .withUri(bucketUri)
                         .withBucket(bucketName)
                         .withObjectKey(objectName)
-                        .allowed();
+                        .allowed(LogAuditEventRecord.EventId.S3_UPLOAD.message + " succeeded");
             }
             return urlUtil.getFullUri(bucketUri, objectName);
         }
@@ -431,11 +432,11 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             LOG.error("Failed to upload {} due to S3 error: {}", path, e);
             _auditEventLogger.createEvent()
                     .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD_ERROR)
+                    .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD.fail)
                     .withUri(bucketUri)
                     .withBucket(bucketName)
                     .withObjectKey(objectName)
-                    .error("Failed to store object in S3.");
+                    .error(LogAuditEventRecord.EventId.S3_UPLOAD.message + " failed");
             // Don't include path so multiple failures appear as one issue in JSON output object.
             throw new StorageException("Failed to upload due to S3 error: " + e, e);
         }

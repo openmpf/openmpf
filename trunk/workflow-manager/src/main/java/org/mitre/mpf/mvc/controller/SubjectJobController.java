@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.businessrules.SubjectJobRequestService;
 import org.mitre.mpf.wfm.data.access.SubjectJobRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbCancellationState;
 import org.mitre.mpf.wfm.service.PastJobResultsService;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
@@ -89,6 +90,7 @@ public class SubjectJobController {
 
 
     @GetMapping
+    @RequestEventId(value = LogAuditEventRecord.EventId.GET_SUBJECT_TRACKING_JOB_INFO)
     @ApiOperation("Gets subject tracking jobs")
     @ExposedMapping
     public Stream<SubjectJobSummary> getJobs(
@@ -112,6 +114,7 @@ public class SubjectJobController {
 
 
     @GetMapping("{jobId}")
+    @RequestEventId(value = LogAuditEventRecord.EventId.GET_SUBJECT_TRACKING_JOB_INFO)
     @ExposedMapping
     @ApiOperation("Gets a subject tracking job")
     @ApiResponses({@ApiResponse(code = 404, message = "Job does not exist.")})
@@ -121,6 +124,7 @@ public class SubjectJobController {
 
 
     @PostMapping
+    @RequestEventId(value = LogAuditEventRecord.EventId.CREATE_SUBJECT_TRACKING_JOB)
     @ExposedMapping
     @ApiOperation("Creates a new subject tracking job")
     public ResponseEntity<Object> createJob(
@@ -138,6 +142,7 @@ public class SubjectJobController {
 
 
     @GetMapping("{jobId}/output")
+    @RequestEventId(value = LogAuditEventRecord.EventId.GET_SUBJECT_TRACKING_JOB_OUTPUT)
     @ExposedMapping
     @ApiOperation(
             value = "Gets a subject tracking job's output.",
@@ -164,6 +169,7 @@ public class SubjectJobController {
 
 
     @PostMapping("{jobId}/cancel")
+    @RequestEventId(value = LogAuditEventRecord.EventId.CANCEL_SUBJECT_TRACKING_JOB)
     @ExposedMapping
     @ApiOperation("Cancels a subject tracking job.")
     @ApiResponses({

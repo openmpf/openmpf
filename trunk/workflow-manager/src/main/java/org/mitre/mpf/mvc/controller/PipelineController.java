@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -44,6 +45,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.inject.Inject;
+
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -74,6 +76,7 @@ public class PipelineController {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(InvalidPipelineException.class)
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     public MessageModel invalidPipelineHandler(InvalidPipelineException ex) {
         log.error(ex.getMessage(), ex);
         return new MessageModel(ex.getMessage());
@@ -82,6 +85,7 @@ public class PipelineController {
 
 
     @GetMapping({  "/pipelines", "/rest/pipelines" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves list of available pipelines.")
     public List<Pipeline> getPipelines() {
         return _pipelineService.getPipelines();
@@ -89,6 +93,7 @@ public class PipelineController {
 
 
     @GetMapping({ "/pipelines/{name}", "/rest/pipelines/{name}" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves a single pipeline.")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Pipeline> getPipeline(@PathVariable String name) {
@@ -99,6 +104,7 @@ public class PipelineController {
 
 
     @PostMapping({ "/pipelines", "/rest/pipelines" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Adds a new pipeline.")
     @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Pipeline pipeline) {
@@ -107,6 +113,7 @@ public class PipelineController {
 
 
     @DeleteMapping({ "/pipelines/{name}", "/rest/pipelines/{name}" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Deletes a pipeline.")
     public void deletePipeline(@PathVariable String name) {
         _pipelineService.deletePipeline(name);
@@ -116,6 +123,7 @@ public class PipelineController {
 
 
     @GetMapping({ "/tasks", "/rest/tasks" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves list of available tasks.")
     public List<Task> getTasks() {
         return _pipelineService.getTasks();
@@ -123,6 +131,7 @@ public class PipelineController {
 
 
     @GetMapping({ "/tasks/{name}", "/rest/tasks/{name}" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves a single task.")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Task> getTask(@PathVariable String name) {
@@ -133,6 +142,7 @@ public class PipelineController {
 
 
     @PostMapping({ "/tasks", "/rest/tasks" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Adds a new task.")
     @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Task task) {
@@ -141,6 +151,7 @@ public class PipelineController {
 
 
     @DeleteMapping({ "/tasks/{name}", "/rest/tasks/{name}" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Deletes a task.")
     public void deleteTask(@PathVariable String name) {
         _pipelineService.deleteTask(name);
@@ -151,6 +162,7 @@ public class PipelineController {
 
 
     @GetMapping({ "/actions", "/rest/actions" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves list of available actions.")
     public List<Action> getActions() {
         return _pipelineService.getActions();
@@ -158,6 +170,7 @@ public class PipelineController {
 
 
     @GetMapping({ "/actions/{name}", "/rest/actions/{name}" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves a single  action")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Action> getAction(@PathVariable String name) {
@@ -168,6 +181,7 @@ public class PipelineController {
 
 
     @PostMapping({ "/actions", "/rest/actions" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Adds a new action.")
     @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Action action) {
@@ -176,6 +190,7 @@ public class PipelineController {
 
 
     @DeleteMapping({ "/actions/{name}", "/rest/actions/{name}" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Deletes an action.")
     public void deleteAction(@PathVariable String name) {
         _pipelineService.deleteAction(name);
@@ -185,6 +200,7 @@ public class PipelineController {
 
 
     @GetMapping({ "/algorithms", "/rest/algorithms" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves list of available algorithms.")
     public List<Algorithm> getAlgorithms() {
         return _pipelineService.getAlgorithms()
@@ -195,6 +211,7 @@ public class PipelineController {
 
 
     @GetMapping({ "/algorithms/{name}", "/rest/algorithms/{name}" })
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_PIPELINES)
     @ApiOperation("Retrieves a single algorithm.")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Algorithm> getAlgorithm(@PathVariable String name) {

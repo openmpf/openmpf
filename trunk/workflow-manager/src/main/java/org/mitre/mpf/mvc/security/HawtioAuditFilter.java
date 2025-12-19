@@ -29,8 +29,8 @@ public class HawtioAuditFilter extends OncePerRequestFilter {
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
                 .withUri(requestURI)
-                .withEventId(LogAuditEventRecord.EventId.HAWTIO_ACCESS)
-                .allowed("Hawtio Accessed");
+                .withEventId(LogAuditEventRecord.EventId.HAWTIO_ACCESS.success)
+                .allowed(LogAuditEventRecord.EventId.HAWTIO_ACCESS.message + " succeeded");
         }
         filterChain.doFilter(request, response);
     }

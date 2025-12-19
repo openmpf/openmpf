@@ -30,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.lenient;
@@ -139,7 +140,7 @@ public class TestS3Copy extends MockitoTest.Strict {
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
-        lenient().when(_mockAuditEventBuilder.withEventId(any()))
+        lenient().when(_mockAuditEventBuilder.withEventId(anyInt()))
                 .thenReturn(_mockAuditEventBuilder);
         lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))
                 .thenReturn(_mockAuditEventBuilder);

@@ -71,7 +71,7 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
                 .withUri(uri)
-                .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED)
+                .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED.fail)
                 .denied("Login attempt failed: Invalid XSRF token");
             response.sendRedirect("/");
         }

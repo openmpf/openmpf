@@ -34,6 +34,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -186,7 +187,7 @@ public class TestS3StorageBackend extends MockitoTest.Strict {
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
-        lenient().when(_mockAuditEventBuilder.withEventId(any()))
+        lenient().when(_mockAuditEventBuilder.withEventId(anyInt()))
                 .thenReturn(_mockAuditEventBuilder);
         lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))
                 .thenReturn(_mockAuditEventBuilder);

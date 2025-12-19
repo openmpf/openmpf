@@ -38,7 +38,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
@@ -96,8 +95,6 @@ public class MarkupController {
 
     private final HttpClientUtils _httpClientUtils;
 
-    private final AuditEventLogger _auditEventLogger;
-
     @Inject
     MarkupController(
             MarkupResultDao markupResultDao,
@@ -107,8 +104,7 @@ public class MarkupController {
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             PropertiesUtil propertiesUtil,
             InProgressBatchJobsService inProgressJobs,
-            HttpClientUtils httpClientUtils,
-            AuditEventLogger auditEventLogger) {
+            HttpClientUtils httpClientUtils) {
         _markupResultDao = markupResultDao;
         _jobRequestDao = jobRequestDao;
         _jsonUtils = jsonUtils;
@@ -117,10 +113,10 @@ public class MarkupController {
         _propertiesUtil = propertiesUtil;
         _inProgressJobs = inProgressJobs;
         _httpClientUtils = httpClientUtils;
-        _auditEventLogger = auditEventLogger;
     }
 
     @GetMapping("/markup/get-markup-results-filtered")
+    @RequestEventId(value = LogAuditEventRecord.EventId.VIEW_MARKUP)
     public ResponseEntity<Object> getMarkupResultsFiltered(
             @RequestParam("jobId") String jobId,
             @RequestParam("page") int page,
@@ -130,10 +126,6 @@ public class MarkupController {
         long internalJobId = _propertiesUtil.getJobIdFromExportedId(jobId);
         JobRequest jobRequest = _jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
-            _auditEventLogger.readEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.INVALID_JOB_ID_ERROR)
-                .error("Failed to retrieve markup results: Invalid job ID %s", jobId);
             return ResponseEntity.notFound().build();
         }
 
@@ -222,31 +214,20 @@ public class MarkupController {
 
 
     @GetMapping("/markup/download")
+    @RequestEventId(value = LogAuditEventRecord.EventId.DOWNLOAD_MARKUP)
     public Object getFile(@RequestParam("id") long id) throws StorageException, IOException {
         var markupResult = _markupResultDao.findById(id);
         if (markupResult == null) {
             log.error("Markup with id {} download failed. Invalid id.", id);
-            _auditEventLogger.extractEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
-                .error("Markup download failed: Invalid markup ID %s", id);
             return ResponseEntity.notFound().build();
         }
 
         var localPath = IoUtils.toLocalPath(markupResult.getMarkupUri());
         if (localPath.isPresent()) {
             if (Files.exists(localPath.get())) {
-                _auditEventLogger.extractEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_FILE)
-                    .allowed("Downloaded markup file: uri=%s", markupResult.getMarkupUri());
                 return new PathResource(localPath.get());
             }
             log.error("Markup with id {} download failed. Invalid path: {}", id, localPath);
-            _auditEventLogger.extractEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
-                .error("Markup download failed: File not found at path %s for markup ID %s", localPath, id);
             return ResponseEntity.notFound().build();
         }
 
@@ -257,10 +238,6 @@ public class MarkupController {
             log.error(
                     "Markup with id {} download failed. Invalid job with id {}.",
                     id, markupResult.getJobId());
-            _auditEventLogger.extractEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
-                .error("Markup download failed: Invalid job ID %s for markup ID %s", markupResult.getJobId(), id);
             return ResponseEntity.notFound().build();
         }
 
@@ -273,10 +250,6 @@ public class MarkupController {
             log.error(
                     "Markup with id {} download failed. Invalid media with id {}.",
                     id, markupResult.getMediaId());
-            _auditEventLogger.extractEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.FILE_DOWNLOAD_ERROR)
-                .error("Markup download failed: Invalid media ID %s for markup ID %s", markupResult.getMediaId(), id);
             return ResponseEntity.notFound().build();
         }
 
@@ -285,28 +258,16 @@ public class MarkupController {
             try {
                 var s3Stream = _s3StorageBackend.getFromS3(
                         markupResult.getMarkupUri(), combinedProperties);
-                _auditEventLogger.extractEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_FILE)
-                    .allowed("Downloaded markup file: uri=%s", markupResult.getMarkupUri());
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
             catch (StorageException e) {
                 log.error("Markup with id " + id + " download failed: " + e.getMessage(), e);
-                _auditEventLogger.extractEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD_ERROR)
-                    .error("Markup download failed: S3 error for markup ID %s : %s", id, e.getMessage());
                 return ResponseEntity.internalServerError().build();
             }
         }
 
         var request = new HttpGet(markupResult.getMarkupUri());
         var markupResponse = _httpClientUtils.executeRequestSync(request, 0);
-        _auditEventLogger.extractEvent()
-            .withSecurityTag()
-            .withEventId(LogAuditEventRecord.EventId.DOWNLOAD_FILE)
-            .allowed("Downloaded markup file: uri=%s", markupResult.getMarkupUri());
         return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
 

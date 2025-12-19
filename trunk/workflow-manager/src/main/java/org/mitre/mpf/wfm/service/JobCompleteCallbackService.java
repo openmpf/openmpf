@@ -133,22 +133,23 @@ public class JobCompleteCallbackService {
 
     private CompletableFuture<HttpResponse> sendCallback(HttpUriRequest request) {
         LOG.info("Sending job completion callback to: {}", request.getURI());
+        var eventId = LogAuditEventRecord.EventId.JOB_CALLBACK;
         return _httpClientUtils.executeRequest(
                     request, _propertiesUtil.getHttpCallbackRetryCount())
                 .thenApplyAsync(response -> {
                     int statusCode = response.getStatusLine().getStatusCode();
                     _auditEventLogger.createEvent()
                         .withSecurityTag()
-                        .withEventId(LogAuditEventRecord.EventId.JOB_CALLBACK_SENT)
-                        .allowed("Job completion callback: %s %s - %d", 
+                        .withEventId(eventId.success)
+                        .allowed(eventId.message + "succeeded: %s %s - %d", 
                             request.getMethod(), request.getURI(), statusCode );
                     return checkResponse(response);
                 })
                 .exceptionallyCompose(err -> {
                     _auditEventLogger.createEvent()
                         .withSecurityTag()
-                        .withEventId(LogAuditEventRecord.EventId.JOB_CALLBACK_ERROR)
-                        .error("Job completion callback failed: %s %s : %s", 
+                        .withEventId(eventId.fail)
+                        .error(eventId.message + " failed: %s %s : %s", 
                             request.getMethod(), request.getURI(), err.getMessage());
                     return ThreadUtil.failedFuture(err);
                 });

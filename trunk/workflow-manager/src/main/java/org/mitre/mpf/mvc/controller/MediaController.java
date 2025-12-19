@@ -56,8 +56,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mitre.mpf.wfm.util.AuditEventLogger;
-
 @Api( value = "Media",
     description = "Media processing")
 @Controller
@@ -74,9 +72,6 @@ public class MediaController {
     @Autowired
     private ServerMediaService serverMediaService;
 
-    @Autowired
-    private AuditEventLogger _auditEventLogger;
-
     @RequestMapping(value = "/upload/max-file-upload-cnt", method = RequestMethod.GET)
     @ResponseBody
     public String getWebMaxFileUploadCnt() {
@@ -84,19 +79,15 @@ public class MediaController {
     }
 
     @RequestMapping(value = "/saveURL", method = RequestMethod.POST)
+    @RequestEventId(value = LogAuditEventRecord.EventId.UPLOAD_MEDIA)
     @ResponseBody
     public Map<String, String> saveMedia(HttpServletRequest request, @RequestParam(value="urls", required=true) String[] urls,
                                          @RequestParam(value="desiredpath", required=true) String desiredpath,
                                          HttpServletResponse response) throws WfmProcessingException {
         log.debug("URL Upload to Directory:"+desiredpath+" urls:"+urls.length);
-
         if(desiredpath == null){
             String err = "Desired path for media upload is null.";
             log.error(err);
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                .error(err);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR,err);
         };
         String remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
@@ -105,10 +96,6 @@ public class MediaController {
         if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
             String err = String.format("Desired path \"{}\" for media upload is invalid or does not exist", desiredPath);
             log.error(err);
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                .error(err);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, err);
         }
 
@@ -131,11 +118,6 @@ public class MediaController {
             } catch (URISyntaxException incorrectUriTranslation) {
                 String err = String.format("The string \"{}\" did not translate cleanly to a URI.", enteredURL);
                 log.error(err, incorrectUriTranslation);
-                _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.URI_SYNTAX_ERROR)
-                    .withUri(enteredURL)
-                    .error(err);
                 urlResultMap.put(enteredURL, "String did not cleanly convert to URI");
                 continue;
             }
@@ -153,11 +135,6 @@ public class MediaController {
                 if (filename.isEmpty()) {
                     String err2 = String.format("The filename does not exist when uploading from the url \"{}\"", url);
                     log.error(err2);
-                    _auditEventLogger.createEvent()
-                        .withSecurityTag()
-                        .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                        .withUri(url.toString())
-                        .error(err2);
                     urlResultMap.put(enteredURL, err2);
                     continue;
                 }
@@ -179,42 +156,26 @@ public class MediaController {
                 FileUtils.copyURLToFile(url, newFile);
                 
                 // Log the URL upload
-                _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.UPLOAD_MEDIA)
-                    .withUri(newFile.getAbsolutePath())
-                    .allowed();
+                String msg = String.format("Completed write of {} to {}", uri.getPath(), newFile.getAbsolutePath());
+                log.info(msg);
 
-                log.info("Completed write of {} to {}", uri.getPath(), newFile.getAbsolutePath());
                 urlResultMap.put(enteredURL, "successful write to: " + newFile.getAbsolutePath());
                 successFiles.add(newFile);
             } catch (MalformedURLException badUrl) {
-                log.error("URI {} could not be converted. ", uri, badUrl);
-                _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.URI_SYNTAX_ERROR)
-                    .withUri(uri.toString())
-                    .error("Malformed URL: " + badUrl.getMessage());
+                String msg = String.format("URI {} could not be converted. ", uri, badUrl);
+                log.error(msg);
                 urlResultMap.put(enteredURL, "Unable to locate media at the provided address.");
             } catch (IOException badWrite) {
-                log.error("Error writing media to temp file from {}.", enteredURL, badWrite);
-                _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                    .withUri(enteredURL)
-                    .error("IO error writing file: %s", badWrite.getMessage());
+                String msg = String.format("Error writing media to temp file from {}.", enteredURL, badWrite);
+                log.error(msg);
                 urlResultMap.put(enteredURL, "Unable to save media from this url. Please view the server logs for more information.");
                 if (newFile != null && newFile.exists()) {
                     newFile.delete();
                 }
             } catch (Exception failure) { //catch the remaining exceptions
                 //this is most likely a failed connection
-                log.error("Exception thrown while saving media from the url {}.", enteredURL, failure);
-                _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                    .withUri(enteredURL)
-                    .error("Exception: %s", failure.getMessage());
+                String msg = String.format("Exception thrown while saving media from the url {}.", enteredURL, failure);
+                log.error(msg);
                 urlResultMap.put(enteredURL, "Error while saving media from this url. Please view the server logs for more information.");
             }
         }
@@ -226,6 +187,7 @@ public class MediaController {
 
 
     @RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
+    @RequestEventId(value = LogAuditEventRecord.EventId.UPLOAD_MEDIA)
     public ResponseEntity<?> saveMediaFileUpload(
             @RequestParam("desiredpath") String desiredPathParam,
             @RequestParam("file") MultipartFile uploadedFile,
@@ -234,10 +196,6 @@ public class MediaController {
         if (desiredPathParam == null || desiredPathParam.isBlank()) {
             var errorMsg = "desiredpath was not provided";
             log.error("File upload failed due to: " + errorMsg);
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.BAD_REQUEST);
         }
 
@@ -248,20 +206,12 @@ public class MediaController {
                     "Desired path was not under the remote media directory \"{}\".",
                     remoteMediaDirectory.toString());
             log.error("File upload failed due to: " + errorMsg);
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.FORBIDDEN);
         }
 
         if (!desiredPath.exists()) {
             var errorMsg = String.format("Desired path \"{}\" does not exist.", desiredPath.toString());
             log.error("File upload failed due to: " + errorMsg);
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.CONFLICT);
         }
 
@@ -269,10 +219,6 @@ public class MediaController {
         if (originalFileName == null || originalFileName.isBlank()) {
             var errorMsg = "The filename was empty during upload of the MultipartFile.";
             log.error("File upload failed due to: " + errorMsg);
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.MEDIA_UPLOAD_ERROR)
-                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.BAD_REQUEST);
         }
 
@@ -281,11 +227,6 @@ public class MediaController {
         uploadedFile.transferTo(targetFile);
 
         // Log the file upload
-        _auditEventLogger.createEvent()
-            .withSecurityTag()
-            .withEventId(LogAuditEventRecord.EventId.UPLOAD_MEDIA)
-            .allowed("Media file uploaded: filename=%s, destination=%s", originalFileName, targetFile.getAbsolutePath());
-
         log.info("Completed upload and write of {} to {}", originalFileName,
                  targetFile.getAbsolutePath());
 
@@ -297,13 +238,10 @@ public class MediaController {
 
 
     @RequestMapping(value = {"/media/create-remote-media-directory"}, method = RequestMethod.POST)
+    @RequestEventId(value = LogAuditEventRecord.EventId.CREATE_DIRECTORY)
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for post
     public ResponseEntity createRemoteMediaDirectory(@RequestParam("serverpath") String serverpath,HttpServletRequest request,  HttpServletResponse response){
         if(serverpath == null ) {
-            _auditEventLogger.createEvent()
-                .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.INVALID_PARAMETER_ERROR)
-                .error("Directory creation failed: null serverpath parameter");
             return new ResponseEntity<>("{\"error\":\"invalid parameter\"}", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         String uploadPath =  propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
@@ -313,31 +251,15 @@ public class MediaController {
             if(!dir.exists()){
                 if(dir.mkdir()){
                     log.debug("Directory added:"+dir.getAbsolutePath());
-                _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.CREATE_DIRECTORY)
-                    .allowed(String.format("Directory added: \"{}\"", dir.getAbsolutePath()));
                     serverMediaService.getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), request.getServletContext(),false, uploadPath);//reload the directories
                     return new ResponseEntity<>("{\"dir\":\""+dir.getAbsolutePath()+"\"}", HttpStatus.OK);
                 }else{
-                    _auditEventLogger.createEvent()
-                        .withSecurityTag()
-                        .withEventId(LogAuditEventRecord.EventId.DIRECTORY_CREATE_ERROR)
-                        .error(String.format("Directory creation failed: cannot create folder at \"{}\"", serverpath));
                     return new ResponseEntity<>("{\"error\":\"Cannot Create Folder\"}", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }else{
-                _auditEventLogger.createEvent()
-                    .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.DIRECTORY_CREATE_ERROR)
-                    .error(String.format("Directory creation failed: path already exists at \"{}\"", serverpath));
                 return new ResponseEntity<>("{\"error\":\"Path Exists\"}", HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-        _auditEventLogger.createEvent()
-            .withSecurityTag()
-            .withEventId(LogAuditEventRecord.EventId.DIRECTORY_CREATE_ERROR)
-            .error(String.format("Directory creation failed: invalid path \"{}\"", serverpath));
         return new ResponseEntity<>("{\"error\":\"Invalid path\"}", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

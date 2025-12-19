@@ -32,6 +32,7 @@ import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.SystemMessageService;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

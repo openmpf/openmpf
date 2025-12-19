@@ -74,7 +74,7 @@ public class AuditEventLogger {
             LogAuditEventRecord.TagType tag,
             LogAuditEventRecord.OpType op,
             LogAuditEventRecord.ResType res,
-            LogAuditEventRecord.EventId eid,
+            int eid,
             String user,
             String uri,
             String msg,
@@ -147,7 +147,7 @@ public class AuditEventLogger {
             return this;
         }
 
-        public AuditEventBuilder withEventId(LogAuditEventRecord.EventId eid) {
+        public AuditEventBuilder withEventId(int eid) {
             return this;
         }
 
@@ -184,7 +184,7 @@ public class AuditEventLogger {
 
         private LogAuditEventRecord.TagType _tagType;
 
-        private LogAuditEventRecord.EventId _eventId;
+        private int _eventId;
 
         private Authentication _auth;
 
@@ -210,7 +210,7 @@ public class AuditEventLogger {
             return this;
         }
 
-        public AuditEventBuilder withEventId(LogAuditEventRecord.EventId eid) {
+        public AuditEventBuilder withEventId(int eid) {
             _eventId = eid;
             return this;
         }

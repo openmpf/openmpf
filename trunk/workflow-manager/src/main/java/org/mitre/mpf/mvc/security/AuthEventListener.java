@@ -51,8 +51,8 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(success.getAuthentication())
-            .withEventId(LogAuditEventRecord.EventId.AUTHENTICATED_WEB_REQUEST)
-            .allowed("Authenticated web request");
+            .withEventId(LogAuditEventRecord.EventId.AUTHENTICATED_WEB_REQUEST.success)
+            .allowed(LogAuditEventRecord.EventId.AUTHENTICATED_WEB_REQUEST.message + " succeeded");
     }
 
 
@@ -61,8 +61,9 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(event.getAuthentication())
-            .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED)
-            .denied("Authentication failed: %s", event.getException().getMessage());
+            .withEventId(LogAuditEventRecord.EventId.USER_LOGIN.fail)
+            .denied(LogAuditEventRecord.EventId.AUTHENTICATED_WEB_REQUEST.message + 
+                " failed: %s", event.getException().getMessage());
     }
 
 
@@ -71,7 +72,7 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(logoutEvent.getAuthentication())
-            .withEventId(LogAuditEventRecord.EventId.USER_LOGOUT)
-            .allowed("User logged out.");
+            .withEventId(LogAuditEventRecord.EventId.USER_LOGOUT.success)
+            .allowed(LogAuditEventRecord.EventId.USER_LOGOUT.message + " succeeded");
     }
 }

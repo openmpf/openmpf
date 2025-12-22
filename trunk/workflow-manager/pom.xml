@@ -46,6 +46,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
         <spring.boot.version>2.7.18</spring.boot.version>
+        <spring.security.version>5.7.13</spring.security.version>
         <querydsl.version>5.1.0</querydsl.version>
         <tomcat.embed.version>9.0.113</tomcat.embed.version>
         <!--
@@ -223,18 +224,22 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-core</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-config</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-taglibs</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
 
         <dependency>
@@ -244,10 +249,12 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-resource-server</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-jose</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
 
         <dependency>

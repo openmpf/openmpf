@@ -92,12 +92,14 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
     }
     
     private AuditEventLogger.BuilderTagStage getAuditEventByHttpMethod(String httpMethod) {
-        return switch (httpMethod.toLowerCase()) {
-            case "get" -> _auditEventLogger.readEvent();
-            case "post" -> _auditEventLogger.createEvent();
-            case "put" -> _auditEventLogger.modifyEvent();
-            case "delete" -> _auditEventLogger.deleteEvent();
-            default -> _auditEventLogger.readEvent();
-        };
+        switch (httpMethod.toLowerCase()) {
+            case "get": return _auditEventLogger.readEvent();
+            case "post": return _auditEventLogger.createEvent();
+            case "put": return _auditEventLogger.modifyEvent();
+            case "delete": return _auditEventLogger.deleteEvent();
+            case "head": return _auditEventLogger.readEvent();
+            default:
+                throw new IllegalArgumentException(String.format("AuditEvent method \"%s\" not supported", httpMethod));
+        }
     }
 }

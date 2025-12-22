@@ -271,8 +271,7 @@ public class JobController {
             @ApiResponse(code = 200, message = "Successful response"),
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
-    public ResponseEntity<SingleJobInfo> getJobStatusRest(
-                                            @ApiParam(required = true, value = "Job Id") @PathVariable("id") String jobId) {
+    public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") String jobId) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
@@ -561,6 +560,7 @@ public class JobController {
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
             var mediaUris = getMediaUris(job);
+            
             return new SingleJobInfo(
                     propertiesUtil.getExportedJobId(job.getId()),
                     job.getPipeline(),

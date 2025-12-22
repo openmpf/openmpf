@@ -156,26 +156,22 @@ public class MediaController {
                 FileUtils.copyURLToFile(url, newFile);
                 
                 // Log the URL upload
-                String msg = String.format("Completed write of {} to {}", uri.getPath(), newFile.getAbsolutePath());
-                log.info(msg);
+                log.info("Completed write of {} to {}", uri.getPath(), newFile.getAbsolutePath());
 
                 urlResultMap.put(enteredURL, "successful write to: " + newFile.getAbsolutePath());
                 successFiles.add(newFile);
             } catch (MalformedURLException badUrl) {
-                String msg = String.format("URI {} could not be converted. ", uri, badUrl);
-                log.error(msg);
+                log.error("URI {} could not be converted. ", uri, badUrl);
                 urlResultMap.put(enteredURL, "Unable to locate media at the provided address.");
             } catch (IOException badWrite) {
-                String msg = String.format("Error writing media to temp file from {}.", enteredURL, badWrite);
-                log.error(msg);
+                log.error("Error writing media to temp file from {}.", enteredURL, badWrite);
                 urlResultMap.put(enteredURL, "Unable to save media from this url. Please view the server logs for more information.");
                 if (newFile != null && newFile.exists()) {
                     newFile.delete();
                 }
             } catch (Exception failure) { //catch the remaining exceptions
                 //this is most likely a failed connection
-                String msg = String.format("Exception thrown while saving media from the url {}.", enteredURL, failure);
-                log.error(msg);
+                log.error("Exception thrown while saving media from the url {}.", enteredURL, failure);
                 urlResultMap.put(enteredURL, "Error while saving media from this url. Please view the server logs for more information.");
             }
         }

@@ -42,7 +42,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.inject.Inject;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -102,8 +101,8 @@ public class BasicAdminComponentRegistrationController {
                 return ResponseEntity.noContent().build();
             }
             catch (ManagedComponentsUnsupportedException e) {
-                String err = "Managed components are not supported in Docker deployments.";
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Managed components are not supported in Docker deployments.");
             }
         });
     }

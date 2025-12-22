@@ -35,6 +35,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -57,7 +58,7 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -75,17 +76,17 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    private final TaskMergingManager _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
     @Inject
     ArtifactExtractionSplitterImpl(
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            TaskMergingManager taskMergingManager) {
+            TaskAnnotatorService taskAnnotatorService) {
         super(inProgressBatchJobs);
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _taskMergingManager = taskMergingManager;
+        _taskAnnotatorService = taskAnnotatorService;
     }
 
     @Override
@@ -111,7 +112,6 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         if (finalActionType == ActionType.MARKUP) {
             lastTaskIndex = lastTaskIndex - 1;
         }
-        boolean notLastTask = (taskIndex < lastTaskIndex);
 
         List<Message> messages = new ArrayList<>();
         for (Media media : job.getMedia()) {
@@ -119,35 +119,26 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                 continue;
             }
 
-            // If the user has requested output objects for the last task only, and this is
-            // not the last task, then skip extraction for this media. Also return an empty
-            // list if this is the second to last task, but the action type of the last task
-            // is MARKUP.
-            // The OUTPUT_LAST_TASK_ONLY property only makes sense to be set at the job or
-            // media level.
-            boolean lastTaskOnly = Boolean.parseBoolean(
-                    _aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
-            if (lastTaskOnly && notLastTask) {
-                LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to {} property.",
-                        pipelineElements.getTask(taskIndex).name(), media.getId(),
-                        MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
-                continue;
-            }
-
-            // If the user has requested that this task be merged with one that follows, then skip artifact extraction.
-            // Artifact extraction will be performed for the next task this one is merged with.
-            if (_taskMergingManager.isMergeTarget(job, media, taskIndex)) {
-                LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to being merged with a following task.",
-                        pipelineElements.getTask(taskIndex).name(), media.getId());
-                continue;
-            }
+            var isAnnotatedChecker = _taskAnnotatorService.createIsAnnotatedChecker(job, media);
 
             for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).actions().size();
                  actionIndex++) {
 
                 Action action = pipelineElements.getAction(taskIndex, actionIndex);
+
+                // If the user has requested to suppress tracks for this action,
+                // then skip extraction for this media.
+                boolean suppressTracks = Boolean.parseBoolean(
+                    _aggregateJobPropertiesUtil.getValue(MpfConstants.SUPPRESS_TRACKS, job, media, action));
+                if (suppressTracks) {
+                    LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {}, media {}, and action {}" +
+                                " due to {} property.",
+                        pipelineElements.getTask(taskIndex).name(), media.getId(), actionIndex,
+                        MpfConstants.SUPPRESS_TRACKS);
+
+                    continue;
+                }
+
                 ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, action);
                 LOG.debug("Artifact extraction policy = {}", extractionPolicy);
                 if (extractionPolicy == ArtifactExtractionPolicy.NONE) {
@@ -173,7 +164,8 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
                 LOG.debug("Action {} has {} tracks", actionIndex, tracks.size());
                 var updatedTracks = processTracks(
-                        request, tracks, job, media, action, actionIndex, extractionPolicy);
+                        request, tracks, job, media, action, actionIndex, extractionPolicy,
+                        isAnnotatedChecker);
                 trackCache.updateTracks(media.getId(), actionIndex, updatedTracks);
 
                 Message message = new DefaultMessage(exchange.getContext());
@@ -195,7 +187,8 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     private SortedSet<Track> processTracks(
             ArtifactExtractionRequest request, SortedSet<Track> tracks, BatchJob job, Media media,
-            Action action, int actionIndex, ArtifactExtractionPolicy policy) {
+            Action action, int actionIndex, ArtifactExtractionPolicy policy,
+            Predicate<Track> isAnnotated) {
         if (policy == ArtifactExtractionPolicy.VISUAL_TYPES_ONLY) {
             var algo = job.getPipelineElements().getAlgorithm(action.algorithm());
             if (_aggregateJobPropertiesUtil.isNonVisualObjectType(algo.trackType())) {
@@ -206,6 +199,9 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         int trackIndex = 0;
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractableDetectionsMap = request.getExtractionsMap();
         for (Track track : tracks) {
+            if (isAnnotated.test(track)) {
+                continue;
+            }
 
             switch (policy) {
                 case ALL_DETECTIONS: {

@@ -33,6 +33,7 @@ import org.mitre.mpf.interop.subject.SubjectJobResult;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -322,6 +323,10 @@ public class AggregateJobPropertiesUtil {
         return getValue(propertyName, job, media, null);
     }
 
+    public boolean getBool(String propertyName, BatchJob job, Media media, Action action) {
+        return Boolean.parseBoolean(getValue(propertyName, job, media, action));
+    }
+
 
     public UnaryOperator<String> getCombinedProperties(
             Action action,
@@ -504,39 +509,6 @@ public class AggregateJobPropertiesUtil {
         return Integer.toString(calcFrameInterval);
     }
 
-
-
-    // Get map of tasks that need to be merged. Values are the previous tasks to merge with.
-    public Map<Integer, Integer> getTasksToMerge(Media media, BatchJob job) {
-        var tasksToMerge = new HashMap<Integer, Integer>();
-
-        for (var jobPart : JobPartsIter.of(job, media)) {
-            if (jobPart.taskIndex() == 0
-                    || jobPart.algorithm().actionType() != ActionType.DETECTION) {
-                continue;
-            }
-
-            boolean shouldMerge = Boolean.parseBoolean(
-                    getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, jobPart));
-            if (!shouldMerge) {
-                continue;
-            }
-
-            for (int prevTaskIndex = jobPart.taskIndex() - 1;
-                 prevTaskIndex > media.getCreationTask();
-                 prevTaskIndex--) {
-                var prevAction = job.getPipelineElements().getAction(prevTaskIndex, 0);
-                if (actionAppliesToMedia(job, media, prevAction)) {
-                    tasksToMerge.put(jobPart.taskIndex(), prevTaskIndex);
-                    break;
-                }
-            }
-
-        }
-
-        return tasksToMerge;
-    }
-
     public String getQualitySelectionProp(BatchJob job, Media media, Action action) {
         String prop = getValue(MpfConstants.QUALITY_SELECTION_PROPERTY, job, media, action);
         if (StringUtils.isEmpty(prop)) {
@@ -547,12 +519,6 @@ public class AggregateJobPropertiesUtil {
         }
     }
 
-    public boolean isOutputLastTaskOnly(Media media, BatchJob job) {
-        // Action properties and algorithm properties are not checked because it doesn't make sense
-        // to apply OUTPUT_LAST_TASK_ONLY to a single task.
-        return Boolean.parseBoolean(
-                getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
-    }
 
     public boolean isNonVisualObjectType(String type) {
         return _propertiesUtil.getArtifactExtractionNonVisualTypesList().stream()

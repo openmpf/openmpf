@@ -184,16 +184,18 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(5, 5);
-		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 5, 10, 0, 5,
-		                         ImmutableSortedSet.of(detection1), Collections.emptyMap(),
-		                         "", "", null, null);
+		Track track1 = new Track(
+                1, 1, 0, 0, 0, -1, 5, 10,
+                List.of(), 5,
+                ImmutableSortedSet.of(detection1), Collections.emptyMap(),
+                "", "", null, null);
 
 		Detection detection2 = createDetection(15, 15);
-		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 15, 30, 0, 15,
-		                         ImmutableSortedSet.of(detection2), Collections.emptyMap(),
-		                         "", "", null, null);
+		Track track2 = new Track(
+                1, 1, 0, 0, 0, -1, 15, 30,
+                List.of(), 15,
+                ImmutableSortedSet.of(detection2), Collections.emptyMap(),
+                "", "", null, null);
 
 		return ImmutableSet.of(track1, track2);
 	}

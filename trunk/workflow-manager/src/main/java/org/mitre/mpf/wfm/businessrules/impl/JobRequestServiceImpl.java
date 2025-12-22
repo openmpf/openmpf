@@ -47,12 +47,14 @@ import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
 import org.mitre.mpf.wfm.service.ConstraintValidationService;
 import org.mitre.mpf.wfm.service.MediaSelectorsSegmenter;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
@@ -65,6 +67,7 @@ import javax.inject.Inject;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
 
@@ -95,6 +98,8 @@ public class JobRequestServiceImpl implements JobRequestService {
 
     private final ConstraintValidationService _validator;
 
+    private final TaskAnnotatorService _taskAnnotatorService;
+
     @Inject
     public JobRequestServiceImpl(
             PropertiesUtil propertiesUtil,
@@ -107,7 +112,8 @@ public class JobRequestServiceImpl implements JobRequestService {
             MarkupResultDao markupResultDao,
             TiesDbBeforeJobCheckService tiesDbBeforeJobCheckService,
             ProducerTemplate jobRequestProducerTemplate,
-            ConstraintValidationService validator) {
+            ConstraintValidationService validator,
+            TaskAnnotatorService taskAnnotatorService) {
         _pipelineService = pipelineService;
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
@@ -119,6 +125,7 @@ public class JobRequestServiceImpl implements JobRequestService {
         _tiesDbBeforeJobCheckService = tiesDbBeforeJobCheckService;
         _jobRequestProducerTemplate = jobRequestProducerTemplate;
         _validator = validator;
+        _taskAnnotatorService = taskAnnotatorService;
     }
 
 
@@ -312,6 +319,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                     overriddenAlgoProps);
 
             try {
+                checkLastActionSuppressed(job);
                 jobRequestEntity.setId(jobId);
                 jobRequestEntity.setPriority(priority);
                 jobRequestEntity.setStatus(jobStatus);
@@ -418,6 +426,48 @@ public class JobRequestServiceImpl implements JobRequestService {
         catch (StorageException | DetectionTransformationException e) {
             throw new WfmProcessingException("Property validation failed due to: " + e, e);
         }
+    }
+
+    private void checkLastActionSuppressed(BatchJob job) {
+        for (var media : job.getMedia()) {
+            checkLastActionSuppressed(job, media);
+        }
+    }
+
+    private void checkLastActionSuppressed(BatchJob job, Media media) {
+        var pipelineElements = job.getPipelineElements();
+
+        var unannotatedLastStageActions = IntStream.iterate(
+                    pipelineElements.getLastDetectionTaskIdx(),
+                    ti -> ti >= 0,
+                    ti -> ti - 1)
+            .mapToObj(ti -> getUnannotatedActions(job, media, ti))
+            .filter(as -> !as.isEmpty())
+            .findFirst()
+            .orElseThrow();
+
+        var suppressedActionNames = unannotatedLastStageActions
+            .stream()
+            .filter(a -> _aggregateJobPropertiesUtil.getBool(
+                    MpfConstants.SUPPRESS_TRACKS, job, media, a))
+            .map(Action::name)
+            .collect(joining(", "));
+
+        if (!suppressedActionNames.isEmpty()) {
+            throw new WfmProcessingException(
+                "Cannot run pipeline because the final non-annotator task contained"
+                + " the following actions with SUPPRESS_TRACKS=true: "
+                + suppressedActionNames);
+        }
+    }
+
+    private List<Action> getUnannotatedActions(BatchJob job, Media media, int taskIdx) {
+        var pipelineElements = job.getPipelineElements();
+        var task = pipelineElements.getTask(taskIdx);
+        return IntStream.range(0, task.actions().size())
+            .filter(ai -> !_taskAnnotatorService.actionIsAnnotator(job, media, taskIdx, ai))
+            .mapToObj(ai -> pipelineElements.getAction(taskIdx, ai))
+            .toList();
     }
 
 

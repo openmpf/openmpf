@@ -397,7 +397,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,
+                1, 3,
+                List.of(), 1,
                  detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
@@ -426,7 +427,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,
+                1, 3,
+                List.of(), 1,
                 detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
@@ -454,7 +456,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1, detections, Collections.emptyMap(), "", "", null, null);
+                1, 3,
+                List.of(), 1, detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -481,7 +484,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1,detections, Collections.emptyMap(), "", "", null, null);
+                1, 3,
+                List.of(), 1,detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -508,7 +512,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1, detections, Collections.emptyMap(), "", "", null, null);
+                1, 3,
+                List.of(), 1, detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -535,7 +540,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1, detections, Collections.emptyMap(), "", "", null, null);
+                1, 3,
+                List.of(), 1, detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -559,7 +565,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection1);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 1,
-                1, 1, 1, 1, detections, Collections.emptyMap(), "", "", null, null);
+                1, 1,
+                List.of(), 1, detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -580,7 +587,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, 1, 1, detections, Collections.emptyMap(), "", "", null, null);
+                1, 3,
+                List.of(), 1, detections, Collections.emptyMap(), "", "", null, null);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -781,7 +789,8 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection);
 
         Track track = new Track(1, 2, 1, 1, 0, 0,
-                0, 0, 1, 1, detections, Collections.emptyMap(), "", "", null, null);
+                0, 0,
+                List.of(), 1, detections, Collections.emptyMap(), "", "", null, null);
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track);
 

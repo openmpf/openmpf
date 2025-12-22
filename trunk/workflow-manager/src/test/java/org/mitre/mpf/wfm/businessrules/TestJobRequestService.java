@@ -682,8 +682,7 @@ public class TestJobRequestService {
         when(_mockPipelineService.getBatchPipelineElements("TEST PIPELINE"))
                 .thenReturn(pipelineElements);
 
-        var jobRequestEntityCaptor = ArgumentCaptor.forClass(JobRequest.class);
-        when(_mockJobRequestDao.persist(jobRequestEntityCaptor.capture()))
+        when(_mockJobRequestDao.persist(notNull()))
                 .thenAnswer(i -> i.getArgument(0));
 
         when(_mockJobRequestDao.getNextId())

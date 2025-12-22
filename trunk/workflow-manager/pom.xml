@@ -47,6 +47,7 @@
         <wfm.port>8080</wfm.port>
         <spring.boot.version>2.7.18</spring.boot.version>
         <querydsl.version>5.1.0</querydsl.version>
+        <tomcat.embed.version>9.0.113</tomcat.embed.version>
         <!--
             extraArgLine is required so that the JaCoCo code coverage plugin can be used.
             To get the code coverage information for a unit test class the following command
@@ -163,13 +164,26 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>${tomcat.embed.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
+            <version>${tomcat.embed.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-el</artifactId>
+            <version>${tomcat.embed.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-websocket</artifactId>
+            <version>${tomcat.embed.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>

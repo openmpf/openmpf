@@ -701,6 +701,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             var newAction = JsonActionOutputObject.factory(
                 oldAction.getAction(),
                 oldAction.getAlgorithm(),
+                oldAction.getAnnotators(),
                 newTracks);
             newActions.add(newAction);
         }

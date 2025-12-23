@@ -41,8 +41,6 @@ import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -56,7 +54,6 @@ import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.JsonTiming;
 import org.mitre.mpf.mvc.security.OutgoingRequestTokenService;
 import org.mitre.mpf.rest.api.TiesDbRepostResponse;
-import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -113,9 +110,8 @@ public class TiesDbService {
 
     private final JobConfigHasher _jobConfigHasher;
 
-    private final TaskMergingManager _taskMergingManager;
-
     private final AuditEventLogger _auditEventLogger;
+
 
 
     @Inject
@@ -128,7 +124,6 @@ public class TiesDbService {
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs,
                   JobConfigHasher jobConfigHasher,
-                  TaskMergingManager taskMergingManager,
                   AuditEventLogger auditEventLogger) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
@@ -139,7 +134,6 @@ public class TiesDbService {
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
         _jobConfigHasher = jobConfigHasher;
-        _taskMergingManager = taskMergingManager;
         _auditEventLogger = auditEventLogger;
     }
 
@@ -285,29 +279,13 @@ public class TiesDbService {
 
     private SortedSet<String> getTrackTypes(BatchJob job, Media media) {
         var pipelineElements = job.getPipelineElements();
-        Stream<Task> tasks;
-        if (_aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)) {
-            int lastDetectionTaskIdx = pipelineElements.getLastDetectionTaskIdx();
-            var endingTaskIdxs = IntStream.of(
-                    lastDetectionTaskIdx, pipelineElements.getTaskCount() - 1);
-
-            var lastDetectionTask = pipelineElements.getTask(lastDetectionTaskIdx);
-            // Include the track types that were merged away.
-            var mergedTaskIdxs = IntStream.range(0, lastDetectionTask.actions().size())
-                    .flatMap(ai -> _taskMergingManager.getTransitiveMergeTargets(
-                            job, media, lastDetectionTaskIdx, ai));
-
-            tasks = IntStream.concat(endingTaskIdxs, mergedTaskIdxs)
-                    .distinct()
-                    .mapToObj(pipelineElements::getTask);
-        }
-        else {
-            tasks = pipelineElements.getTaskStreamInOrder();
-        }
-        return tasks
-                .flatMap(pipelineElements::getActionStreamInOrder)
-                .map(a -> pipelineElements.getAlgorithm(a.algorithm()).trackType())
-                .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+        return pipelineElements.getAllActions()
+            .stream()
+            .filter(a -> _aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, a))
+            .filter(a -> !_aggregateJobPropertiesUtil.getBool(
+                        MpfConstants.SUPPRESS_TRACKS, job, media, a))
+            .map(a -> pipelineElements.getAlgorithm(a.algorithm()).trackType())
+            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
     }
 
 

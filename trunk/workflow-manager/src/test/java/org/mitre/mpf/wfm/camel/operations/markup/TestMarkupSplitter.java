@@ -63,7 +63,7 @@ public class TestMarkupSplitter {
                          10,      // endOffsetFrame
                          5000,    // startOffsetTime
                          10000,   // endOffsetTime
-                         0, // mergedTaskIndex
+                         List.of(), // annotatedTaskIndices
                          7.7777f, // confidence
                          List.of(createDetection(detectionProperties)),
                          trackProperties,

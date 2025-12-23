@@ -150,14 +150,15 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runArtifactExtractionLastTaskOnlyTest() {
+    public void runArtifactExtractionSuppressTracksTest() {
 
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
-        Map<String, String> jobProperties = new HashMap<>();
-        jobProperties.put("OUTPUT_LAST_TASK_ONLY", "true");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
+        long jobId = runPipelineOnMedia(
+                pipelineName, media,
+                Map.of("MOG", Map.of("SUPPRESS_TRACKS", "TRUE")),
+                Map.of(), 4);
 
-        long jobId = runPipelineOnMedia(pipelineName, media, jobProperties);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -229,34 +230,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         }
     }
 
-    @Test(timeout = 5 * MINUTES)
-    public void runArtifactExtractionWithMediaProperty() {
-        var media = ImmutableList.of(
-                toMediaObject(
-                        ioUtils.findFile("/samples/face/ff-region-motion-face.avi"),
-                        ImmutableMap.of("OUTPUT_LAST_TASK_ONLY", "true")),
-                toMediaObject(ioUtils.findFile("/samples/face/ff-region-motion-face.avi")));
-
-        String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
-        long jobId = runPipelineOnMedia(pipelineName, media);
-        JsonOutputObject outputObject = getJobOutputObject(jobId);
-
-        // Check that the first task (MOTION) was suppressed for the first media
-        List<JsonMediaOutputObject> mediaOutput = outputObject.getMedia().stream().collect(toList());
-        assertEquals(2, mediaOutput.size());
-        SortedSet<JsonActionOutputObject> firstMediaSuppressed =
-                mediaOutput.get(0).getTrackTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
-        assertNotNull("Output object did not contain TRACKS_SUPPRESSED_TYPE", firstMediaSuppressed);
-        // Make sure that only one action was suppressed
-        assertEquals("Output contained more than one suppressed action", 1, firstMediaSuppressed.size());
-        // Make sure that the suppressed action was MOTION
-        assertEquals("Tracks suppressed for action other than MOTION", "MOG MOTION DETECTION PREPROCESSOR ACTION",
-                firstMediaSuppressed.first().getAction());
-
-        // Check that the second media did not have a suppressed action
-        assertFalse("Found an incorrectly suppressed action",
-                mediaOutput.get(1).getTrackTypes().containsKey(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE));
-    }
 
     @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionWithPolicyNoneTest() {
@@ -291,12 +264,12 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMergeWithPreviousTextTaskTest() {
+    public void runAnnotatorTextTaskTest() {
         String pipelineName = "TESSERACT OCR TEXT DETECTION ON EAST REGIONS WITH KEYWORD TAGGING PIPELINE";
         addPipeline(pipelineName,
                 "EAST TEXT DETECTION TASK",
                 "TESSERACT OCR TEXT DETECTION (WITH FF REGION) TASK",
-                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has IS_ANNOTATOR=TRUE
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/ocr/keyword-tagging.jpg"));
         long jobId = runPipelineOnMedia(pipelineName, media, Map.of());
@@ -332,11 +305,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runMergeWithPreviousSpeechTaskTest() {
+    public void runAnnotatorSpeechTaskTest() {
         String pipelineName = "SPHINX SPEECH DETECTION WITH KEYWORD TAGGING AND MARKUP PIPELINE";
         addPipeline(pipelineName,
                 "SPHINX SPEECH DETECTION TASK",
-                "KEYWORD TAGGING (WITH FF REGION) TASK", // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+                "KEYWORD TAGGING (WITH FF REGION) TASK", // has IS_ANNOTATOR=TRUE
                 "OCV GENERIC MARKUP TASK");
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/green.wav"));
@@ -1311,7 +1284,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         addPipeline(
                 pipelineName,
                 "FASTTEXT LANGUAGE ID TEXT FILE TASK",
-                "ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) TASK",
+                "ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) TASK",
                 "KEYWORD TAGGING (WITH FF REGION) TASK");
 
         var selector1 = new JobCreationMediaSelector(
@@ -1332,7 +1305,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 List.of(),
                 List.of(),
                 List.of(selector1, selector2),
-                Optional.of("ARGOS TRANSLATION (WITH FF REGION AND NO TASK MERGING) ACTION"));
+                Optional.of("ARGOS TRANSLATION (WITH FF REGION AND NOT ANNOTATOR) ACTION"));
 
         var outputObject = runSystemTest(pipelineName, "output/text/runJsonPathTest.json", media);
 

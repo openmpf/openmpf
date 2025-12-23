@@ -295,10 +295,6 @@ public class PropertiesUtil {
         return _mpfPropertiesConfig.getBoolean("mpf.output.objects.artifacts.and.exemplars.only");
     }
 
-    public boolean isOutputObjectsLastTaskOnly() {
-        return _mpfPropertiesConfig.getBoolean("mpf.output.objects.last.task.only");
-    }
-
     public Set<String> getCensoredOutputProperties() {
         return new HashSet<>(_mpfPropertiesConfig.getList(
                 String.class, "mpf.output.objects.censored.properties"));

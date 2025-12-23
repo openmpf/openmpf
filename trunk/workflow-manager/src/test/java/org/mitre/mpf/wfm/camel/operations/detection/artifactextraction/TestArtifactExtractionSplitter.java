@@ -48,7 +48,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 
 import java.nio.file.Paths;
@@ -63,13 +63,13 @@ public class TestArtifactExtractionSplitter {
 
     private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
-    private final TaskMergingManager _mockTaskMergingManager = mock(TaskMergingManager.class);
+    private final TaskAnnotatorService _mockTaskAnnotatorService = mock(TaskAnnotatorService.class);
 
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
             _mockInProgressJobs,
             _mockAggregateJobPropertiesUtil,
-            _mockTaskMergingManager);
+            _mockTaskAnnotatorService);
 
 
 
@@ -720,6 +720,9 @@ public class TestArtifactExtractionSplitter {
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 
+        when(_mockTaskAnnotatorService.createIsAnnotatedChecker(job, media))
+                .thenReturn(t -> false);
+
         var algorithm = new Algorithm(
                 "Test Algo", null, ActionType.DETECTION, null, null, null, null, false, false);
         var action = new Action("Test Action", null, algorithm.name(), List.of());
@@ -739,7 +742,6 @@ public class TestArtifactExtractionSplitter {
 
         when(pipelineElements.getAlgorithm(anyInt(), anyInt()))
                 .thenReturn(algorithm);
-
 
         when(_mockAggregateJobPropertiesUtil.getCombinedProperties(job, media, action))
                 .thenReturn(pName -> pName.equals(ArtifactExtractionProcessor.POLICY)

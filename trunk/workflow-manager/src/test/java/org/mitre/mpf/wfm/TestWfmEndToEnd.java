@@ -49,12 +49,14 @@ import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -164,8 +166,12 @@ public class TestWfmEndToEnd {
 	}
 
 
-	private long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media,
-	                                Map<String, String> jobProperties, boolean buildOutput, int priority) {
+	private long runPipelineOnMedia(
+            String pipelineName,
+            List<JobCreationMediaData> media,
+            Map<String, String> jobProperties,
+            boolean buildOutput,
+            int priority) {
 
 		var jobRequest = new JobCreationRequest(
                 List.copyOf(media),
@@ -179,7 +185,16 @@ public class TestWfmEndToEnd {
                 null,
                 null);
 
-		long jobRequestId = jobRequestService.run(jobRequest).jobId();
+        // Added retry because the tests would sometimes fail on Jenkins with an
+        // InvalidPipelineException. The exception was thrown because the test would run just
+        // before the component was registered.
+        long jobRequestId = RetryTemplate.builder()
+            .exponentialBackoff(200, 2, 30_000)
+            .withinMillis(2 * MINUTES)
+            .retryOn(InvalidPipelineException.class)
+            .build()
+            .execute(ctx -> jobRequestService.run(jobRequest).jobId());
+
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}

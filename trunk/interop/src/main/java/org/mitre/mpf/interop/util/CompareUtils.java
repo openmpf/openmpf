@@ -87,46 +87,53 @@ public class CompareUtils {
 
 
     private static <T> int doSortedSetCompare(SortedSet<T> s1, SortedSet<T> s2) {
-        //noinspection ObjectEquality - False positive
-        if (s1 == s2) {
+        // s1 and s2 are expected to have the same comparator. Passing in sets with different
+        // comparators is not supported.
+        Comparator<? super T> comparator = s1.comparator();
+        if (comparator == null) {
+            comparator = (a, b) -> ((Comparable<T>) a).compareTo(b);
+        }
+        return doCollectionCompare(s1, s2, comparator);
+    }
+
+
+    public static <T, U extends Comparable<U>> Comparator<T> listCompare(Function<T, List<U>> toListFunc) {
+        return Comparator.nullsFirst(Comparator.comparing(
+                toListFunc,
+                (c1, c2) -> doCollectionCompare(c1, c2, Comparator.naturalOrder())));
+    }
+
+
+    private static <T> int doCollectionCompare(
+            Collection<T> c1, Collection<T> c2, Comparator<? super T> comparator) {
+        if (c1 == c2) {
             return 0;
         }
 
-        Comparator<? super T> comparator = s1.comparator();
-        if (comparator == null) {
-            comparator = (a, b) -> ((Comparable<T>) a).compareTo(b) ;
-        }
-
-        Iterator<T> iter1 = s1.iterator();
-        Iterator<T> iter2 = s2.iterator();
-
-        while (true) {
-            boolean hasNext1 = iter1.hasNext();
-            boolean hasNext2 = iter2.hasNext();
-            if (!hasNext1 && !hasNext2) {
-                return 0;
+        var iter1 = c1.iterator();
+        var iter2 = c2.iterator();
+        while (true)  {
+            var hasNext1 = iter1.hasNext();
+            var hasNext2 = iter2.hasNext();
+            if (hasNext1 && hasNext2) {
+                var item1 = iter1.next();
+                var item2 = iter2.next();
+                int itemCompare = comparator.compare(item1, item2);
+                if (itemCompare != 0) {
+                    return itemCompare;
+                }
             }
-
-            T item1 = hasNext1 ? iter1.next() : null;
-            T item2 = hasNext2 ? iter2.next() : null;
-            if (item1 == null && item2 == null) {
-                continue;
-            }
-
-            if (item1 == null) {
-                return -1;
-            }
-            if (item2 == null) {
+            else if (hasNext1) {
                 return 1;
             }
-
-            int itemCompare = comparator.compare(item1, item2);
-            if (itemCompare != 0) {
-                return itemCompare;
+            else if (hasNext2) {
+                return -1;
+            }
+            else {
+                return 0;
             }
         }
     }
-
 
 
     private CompareUtils() {

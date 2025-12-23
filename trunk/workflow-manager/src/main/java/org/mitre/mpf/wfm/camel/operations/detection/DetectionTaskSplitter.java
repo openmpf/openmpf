@@ -59,7 +59,7 @@ import org.mitre.mpf.wfm.segmenting.ImageMediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ public class DetectionTaskSplitter {
 
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    private final TaskMergingManager _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
     private final MediaSegmenter _imageMediaSegmenter;
 
@@ -96,7 +96,7 @@ public class DetectionTaskSplitter {
             CamelContext camelContext,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             InProgressBatchJobsService inProgressBatchJobs,
-            TaskMergingManager taskMergingManager,
+            TaskAnnotatorService taskAnnotatorService,
             @Named(ImageMediaSegmenter.REF) MediaSegmenter imageMediaSegmenter,
             @Named(VideoMediaSegmenter.REF) MediaSegmenter videoMediaSegmenter,
             @Named(AudioMediaSegmenter.REF) MediaSegmenter audioMediaSegmenter,
@@ -104,7 +104,7 @@ public class DetectionTaskSplitter {
         _camelContext = camelContext;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobs = inProgressBatchJobs;
-        _taskMergingManager = taskMergingManager;
+        _taskAnnotatorService = taskAnnotatorService;
         _imageMediaSegmenter = imageMediaSegmenter;
         _videoMediaSegmenter = videoMediaSegmenter;
         _audioMediaSegmenter = audioMediaSegmenter;
@@ -214,7 +214,7 @@ public class DetectionTaskSplitter {
         var actionType = job.getPipelineElements().getAlgorithm(action.algorithm())
                 .actionType();
         var destination = "MPF.%s_%s_REQUEST".formatted(actionType, action.algorithm());
-        boolean needsBreadCrumb = _taskMergingManager.needsBreadCrumb(
+        boolean needsBreadCrumb = _taskAnnotatorService.needsBreadCrumb(
                 job, media, detectionContext.getTaskIndex(), detectionContext.getActionIndex());
 
         var messages = new ArrayList<Message>(requests.size());
@@ -227,7 +227,7 @@ public class DetectionTaskSplitter {
             media.getType()
                     .ifPresent(mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
             if (needsBreadCrumb && !request.feedForwardTracks().isEmpty()) {
-                _taskMergingManager.addBreadCrumb(message, request.feedForwardTracks());
+                _taskAnnotatorService.addBreadCrumb(message, request.feedForwardTracks());
             }
             message.getHeaders().putAll(request.headers());
             message.setBody(request.protobuf());

@@ -148,7 +148,7 @@ public class LoginController {
 
 
     @GetMapping("/user/role-info")
-    @RequestEventId(value = LogAuditEventRecord.EventId.LOGIN_PAGE_ACCESS)
+    @RequestEventId(value = LogAuditEventRecord.EventId.GET_USER_CREDENTIALS)
     public AuthenticationModel getSecurityCredentials(HttpServletRequest request /*needed for UserPrincipal*/) {
         return getAuthenticationModel(request);
     }

@@ -94,7 +94,7 @@ public class MediaController {
         //verify the desired path
         File desiredPath = new File(desiredpath);
         if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
-            String err = String.format("Desired path \"{}\" for media upload is invalid or does not exist", desiredPath);
+            String err = String.format("Desired path \"%s\" for media upload is invalid or does not exist", desiredPath);
             log.error(err);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, err);
         }
@@ -116,7 +116,7 @@ public class MediaController {
                     uri = new URI("http://" + uri.toASCIIString());
                 }
             } catch (URISyntaxException incorrectUriTranslation) {
-                String err = String.format("The string \"{}\" did not translate cleanly to a URI.", enteredURL);
+                String err = String.format("The string \"%s\" did not translate cleanly to a URI.", enteredURL);
                 log.error(err, incorrectUriTranslation);
                 urlResultMap.put(enteredURL, "String did not cleanly convert to URI");
                 continue;
@@ -133,7 +133,7 @@ public class MediaController {
 
                 String filename = url.getFile();
                 if (filename.isEmpty()) {
-                    String err2 = String.format("The filename does not exist when uploading from the url \"{}\"", url);
+                    String err2 = String.format("The filename does not exist when uploading from the url \"%s\"", url);
                     log.error(err2);
                     urlResultMap.put(enteredURL, err2);
                     continue;
@@ -199,14 +199,14 @@ public class MediaController {
         var remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory();
         if (!IoUtils.isSubdirectory(desiredPath, remoteMediaDirectory)) {
             var errorMsg = String.format(
-                    "Desired path was not under the remote media directory \"{}\".",
+                    "Desired path was not under the remote media directory \"%s\".",
                     remoteMediaDirectory.toString());
             log.error("File upload failed due to: " + errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.FORBIDDEN);
         }
 
         if (!desiredPath.exists()) {
-            var errorMsg = String.format("Desired path \"{}\" does not exist.", desiredPath.toString());
+            var errorMsg = String.format("Desired path \"%s\" does not exist.", desiredPath.toString());
             log.error("File upload failed due to: " + errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.CONFLICT);
         }

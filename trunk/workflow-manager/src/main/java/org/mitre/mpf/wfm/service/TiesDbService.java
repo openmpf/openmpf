@@ -353,17 +353,17 @@ public class TiesDbService {
                     .thenAccept(response -> {
                         _auditEventLogger.createEvent()
                             .withSecurityTag()
-                            .withEventId(LogAuditEventRecord.EventId.TIESDB_POST.success)
+                            .withEventId(LogAuditEventRecord.EventId.TIES_DB_POST.success)
                             .withUri(fullUrl.toString())
-                            .allowed(LogAuditEventRecord.EventId.TIESDB_POST.message + " succeeded");
+                            .allowed(LogAuditEventRecord.EventId.TIES_DB_POST.message + " succeeded");
                         responseChecker.checkResponse(response);
                     })
                     .exceptionallyCompose(err -> {
                         _auditEventLogger.createEvent()
                             .withSecurityTag()
-                            .withEventId(LogAuditEventRecord.EventId.TIESDB_POST.fail)
+                            .withEventId(LogAuditEventRecord.EventId.TIES_DB_POST.fail)
                             .withUri(fullUrl.toString())
-                            .error(LogAuditEventRecord.EventId.TIESDB_POST.message + " failed: %s", err.getMessage());
+                            .error(LogAuditEventRecord.EventId.TIES_DB_POST.message + " failed: %s", err.getMessage());
                         return convertError(fullUrl.toString(), err);
                     });
         }

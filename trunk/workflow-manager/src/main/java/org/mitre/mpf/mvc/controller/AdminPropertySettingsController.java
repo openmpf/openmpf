@@ -80,7 +80,7 @@ public class AdminPropertySettingsController
      */
     @ResponseBody
     @RequestMapping(value = "/properties", method = RequestMethod.GET)
-    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_PROPERTY_SETTINGS)
+    @RequestEventId(value = LogAuditEventRecord.EventId.PROPERTY_SETTINGS_ACCESS)
     public ResponseEntity getProperties(
             @RequestParam(value = "propertySet", required = false, defaultValue="all") String propertySet) {
 
@@ -104,7 +104,7 @@ public class AdminPropertySettingsController
 
     @ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
-    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_PROPERTY_SETTINGS)
+    @RequestEventId(value = LogAuditEventRecord.EventId.PROPERTY_SETTINGS_ACCESS)
     /** Call this method to save system properties that have changed to the custom mpf properties file.
      * If any detection system properties have changed, that are identified as changeable without OpenMPF restart,
      * then update those detection system properties via PropertiesUtil.
@@ -149,7 +149,7 @@ public class AdminPropertySettingsController
 
 	//gets the current default job priority value
 	@RequestMapping(value = "/properties/job-priority", method = RequestMethod.GET)
-    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_PROPERTY_SETTINGS)
+    @RequestEventId(value = LogAuditEventRecord.EventId.PROPERTY_SETTINGS_ACCESS)
 	@ResponseBody
 	public int getDefaultJobPriority() {
 		return propertiesUtil.getJmsPriority();
@@ -157,7 +157,7 @@ public class AdminPropertySettingsController
 
 
 	@RequestMapping(value = "/properties/{propertyName:.+}", method = RequestMethod.GET)
-    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_PROPERTY_SETTINGS)
+    @RequestEventId(value = LogAuditEventRecord.EventId.PROPERTY_SETTINGS_ACCESS)
 	public ResponseEntity<?> getProperty(@PathVariable String propertyName) {
         String propertyValue = propertiesUtil.lookup(propertyName);
         if (propertyValue == null) {

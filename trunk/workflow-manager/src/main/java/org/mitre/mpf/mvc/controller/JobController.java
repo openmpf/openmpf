@@ -129,7 +129,6 @@ public class JobController {
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @RequestEventId(value = LogAuditEventRecord.EventId.JOB_ID_VALIDATION)
     @ResponseBody
     public MessageModel invalidJobIdHandler(InvalidJobIdException ex) {
         log.error(ex.getMessage(), ex);
@@ -442,7 +441,7 @@ public class JobController {
     @RequestMapping(
             value = { "/rest/jobs/tiesdbrepost", "jobs/tiesdbrepost" },
             method = RequestMethod.POST)
-    @RequestEventId(value = LogAuditEventRecord.EventId.TIESDB_REPOST)
+    @RequestEventId(value = LogAuditEventRecord.EventId.TIES_DB_REPOST)
     @ApiOperation(
             value = "Retry posting job results to TiesDB.",
             notes = """
@@ -504,7 +503,6 @@ public class JobController {
         catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
             log.error(err, ex);
-            log.error("Error creating job");
             _auditEventLogger.createEvent()
             .withSecurityTag()
             .withEventId(LogAuditEventRecord.EventId.CREATE_JOB.fail)

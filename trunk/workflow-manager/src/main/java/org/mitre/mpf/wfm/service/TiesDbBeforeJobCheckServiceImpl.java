@@ -356,9 +356,9 @@ public class TiesDbBeforeJobCheckServiceImpl
                 int statusCode = resp.getStatusLine().getStatusCode();
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.TIESDB_GET.success)
+                    .withEventId(LogAuditEventRecord.EventId.TIES_DB_GET.success)
                     .withUri(uri.toString())
-                    .allowed(LogAuditEventRecord.EventId.TIESDB_GET.message + " succeeded - Status Code: %s", statusCode);
+                    .allowed(LogAuditEventRecord.EventId.TIES_DB_GET.message + " succeeded - Status Code: %s", statusCode);
                 return checkResponse(unpagedUri, resp);
             })
             .thenCompose(resp -> {
@@ -375,9 +375,9 @@ public class TiesDbBeforeJobCheckServiceImpl
             }).exceptionally(e -> {
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
-                    .withEventId(LogAuditEventRecord.EventId.TIESDB_GET.fail)
+                    .withEventId(LogAuditEventRecord.EventId.TIES_DB_GET.fail)
                     .withUri(uri.toString())
-                    .error(LogAuditEventRecord.EventId.TIESDB_GET.message + " failed : %s", e.getCause().getMessage());
+                    .error(LogAuditEventRecord.EventId.TIES_DB_GET.message + " failed : %s", e.getCause().getMessage());
                 lastException.set(e.getCause());
                 return prevBest;
             });

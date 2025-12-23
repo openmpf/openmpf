@@ -163,9 +163,6 @@ public class AuditEventLogger {
             return this;
         }
 
-        public void allowed() {
-        }
-
         public void allowed(String message, Object... formatArgs) {
         }
 
@@ -210,6 +207,7 @@ public class AuditEventLogger {
             return this;
         }
 
+        @Override
         public AuditEventBuilder withEventId(int eid) {
             _eventId = eid;
             return this;
@@ -233,11 +231,6 @@ public class AuditEventLogger {
         public AuditEventBuilder withObjectKey(String objectKey) {
             _objectKey = objectKey;
             return this;
-        }
-
-        @Override
-        public void allowed() {
-            logEvent(LogAuditEventRecord.ResType.ALLOW, null);
         }
 
         @Override

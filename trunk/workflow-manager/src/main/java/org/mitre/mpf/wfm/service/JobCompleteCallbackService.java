@@ -133,27 +133,30 @@ public class JobCompleteCallbackService {
 
     private CompletableFuture<HttpResponse> sendCallback(HttpUriRequest request) {
         LOG.info("Sending job completion callback to: {}", request.getURI());
-        var eventId = LogAuditEventRecord.EventId.JOB_CALLBACK;
         return _httpClientUtils.executeRequest(
-                    request, _propertiesUtil.getHttpCallbackRetryCount())
-                .thenApplyAsync(response -> {
-                    int statusCode = response.getStatusLine().getStatusCode();
-                    _auditEventLogger.createEvent()
-                        .withSecurityTag()
-                        .withEventId(eventId.success)
-                        .allowed(eventId.message + "succeeded: %s %s - %d", 
-                            request.getMethod(), request.getURI(), statusCode );
-                    return checkResponse(response);
-                })
-                .exceptionallyCompose(err -> {
-                    _auditEventLogger.createEvent()
-                        .withSecurityTag()
-                        .withEventId(eventId.fail)
-                        .error(eventId.message + " failed: %s %s : %s", 
-                            request.getMethod(), request.getURI(), err.getMessage());
-                    return ThreadUtil.failedFuture(err);
-                });
+                request, _propertiesUtil.getHttpCallbackRetryCount())
+                .thenApplyAsync(JobCompleteCallbackService::checkResponse)
+                .whenComplete((resp, err) -> emitAuditEvent(request, resp, err));
     }
+
+    private void emitAuditEvent(HttpUriRequest request, HttpResponse response, Throwable error) {
+    var eventId = LogAuditEventRecord.EventId.JOB_CALLBACK;
+    if (error == null) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        _auditEventLogger.createEvent()
+            .withSecurityTag()
+            .withEventId(eventId.success)
+            .allowed("%s succeeded: %s %s - %d",
+                eventId.message, request.getMethod(), request.getURI(), statusCode);
+    }
+    else {
+        _auditEventLogger.createEvent()
+            .withSecurityTag()
+            .withEventId(eventId.fail)
+            .error("%s failed: %s %s : %s",
+                eventId.message, request.getMethod(), request.getURI(), error.getMessage());
+    }
+}
 
 
     private static CallbackMethod getCallbackMethod(BatchJob job) {

@@ -36,7 +36,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -175,6 +177,10 @@ public class TestTiesDbService extends MockitoTest.Strict {
         lenient().when(_mockAuditEventLogger.readEvent())
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withEventId(anyInt()))
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))
                 .thenReturn(_mockAuditEventBuilder);
 
         _tiesDbService = new TiesDbService(

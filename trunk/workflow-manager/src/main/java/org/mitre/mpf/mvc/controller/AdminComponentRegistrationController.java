@@ -31,6 +31,7 @@ import io.swagger.annotations.Api;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,14 +96,15 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
     @RequestMapping(value = {"/components/{componentPackageFileName:.+}",
             "/rest/components/{componentPackageFileName:.+}"},
             method = RequestMethod.GET)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     public ResponseEntity<RegisterComponentModel> getComponentRest(
             @PathVariable("componentPackageFileName") String componentPackageFileName)
     {
-        return withReadLock(() ->
+        return withReadLock(() -> 
             _componentState.getByPackageFile(componentPackageFileName)
                     .map(ResponseEntity::ok)
-                    .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND)));
+                    .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND)) );
     }
 
 
@@ -112,6 +114,7 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
     @RequestMapping(value = {"/components/{componentPackageFileName:.+}/register",
             "/rest/components/{componentPackageFileName:.+}/register"},
             method = RequestMethod.POST)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     public ResponseEntity<?> registerComponentRest(
             @PathVariable("componentPackageFileName") String componentPackageFileName) {
@@ -134,6 +137,7 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
 
 
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.POST)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     public ResponseEntity<?> uploadComponentRest(@RequestParam("file") MultipartFile file) {
         return withWriteLock(() -> {
@@ -179,6 +183,7 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
     @RequestMapping(value = {"/components/packages/{componentPackageFileName:.+}/",
             "/rest/components/packages/{componentPackageFileName:.+}/"},
             method = RequestMethod.DELETE)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ResponseBody
     public void removeComponentPackageRest(
@@ -198,6 +203,7 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
     @RequestMapping(value = {"/components/{componentPackageFileName:.+}/reRegister",
             "/rest/components/{componentPackageFileName:.+}/reRegister"},
             method = RequestMethod.POST)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     public ResponseEntity<?> reRegisterRest(@PathVariable("componentPackageFileName") String componentPackageFileName) {
         return withWriteLock(() -> {

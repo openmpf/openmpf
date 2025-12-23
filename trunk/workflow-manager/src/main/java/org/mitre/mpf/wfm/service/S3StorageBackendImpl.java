@@ -65,6 +65,8 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.StorageService.OutputProcessor;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.RetryUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -131,13 +133,16 @@ public class S3StorageBackendImpl implements S3StorageBackend {
 
     private final ObjectMapper _objectMapper;
 
+    private final AuditEventLogger _auditEventLogger;
+
     @Inject
     public S3StorageBackendImpl(PropertiesUtil propertiesUtil,
                                 LocalStorageBackend localStorageBackend,
                                 InProgressBatchJobsService inProgressBatchJobsService,
                                 AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                 OutgoingRequestTokenService tokenService,
-                                ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper,
+                                AuditEventLogger auditEventLogger) {
         synchronized (S3StorageBackend.class) {
             _s3ClientCache = createClientCache(propertiesUtil.getS3ClientCacheCount());
         }
@@ -147,6 +152,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _tokenService = tokenService;
         _objectMapper = objectMapper;
+        _auditEventLogger = auditEventLogger;
     }
 
 
@@ -318,20 +324,37 @@ public class S3StorageBackendImpl implements S3StorageBackend {
             String uri,
             UnaryOperator<String> properties,
             ResponseTransformer<GetObjectResponse, T> responseTransformer) throws StorageException {
+        var s3UrlUtil = S3UrlUtil.get(properties);
+        String[] pathParts = s3UrlUtil.splitBucketAndObjectKey(uri);
+        String bucket = pathParts[0];
+        String objectKey = pathParts[1];
+
+        var eventId = LogAuditEventRecord.EventId.S3_DOWNLOAD;
         try {
-            var s3UrlUtil = S3UrlUtil.get(properties);
             var s3Client = getS3DownloadClient(uri, s3UrlUtil, properties);
-            String[] pathParts = s3UrlUtil.splitBucketAndObjectKey(uri);
-            String bucket = pathParts[0];
-            String objectKey = pathParts[1];
             var getRequest = GetObjectRequest.builder()
                     .bucket(bucket)
                     .key(objectKey)
                     .overrideConfiguration(getOverrideConfig(properties))
                     .build();
-            return s3Client.getObject(getRequest, responseTransformer);
+            T result = s3Client.getObject(getRequest, responseTransformer);
+            _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .withEventId(eventId.success)
+                    .withUri(uri)
+                    .withBucket(bucket)
+                    .withObjectKey(objectKey)
+                    .allowed(eventId.message + " succeeded");
+            return result;
         }
         catch (SdkException e) {
+            _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.S3_DOWNLOAD.fail)
+                    .withUri(uri)
+                    .withBucket(bucket)
+                    .withObjectKey(objectKey)
+                    .error(eventId.message + " failed");
             throw new StorageException(
                     String.format("Failed to download \"%s\" due to %s", uri, e),
                     e);
@@ -370,13 +393,21 @@ public class S3StorageBackendImpl implements S3StorageBackend {
 
         LOG.info("Storing \"{}\" in S3 bucket \"{}\" with object key \"{}\" ...",
                 path, bucketUri, objectName);
+        var bucketName = urlUtil.getResultsBucketName(bucketUri);
+
         try {
-            var bucketName = urlUtil.getResultsBucketName(bucketUri);
             if (s3Client.objectExists(bucketName, objectName, overrideConfig)) {
                 LOG.info(
                         "Did not upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" "
                                 + "because a file with the same SHA-256 hash was already there.",
                         path, bucketUri, objectName);
+                _auditEventLogger.createEvent()
+                        .withSecurityTag()
+                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD_SKIPPED.success)
+                        .withUri(bucketUri)
+                        .withBucket(bucketName)
+                        .withObjectKey(objectName)
+                        .allowed(LogAuditEventRecord.EventId.S3_UPLOAD_SKIPPED.message + " succeeded");
             }
             else {
                 var putRequest = PutObjectRequest.builder()
@@ -387,11 +418,25 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                 s3Client.putObject(putRequest, path);
                 LOG.info("Successfully stored \"{}\" in S3 bucket \"{}\" with object key \"{}\".",
                         path, bucketUri, objectName);
+                _auditEventLogger.createEvent()
+                        .withSecurityTag()
+                        .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD.success)
+                        .withUri(bucketUri)
+                        .withBucket(bucketName)
+                        .withObjectKey(objectName)
+                        .allowed(LogAuditEventRecord.EventId.S3_UPLOAD.message + " succeeded");
             }
             return urlUtil.getFullUri(bucketUri, objectName);
         }
         catch (SdkException | FailedToGetTokenException e) {
             LOG.error("Failed to upload {} due to S3 error: {}", path, e);
+            _auditEventLogger.createEvent()
+                    .withSecurityTag()
+                    .withEventId(LogAuditEventRecord.EventId.S3_UPLOAD.fail)
+                    .withUri(bucketUri)
+                    .withBucket(bucketName)
+                    .withObjectKey(objectName)
+                    .error(LogAuditEventRecord.EventId.S3_UPLOAD.message + " failed");
             // Don't include path so multiple failures appear as one issue in JSON output object.
             throw new StorageException("Failed to upload due to S3 error: " + e, e);
         }

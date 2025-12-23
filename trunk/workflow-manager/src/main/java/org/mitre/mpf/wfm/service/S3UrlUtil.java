@@ -148,10 +148,10 @@ public interface S3UrlUtil {
         public String[] splitBucketAndObjectKey(String uriStr) throws StorageException {
             URI uri = URI.create(uriStr);
             String uriPath = uri.getPath();
-            if (uriPath.startsWith("/")) {
+            if (uriPath != null && uriPath.startsWith("/")) {
                 uriPath = uriPath.substring(1);
             }
-            String[] parts = uriPath.split("/", 2);
+            String[] parts = (uriPath != null) ? uriPath.split("/", 2) : new String[0];
             if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
                 throw new StorageException(
                         "Unable to determine bucket name and object key from uri: " + uriStr);

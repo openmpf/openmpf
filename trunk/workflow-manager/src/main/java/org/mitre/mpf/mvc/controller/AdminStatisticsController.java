@@ -32,6 +32,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.AllJobsStatisticsModel;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,8 +42,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
-
-import javax.servlet.http.HttpServletRequest;
 
 @Api(value = "Statistics",
      description = "Job statistics")
@@ -55,7 +54,8 @@ public class AdminStatisticsController {
     private JobRequestDao jobRequestDao;
 
     @RequestMapping(value = "/adminStatistics", method = RequestMethod.GET)
-    public ModelAndView getAdminStatistics(HttpServletRequest request) {
+    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_STATISTICS)
+    public ModelAndView getAdminStatistics() {
         ModelAndView mv = new ModelAndView("admin_statistics");
         return mv;
     }
@@ -65,6 +65,7 @@ public class AdminStatisticsController {
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/jobs/stats", method = RequestMethod.GET)
+    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_STATISTICS)
     @ApiOperation(value = "Compiles the AllJobsStatisticsModel using all of the submitted jobs.",
             produces = "application/json", response = AllJobsStatisticsModel.class)
     @ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
@@ -77,6 +78,7 @@ public class AdminStatisticsController {
 
     //INTERNAL
     @RequestMapping(value = "/jobs/stats", method = RequestMethod.GET)
+    @RequestEventId(value = LogAuditEventRecord.EventId.ADMIN_STATISTICS)
     @ResponseBody
     public AllJobsStatisticsModel getAllJobsStats() {
         log.debug("[/jobs/stats]");

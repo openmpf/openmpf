@@ -33,6 +33,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
@@ -71,6 +72,7 @@ public class BasicAdminComponentRegistrationController {
 
 
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.GET)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     public List<RegisterComponentModel> getComponentsRest() {
         return withReadLock(_componentState::get);
@@ -84,6 +86,7 @@ public class BasicAdminComponentRegistrationController {
     })
     @RequestMapping(value = {"/components/{componentName}", "/rest/components/{componentName}"},
             method = RequestMethod.DELETE)
+    @RequestEventId(value = LogAuditEventRecord.EventId.COMPONENT_REGISTRATION)
     @ResponseBody
     // Prevents Swagger from automatically adding 200 as a response status.
     @ResponseStatus(HttpStatus.NO_CONTENT)

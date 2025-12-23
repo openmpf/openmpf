@@ -101,7 +101,7 @@ public record LogAuditEventRecord(
         HAWTIO_ACCESS(800, 4800, "Hawtio access"),
         ADMIN_LOGS(1000,5000, "admin logs access"),
         ADMIN_STATISTICS(1001, 5001, "admin statistics access"),
-        PROPERTY_SETTINGS_ACCESS(1002, 5002, "admin property settings access");
+        PROPERTY_SETTINGS_ACCESS(1002, 5002, "property settings access");
 
         public final int success;
         public final int fail;

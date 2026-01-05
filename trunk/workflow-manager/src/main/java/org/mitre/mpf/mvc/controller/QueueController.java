@@ -35,6 +35,7 @@ import org.apache.activemq.broker.Broker;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.broker.region.Destination;
 import org.mitre.mpf.rest.api.QueueInfo;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,6 +61,7 @@ public class QueueController {
 
 
     @GetMapping("/rest/queues")
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_QUEUES)
     @ApiOperation("Retrieves information about all queues.")
     public List<QueueInfo> getQueues() {
         return getQueuesInternal()
@@ -69,6 +71,7 @@ public class QueueController {
 
 
     @GetMapping("/rest/queues/{name}")
+    @RequestEventId(value = LogAuditEventRecord.EventId.REST_QUEUES)
     @ApiOperation("Retrieves information about a single queue.")
     @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<QueueInfo> getQueue(@PathVariable String name) {

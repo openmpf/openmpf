@@ -34,6 +34,7 @@ import org.mitre.mpf.rest.api.subject.SubjectComponentDetails;
 import org.mitre.mpf.rest.api.subject.SubjectComponentSummary;
 import org.mitre.mpf.wfm.data.access.SubjectComponentRepo;
 import org.mitre.mpf.wfm.data.entities.persistent.DbSubjectComponentProperty;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -68,6 +69,7 @@ public class SubjectComponentController {
 
 
     @GetMapping
+    @RequestEventId(value = LogAuditEventRecord.EventId.SUBJECT_TRACKING_COMPONENTS)
     @ExposedMapping
     @ApiOperation("Gets subject tracking components")
     public Stream<SubjectComponentSummary> getComponents() {
@@ -80,6 +82,7 @@ public class SubjectComponentController {
 
 
     @GetMapping("{componentName}")
+    @RequestEventId(value = LogAuditEventRecord.EventId.SUBJECT_TRACKING_COMPONENTS)
     @ExposedMapping
     @ApiOperation("Gets details of a subject tracking component")
     @ApiResponses({
@@ -106,6 +109,7 @@ public class SubjectComponentController {
 
 
     @DeleteMapping("{componentName}")
+    @RequestEventId(value = LogAuditEventRecord.EventId.SUBJECT_TRACKING_COMPONENTS)
     @ExposedMapping
     @ApiOperation("Un-registers a subject tracking component")
     @ResponseStatus(HttpStatus.NO_CONTENT)

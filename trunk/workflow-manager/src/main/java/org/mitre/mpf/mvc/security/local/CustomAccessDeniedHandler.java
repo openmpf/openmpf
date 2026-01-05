@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
@@ -56,6 +57,8 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
             HttpServletRequest request,
             HttpServletResponse response,
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        
+        String uri = request.getRequestURI();
 
         if (!(accessDeniedException instanceof CsrfException)) {
             super.handle(request, response, accessDeniedException);
@@ -63,10 +66,12 @@ public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
         else if (isAjax(request)) {
             response.sendError(403, "INVALID_CSRF_TOKEN");
         }
-        else if ("/login".equals(request.getRequestURI())) {
+        else if ("/login".equals(uri)) {
             // CSRF failures on login page
             _auditEventLogger.loginEvent()
                 .withSecurityTag()
+                .withUri(uri)
+                .withEventId(LogAuditEventRecord.EventId.ACCESS_DENIED.fail)
                 .denied("Login attempt failed: Invalid XSRF token");
             response.sendRedirect("/");
         }

@@ -26,9 +26,12 @@
 
 package org.mitre.mpf.mvc.security;
 
+import org.mitre.mpf.mvc.controller.RequestEventId;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,26 +44,67 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
     public RestAuditLoggingInterceptor(AuditEventLogger auditEventLogger) {
         this._auditEventLogger = auditEventLogger;
     }
-    
-    @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        String requestURI = request.getRequestURI();
-        String method = request.getMethod();
-        String logMessage = String.format("Method: %s RequestURI: %s", method, requestURI);
 
-        getAuditEventByHttpMethod(method)
+    @Override
+    public void afterCompletion(HttpServletRequest request,
+                                HttpServletResponse response,
+                                Object handler,
+                                Exception ex) {
+
+        if (handler instanceof ResourceHttpRequestHandler) {
+            return;
+        }
+
+        if (!(handler instanceof HandlerMethod handlerMethod)) {
+            throw new IllegalStateException("Invalid handler");
+        }
+        var eventIdAnnotation = handlerMethod.getMethodAnnotation(RequestEventId.class);
+        if (eventIdAnnotation == null) {
+            // If the method is not annotated, that means the audit logging
+            // was already done. This is an exception to the rule, for cases
+            // where we want to log some information that is only available
+            // internal to the endpoint method.
+            return;
+        }
+        var eventId = eventIdAnnotation.value();
+
+        var method = request.getMethod();
+        var uri = request.getRequestURI();
+
+        if (response == null) {
+            throw new IllegalStateException("REST Response is null");
+        }
+        int responseStatus = response.getStatus();
+
+        if (responseStatus >= 400) {
+            String err = eventId.message + " failed with response code = " + String.valueOf(responseStatus);
+            if (ex != null) {
+                err = err + ": " + ex.getMessage();
+            }
+            getAuditEventByHttpMethod(method)
                 .withSecurityTag()
-                .allowed(logMessage);
-        return true;
+                .withEventId(eventId.fail)
+                .withUri(uri)
+                .error(err);
+        }
+        else {
+            getAuditEventByHttpMethod(method)
+                .withSecurityTag()
+                .withEventId(eventId.success)
+                .withUri(uri)
+                .allowed(eventId.message + " succeeded.");
+        }
     }
     
     private AuditEventLogger.BuilderTagStage getAuditEventByHttpMethod(String httpMethod) {
-        return switch (httpMethod.toLowerCase()) {
-            case "get" -> _auditEventLogger.readEvent();
-            case "post" -> _auditEventLogger.createEvent();
-            case "put" -> _auditEventLogger.modifyEvent();
-            case "delete" -> _auditEventLogger.deleteEvent();
-            default -> _auditEventLogger.readEvent();
-        };
+        switch (httpMethod.toLowerCase()) {
+            case "get": return _auditEventLogger.readEvent();
+            case "post": return _auditEventLogger.createEvent();
+            case "put": return _auditEventLogger.modifyEvent();
+            case "delete": return _auditEventLogger.deleteEvent();
+            case "head": return _auditEventLogger.readEvent();
+            default:
+                throw new IllegalArgumentException(String.format("AuditEvent method \"%s\" not supported", httpMethod));
+        }
     }
 }

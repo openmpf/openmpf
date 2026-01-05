@@ -116,6 +116,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
 	@JsonProperty("mediaSelectorsOutputUri")
+	@JsonPropertyDescription("When the job request includes media selectors, this will be a URI referencing a copy of the input file with the selected sections replaced by component output.")
 	private String mediaSelectorsOutputUri;
 	public String getMediaSelectorsOutputUri() { return mediaSelectorsOutputUri; }
 	public void setMediaSelectorsOutputUri(String uri) { mediaSelectorsOutputUri = uri; }

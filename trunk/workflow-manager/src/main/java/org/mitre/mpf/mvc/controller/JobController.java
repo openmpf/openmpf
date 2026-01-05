@@ -235,7 +235,8 @@ public class JobController {
 
 
     @GetMapping("/jobs-paged")
-    @RequestEventId(value = LogAuditEventRecord.EventId.GET_JOB_STATUS)
+    // No audit logging here to avoid excess logging when the job status progress bar
+    // is being periodically updated in the web UI.
     @ResponseBody
     public JobPageListModel getJobStatusFiltered(
             @RequestParam("page") int page,

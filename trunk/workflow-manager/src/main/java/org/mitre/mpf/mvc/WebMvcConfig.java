@@ -106,8 +106,7 @@ public class WebMvcConfig extends DelegatingWebMvcConfiguration {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         super.addInterceptors(registry);
-        registry.addInterceptor(_restAuditLoggingInterceptor)
-                .addPathPatterns("/rest/**");
+        registry.addInterceptor(_restAuditLoggingInterceptor);
     }
 
     @Override

@@ -85,6 +85,7 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JobPartsIter;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -355,7 +356,9 @@ public class TiesDbBeforeJobCheckServiceImpl
                 int statusCode = resp.getStatusLine().getStatusCode();
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
-                    .allowed("TiesDB API call: GET %s - Status Code: %s", uri, statusCode);
+                    .withEventId(LogAuditEventRecord.EventId.TIES_DB_GET.success)
+                    .withUri(uri.toString())
+                    .allowed(LogAuditEventRecord.EventId.TIES_DB_GET.message + " succeeded - Status Code: %s", statusCode);
                 return checkResponse(unpagedUri, resp);
             })
             .thenCompose(resp -> {
@@ -372,7 +375,9 @@ public class TiesDbBeforeJobCheckServiceImpl
             }).exceptionally(e -> {
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
-                    .error("TiesDB API call failed: GET %s : %s", uri, e.getCause().getMessage());
+                    .withEventId(LogAuditEventRecord.EventId.TIES_DB_GET.fail)
+                    .withUri(uri.toString())
+                    .error(LogAuditEventRecord.EventId.TIES_DB_GET.message + " failed : %s", e.getCause().getMessage());
                 lastException.set(e.getCause());
                 return prevBest;
             });
@@ -696,6 +701,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             var newAction = JsonActionOutputObject.factory(
                 oldAction.getAction(),
                 oldAction.getAlgorithm(),
+                oldAction.getAnnotators(),
                 newTracks);
             newActions.add(newAction);
         }

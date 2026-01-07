@@ -34,10 +34,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -56,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.http.HttpResponse;
@@ -133,9 +136,6 @@ public class TestTiesDbService extends MockitoTest.Strict {
     private JobConfigHasher _mockJobConfigHasher;
 
     @Mock
-    private TaskMergingManager _mockTaskMergingManager;
-
-    @Mock
     private AuditEventLogger _mockAuditEventLogger;
 
     @Mock
@@ -178,6 +178,10 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 .thenReturn(_mockBuilderTagStage);
         lenient().when(_mockBuilderTagStage.withSecurityTag())
                 .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withEventId(anyInt()))
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))
+                .thenReturn(_mockAuditEventBuilder);
 
         _tiesDbService = new TiesDbService(
                 _mockPropertiesUtil,
@@ -189,7 +193,6 @@ public class TestTiesDbService extends MockitoTest.Strict {
                 _mockJobRequestDao,
                 _mockInProgressJobs,
                 _mockJobConfigHasher,
-                _mockTaskMergingManager,
                 _mockAuditEventLogger);
 
         lenient().when(_mockPropertiesUtil.getHttpCallbackRetryCount())
@@ -232,20 +235,29 @@ public class TestTiesDbService extends MockitoTest.Strict {
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbMedia))
                 .thenReturn("http://tiesdb");
-        when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbMedia, _job))
-                .thenReturn(false);
 
         when(_mockAggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, _job, _tiesDbParentMedia))
                 .thenReturn("http://tiesdbForParent");
-        // Configure _tiesDbParentMedia so that task merging and output last task only are both
-        // enabled. When both are enabled, the TiesDb output should only report the track type for
-        // the last task and its transitive merge targets.
-        when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(_tiesDbParentMedia, _job))
+
+        when(_mockAggregateJobPropertiesUtil.getBool(
+                    eq(MpfConstants.SUPPRESS_TRACKS),
+                    eq(_job),
+                    notNull(),
+                    notNull()))
+                .thenReturn(false);
+
+        when(_mockAggregateJobPropertiesUtil.getBool(
+                    eq(MpfConstants.SUPPRESS_TRACKS),
+                    eq(_job),
+                    eq(_tiesDbParentMedia),
+                    argThat(a -> a.name().equals("ACTION_0"))))
                 .thenReturn(true);
-        when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 0))
-                .thenReturn(IntStream.of(2, 1));
-        when(_mockTaskMergingManager.getTransitiveMergeTargets(_job, _tiesDbParentMedia, 3, 1))
-                .thenReturn(IntStream.of(2, 1));
+
+        when(_mockAggregateJobPropertiesUtil.actionAppliesToMedia(
+                    eq(_job),
+                    or(eq(_tiesDbMedia), eq(_tiesDbParentMedia)),
+                    notNull()))
+                .thenReturn(true);
 
         when(_mockJobConfigHasher.getJobConfigHash(_job))
                 .thenReturn("FAKE_JOB_CONFIG_HASH");
@@ -503,17 +515,17 @@ public class TestTiesDbService extends MockitoTest.Strict {
         var action0 = createAction(0, algo0);
         var task0 = createTask(0, action0);
 
-        var algo1 = createAlgorithm(1, "MERGE_SOURCE");
+        var algo1 = createAlgorithm(1, "WILL_BE_ANNOTATED");
         var action1 = createAction(1, algo1);
         var task1 = createTask(1, action1);
 
-        var algo2 = createAlgorithm(2, "MERGE_SOURCE_AND_TARGET");
+        var algo2 = createAlgorithm(2, "ANNOTATOR0");
         var action2 = createAction(2, algo2);
         var task2 = createTask(2, action2);
 
-        var algo3 = createAlgorithm(3, "MERGE_SOURCE0");
+        var algo3 = createAlgorithm(3, "ANNOTATOR1");
         var action3 = createAction(3, algo3);
-        var algo4 = createAlgorithm(4, "MERGE_SOURCE1");
+        var algo4 = createAlgorithm(4, "ANNOTATOR2");
         var action4 = createAction(4, algo4);
         var task3 = createTask(3, action3, action4);
 
@@ -562,8 +574,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",
                 ImmutableSortedSet.of(
-                        "PARENT_SUPPRESSED", "MERGE_SOURCE", "MERGE_SOURCE_AND_TARGET",
-                        "MERGE_SOURCE0", "MERGE_SOURCE1"),
+                        "PARENT_SUPPRESSED", "WILL_BE_ANNOTATED", "ANNOTATOR0",
+                        "ANNOTATOR1", "ANNOTATOR2"),
                 "host-123",
                 "file:///fake-path",
                 "FAKE_OUTPUT_OBJECT_SHA",
@@ -590,8 +602,8 @@ public class TestTiesDbService extends MockitoTest.Strict {
         var dataObject = new TiesDbInfo.DataObject(
                 "TEST_PIPELINE",
                 ImmutableSortedSet.of(
-                        "MERGE_SOURCE", "MERGE_SOURCE_AND_TARGET", "MERGE_SOURCE0",
-                        "MERGE_SOURCE1"),
+                        "WILL_BE_ANNOTATED", "ANNOTATOR0", "ANNOTATOR1",
+                        "ANNOTATOR2"),
                 "host-123",
                 "file:///fake-path",
                 "FAKE_OUTPUT_OBJECT_SHA",

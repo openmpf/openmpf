@@ -27,11 +27,8 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import static java.util.stream.Collectors.toCollection;
-
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.IntStream;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -39,135 +36,65 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.segmenting.TriggerProcessor;
-import org.mitre.mpf.wfm.service.TaskMergingManager;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.service.TaskAnnotatorService;
+import org.mitre.mpf.wfm.util.JobPartsIter;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 
 
 @Component
 public class TrackOutputHelper {
 
-    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    private final InProgressBatchJobsService _inProgressBatchJobsService;
-
-    private final TriggerProcessor _triggerProcessor;
-
-    private final TaskMergingManager _taskMergingManager;
+    private final TaskAnnotatorService _taskAnnotatorService;
 
     @Inject
     TrackOutputHelper(
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-            InProgressBatchJobsService inProgressBatchJobsService,
-            TriggerProcessor triggerProcessor,
-            TaskMergingManager taskMergingManager) {
-        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _inProgressBatchJobsService = inProgressBatchJobsService;
-        _triggerProcessor = triggerProcessor;
-        _taskMergingManager = taskMergingManager;
-    }
-
-    public record TrackInfo(
-            boolean isSuppressed,
-            boolean isMergeSource,
-            boolean isMergeTarget,
-            boolean hadAnyTracks,
-            Multimap<String, Track> tracksGroupedByAction) { }
-
-
-    public TrackInfo getTrackInfo(BatchJob job, Media media, int taskIdx, int actionIdx) {
-        boolean isSuppressed = isSuppressed(job, media, taskIdx);
-        boolean isMergeTarget = _taskMergingManager.isMergeTarget(job, media, taskIdx);
-        boolean needToCheckTrackTriggers = needToCheckSuppressedTriggers(job, media, taskIdx);
-        boolean isMergeSource = _taskMergingManager.isMergeSource(job, media, taskIdx, actionIdx);
-
-        boolean canAvoidGettingTracks =
-                isMergeTarget || (isSuppressed && !needToCheckTrackTriggers);
-        if (canAvoidGettingTracks) {
-            int trackCount = _inProgressBatchJobsService.getTrackCount(
-                    job.getId(), media.getId(), taskIdx, actionIdx);
-            return new TrackInfo(
-                    isSuppressed, isMergeSource, isMergeTarget, trackCount > 0,
-                    ImmutableMultimap.of());
-        }
-
-        var tracks = _inProgressBatchJobsService.getTracks(
-                job.getId(), media.getId(), taskIdx, actionIdx);
-
-        if (needToCheckTrackTriggers) {
-            tracks = findUntriggered(job, media, taskIdx, tracks);
-            if (!tracks.isEmpty()) {
-                // Since there are un-triggered tracks, this task is the last task that
-                // processed those tracks.
-                isSuppressed = false;
-            }
-        }
-        var indexedTracks = Multimaps.index(tracks, t -> getMergedAction(t, job));
-        return new TrackInfo(
-                isSuppressed, isMergeSource, isMergeTarget,
-                !indexedTracks.isEmpty(), indexedTracks);
+            InProgressBatchJobsService inProgressJobs,
+            TaskAnnotatorService taskAnnotatorService) {
+        _inProgressJobs = inProgressJobs;
+        _taskAnnotatorService = taskAnnotatorService;
     }
 
 
-    private boolean isSuppressed(BatchJob job, Media media, int taskIdx) {
-        return _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)
-                && taskIdx < job.getPipelineElements().getLastDetectionTaskIdx();
+    public record TrackGroupKey(
+            int taskIdx,
+            int actionIdx,
+            ImmutableSet<Annotator> annotators) {
+    }
+
+    public record Annotator(int taskIdx, int actionIdx) {
     }
 
 
-    private boolean needToCheckSuppressedTriggers(BatchJob job, Media media, int taskIdx) {
-        if (!isSuppressed(job, media, taskIdx)) {
-            return false;
-        }
-
-        var pipelineElements = job.getPipelineElements();
-        // Check if a task later in the pipeline does not have a trigger set. When a trigger is not
-        // set, all tracks are passed as input to the task. That means that all of the tracks
-        // created in current task were input to a task.
-        boolean futureTaskMissingTrigger = IntStream
-            .rangeClosed(taskIdx + 1, pipelineElements.getLastDetectionTaskIdx())
-            .mapToObj(pipelineElements::getTask)
-            .flatMap(pipelineElements::getActionStreamInOrder)
-            .map(a -> _aggregateJobPropertiesUtil.getValue(MpfConstants.TRIGGER, job, media, a))
-            .anyMatch(t -> t == null || t.isBlank());
-        return !futureTaskMissingTrigger;
+    public ImmutableSetMultimap<TrackGroupKey, Track> getTrackGroups(BatchJob job, Media media) {
+        var isNotAnnotated = _taskAnnotatorService.createIsAnnotatedChecker(job, media).negate();
+        return JobPartsIter.stream(job, media)
+            .flatMap(jp -> _inProgressJobs.getTracksStream(
+                    jp.id(), media.getId(), jp.taskIndex(), jp.actionIndex()))
+            .filter(isNotAnnotated)
+            .collect(ImmutableSetMultimap.toImmutableSetMultimap(
+                    TrackOutputHelper::createTrackGroupKey, Function.identity()));
     }
 
-
-    private SortedSet<Track> findUntriggered(
-            BatchJob job, Media media, int taskIdx, SortedSet<Track> tracks) {
-        int lastDetectionTaskIdx = job.getPipelineElements().getLastDetectionTaskIdx();
-        if (taskIdx == lastDetectionTaskIdx) {
-            return tracks;
+    private static TrackGroupKey createTrackGroupKey(Track track) {
+        if (track.getAnnotatedTaskIndices().isEmpty()) {
+            return new TrackGroupKey(
+                    track.getTaskIndex(), track.getActionIndex(), ImmutableSet.of());
         }
-        var wasTriggeredFilter = _triggerProcessor.createWasEverTriggeredFilter(
-                job, media, taskIdx, lastDetectionTaskIdx);
-        return tracks.stream()
-            .filter(wasTriggeredFilter.negate())
-            .collect(toCollection(TreeSet::new));
-    }
 
+        int originTaskIdx = track.getAnnotatedTaskIndices().first();
+        var prevAnnotators = track.getAnnotatedTaskIndices()
+                .tailSet(originTaskIdx, false)
+                .stream()
+                .map(ti -> new Annotator(ti, 0));
+        var currentAnnotator = new Annotator(track.getTaskIndex(), track.getActionIndex());
 
-    private String getMergedAction(Track track, BatchJob job) {
-        int actionIndex;
-        var trackMergingEnabled = track.getMergedTaskIndex() != track.getTaskIndex();
-        if (trackMergingEnabled) {
-            // When track merging is enabled, the merged task will never be the last task.  Only
-            // the last task can have more than one action, so the merged action has to be the
-            // first and only action in the task.
-            actionIndex = 0;
-        }
-        else {
-            actionIndex = track.getActionIndex();
-        }
-        return job.getPipelineElements()
-                .getAction(track.getMergedTaskIndex(), actionIndex)
-                .name();
+        var combinedAnnotators = Stream.concat(prevAnnotators, Stream.of(currentAnnotator))
+                .collect(ImmutableSet.toImmutableSet());
+        return new TrackGroupKey(originTaskIdx, 0, combinedAnnotators);
     }
 }

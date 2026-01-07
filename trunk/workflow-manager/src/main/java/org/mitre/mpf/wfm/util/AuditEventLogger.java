@@ -74,11 +74,15 @@ public class AuditEventLogger {
             LogAuditEventRecord.TagType tag,
             LogAuditEventRecord.OpType op,
             LogAuditEventRecord.ResType res,
+            int eid,
             String user,
-            String msg) {
+            String uri,
+            String msg,
+            String bucket,
+            String objectKey) {
 
         var eventRecord = new LogAuditEventRecord(
-                Instant.now(), tag, "openmpf", user, op, res, msg);
+                Instant.now(), eid, tag, "openmpf", user, op, res, uri, bucket, objectKey, msg);
         writeToLogger(eventRecord);
         return this;
     }
@@ -143,6 +147,22 @@ public class AuditEventLogger {
             return this;
         }
 
+        public AuditEventBuilder withEventId(int eid) {
+            return this;
+        }
+
+        public AuditEventBuilder withUri(String uri, Object... formatArgs) {
+            return this;
+        }
+
+        public AuditEventBuilder withBucket(String bucket) {
+            return this;
+        }
+
+        public AuditEventBuilder withObjectKey(String objectKey) {
+            return this;
+        }
+
         public void allowed(String message, Object... formatArgs) {
         }
 
@@ -161,7 +181,15 @@ public class AuditEventLogger {
 
         private LogAuditEventRecord.TagType _tagType;
 
+        private int _eventId;
+
         private Authentication _auth;
+
+        private String _uri;
+
+        private String _bucket;
+
+        private String _objectKey;
 
         private EnabledEventBuilder(LogAuditEventRecord.OpType opType) {
             _opType = opType;
@@ -176,6 +204,32 @@ public class AuditEventLogger {
         @Override
         public AuditEventBuilder withSecurityTag() {
             _tagType = LogAuditEventRecord.TagType.SECURITY;
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withEventId(int eid) {
+            _eventId = eid;
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withUri(String uri, Object... formatArgs) {
+            _uri = formatArgs != null && formatArgs.length > 0
+                    ? uri.formatted(formatArgs)
+                    : uri;
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withBucket(String bucket) {
+            _bucket = bucket;
+            return this;
+        }
+
+        @Override
+        public AuditEventBuilder withObjectKey(String objectKey) {
+            _objectKey = objectKey;
             return this;
         }
 
@@ -198,7 +252,7 @@ public class AuditEventLogger {
                 LogAuditEventRecord.ResType resType,
                 String message,
                 Object... formatArgs) {
-            var formattedMessage = formatArgs != null && formatArgs.length > 0
+            var formattedMessage = message != null && formatArgs != null && formatArgs.length > 0
                     ? message.formatted(formatArgs)
                     : message;
 
@@ -207,7 +261,7 @@ public class AuditEventLogger {
                     .filter(s -> !s.isEmpty())
                     .orElseGet(() -> getCurrentLoggedInUser());
 
-            log(_tagType, _opType, resType, user, formattedMessage);
+            log(_tagType, _opType, resType, _eventId, user, _uri, formattedMessage, _bucket, _objectKey);
         }
     }
 }

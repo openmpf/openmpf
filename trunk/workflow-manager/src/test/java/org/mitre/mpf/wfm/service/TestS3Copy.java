@@ -29,7 +29,11 @@ package org.mitre.mpf.wfm.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -62,6 +66,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mockito.Mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -96,6 +101,15 @@ public class TestS3Copy extends MockitoTest.Strict {
     @Mock
     private OutgoingRequestTokenService _mockTokenService;
 
+    @Mock
+    private AuditEventLogger _mockAuditEventLogger;
+
+    @Mock
+    private AuditEventLogger.BuilderTagStage _mockBuilderTagStage;
+
+    @Mock
+    private AuditEventLogger.AuditEventBuilder _mockAuditEventBuilder;
+
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
     private S3StorageBackendImpl _s3StorageBackend;
@@ -122,6 +136,18 @@ public class TestS3Copy extends MockitoTest.Strict {
 
     @Before
     public void init() {
+        lenient().when(_mockAuditEventLogger.createEvent())
+                .thenReturn(_mockBuilderTagStage);
+        lenient().when(_mockBuilderTagStage.withSecurityTag())
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withEventId(anyInt()))
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withUri(anyString(), any()))
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withBucket(anyString()))
+                .thenReturn(_mockAuditEventBuilder);
+        lenient().when(_mockAuditEventBuilder.withObjectKey(anyString()))
+                .thenReturn(_mockAuditEventBuilder);
         when(_mockPropertiesUtil.getS3ClientCacheCount())
                 .thenReturn(20);
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
@@ -136,7 +162,8 @@ public class TestS3Copy extends MockitoTest.Strict {
                 _mockInProgressJobs,
                 _mockAggJobProps,
                 _mockTokenService,
-                _objectMapper);
+                _objectMapper,
+                _mockAuditEventLogger);
     }
 
 

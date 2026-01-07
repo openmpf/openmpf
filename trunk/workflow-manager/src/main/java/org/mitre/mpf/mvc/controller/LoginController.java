@@ -39,7 +39,7 @@ import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.mvc.security.AccessDeniedWithUserMessageException;
 import org.mitre.mpf.mvc.security.custom.sso.CustomSsoConfig;
 import org.mitre.mpf.mvc.security.custom.sso.CustomSsoProps;
-import org.mitre.mpf.wfm.util.AuditEventLogger;
+import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,17 +65,13 @@ public class LoginController {
 
     private final PropertiesUtil _propertiesUtil;
 
-    private final AuditEventLogger _auditEventLogger;
-
     private final Optional<CustomSsoProps> _customSsoProps;
 
     @Inject
     LoginController(
             PropertiesUtil propertiesUtil,
-            AuditEventLogger auditEventLogger,
             Optional<CustomSsoProps> customSsoProps) {
         _propertiesUtil = propertiesUtil;
-        _auditEventLogger = auditEventLogger;
         _customSsoProps = customSsoProps;
     }
 
@@ -129,18 +125,12 @@ public class LoginController {
     }
 
     @GetMapping("/login")
+    @RequestEventId(value = LogAuditEventRecord.EventId.LOGIN_PAGE_ACCESS)
     public Object getLogin(
             @SessionAttribute(name = WebAttributes.AUTHENTICATION_EXCEPTION, required = false)
             Exception authException,
             Authentication authentication) {
-
-        _auditEventLogger.loginEvent()
-                .withSecurityTag()
-                .allowed("Login page accessed.");
         if (authentication != null && authentication.isAuthenticated()) {
-            _auditEventLogger.loginEvent()
-                .withSecurityTag()
-                .allowed("User is already authenticated.");
             return "redirect:/";
         }
 
@@ -149,9 +139,6 @@ public class LoginController {
 
         if (authException instanceof BadCredentialsException) {
             String badCredentialsMessage = "Failed login attempt: Invalid username and/or password.";
-            _auditEventLogger.loginEvent()
-                .withSecurityTag()
-                .denied(badCredentialsMessage);
             model.addObject("error", badCredentialsMessage);
         }
 
@@ -161,12 +148,14 @@ public class LoginController {
 
 
     @GetMapping("/user/role-info")
+    @RequestEventId(value = LogAuditEventRecord.EventId.GET_USER_CREDENTIALS)
     public AuthenticationModel getSecurityCredentials(HttpServletRequest request /*needed for UserPrincipal*/) {
         return getAuthenticationModel(request);
     }
 
 
     @GetMapping("/oidc-access-denied")
+    @RequestEventId(value = LogAuditEventRecord.EventId.LOGIN_PAGE_ACCESS)
     public ModelAndView oidcAccessDenied(
             @RequestAttribute(name = WebAttributes.ACCESS_DENIED_403, required = false)
             AccessDeniedException accessDeniedException) {
@@ -174,9 +163,6 @@ public class LoginController {
         if (accessDeniedException != null) {
             String errorMessage = "A user successfully authenticated with an OIDC provider, but was not authorized to access Workflow Manager.";
             log.error(errorMessage, accessDeniedException);
-            _auditEventLogger.loginEvent()
-                .withSecurityTag()
-                .denied(errorMessage);
         }
         if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
             return new ModelAndView(
@@ -189,6 +175,7 @@ public class LoginController {
     }
 
     @GetMapping("/custom_sso_error")
+    @RequestEventId(value = LogAuditEventRecord.EventId.LOGIN_PAGE_ACCESS)
     public Object customSsoError(
             HttpSession session,
             HttpServletRequest request,

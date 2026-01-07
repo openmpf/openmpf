@@ -126,6 +126,9 @@ public class OutputChecker {
             _errorCollector.checkThat(
                     "Algorithm Name", actActionOutput.getAlgorithm(),
                     is(expActionOutput.getAlgorithm()));
+            _errorCollector.checkThat(
+            "Annotator List", actActionOutput.getAnnotators(),
+                    is(expActionOutput.getAnnotators()));
             compareJsonTrackOutputObjects(
                     sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expActionOutput),
                     sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actActionOutput),

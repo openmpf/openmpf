@@ -116,6 +116,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
 	@JsonProperty("mediaSelectorsOutputUri")
+	@JsonPropertyDescription("When the job request includes media selectors, this will be a URI referencing a copy of the input file with the selected sections replaced by component output.")
 	private String mediaSelectorsOutputUri;
 	public String getMediaSelectorsOutputUri() { return mediaSelectorsOutputUri; }
 	public void setMediaSelectorsOutputUri(String uri) { mediaSelectorsOutputUri = uri; }
@@ -237,7 +238,6 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private static class TrackTypeComparator implements Comparator<String> {
 		private static final Set<String> _special = new HashSet<>(Arrays.asList(
 				JsonActionOutputObject.NO_TRACKS_TYPE,
-				JsonActionOutputObject.TRACKS_MERGED_TYPE,
 				JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE));
 
 		@Override

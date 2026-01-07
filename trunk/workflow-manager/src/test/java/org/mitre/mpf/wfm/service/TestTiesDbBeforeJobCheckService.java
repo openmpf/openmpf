@@ -36,6 +36,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
@@ -186,6 +187,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAuditEventLogger.readEvent())
                 .thenReturn(_mockBuilderTagStage);
         when(_mockBuilderTagStage.withSecurityTag())
+                .thenReturn(_mockAuditEventBuilder);
+        when(_mockAuditEventBuilder.withEventId(anyInt()))
+                .thenReturn(_mockAuditEventBuilder);
+        when(_mockAuditEventBuilder.withUri(any()))
                 .thenReturn(_mockAuditEventBuilder);
 
         _tiesDbBeforeJobCheckService = new TiesDbBeforeJobCheckServiceImpl(
@@ -805,10 +810,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 Map.of("prop3", "prop4"), detection3, List.of(detection3));
 
         var action1 = JsonActionOutputObject.factory(
-                "action1", "algo1", ImmutableSortedSet.of(track1));
+                "action1", "algo1", null, ImmutableSortedSet.of(track1));
 
         var action2 = JsonActionOutputObject.factory(
-                "action2", "algo2", ImmutableSortedSet.of(track2));
+                "action2", "algo2", null, ImmutableSortedSet.of(track2));
 
         var trackTypeMap = ImmutableSortedMap.<String, SortedSet<JsonActionOutputObject>>of(
                 "type1", ImmutableSortedSet.of(action1),

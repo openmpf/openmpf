@@ -65,17 +65,11 @@ public class CustomJpegParser extends JpegParser {
     public void parse(InputStream stream, ContentHandler handler, Metadata metadata,
                       ParseContext context) throws IOException, SAXException, TikaException {
 
-        TemporaryResources tmp = new TemporaryResources();
-        try {
-            TikaInputStream tis = TikaInputStream.get(stream, tmp);
-            // This is the original line from the base class method:
-            // new ImageMetadataExtractor(metadata).parseJpeg(tis.getFile());
-            new CustomMetadataExtractor(metadata).parseJpeg(tis.getFile());
-            new JempboxExtractor(metadata).parse(tis);
-        }
-        finally {
-            tmp.dispose();
-        }
+        TikaInputStream tis = TikaInputStream.get(stream);
+        // This is the original line from the base class method:
+        // new ImageMetadataExtractor(metadata).parseJpeg(tis.getFile());
+        new CustomMetadataExtractor(metadata).parseJpeg(tis.getFile());
+        new JempboxExtractor(metadata).parse(tis);
 
         XHTMLContentHandler xhtml = new XHTMLContentHandler(handler, metadata);
         xhtml.startDocument();

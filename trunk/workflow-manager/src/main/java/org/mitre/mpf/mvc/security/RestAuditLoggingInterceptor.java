@@ -92,7 +92,7 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
-                .allowed(eventId.message + " succeeded.");
+                .allowed(eventId.message + " succeeded");
         }
     }
     

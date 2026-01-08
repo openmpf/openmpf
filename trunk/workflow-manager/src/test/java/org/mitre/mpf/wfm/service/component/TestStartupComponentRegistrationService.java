@@ -322,7 +322,7 @@ public class TestStartupComponentRegistrationService extends MockitoTest.Strict 
 
             try (TarArchiveOutputStream outputStream
                          = new TarArchiveOutputStream(new GZIPOutputStream(Files.newOutputStream(packagePath)))) {
-                ArchiveEntry entry = new TarArchiveEntry(name + "/descriptor");
+                var entry = new TarArchiveEntry(name + "/descriptor");
                 outputStream.putArchiveEntry(entry);
                 outputStream.closeArchiveEntry();
             }

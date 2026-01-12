@@ -133,7 +133,12 @@ public class SwaggerConfig {
                 // Set order to ensure this rule gets applied before
                 // .genericModelSubstitutes(Optional.class)
                 AlternateTypeRules.GENERIC_SUBSTITUTION_RULE_ORDER - 1);
-        return new AlternateTypeRule[] { streamRule, optionalInstantRule };
+
+        var mediaUriRule = AlternateTypeRules.newRule(
+                resolver.resolve(List.class, MediaUri.class),
+                resolver.resolve(List.class, URI.class));
+
+        return new AlternateTypeRule[] { streamRule, optionalInstantRule, mediaUriRule };
     }
 
 

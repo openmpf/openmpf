@@ -100,12 +100,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     @Test(timeout = 6*MINUTES)
     public void runMogMotionPreprocessing() throws Exception {
         String actionName = "TEST PREPROCESSOR MOTION ACTION";
-        addAction(actionName, "MOG",
-            Map.of(
-                "SUPPRESS_TRACKS", "false",
-                "USE_PREPROCESSOR", "1"
-            )
-        );
+        addAction(actionName, "MOG", Collections.singletonMap("USE_PREPROCESSOR", "1"));
 
         String taskName = "TEST PREPROCESSING MOTION EXTRACTION MOTION MOG TASK";
         addTask(taskName, actionName);
@@ -123,6 +118,8 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void runMogMotionPreprocessingFaceDetectionMarkup() throws Exception {
         runSystemTest("OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR AND MARKUP) PIPELINE",
                 "output/motion/runMogMotionPreprocessingFaceDetectionMarkup.json",
+                Map.of(),
+                Map.of("SUPPRESS_TRACKS", "false"),
                 "/samples/person/video_02.mp4");
     }
 

@@ -71,6 +71,10 @@ namespace MPF::COMPONENT {
         return component_->GetDetections(job);
     }
 
+    std::vector<MPFAudioTrack> CppComponentHandle::GetDetections(const MPFAllAudioTracksJob &job) {
+        throw std::runtime_error{"MPFAllAudioTracksJob is not currently supported."};
+    }
+
     std::vector<MPFGenericTrack> CppComponentHandle::GetDetections(const MPFGenericJob &job) {
         return component_->GetDetections(job);
     }

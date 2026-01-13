@@ -26,16 +26,27 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AllAudioTracksRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AudioRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.util.TextUtils;
+import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -57,6 +68,10 @@ public class AudioMediaSegmenter implements MediaSegmenter {
     public List<DetectionRequest> createDetectionRequests(Media media, DetectionContext context) {
         log.info("Media #{} is an audio file and will not be segmented.", media.getId());
         if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
+            if (MediaSegmenter.feedForwardAllTracksIsEnabled(context)) {
+                var feedForwardAllTracksRequest = createFeedForwardAllTracksRequest(media, context);
+                return feedForwardAllTracksRequest.isPresent() ? List.of(feedForwardAllTracksRequest.get()) : List.of();
+            }
             return _triggerProcessor.getTriggeredTracks(media, context)
                     .map(t -> createFeedForwardRequest(t, media, context))
                     .toList();
@@ -79,6 +94,114 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                 .build();
     }
 
+    private static DetectionProtobuf.DetectionRequest createProtobuf(
+            Media media,
+            DetectionContext context,
+            AllAudioTracksRequest AllAudioTracksRequest) {
+        return MediaSegmenter.initializeRequest(media, context)
+                .setAllAudioTracksRequest(AllAudioTracksRequest)
+                .build();
+    }
+
+    private static int getTopQualityCount(DetectionContext context) {
+        return Optional.ofNullable(
+                    context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_TOP_QUALITY_COUNT))
+                .map(Integer::parseInt)
+                .orElse(0);
+    }
+
+    private static Optional<String> getBestDetectionPropertyList(DetectionContext context) {
+        return Optional.ofNullable(
+            context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST));
+    }
+
+    private static DetectionProtobuf.AudioTrack.Builder createFeedForwardTrackBuilder(
+        Track track, int topQualityCount, String topQualitySelectionProp, Media media, DetectionContext context) {
+
+        Set<Detection> includedDetections;
+        int startTime;
+        int stopTime;
+        if (topQualityCount <= 0) {
+            includedDetections = track.getDetections();
+            startTime = track.getStartOffsetTimeInclusive();
+            stopTime = track.getEndOffsetTimeInclusive();
+        }
+        else {
+            includedDetections = new TreeSet<>(TopQualitySelectionUtil.getTopQualityDetections(
+                              track.getDetections(), topQualityCount, topQualitySelectionProp));
+
+            var bestDetectionPropertyNamesList = getBestDetectionPropertyList(context);
+            if (bestDetectionPropertyNamesList.isPresent()) {
+                List<String> propNameList = TextUtils.parseListFromString(bestDetectionPropertyNamesList.get());
+                propNameList = TextUtils.trimAndUpper(propNameList, Collectors.toList());
+                for (Detection detection : track.getDetections()) {
+                    for (String p : propNameList) {
+                        if (detection.getDetectionProperties().containsKey(p)) {
+                            log.debug("Will feed forward detection in frame {} with property {}", detection.getMediaOffsetFrame(), p);
+                            includedDetections.add(detection);
+                            break;
+                        }
+                    }
+                }
+            }
+            var frameSummaryStats = includedDetections.stream()
+                .mapToInt(Detection::getMediaOffsetFrame)
+                .summaryStatistics();
+            startTime = frameSummaryStats.getMin();
+            stopTime = frameSummaryStats.getMax();
+        }
+
+        var protobufTrackBuilder = DetectionProtobuf.AudioTrack.newBuilder()
+                .setStartTime(startTime)
+                .setStopTime(stopTime)
+                .setConfidence(track.getConfidence())
+                .putAllDetectionProperties(track.getTrackProperties());
+
+        return protobufTrackBuilder;
+    }
+
+    private Optional<DetectionRequest> createFeedForwardAllTracksRequest(Media media, DetectionContext context) {
+        int topQualityCount = getTopQualityCount(context);
+        String topQualitySelectionProp = context.getQualitySelectionProperty();
+        var tracks = _triggerProcessor.getTriggeredTracks(media, context)
+                .filter(t -> {
+                    if (t.getDetections().isEmpty()) {
+                        log.warn("Found track with no detections. "
+                                    + "No feed forward request will be created for: {}", t);
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        if (tracks.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var allAudioTracksRequestBuilder = AllAudioTracksRequest.newBuilder();
+        for (Track track : tracks) {
+            var protobufTrackBuilder = 
+                createFeedForwardTrackBuilder(track, topQualityCount, topQualitySelectionProp, media, context);
+            allAudioTracksRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
+        }
+
+        var startTime = tracks.stream()
+                .mapToInt(Track::getStartOffsetTimeInclusive)
+                .min();
+
+        var stopTime = tracks.stream()
+                .mapToInt(Track::getEndOffsetTimeInclusive)
+                .max();
+
+        AllAudioTracksRequest allAudioTracksRequest = allAudioTracksRequestBuilder
+                .setStartTime(startTime.getAsInt())
+                .setStopTime(stopTime.getAsInt())
+                .build();
+
+        var protobuf = createProtobuf(media, context, allAudioTracksRequest);
+
+        return Optional.of(new DetectionRequest(protobuf, tracks));
+    }
 
     private static DetectionRequest createFeedForwardRequest(
             Track track, Media media, DetectionContext ctx) {

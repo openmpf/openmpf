@@ -30,6 +30,7 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -76,7 +77,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-import javax.annotation.PostConstruct;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.io.File;
@@ -152,8 +152,7 @@ public abstract class TestSystem {
     private Object lock = new Object();
     private boolean hasInitialized = false;
 
-
-    @PostConstruct
+    @BeforeClass
     private void init() throws Exception {
         synchronized (lock) {
             if (!hasInitialized) {

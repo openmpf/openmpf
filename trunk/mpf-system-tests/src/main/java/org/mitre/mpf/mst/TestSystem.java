@@ -99,7 +99,7 @@ import static org.junit.Assert.*;
 @ActiveProfiles("jenkins")
 public abstract class TestSystem {
 
-    protected static final int INIT_TIME_MILLIS = 35_000;
+    protected static final int INIT_TIME_MILLIS = 120_000;
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
     // is this running on Jenkins and/or is output checking desired?

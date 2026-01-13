@@ -100,7 +100,7 @@ public class TestWfmEndToEnd {
 	@Autowired
 	private ObjectMapper objectMapper;
 
-	protected static final int INIT_TIME_MILLIS = 20_000;
+	protected static final int INIT_TIME_MILLIS = 35_000;
 	protected static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
 
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);

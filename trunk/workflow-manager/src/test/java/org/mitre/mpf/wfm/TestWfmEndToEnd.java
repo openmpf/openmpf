@@ -31,6 +31,8 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -62,7 +64,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -99,38 +100,43 @@ public class TestWfmEndToEnd {
 	@Autowired
 	private ObjectMapper objectMapper;
 
+	protected static final int INIT_TIME_MILLIS = 5000;
 	protected static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
 
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
 
 
-	private static boolean hasInitialized = false;
 	private static int testCtr = 0;
 	private static Set<Long> completedJobs = new HashSet<>();
 	private static final Object lock = new Object();
 
-	@PostConstruct
-	private void init() {
-		synchronized (lock) {
-			if (!hasInitialized) {
-				completedJobs = new HashSet<>();
-				jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
-					@Override
-					public void onNotification(Object source, JobCompleteNotification notification) {
-						log.info("JobCompleteProcessorSubscriber: Source={}, Notification={}", source, notification);
-						synchronized (lock) {
-							completedJobs.add(notification.getJobId());
-							lock.notifyAll();
-						}
-						log.info("JobCompleteProcessorSubscriber COMPLETE");
-					}
-				});
+    @BeforeClass
+    public static void initAll() throws Exception {
+        log.info("Sleeping for {} milliseconds before starting the tests to give components time to register", INIT_TIME_MILLIS);
+        try {
+            Thread.sleep(INIT_TIME_MILLIS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
-				log.info("Starting the tests from _setupContext");
-				hasInitialized = true;
-			}
-		}
-	}
+    @Before
+    public void init() {
+        synchronized (lock) {
+            completedJobs = new HashSet<Long>();
+            jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
+                @Override
+                public void onNotification(Object source, JobCompleteNotification notification) {
+                    log.info("JobCompleteProcessorSubscriber: Source={}, Notification={}", source, notification);
+                    synchronized (lock) {
+                        completedJobs.add(notification.getJobId());
+                        lock.notifyAll();
+                    }
+                    log.info("JobCompleteProcessorSubscriber COMPLETE");
+                }
+            });
+        }
+    }
 
 	private static List<JobCreationMediaData> toMediaObjectList(URI... uris) {
 		List<JobCreationMediaData> media = new ArrayList<>(uris.length);

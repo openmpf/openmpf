@@ -30,6 +30,7 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -98,7 +99,7 @@ import static org.junit.Assert.*;
 @ActiveProfiles("jenkins")
 public abstract class TestSystem {
 
-    private static final int INIT_TIME_MILLIS = 5000;
+    protected static final int INIT_TIME_MILLIS = 5000;
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
     // is this running on Jenkins and/or is output checking desired?
@@ -146,41 +147,38 @@ public abstract class TestSystem {
     public TestWatcher testInfoMethodRule = testInfoLoggerClassRule.methodRule();
 
 
-
     private OutputChecker outputChecker = new OutputChecker(errorCollector);
     private Set<Long> completedJobs = new HashSet<>();
     private Object lock = new Object();
-    private boolean hasInitialized = false;
+
 
     @BeforeClass
-    private void init() throws Exception {
-        synchronized (lock) {
-            if (!hasInitialized) {
-                completedJobs = new HashSet<Long>();
-                jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
-                    @Override
-                    public void onNotification(Object source, JobCompleteNotification notification) {
-                        log.info("JobCompleteProcessorSubscriber: Source={}, Notification={}", source, notification);
-                        synchronized (lock) {
-                            completedJobs.add(notification.getJobId());
-                            lock.notifyAll();
-                        }
-                        log.info("JobCompleteProcessorSubscriber COMPLETE");
-                    }
-                });
-
-                log.info("Sleeping for {} milliseconds before starting the tests from _setupContext", INIT_TIME_MILLIS);
-                try {
-                    Thread.sleep(INIT_TIME_MILLIS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-
-                hasInitialized = true;
-            }
+    public static void initAll() throws Exception {
+        log.info("Sleeping for {} milliseconds before starting the tests to give components time to register", INIT_TIME_MILLIS);
+        try {
+            Thread.sleep(INIT_TIME_MILLIS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
+    @Before
+    public void init() {
+        synchronized (lock) {
+            completedJobs = new HashSet<Long>();
+            jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
+                @Override
+                public void onNotification(Object source, JobCompleteNotification notification) {
+                    log.info("JobCompleteProcessorSubscriber: Source={}, Notification={}", source, notification);
+                    synchronized (lock) {
+                        completedJobs.add(notification.getJobId());
+                        lock.notifyAll();
+                    }
+                    log.info("JobCompleteProcessorSubscriber COMPLETE");
+                }
+            });
+        }
+    }
 
     protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
         if (pipelineService.getAction(actionName) != null) {

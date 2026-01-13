@@ -100,7 +100,12 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     @Test(timeout = 6*MINUTES)
     public void runMogMotionPreprocessing() throws Exception {
         String actionName = "TEST PREPROCESSOR MOTION ACTION";
-        addAction(actionName, "MOG", Collections.singletonMap("USE_PREPROCESSOR", "1"));
+        addAction(actionName, "MOG",
+            Map.of(
+                "SUPPRESS_TRACKS", "false",
+                "USE_PREPROCESSOR", "1"
+            )
+        );
 
         String taskName = "TEST PREPROCESSING MOTION EXTRACTION MOTION MOG TASK";
         addTask(taskName, actionName);

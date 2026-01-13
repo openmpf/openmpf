@@ -32,7 +32,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -70,6 +69,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 
+import javax.annotation.PostConstruct;
+
 
 @WebAppConfiguration
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -105,18 +106,21 @@ public class TestWfmEndToEnd {
 
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
 
-
+	private static boolean initialized = false;
 	private static int testCtr = 0;
 	private static Set<Long> completedJobs = new HashSet<>();
 	private static final Object lock = new Object();
 
-    @BeforeClass
-    public static void initAll() throws Exception {
-        log.info("Sleeping for {} milliseconds before starting the tests to give components time to register", INIT_TIME_MILLIS);
-        try {
-            Thread.sleep(INIT_TIME_MILLIS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    @PostConstruct
+    private void initAll() throws Exception {
+        if (!initialized) {
+            log.info("Sleeping for {} milliseconds before starting the tests to give components time to register", INIT_TIME_MILLIS);
+            try {
+                Thread.sleep(INIT_TIME_MILLIS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            initialized = true;
         }
     }
 

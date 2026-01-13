@@ -100,7 +100,7 @@ import static org.junit.Assert.*;
 @ActiveProfiles("jenkins")
 public abstract class TestSystem {
 
-    protected static final int INIT_TIME_MILLIS = 120_000;
+    protected static final int INIT_TIME_MILLIS = 35_000;
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
     // is this running on Jenkins and/or is output checking desired?
@@ -148,14 +148,14 @@ public abstract class TestSystem {
     public TestWatcher testInfoMethodRule = testInfoLoggerClassRule.methodRule();
 
 
-    public static boolean initialized = false;
+    private static boolean initialized = false;
     private OutputChecker outputChecker = new OutputChecker(errorCollector);
     private Set<Long> completedJobs = new HashSet<>();
     private Object lock = new Object();
 
 
     @PostConstruct
-    public void initAll() throws Exception {
+    private void initAll() throws Exception {
         if (!initialized) {
             log.info("Sleeping for {} milliseconds before starting the tests to give components time to register", INIT_TIME_MILLIS);
             try {

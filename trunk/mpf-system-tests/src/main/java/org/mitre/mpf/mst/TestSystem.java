@@ -98,8 +98,8 @@ import static org.junit.Assert.*;
 @ActiveProfiles("jenkins")
 public abstract class TestSystem {
 
+    private static final int INIT_TIME_MILLIS = 5000;
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
-
 
     // is this running on Jenkins and/or is output checking desired?
     protected static boolean DISABLE_OUTPUT_CHECKING = false;
@@ -170,7 +170,13 @@ public abstract class TestSystem {
                     }
                 });
 
-                log.info("Starting the tests from _setupContext");
+                log.info("Sleeping for {} milliseconds before starting the tests from _setupContext", INIT_TIME_MILLIS);
+                try {
+                    Thread.sleep(INIT_TIME_MILLIS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
                 hasInitialized = true;
             }
         }

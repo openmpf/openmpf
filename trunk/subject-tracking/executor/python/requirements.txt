@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-mpf_component_api>=9.0
-mpf_subject_api>=9.0
+mpf_component_api>=10.0
+mpf_subject_api>=10.0
 python-qpid-proton
 protobuf>=5.28.3

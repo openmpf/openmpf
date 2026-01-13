@@ -55,21 +55,31 @@ Additionally, the REST API exposes the same core functionality as the Web UI and
 
 ### Component Plugin Architecture
 
-The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection**, **tracking**, and **classification** algorithms in C++, Python, and Java.
+The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection**, **tracking**, and **classification** algorithms, as well as **language identification**, **speech-to-text**, **translation**, and **video summarization**. All of these capabilities can be developed using C++, Python, or Java.
 
 New processing nodes can easily be added to increase processing throughput and new algorithms can be dynamically loaded and scaled to meet user needs.
 
 ![Component Architecture](README-images/plugins.png)
 
-OpenMPF includes open-source algorithms for detecting and tracking:
+OpenMPF includes open-source algorithms for the following:
 
-- Faces - LBP-Based OpenCV
-- Motion - MOG, SuBSENSE
-- Objects - OpenCV DNN
-- Scene Changes - OpenCV
-- License Plates - OpenALPR
-- Text - Tesseract
-- Speech - Sphinx
+- Face Detection and Tracking - LBP-Based OpenCV
+- Motion Detection and Tracking - MOG, SuBSENSE
+- Object Detection and Classification - OpenCV DNN, OpenCV Yolo
+- Classification - Clip, TensorRT
+- Scene Change Detection - OpenCV
+- License Plate Detection and Tracking - OpenALPR
+- Speech Detection - Sphinx, Azure Cognitive Services Batch Transcription API
+- Image Detection in Documents - Tika
+- Text Region Detection - East
+- Text Detection and OCR - Tika, Tesseract, Azure Cognitive Services Read API
+- Structured Text in Forms - Azure Cognitive Services Form Recognizer API
+- Text Correction - NlpTextCorrection
+- Keyword Detection - Keyword Tagging using Boost Regular Expressions
+- Language Identification - FastText
+- Language Translation - Argos, Whisper, NLLB, Azure Cognitive Services Translate API
+- Video Summarization - LLAMA Video 3
+- Known Phrase Tagging - Transformer Tagging
 - And more
 
 ### Tailored Framework for Media Analytics

@@ -97,10 +97,20 @@ class TestComponent(object):
         echo_job, echo_media = cls.get_echo_msgs(audio_job)
         detection_properties = dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
 
-        track1 = mpf.AudioTrack(0, 10, .75, detection_properties)
+        track1 = self.get_echo_audio_track1(audio_job)
         # Make sure multiple return values are accepted
-        return track1, mpf.AudioTrack(10, 20, 1, detection_properties)
+        return track1, self.get_echo_audio_track2(audio_job)
 
+    @classmethod  # Doesn't need to be a class method, just making sure executor can call class methods
+    def get_detections_from_all_audio_tracks(self, audio_job):
+        logger.info('[%s] Received all audio tracks job: %s', audio_job.job_name, audio_job)
+
+        # Passed-in feed-forward tracks will never be empty
+        tracks = list(audio_job.feed_forward_tracks)
+        tracks.append(self.get_echo_audio_track1(audio_job))
+        tracks.append(self.get_echo_audio_track2(audio_job))
+
+        return tracks
 
     @staticmethod
     def get_echo_msgs(job):
@@ -136,6 +146,24 @@ class TestComponent(object):
             {3: mpf.ImageLocation(9, 10, 11, 12, -1, dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))},
             dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
 
+    @staticmethod
+    def get_echo_audio_track1(audio_job):
+        echo_job, echo_media = TestComponent.get_echo_msgs(audio_job)
+
+        track = mpf.AudioTrack(0, 10, .75)
+        
+        track.detection_properties.update(audio_job.job_properties)
+        track.detection_properties.update(audio_job.media_properties)
+
+        return track
+    
+
+    @staticmethod
+    def get_echo_audio_track2(video_job):
+        echo_job, echo_media = TestComponent.get_echo_msgs(audio_job)
+        return mpf.AudioTrack(
+            0, 10, .75,
+            dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
 
 # The component executor looks for a module level variable named EXPORT_MPF_COMPONENT and calls it to create a
 # instance of the component that will be executed. EXPORT_MPF_COMPONENT will normally be assigned to a class as below,

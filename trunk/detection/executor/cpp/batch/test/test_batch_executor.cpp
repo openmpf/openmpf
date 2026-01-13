@@ -152,6 +152,23 @@ void assert_echo_video_tracks(const std::vector<MPFVideoTrack> &tracks) {
 }
 
 
+void assert_echo_audio_tracks(const std::vector<MPFAudioTrack> &tracks) {
+    ASSERT_EQ(tracks.size(), 2);
+
+    const auto &track1 = tracks.at(0);
+    assert_has_echo_properties(track1.detection_properties);
+    ASSERT_FLOAT_EQ(track1.confidence, 0.75);
+    ASSERT_EQ(track1.start_time, 0);
+    ASSERT_EQ(track1.stop_time, 10);
+
+    const auto &track2 = tracks.at(1);
+    assert_has_echo_properties(track2.detection_properties);
+    ASSERT_FLOAT_EQ(track2.confidence, 1);
+    ASSERT_EQ(track2.start_time, 10);
+    ASSERT_EQ(track2.stop_time, 20);
+}
+
+
 TEST(PythonComponentHandleTest, TestImageJob) {
     PythonComponentHandle py_component = get_test_component();
     MPFImageJob job("Test Job Name", "path/to/media",
@@ -187,20 +204,7 @@ TEST(PythonComponentHandleTest, TestAudioJob) {
                     { job_echo_pair }, { media_echo_pair });
 
     std::vector<MPFAudioTrack> results = py_component.GetDetections(job);
-
-    ASSERT_EQ(results.size(), 2);
-
-    const auto &track1 = results.at(0);
-    assert_has_echo_properties(track1.detection_properties);
-    ASSERT_FLOAT_EQ(track1.confidence, 0.75);
-    ASSERT_EQ(track1.start_time, 0);
-    ASSERT_EQ(track1.stop_time, 10);
-
-    const auto &track2 = results.at(1);
-    assert_has_echo_properties(track2.detection_properties);
-    ASSERT_FLOAT_EQ(track2.confidence, 1);
-    ASSERT_EQ(track2.start_time, 10);
-    ASSERT_EQ(track2.stop_time, 20);
+    assert_echo_audio_tracks(results);
 }
 
 
@@ -223,6 +227,12 @@ TEST(PythonComponentHandleTest, TestGenericJob) {
     assert_has_echo_properties(track2.detection_properties);
 }
 
+void assert_audio_tracks_equal(const MPFAudioTrack &track1, const MPFAudioTrack &track2) {
+    ASSERT_EQ(track1.start_time, track2.start_time);
+    ASSERT_EQ(track1.stop_time, track2.stop_time);
+    ASSERT_FLOAT_EQ(track1.confidence, track2.confidence);
+    ASSERT_EQ(track1.detection_properties, track2.detection_properties);
+}
 
 TEST(PythonComponentHandleTest, TestAudioFeedForward) {
     PythonComponentHandle py_component = get_test_component();
@@ -236,12 +246,25 @@ TEST(PythonComponentHandleTest, TestAudioFeedForward) {
 
     const auto &returned_track = results.at(0);
 
-    ASSERT_EQ(ff_track.start_time, returned_track.start_time);
-    ASSERT_EQ(ff_track.stop_time, returned_track.stop_time);
-    ASSERT_FLOAT_EQ(ff_track.confidence, returned_track.confidence);
-    ASSERT_EQ(ff_track.detection_properties, returned_track.detection_properties);
+    assert_audio_tracks_equal(ff_track, returned_track);
 }
 
+TEST(PythonComponentHandleTest, TestAllAudioTracksFeedForward) {
+    PythonComponentHandle py_component = get_test_component();
+
+    MPFAudioTrack ff_track1(1, 2, .75, { {"prop1_1", "val1_1"}, {"prop2_1", "val2_1"} });
+    MPFAudioTrack ff_track2(1, 2, .75, { {"prop1_2", "val1_2"}, {"prop2_2", "val2_2"} });
+    MPFAllAudioTracksJob job("Test Job", "path/to/media", 0, 100, {ff_track1, ff_track2}, 
+                            { { "job prop 1" , "job val 1" }, job_echo_pair },
+                            { { "media prop 1" , "media val 1" }, media_echo_pair });
+
+    std::vector<MPFAudioTrack> results = py_component.GetDetections(job);
+
+    ASSERT_EQ(results.size(), 4);
+    assert_audio_tracks_equal(ff_track1, results.at(0));
+    assert_audio_tracks_equal(ff_track2, results.at(1));
+    assert_echo_audio_tracks({results.at(2), results.at(3)});
+}
 
 void assert_image_locations_equal(const MPFImageLocation &loc1, const MPFImageLocation &loc2) {
     ASSERT_EQ(loc1.x_left_upper, loc2.x_left_upper);

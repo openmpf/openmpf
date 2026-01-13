@@ -60,9 +60,15 @@ namespace MPF::COMPONENT::ProtobufResponseUtil {
             }
             case MPFDetectionDataType::AUDIO: {
                 auto audio_response = detection_response.mutable_audio_response();
-                const auto& audio_job = std::get<MPFAudioJob>(context.job);
-                audio_response->set_start_time(audio_job.start_time);
-                audio_response->set_stop_time(audio_job.stop_time);
+                if (std::holds_alternative<MPFAudioJob>(context.job)) {
+                    const auto& audio_job = std::get<MPFAudioJob>(context.job);
+                    audio_response->set_start_time(audio_job.start_time);
+                    audio_response->set_stop_time(audio_job.stop_time);
+                } else {
+                    const auto& audio_job = std::get<MPFAllAudioTracksJob>(context.job);
+                    audio_response->set_start_time(audio_job.start_time);
+                    audio_response->set_stop_time(audio_job.stop_time);
+                }
                 break;
             }
             default: {
@@ -164,9 +170,15 @@ namespace MPF::COMPONENT::ProtobufResponseUtil::detail {
             const std::vector<MPFAudioTrack>& tracks,
             mpf_buffers::DetectionResponse& response) {
         auto audio_response = response.mutable_audio_response();
-        const auto& audio_job = std::get<MPFAudioJob>(context.job);
-        audio_response->set_start_time(audio_job.start_time);
-        audio_response->set_stop_time(audio_job.stop_time);
+        if (std::holds_alternative<MPFAudioJob>(context.job)) {
+            const auto& audio_job = std::get<MPFAudioJob>(context.job);
+            audio_response->set_start_time(audio_job.start_time);
+            audio_response->set_stop_time(audio_job.stop_time);
+        } else {
+            const auto& audio_job = std::get<MPFAllAudioTracksJob>(context.job);
+            audio_response->set_start_time(audio_job.start_time);
+            audio_response->set_stop_time(audio_job.stop_time);
+        }
         for (const auto &track : tracks) {
             auto pb_track = audio_response->add_audio_tracks();
             pb_track->set_start_time(track.start_time);

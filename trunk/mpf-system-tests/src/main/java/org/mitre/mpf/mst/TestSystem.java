@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -90,6 +89,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.PostConstruct;
+
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
 
@@ -147,18 +148,22 @@ public abstract class TestSystem {
     public TestWatcher testInfoMethodRule = testInfoLoggerClassRule.methodRule();
 
 
+    public static boolean initialized = false;
     private OutputChecker outputChecker = new OutputChecker(errorCollector);
     private Set<Long> completedJobs = new HashSet<>();
     private Object lock = new Object();
 
 
-    @BeforeClass
-    public static void initAll() throws Exception {
-        log.info("Sleeping for {} milliseconds before starting the tests to give components time to register", INIT_TIME_MILLIS);
-        try {
-            Thread.sleep(INIT_TIME_MILLIS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    @PostConstruct
+    public void initAll() throws Exception {
+        if (!initialized) {
+            log.info("Sleeping for {} milliseconds before starting the tests to give components time to register", INIT_TIME_MILLIS);
+            try {
+                Thread.sleep(INIT_TIME_MILLIS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            initialized = true;
         }
     }
 

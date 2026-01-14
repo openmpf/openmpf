@@ -141,7 +141,18 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     @Test(timeout = 4*MINUTES, expected = InvalidPipelineException.class)
     public void testBadPipeline() throws Exception {
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
-        runPipelineOnMedia("X", media);
+        var jobRequest = new JobCreationRequest(
+                media,
+                Map.of(),
+                Map.of(),
+                UUID.randomUUID().toString(),
+                "X",
+                null,
+                true,
+                4,
+                null,
+                null);
+        jobRequestService.run(jobRequest).jobId();
     }
 
     @Test(timeout = 8*MINUTES)

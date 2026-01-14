@@ -53,6 +53,7 @@ import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -70,6 +71,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -112,6 +114,13 @@ public abstract class TestSystem {
     }
 
     private static final Logger log = LoggerFactory.getLogger(TestSystem.class);
+
+    protected static RetryTemplate INVALID_PIPELINE_RETRY = RetryTemplate
+            .builder()
+            .exponentialBackoff(200, 2, 30_000)
+            .withinMillis(2 * MINUTES)
+            .retryOn(InvalidPipelineException.class)
+            .build();
 
 
     @Autowired
@@ -308,7 +317,8 @@ public abstract class TestSystem {
     }
 
     protected long runJob(JobCreationRequest jobRequest) {
-        long jobRequestId = jobRequestService.run(jobRequest).jobId();
+        long jobRequestId = INVALID_PIPELINE_RETRY.execute(
+                ctx -> jobRequestService.run(jobRequest).jobId());
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }

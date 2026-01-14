@@ -118,6 +118,8 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void runMogMotionPreprocessingFaceDetectionMarkup() throws Exception {
         runSystemTest("OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR AND MARKUP) PIPELINE",
                 "output/motion/runMogMotionPreprocessingFaceDetectionMarkup.json",
+                Map.of(),
+                Map.of("SUPPRESS_TRACKS", "false"),
                 "/samples/person/video_02.mp4");
     }
 
@@ -360,7 +362,8 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                     null,
                     null);
 
-                jobRequestId = jobRequestService.run(jobRequest).jobId();
+                jobRequestId = INVALID_PIPELINE_RETRY.execute(
+                    ctx -> jobRequestService.run(jobRequest).jobId());
                 completed = waitFor(jobRequestId); // blocking
             } catch (Exception exception) {
                 log.error(String.format("Failed to run job %d due to an exception.", jobRequestId), exception);

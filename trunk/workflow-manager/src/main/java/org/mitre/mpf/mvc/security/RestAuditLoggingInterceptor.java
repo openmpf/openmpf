@@ -70,6 +70,7 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
 
         var method = request.getMethod();
         var uri = request.getRequestURI();
+        var requestString = request.getQueryString();
 
         if (response == null) {
             throw new IllegalStateException("REST Response is null");
@@ -85,6 +86,7 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(uri)
+                .withUriQueryString(requestString)
                 .error(err);
         }
         else {
@@ -92,6 +94,7 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
+                .withUriQueryString(requestString)
                 .allowed(eventId.message + " succeeded");
         }
     }

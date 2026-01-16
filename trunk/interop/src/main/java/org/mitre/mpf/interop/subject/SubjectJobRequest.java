@@ -62,4 +62,9 @@ public record SubjectJobRequest(
 
         Optional<String> externalId) {
 
+    public SubjectJobRequest {
+        if (jobProperties == null) {
+            jobProperties = Map.of();
+        }
+    }
 }

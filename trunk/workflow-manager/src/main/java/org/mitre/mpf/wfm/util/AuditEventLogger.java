@@ -77,12 +77,13 @@ public class AuditEventLogger {
             int eid,
             String user,
             String uri,
+            String uriQueryString,
             String msg,
             String bucket,
             String objectKey) {
 
         var eventRecord = new LogAuditEventRecord(
-                Instant.now(), eid, tag, "openmpf", user, op, res, uri, bucket, objectKey, msg);
+                Instant.now(), eid, tag, "openmpf", user, op, res, uri, uriQueryString, bucket, objectKey, msg);
         writeToLogger(eventRecord);
         return this;
     }
@@ -154,6 +155,9 @@ public class AuditEventLogger {
         public AuditEventBuilder withUri(String uri, Object... formatArgs) {
             return this;
         }
+        public AuditEventBuilder withUriQueryString(String uriQueryString) {
+            return this;
+        }
 
         public AuditEventBuilder withBucket(String bucket) {
             return this;
@@ -187,6 +191,8 @@ public class AuditEventLogger {
 
         private String _uri;
 
+        private String _uriQueryString;
+
         private String _bucket;
 
         private String _objectKey;
@@ -218,6 +224,11 @@ public class AuditEventLogger {
             _uri = formatArgs != null && formatArgs.length > 0
                     ? uri.formatted(formatArgs)
                     : uri;
+            return this;
+        }
+        @Override
+        public AuditEventBuilder withUriQueryString(String uriQueryString) {
+            _uriQueryString = uriQueryString;
             return this;
         }
 
@@ -261,7 +272,7 @@ public class AuditEventLogger {
                     .filter(s -> !s.isEmpty())
                     .orElseGet(() -> getCurrentLoggedInUser());
 
-            log(_tagType, _opType, resType, _eventId, user, _uri, formattedMessage, _bucket, _objectKey);
+            log(_tagType, _opType, resType, _eventId, user, _uri, _uriQueryString, formattedMessage, _bucket, _objectKey);
         }
     }
 }

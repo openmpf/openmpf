@@ -33,6 +33,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -70,7 +74,14 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
 
         var method = request.getMethod();
         var uri = request.getRequestURI();
-        var requestString = request.getQueryString();
+        String requestString = request.getQueryString();
+        if (requestString != null && !requestString.isEmpty()) {
+            try {
+                requestString = URLDecoder.decode(requestString, StandardCharsets.UTF_8.name());
+            } catch (UnsupportedEncodingException e) {
+                // Don't try to decode if there is an error, just let it go
+            }
+        }
 
         if (response == null) {
             throw new IllegalStateException("REST Response is null");

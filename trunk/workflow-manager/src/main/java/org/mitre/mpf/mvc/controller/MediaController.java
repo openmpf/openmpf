@@ -31,6 +31,7 @@ import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.ServerMediaService;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -71,6 +72,9 @@ public class MediaController {
 
     @Autowired
     private ServerMediaService serverMediaService;
+
+    @Autowired
+    private AuditEventLogger _auditEventLogger;
 
     @RequestMapping(value = "/upload/max-file-upload-cnt", method = RequestMethod.GET)
     @ResponseBody
@@ -183,15 +187,19 @@ public class MediaController {
 
 
     @RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
-    @RequestEventId(value = LogAuditEventRecord.EventId.UPLOAD_MEDIA)
     public ResponseEntity<?> saveMediaFileUpload(
             @RequestParam("desiredpath") String desiredPathParam,
             @RequestParam("file") MultipartFile uploadedFile,
             ServletRequest servletRequest) throws IOException {
-
+        var eventId = LogAuditEventRecord.EventId.UPLOAD_MEDIA;
         if (desiredPathParam == null || desiredPathParam.isBlank()) {
             var errorMsg = "desiredpath was not provided";
             log.error("File upload failed due to: " + errorMsg);
+            _auditEventLogger.createEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri("/uploadFile")
+                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.BAD_REQUEST);
         }
 
@@ -202,12 +210,22 @@ public class MediaController {
                     "Desired path was not under the remote media directory \"%s\".",
                     remoteMediaDirectory.toString());
             log.error("File upload failed due to: " + errorMsg);
+            _auditEventLogger.createEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri("/uploadFile")
+                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.FORBIDDEN);
         }
 
         if (!desiredPath.exists()) {
             var errorMsg = String.format("Desired path \"%s\" does not exist.", desiredPath.toString());
             log.error("File upload failed due to: " + errorMsg);
+            _auditEventLogger.createEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri("/uploadFile")
+                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.CONFLICT);
         }
 
@@ -215,6 +233,11 @@ public class MediaController {
         if (originalFileName == null || originalFileName.isBlank()) {
             var errorMsg = "The filename was empty during upload of the MultipartFile.";
             log.error("File upload failed due to: " + errorMsg);
+            _auditEventLogger.createEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri("/uploadFile")
+                .error(errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.BAD_REQUEST);
         }
 
@@ -223,8 +246,14 @@ public class MediaController {
         uploadedFile.transferTo(targetFile);
 
         // Log the file upload
-        log.info("Completed upload and write of {} to {}", originalFileName,
+        String msg = String.format("Completed upload and write of %s to %s", originalFileName,
                  targetFile.getAbsolutePath());
+        log.info(msg);
+            _auditEventLogger.createEvent()
+                .withSecurityTag()
+                .withEventId(eventId.success)
+                .withUri("/uploadFile")
+                .allowed(eventId.message + " succeeded: " + msg);
 
         serverMediaService.addFileToCache(desiredPathParam, targetFile,
                                           servletRequest.getServletContext());

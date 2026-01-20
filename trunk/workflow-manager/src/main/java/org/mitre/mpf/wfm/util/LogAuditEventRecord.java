@@ -47,6 +47,8 @@ public record LogAuditEventRecord(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String uri,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    String uriQueryString,
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String bucket,

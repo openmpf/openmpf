@@ -89,6 +89,11 @@ ByteArray JniHelper::GetByteArray(jbyteArray byte_array) {
     return result;
 }
 
+jlongArray JniHelper::ToJLongArray(jsize length, const long* buf) {
+    auto* jarray = callJni(&JNIEnv::NewLongArray, length);
+    callJniVoid(&JNIEnv::SetLongArrayRegion, jarray, 0, length, buf);
+    return jarray;
+}
 
 std::unique_ptr<jstring, JStringDeleter> JniHelper::ToJString(const std::string &inString) {
     return {

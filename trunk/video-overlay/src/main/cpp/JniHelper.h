@@ -108,7 +108,7 @@ public:
 
     ByteArray GetByteArray(jbyteArray byte_array);
 
-    jlongArray ToJLongArray(jsize length, const long* buf);
+    jlongArray ToJLongArray(std::size_t length, const long* buf);
 
 private:
     JNIEnv * const env_;

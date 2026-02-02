@@ -43,17 +43,19 @@ namespace {
 
     template <typename T, typename TDel>
     auto makeAvObj(T* data, TDel deleter) {
-        auto del_wrapper = [deleter = std::move(deleter)](T* data) {
+        // unique_ptr expects the deleter function to accept a T*, but the free functions from
+        // libAv usually accept T**.
+        auto deleterAdapter = [deleter = std::move(deleter)](T* data) {
             deleter(&data);
         };
-        return std::unique_ptr<T, decltype(del_wrapper)>{data, std::move(del_wrapper)};
+        return std::unique_ptr<T, decltype(deleterAdapter)>{data, std::move(deleterAdapter)};
     }
 
 
     std::string avErrorToString(int av_error_code) {
-        char error_buf[AV_ERROR_MAX_STRING_SIZE];
-        av_strerror(av_error_code, error_buf, sizeof(error_buf));
-        return error_buf;
+        char errorMsgBuf[AV_ERROR_MAX_STRING_SIZE];
+        av_strerror(av_error_code, errorMsgBuf, sizeof(errorMsgBuf));
+        return errorMsgBuf;
     }
 
     template <typename TFunc, typename... Args>
@@ -89,8 +91,11 @@ namespace {
         }
     }
 
-    unsigned int getVideoStreamIdx(const AVFormatContext& formatCtx) {
-        for (unsigned int i = 0; i < formatCtx.nb_streams; i++) {
+
+    using num_streams_t = decltype(AVFormatContext::nb_streams);
+
+    num_streams_t getVideoStreamIdx(const AVFormatContext& formatCtx) {
+        for (num_streams_t i = 0; i < formatCtx.nb_streams; i++) {
             if (formatCtx.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 return i;
             }
@@ -98,8 +103,8 @@ namespace {
         throw std::runtime_error{"Could not find video stream"};
     }
 
-    void discardOtherStreams(const AVFormatContext& formatCtx, unsigned int streamToKeep) {
-        for (unsigned int i = 0; i < formatCtx.nb_streams; i++) {
+    void discardOtherStreams(const AVFormatContext& formatCtx, num_streams_t streamToKeep) {
+        for (num_streams_t i = 0; i < formatCtx.nb_streams; i++) {
             if (i != streamToKeep) {
                 formatCtx.streams[i]->discard = AVDISCARD_ALL;
             }

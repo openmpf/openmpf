@@ -25,8 +25,6 @@
  ******************************************************************************/
 
 #include <exception>
-#include <limits>
-#include <stdexcept>
 
 #include <jni.h>
 
@@ -34,26 +32,13 @@
 #include "PtsUtil.h"
 
 
-namespace {
-    constexpr auto MAX_JAVA_ARRAY_SIZE = static_cast<std::size_t>(std::numeric_limits<jint>::max());
-
-    jint toJavaArraySize(std::size_t size) {
-        if (size <= MAX_JAVA_ARRAY_SIZE) {
-            return static_cast<jint>(size);
-        }
-        throw std::runtime_error{"Too big for Java array."};
-    }
-} // end anonymous namespace
-
-
-extern "C" JNIEXPORT jobject JNICALL Java_org_mitre_mpf_pts_PtsExtractor_getPtsNative (
+extern "C" JNIEXPORT jobject JNICALL Java_org_mitre_mpf_pts_PtsExtractor_getPtsNative(
         JNIEnv *env, jclass, jstring videoPath) {
     JniHelper jni(env);
     try {
         auto ptsResult = extractPts(jni.ToStdString(videoPath).c_str());
 
-        auto* ptsArray = jni.ToJLongArray(
-            toJavaArraySize(ptsResult.values.size()), ptsResult.values.data());
+        auto* ptsArray = jni.ToJLongArray(ptsResult.values.size(), ptsResult.values.data());
 
         auto* clzPtsResult = jni.FindClass("org/mitre/mpf/pts/PtsResult");
         auto* clzPtsResult_fnConstruct = jni.GetMethodID(clzPtsResult, "<init>", "([JZ)V");

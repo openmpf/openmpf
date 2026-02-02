@@ -88,8 +88,11 @@ public class RestAuditLoggingInterceptor implements HandlerInterceptor {
         }
         int responseStatus = response.getStatus();
 
-        if (responseStatus >= 400) {
-            String err = eventId.message + " failed with response code = " + String.valueOf(responseStatus);
+        if (ex != null || responseStatus >= 400) {
+            String err = eventId.message + " failed";
+            if (responseStatus >= 400) {
+                err = err + " with response code = " + String.valueOf(responseStatus);
+            }
             if (ex != null) {
                 err = err + ": " + ex.getMessage();
             }

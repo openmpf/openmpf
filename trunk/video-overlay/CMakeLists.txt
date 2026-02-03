@@ -71,6 +71,8 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavcodec
     libavutil
 )
+
+# Add standalone executable primarily for running Valgrind on the PTS extraction code.
 add_executable(extract_pts ${JNI_SRC_DIR}/extract_pts.cpp ${JNI_SRC_DIR}/PtsUtil.cpp)
 target_link_libraries(extract_pts PUBLIC PkgConfig::LIBAV)
 

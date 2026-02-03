@@ -112,7 +112,7 @@ namespace {
     }
 
 
-    PtsResult extractInternal(AVFormatContext& formatCtx, unsigned int videoStreamIdx) {
+    PtsResult extractInternal(AVFormatContext& formatCtx, num_streams_t videoStreamIdx) {
         std::vector<long> ptsValues;
         bool isMissingPts = false;
         auto packet = makeAvObj(av_packet_alloc(), av_packet_free);
@@ -162,6 +162,9 @@ PtsResult extractPts(const char* videoPath) {
     }
 
     auto codecCtx = makeAvObj(avcodec_alloc_context3(codec), avcodec_free_context);
+    if (codecCtx == nullptr) {
+        throw std::runtime_error{"Failed to allocate codec context."};
+    }
     checkAvCall(avcodec_parameters_to_context,
             codecCtx.get(), formatCtx->streams[videoStreamIdx]->codecpar);
     checkAvCall(avcodec_open2, codecCtx.get(), codec, nullptr);

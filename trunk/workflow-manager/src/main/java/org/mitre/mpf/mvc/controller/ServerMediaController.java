@@ -182,8 +182,7 @@ public class ServerMediaController {
                                                           @RequestParam(value="draw", required=false) int draw,
                                                           @RequestParam(value="start", required=false) int start,
                                                           @RequestParam(value="length", required=false) int length,
-                                                          @RequestParam(value="search", required=false) String search,
-                                                          HttpServletRequest HttpRequest){
+                                                          @RequestParam(value="search", required=false) String search){
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
         var eventId = LogAuditEventRecord.EventId.VIEW_MEDIA;
         File dir = new File(fullPath);
@@ -270,7 +269,7 @@ public class ServerMediaController {
         long internalJobId = _propertiesUtil.getJobIdFromExportedId(jobId);
         JobRequest jobRequest = _jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
-            String errString = String.format("Media for job id %d download failed. Invalid job id.", jobId);
+            String errString = String.format("Media for job id %s download failed. Invalid job id.", jobId);
             log.error(errString);
             _auditEventLogger.readEvent()
                 .withSecurityTag()

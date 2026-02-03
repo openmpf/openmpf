@@ -297,7 +297,7 @@ public class MarkupController {
                     .withSecurityTag()
                     .withEventId(eventId.success)
                     .withUri(requestUri)
-                    .allowed(eventId.message + " succeeded for file %s", markupResult.getMarkupUri());
+                    .allowed(eventId.message + " succeeded for file " + markupResult.getMarkupUri());
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
             catch (StorageException e) {

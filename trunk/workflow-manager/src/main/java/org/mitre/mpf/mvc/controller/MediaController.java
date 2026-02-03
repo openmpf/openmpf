@@ -33,7 +33,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.LogAuditEventRecord;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -259,7 +258,7 @@ public class MediaController {
         uploadedFile.transferTo(targetFile);
 
         // Log the file upload
-        String msg = String.format("Completed upload and write of %s to %s", originalFileName,
+        log.info("Completed upload and write of {} to {}", originalFileName,
                  targetFile.getAbsolutePath());
         auditEventLogger.createEvent()
             .withSecurityTag()

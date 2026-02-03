@@ -284,7 +284,7 @@ public class MarkupController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(requestUri)
-                .error(eventId.message + "failed: " + errString);
+                .error(eventId.message + " failed: " + errString);
             return ResponseEntity.notFound().build();
         }
 

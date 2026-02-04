@@ -37,7 +37,10 @@ set(OCV_JNI_SRC ${JNI_SRC_DIR}/BoundingBoxImageHandle.h ${JNI_SRC_DIR}/BoundingB
                 ${JNI_SRC_DIR}/BoundingBoxVideoHandle.h ${JNI_SRC_DIR}/BoundingBoxVideoHandle.cpp
                 ${JNI_SRC_DIR}/BoundingBoxWriter.cpp
                 ${JNI_SRC_DIR}/FrameExtractor.cpp
-                ${JNI_SRC_DIR}/ResolutionConfig.h)
+                ${JNI_SRC_DIR}/ResolutionConfig.h
+                ${JNI_SRC_DIR}/PtsExtractor.cpp
+                ${JNI_SRC_DIR}/PtsUtil.cpp
+                ${JNI_SRC_DIR}/PtsUtil.h)
 find_package(OpenCV 4.9.0 EXACT REQUIRED PATHS /opt/opencv-4.9.0 COMPONENTS opencv_core opencv_freetype)
 
 find_package(mpfComponentInterface REQUIRED)
@@ -62,6 +65,18 @@ install(TARGETS mpfopencvjni
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+    libavformat
+    libavcodec
+    libavutil
+)
+
+# Add standalone executable primarily for running Valgrind on the PTS extraction code.
+add_executable(extract_pts ${JNI_SRC_DIR}/extract_pts.cpp ${JNI_SRC_DIR}/PtsUtil.cpp)
+target_link_libraries(extract_pts PUBLIC PkgConfig::LIBAV)
+
+
 # Build the HEIF JNI library used by HeifConverter.
 set(HEIF_JNI_SRC ${JNI_SRC_DIR}/HeifConverter.cpp)
 find_package(PNG)
@@ -79,4 +94,3 @@ install(TARGETS mpfheifjni
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-

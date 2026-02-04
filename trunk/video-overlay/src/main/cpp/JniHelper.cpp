@@ -26,6 +26,18 @@
 
 #include "JniHelper.h"
 
+#include <limits>
+
+namespace {
+    jint toJavaArraySize(std::size_t size) {
+        static constexpr std::size_t maxJavaArraySize = std::numeric_limits<jint>::max();
+        if (size <= maxJavaArraySize) {
+            return static_cast<jint>(size);
+        }
+        throw std::runtime_error{"Too big for Java array."};
+    }
+}
+
 
 JniHelper::JniHelper(JNIEnv *env)
     : env_(env) {
@@ -89,6 +101,12 @@ ByteArray JniHelper::GetByteArray(jbyteArray byte_array) {
     return result;
 }
 
+jlongArray JniHelper::ToJLongArray(std::size_t length, const long* buf) {
+    jint javaSize = toJavaArraySize(length);
+    auto* jarray = callJni(&JNIEnv::NewLongArray, javaSize);
+    callJniVoid(&JNIEnv::SetLongArrayRegion, jarray, 0, javaSize, buf);
+    return jarray;
+}
 
 std::unique_ptr<jstring, JStringDeleter> JniHelper::ToJString(const std::string &inString) {
     return {

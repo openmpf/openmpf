@@ -108,6 +108,8 @@ public:
 
     ByteArray GetByteArray(jbyteArray byte_array);
 
+    jlongArray ToJLongArray(std::size_t length, const long* buf);
+
 private:
     JNIEnv * const env_;
 
@@ -121,7 +123,6 @@ private:
         CheckException();
         return result;
     }
-
 
     template <typename Method, typename... Args>
     void callJniVoid(Method method, Args... args) {

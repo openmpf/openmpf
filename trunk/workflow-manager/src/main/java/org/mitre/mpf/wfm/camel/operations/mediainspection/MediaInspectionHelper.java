@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
@@ -142,11 +143,11 @@ public class MediaInspectionHelper {
 
         try {
             Path localPath = media.getLocalPath();
-
-            try (InputStream inputStream = Files.newInputStream(localPath)) {
+            try {
                 LOG.debug("Calculating hash for '{}'.", localPath);
-                sha = DigestUtils.sha256Hex(inputStream);
-            } catch (IOException ioe) {
+                sha = getSha256(localPath);
+            }
+            catch (IOException ioe) {
                 String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException: "
                         + ioe;
                 _inProgressJobs.addError(jobId, mediaId, IssueCodes.ARTIFACT_EXTRACTION, errorMessage);
@@ -436,5 +437,17 @@ public class MediaInspectionHelper {
             parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
         }
         return metadata;
+    }
+
+    private static String getSha256(Path path) throws IOException {
+        var digest = DigestUtils.getSha256Digest();
+        try (var inputStream = Files.newInputStream(path)) {
+            var buf = new byte[8192];
+            int numRead;
+            while ((numRead = inputStream.read(buf)) != -1) {
+                digest.update(buf, 0, numRead);
+            }
+        }
+        return Hex.encodeHexString(digest.digest());
     }
 }

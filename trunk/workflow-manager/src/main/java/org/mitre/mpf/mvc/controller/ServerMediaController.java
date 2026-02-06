@@ -152,7 +152,7 @@ public class ServerMediaController {
                                           @RequestParam(required = false, defaultValue = "true") boolean useCache) {
         var eventId = LogAuditEventRecord.EventId.GET_DIRECTORY_LISTING;
         File dir = new File(fullPath);
-        if (!dir.isDirectory() || !fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(eventId.fail)
@@ -186,7 +186,7 @@ public class ServerMediaController {
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
         var eventId = LogAuditEventRecord.EventId.GET_DIRECTORY_LISTING;
         File dir = new File(fullPath);
-        if (!dir.isDirectory() || !fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(eventId.fail)
@@ -231,7 +231,7 @@ public class ServerMediaController {
                         HttpServletRequest request) {
         var eventId = LogAuditEventRecord.EventId.VIEW_MEDIA;
         var dir = new File(nodeFullPath);
-        if (!dir.isDirectory() || !nodeFullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())){
+        if (!dir.isDirectory() && nodeFullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())){
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(eventId.fail)

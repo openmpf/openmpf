@@ -89,7 +89,7 @@ public class MediaController {
                                                 @RequestParam(value="desiredpath", required=true) String desiredpath,
                                                 HttpServletResponse response)
                                                 throws WfmProcessingException {
-        log.debug("URL Upload to Directory:"+desiredpath+" urls:"+urls.length);
+        log.debug("URL Upload to Directory: \"" + desiredpath + "\" urls: " + urls.length);
         Map<String, String> urlResultMap = new HashMap<>();
         if(desiredpath == null){
             String err = "Desired path for media upload is null.";
@@ -99,7 +99,7 @@ public class MediaController {
         String remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
         //verify the desired path
         File desiredPath = new File(desiredpath);
-        if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
+        if (!desiredPath.exists() && desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
             String err = String.format("Desired path \"%s\" for media upload is invalid or does not exist", desiredPath);
             log.error(err);
             return new ResponseEntity<>(urlResultMap,HttpStatus.INTERNAL_SERVER_ERROR);

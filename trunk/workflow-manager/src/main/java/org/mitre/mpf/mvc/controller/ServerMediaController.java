@@ -230,15 +230,6 @@ public class ServerMediaController {
     public Object serve(@RequestParam("nodeFullPath") String nodeFullPath,
                         HttpServletRequest request) {
         var eventId = LogAuditEventRecord.EventId.VIEW_MEDIA;
-        var dir = new File(nodeFullPath);
-        if (!dir.isDirectory() && nodeFullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())){
-            _auditEventLogger.readEvent()
-                .withSecurityTag()
-                .withEventId(eventId.fail)
-                .withUri(request.getRequestURI())
-                .error(eventId.message + " failed for path \"" + dir + "\"");
-            return null; // security check
-        }
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
             _auditEventLogger.readEvent()

@@ -243,10 +243,10 @@ public class MarkupController {
                     .withSecurityTag()
                     .withEventId(eventId.success)
                     .withUri(requestUri)
-                    .allowed(eventId.message + " succeeded for " + markupResult.getMarkupUri());
+                    .allowed(eventId.message + " succeeded for \"" + markupResult.getMarkupUri() + "\"");
                 return new PathResource(localPath.get());
             }
-            String errString = String.format("Markup with id %d download failed. Invalid path: %s", id, localPath);
+            String errString = String.format("Markup with id %d download failed. Invalid path: \"%s\"", id, localPath);
             log.error(errString);
             _auditEventLogger.readEvent()
                 .withSecurityTag()
@@ -297,7 +297,7 @@ public class MarkupController {
                     .withSecurityTag()
                     .withEventId(eventId.success)
                     .withUri(requestUri)
-                    .allowed(eventId.message + " succeeded for file " + markupResult.getMarkupUri());
+                    .allowed(eventId.message + " succeeded for file \"" + markupResult.getMarkupUri() + "\"");
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
             catch (StorageException e) {
@@ -317,7 +317,7 @@ public class MarkupController {
             .withSecurityTag()
             .withEventId(eventId.success)
             .withUri(requestUri)
-            .allowed(eventId.message + " succeeded for markup file " + markupResult.getMarkupUri());
+            .allowed(eventId.message + " succeeded for markup file \"" + markupResult.getMarkupUri() + "\"");
         return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
 

@@ -132,7 +132,7 @@ public class ServerMediaController {
     }
 
     @GetMapping("/server/get-all-directories")
-    @RequestEventId(value = LogAuditEventRecord.EventId.VIEW_MEDIA)
+    @RequestEventId(value = LogAuditEventRecord.EventId.GET_DIRECTORY_LISTING)
     public DirectoryTreeNode getAllDirectories(HttpServletRequest request, @RequestParam(required = false) Boolean useUploadRoot,
                                                @RequestParam(required = false, defaultValue = "true") boolean useCache){
         String nodePath = _propertiesUtil.getServerMediaTreeRoot();
@@ -150,14 +150,14 @@ public class ServerMediaController {
     @GetMapping("/server/get-all-files")
     public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath,
                                           @RequestParam(required = false, defaultValue = "true") boolean useCache) {
-        var eventId = LogAuditEventRecord.EventId.VIEW_MEDIA;
+        var eventId = LogAuditEventRecord.EventId.GET_DIRECTORY_LISTING;
         File dir = new File(fullPath);
-        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+        if (!dir.isDirectory() || !fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(request.getRequestURI())
-                .error(eventId.message + " failed for path " + dir);
+                .error(eventId.message + " failed for path \"" + dir + "\"");
             return null; // security check
         }
 
@@ -167,7 +167,7 @@ public class ServerMediaController {
             .withSecurityTag()
             .withEventId(eventId.success)
             .withUri(request.getRequestURI())
-            .allowed(eventId.message + " succeeded for path " + dir);
+            .allowed(eventId.message + " succeeded for path \"" + dir + "\"");
         return new ServerMediaListing(mediaFiles);
     }
 
@@ -184,14 +184,14 @@ public class ServerMediaController {
                                                           @RequestParam(value="length", required=false) int length,
                                                           @RequestParam(value="search", required=false) String search){
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
-        var eventId = LogAuditEventRecord.EventId.VIEW_MEDIA;
+        var eventId = LogAuditEventRecord.EventId.GET_DIRECTORY_LISTING;
         File dir = new File(fullPath);
-        if (!dir.isDirectory() && fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
+        if (!dir.isDirectory() || !fullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())) {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(request.getRequestURI())
-                .error(eventId.message + " failed for path " + dir);
+                .error(eventId.message + " failed for path \"" + dir + "\"");
             return null; // security check
         }
 
@@ -221,7 +221,7 @@ public class ServerMediaController {
             .withSecurityTag()
             .withEventId(eventId.success)
             .withUri(request.getRequestURI())
-            .allowed(eventId.message + " succeeded for path " + dir);
+            .allowed(eventId.message + " succeeded for path \"" + dir + "\"");
         return new ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end));
     }
 
@@ -230,13 +230,22 @@ public class ServerMediaController {
     public Object serve(@RequestParam("nodeFullPath") String nodeFullPath,
                         HttpServletRequest request) {
         var eventId = LogAuditEventRecord.EventId.VIEW_MEDIA;
+        var dir = new File(nodeFullPath);
+        if (!dir.isDirectory() || !nodeFullPath.startsWith(_propertiesUtil.getServerMediaTreeRoot())){
+            _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri(request.getRequestURI())
+                .error(eventId.message + " failed for path \"" + dir + "\"");
+            return null; // security check
+        }
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
             _auditEventLogger.readEvent()
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(request.getRequestURI())
-                .allowed(eventId.message + " succeeded for path " + path);
+                .allowed(eventId.message + " succeeded for path \"" + path + "\"");
             return new PathResource(path);
         }
         else {
@@ -244,7 +253,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(request.getRequestURI())
-                .error(eventId.message + " failed: path " + path + " is not readable or does not exist");
+                .error(eventId.message + " failed: path \"" + path + "\" is not readable or does not exist");
             return ResponseEntity.notFound().build();
         }
     }
@@ -262,7 +271,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
-                .allowed(eventId.message + " succeeded for file " + sourceUri.toString());
+                .allowed(eventId.message + " succeeded for file \"" + sourceUri.toString() + "\"");
             return new PathResource(sourceUri);
         }
 
@@ -275,7 +284,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(uri)
-                .error(eventId.message + " failed for file " + sourceUri.toString() + " : " + errString);
+                .error(eventId.message + " failed for file \"" + sourceUri.toString() + "\" : " + errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -291,7 +300,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
-                .allowed(eventId.message + " succeeded for file " + sourceUri.toString());
+                .allowed(eventId.message + " succeeded for file \"" + sourceUri.toString() + "\"");
             return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
         }
 
@@ -302,7 +311,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
-                .allowed(eventId.message + " succeeded for file " + sourceUri.toString());
+                .allowed(eventId.message + " succeeded for file \"" + sourceUri.toString() + "\"");
         return ForwardHttpResponseUtil.createResponseEntity(responseToForward);
     }
 }

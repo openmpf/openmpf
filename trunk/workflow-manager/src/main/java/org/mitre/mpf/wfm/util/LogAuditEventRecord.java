@@ -93,7 +93,7 @@ public record LogAuditEventRecord(
         DOWNLOAD_FILE(506, 4506, "download file"),
         CREATE_FILE(507, 4507, "create file"),
         CREATE_DIRECTORY(508, 4508, "create directory"),
-        VIEW_FILES(509, 4509, "view files"),
+        GET_DIRECTORY_LISTING(509, 4509, "get directory listing"),
         TIES_DB_GET(600, 4600, "TiesDB get"),
         TIES_DB_POST(601, 4601, "TiesDB post"),
         TIES_DB_REPOST(602, 4602, "TiesDB repost"),

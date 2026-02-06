@@ -38,6 +38,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
@@ -55,6 +56,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AuditEventLogger;
 import org.mitre.mpf.wfm.util.ForwardHttpResponseUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -95,6 +97,8 @@ public class MarkupController {
 
     private final HttpClientUtils _httpClientUtils;
 
+    private final AuditEventLogger _auditEventLogger;
+
     @Inject
     MarkupController(
             MarkupResultDao markupResultDao,
@@ -104,7 +108,8 @@ public class MarkupController {
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
             PropertiesUtil propertiesUtil,
             InProgressBatchJobsService inProgressJobs,
-            HttpClientUtils httpClientUtils) {
+            HttpClientUtils httpClientUtils,
+            AuditEventLogger auditEventLogger) {
         _markupResultDao = markupResultDao;
         _jobRequestDao = jobRequestDao;
         _jsonUtils = jsonUtils;
@@ -113,6 +118,7 @@ public class MarkupController {
         _propertiesUtil = propertiesUtil;
         _inProgressJobs = inProgressJobs;
         _httpClientUtils = httpClientUtils;
+        _auditEventLogger = auditEventLogger;
     }
 
     @GetMapping("/markup/get-markup-results-filtered")
@@ -214,20 +220,39 @@ public class MarkupController {
 
 
     @GetMapping("/markup/download")
-    @RequestEventId(value = LogAuditEventRecord.EventId.DOWNLOAD_MARKUP)
-    public Object getFile(@RequestParam("id") long id) throws StorageException, IOException {
+    public Object getFile(@RequestParam("id") long id,
+                          HttpServletRequest httpRequest) throws StorageException, IOException {
+        var eventId = LogAuditEventRecord.EventId.DOWNLOAD_MARKUP;
+        var requestUri = httpRequest.getRequestURI();
         var markupResult = _markupResultDao.findById(id);
         if (markupResult == null) {
-            log.error("Markup with id {} download failed. Invalid id.", id);
+            String errString = String.format("Markup with id %d download failed. Invalid id.", id);
+            log.error(errString);
+            _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri(requestUri)
+                .error(eventId.message + " failed: " + errString);
             return ResponseEntity.notFound().build();
         }
 
         var localPath = IoUtils.toLocalPath(markupResult.getMarkupUri());
         if (localPath.isPresent()) {
             if (Files.exists(localPath.get())) {
+                _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .withEventId(eventId.success)
+                    .withUri(requestUri)
+                    .allowed(eventId.message + " succeeded for \"" + markupResult.getMarkupUri() + "\"");
                 return new PathResource(localPath.get());
             }
-            log.error("Markup with id {} download failed. Invalid path: {}", id, localPath);
+            String errString = String.format("Markup with id %d download failed. Invalid path: \"%s\"", id, localPath);
+            log.error(errString);
+            _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri(requestUri)
+                .error(eventId.message + " failed: " + errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -235,9 +260,14 @@ public class MarkupController {
                 .map(JobRequest::getJob)
                 .map(bytes -> _jsonUtils.deserialize(bytes, BatchJob.class));
         if (job.isEmpty()) {
-            log.error(
-                    "Markup with id {} download failed. Invalid job with id {}.",
+            String errString = String.format("Markup with id %d download failed. Invalid job with id %d.",
                     id, markupResult.getJobId());
+            log.error(errString);
+            _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri(requestUri)
+                .error(eventId.message + " failed: " + errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -247,9 +277,14 @@ public class MarkupController {
                 .filter(m -> m.getId() == markupResult.getMediaId())
                 .findAny();
         if (media.isEmpty()) {
-            log.error(
-                    "Markup with id {} download failed. Invalid media with id {}.",
+            String errString = String.format("Markup with id %d download failed. Invalid media with id %d.",
                     id, markupResult.getMediaId());
+            log.error(errString);
+            _auditEventLogger.readEvent()
+                .withSecurityTag()
+                .withEventId(eventId.fail)
+                .withUri(requestUri)
+                .error(eventId.message + " failed: " + errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -258,16 +293,31 @@ public class MarkupController {
             try {
                 var s3Stream = _s3StorageBackend.getFromS3(
                         markupResult.getMarkupUri(), combinedProperties);
+                _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .withEventId(eventId.success)
+                    .withUri(requestUri)
+                    .allowed(eventId.message + " succeeded for file \"" + markupResult.getMarkupUri() + "\"");
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
             catch (StorageException e) {
                 log.error("Markup with id " + id + " download failed: " + e.getMessage(), e);
+                _auditEventLogger.readEvent()
+                    .withSecurityTag()
+                    .withEventId(eventId.fail)
+                    .withUri(requestUri)
+                    .error(eventId.message + " failed: " + "Markup with id " + id + " failed to download: " + e.getMessage());
                 return ResponseEntity.internalServerError().build();
             }
         }
 
         var request = new HttpGet(markupResult.getMarkupUri());
         var markupResponse = _httpClientUtils.executeRequestSync(request, 0);
+        _auditEventLogger.readEvent()
+            .withSecurityTag()
+            .withEventId(eventId.success)
+            .withUri(requestUri)
+            .allowed(eventId.message + " succeeded for markup file \"" + markupResult.getMarkupUri() + "\"");
         return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
 

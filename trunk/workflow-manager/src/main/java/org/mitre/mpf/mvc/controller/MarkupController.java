@@ -232,7 +232,7 @@ public class MarkupController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(requestUri)
-                .error(eventId.message + " failed: " + errString);
+                .error("%s failed: %s", eventId.message, errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -243,7 +243,7 @@ public class MarkupController {
                     .withSecurityTag()
                     .withEventId(eventId.success)
                     .withUri(requestUri)
-                    .allowed(eventId.message + " succeeded for \"" + markupResult.getMarkupUri() + "\"");
+                    .allowed("%s succeeded for '%s'", eventId.message, markupResult.getMarkupUri());
                 return new PathResource(localPath.get());
             }
             String errString = String.format("Markup with id %d download failed. Invalid path: \"%s\"", id, localPath);
@@ -252,7 +252,7 @@ public class MarkupController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(requestUri)
-                .error(eventId.message + " failed: " + errString);
+                .error("%s failed: %s", eventId.message, errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -267,7 +267,7 @@ public class MarkupController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(requestUri)
-                .error(eventId.message + " failed: " + errString);
+                .error("%s failed: %s", eventId.message, errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -284,7 +284,7 @@ public class MarkupController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(requestUri)
-                .error(eventId.message + " failed: " + errString);
+                .error("%s failed: %s", eventId.message, errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -297,7 +297,7 @@ public class MarkupController {
                     .withSecurityTag()
                     .withEventId(eventId.success)
                     .withUri(requestUri)
-                    .allowed(eventId.message + " succeeded for file \"" + markupResult.getMarkupUri() + "\"");
+                    .allowed("%s succeeded for '%s'", eventId.message, markupResult.getMarkupUri());
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
             catch (StorageException e) {
@@ -306,7 +306,7 @@ public class MarkupController {
                     .withSecurityTag()
                     .withEventId(eventId.fail)
                     .withUri(requestUri)
-                    .error(eventId.message + " failed: " + "Markup with id " + id + " failed to download: " + e.getMessage());
+                    .error("%s failed: Markup with id %d failed to download: %s", eventId.message, id, e.getMessage());
                 return ResponseEntity.internalServerError().build();
             }
         }
@@ -317,7 +317,7 @@ public class MarkupController {
             .withSecurityTag()
             .withEventId(eventId.success)
             .withUri(requestUri)
-            .allowed(eventId.message + " succeeded for markup file \"" + markupResult.getMarkupUri() + "\"");
+            .allowed("%s succeeded for '%s'", eventId.message, markupResult.getMarkupUri());
         return ForwardHttpResponseUtil.createResponseEntity(markupResponse);
     }
 

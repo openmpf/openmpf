@@ -157,7 +157,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(request.getRequestURI())
-                .error(eventId.message + " failed for path \"" + dir + "\"");
+                .error("%s failed for path '%s'", eventId.message, dir.toString());
             return null; // security check
         }
 
@@ -167,7 +167,7 @@ public class ServerMediaController {
             .withSecurityTag()
             .withEventId(eventId.success)
             .withUri(request.getRequestURI())
-            .allowed(eventId.message + " succeeded for path \"" + dir + "\"");
+            .allowed("%s succeeded for path '%s'", eventId.message, dir.toString());
         return new ServerMediaListing(mediaFiles);
     }
 
@@ -191,7 +191,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(request.getRequestURI())
-                .error(eventId.message + " failed for path \"" + dir + "\"");
+                .error("%s failed for path '%s'", eventId.message, dir.toString());
             return null; // security check
         }
 
@@ -221,7 +221,7 @@ public class ServerMediaController {
             .withSecurityTag()
             .withEventId(eventId.success)
             .withUri(request.getRequestURI())
-            .allowed(eventId.message + " succeeded for path \"" + dir + "\"");
+            .allowed("%s succeeded for path '%s'", eventId.message, dir);
         return new ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end));
     }
 
@@ -236,7 +236,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(request.getRequestURI())
-                .allowed(eventId.message + " succeeded for path \"" + path + "\"");
+            .allowed("%s succeeded for path '%s'", eventId.message, path.toString());
             return new PathResource(path);
         }
         else {
@@ -244,7 +244,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(request.getRequestURI())
-                .error(eventId.message + " failed: path \"" + path + "\" is not readable or does not exist");
+                .error("%s failed: path '%s' is not readable or does not exist", eventId.message, path.toString());
             return ResponseEntity.notFound().build();
         }
     }
@@ -262,7 +262,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
-                .allowed(eventId.message + " succeeded for file \"" + sourceUri.toString() + "\"");
+                .allowed("%s succeeded for file '%s'", eventId.message, sourceUri.toString());
             return new PathResource(sourceUri);
         }
 
@@ -275,7 +275,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.fail)
                 .withUri(uri)
-                .error(eventId.message + " failed for file \"" + sourceUri.toString() + "\" : " + errString);
+                .error("%s failed for file '%s' : %s", eventId.message, sourceUri.toString(), errString);
             return ResponseEntity.notFound().build();
         }
 
@@ -291,7 +291,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
-                .allowed(eventId.message + " succeeded for file \"" + sourceUri.toString() + "\"");
+                .allowed("%s succeeded for file '%s'", eventId.message, sourceUri.toString());
             return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
         }
 
@@ -302,7 +302,7 @@ public class ServerMediaController {
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)
-                .allowed(eventId.message + " succeeded for file \"" + sourceUri.toString() + "\"");
+                .allowed("%s succeeded for file '%s'", eventId.message, sourceUri.toString());
         return ForwardHttpResponseUtil.createResponseEntity(responseToForward);
     }
 }

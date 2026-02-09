@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.OptionalLong;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 
 public class TestFrameTimeInfoBuilder {
@@ -92,10 +93,11 @@ public class TestFrameTimeInfoBuilder {
 
     @Test
     public void testVideoWithMissingTimes() {
-        // ffprobe output:
-        // 41
-        // N/A
-        // N/A
+        // ffprobe -select_streams v -show_entries packet=pts,dts -print_format csv=print_section=0
+        // Output:
+        // N/A,0
+        // N/A,20
+        // N/A,41
 
         var fps = new Fraction(223, 12);
         var timeBase = new Fraction(12, 223);
@@ -104,22 +106,18 @@ public class TestFrameTimeInfoBuilder {
                 -1, -1, fps, OptionalLong.empty(), OptionalLong.empty(), 0, timeBase);
         var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(videoPath, ffprobeMetdata, "");
 
-        assertEquals(2206, timeInfo.getTimeMsFromFrame(0));
-        assertEquals(0, timeInfo.getFrameFromTimeMs(2206));
-        // Use frame rate to guess time
-        // prev + (1000 / fps)
-        // 2206 + 1000 / 18.58
-        assertEquals(2259, timeInfo.getTimeMsFromFrame(1));
-        assertEquals(1, timeInfo.getFrameFromTimeMs(2259));
-        // Use previous pts delta to guess time
-        // prev + prev - prev_prev
-        // 2259 + 2259 - 2206
-        assertEquals(2312, timeInfo.getTimeMsFromFrame(2));
-        assertEquals(2, timeInfo.getFrameFromTimeMs(2312));
+        assertThat(timeInfo.getTimeMsFromFrame(0)).isZero();
+        assertThat(timeInfo.getFrameFromTimeMs(0)).isZero();
 
-        assertFalse(timeInfo.hasConstantFrameRate());
-        assertTrue(timeInfo.requiresTimeEstimation());
-        assertEquals(3, timeInfo.getExactFrameCount().orElse(0));
+        assertThat(timeInfo.getTimeMsFromFrame(1)).isEqualTo(1076);
+        assertThat(timeInfo.getFrameFromTimeMs(1076)).isEqualTo(1);
+
+        assertThat(timeInfo.getTimeMsFromFrame(2)).isEqualTo(2206);
+        assertThat(timeInfo.getFrameFromTimeMs(2206)).isEqualTo(2);
+
+        assertThat(timeInfo.hasConstantFrameRate()).isFalse();
+        assertThat(timeInfo.requiresTimeEstimation()).isTrue();
+        assertThat(timeInfo.getExactFrameCount()).hasValue(3);
     }
 
 

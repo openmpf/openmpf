@@ -27,6 +27,7 @@
 #include "JniHelper.h"
 
 #include <limits>
+#include <stdexcept>
 #include <utility>
 
 

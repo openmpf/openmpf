@@ -281,7 +281,11 @@ public class HttpClientUtils implements AutoCloseable {
                 MdcUtil.all(mdcCtx, () -> future.cancel(true));
             }
         });
-        return future;
+        // By default, CloseableHttpAsyncClient runs the completion handler methods on one of its
+        // I/O dispatcher threads. If a completion handler then begins another HTTP request, a
+        // deadlock can occur. Using .whenCompleteAsync ensures that the completion handlers do
+        // not run on CloseableHttpAsyncClient's threads.
+        return future.whenCompleteAsync((r, err) -> {});
     }
 
     // TODO: Implement sendGetCallback

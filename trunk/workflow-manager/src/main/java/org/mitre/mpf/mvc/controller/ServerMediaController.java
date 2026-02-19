@@ -258,7 +258,7 @@ public class ServerMediaController {
         var eventId = LogAuditEventRecord.EventId.DOWNLOAD_MEDIA;
         var uri = httpRequest.getRequestURI();
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
-            _auditEventLogger.readEvent()
+            _auditEventLogger.extractEvent()
                 .withSecurityTag()
                 .withEventId(eventId.success)
                 .withUri(uri)

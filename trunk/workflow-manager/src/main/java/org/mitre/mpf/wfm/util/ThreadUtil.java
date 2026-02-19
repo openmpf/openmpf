@@ -298,13 +298,10 @@ public class ThreadUtil {
 
     private static class MdcAwareCachedThreadPool extends ThreadPoolExecutor {
 
-        // Create thread pool with a maximum size of 1000 threads. If a job is received and there
-        // are already 1000 threads in the pool, the caller will run the job on their own thread.
-        // After completing a job, the thread will stay alive waiting for a new jobs for a minute.
         MdcAwareCachedThreadPool() {
-            super(0, 1000, 1, TimeUnit.MINUTES,
-                  new SynchronousQueue<>(), MdcAwareCachedThreadPool::createThread,
-                  new ThreadPoolExecutor.CallerRunsPolicy());
+            // Constructor arguments taken from Executors.newCachedThreadPool(ThreadFactory).
+            super(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
+                    new SynchronousQueue<>(), MdcAwareCachedThreadPool::createThread);
         }
 
         @Override

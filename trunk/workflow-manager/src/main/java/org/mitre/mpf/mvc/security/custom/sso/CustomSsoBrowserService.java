@@ -113,7 +113,7 @@ public class CustomSsoBrowserService extends BaseCustomSsoService {
             var redirectDest = _customSsoProps.getFullRedirectUri().toString();
             _auditLogger.loginEvent()
                 .withSecurityTag()
-                .withEventId(LogAuditEventRecord.EventId.SSO_ACCESS.fail)
+                .withEventId(LogAuditEventRecord.EventId.SSO_REDIRECT.success)
                 .denied("User does not have an SSO token. Redirecting to %s", redirectDest);
             response.sendRedirect(redirectDest);
         }

@@ -27,6 +27,7 @@
 #pragma once
 
 #include <exception>
+#include <optional>
 #include <string_view>
 
 #include <MPFDetectionObjects.h>
@@ -46,7 +47,7 @@ public:
     JobReceiver(
             LoggerWrapper logger, Messenger messenger);
 
-    JobContext GetJob();
+    std::optional<JobContext> TryGetJob();
 
     template <typename TResp>
     void CompleteJob(const JobContext& context, const TResp& results) {
@@ -75,6 +76,6 @@ private:
 
     Messenger messenger_;
 
-    JobContext TryGetJob();
+    std::optional<JobContext> InternalTryGetJob();
 };
 }

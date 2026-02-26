@@ -62,22 +62,24 @@ JobReceiver::JobReceiver(
     , messenger_{std::move(messenger)} {
 }
 
-JobContext JobReceiver::GetJob() {
-    while (true) {
-        try {
-            return TryGetJob();
-        }
-        catch (const std::exception& e) {
-            logger_.Error(
-                    "An error occurred while trying to get job from ActiveMQ: ", e.what());
-            messenger_.Rollback();
-        }
+std::optional<JobContext> JobReceiver::TryGetJob() {
+    try {
+        return InternalTryGetJob();
+    }
+    catch (const std::exception& e) {
+        logger_.Error(
+            "An error occurred while trying to get job from ActiveMQ: ", e.what());
+        messenger_.Rollback();
     }
 }
 
 
-JobContext JobReceiver::TryGetJob() {
+std::optional<JobContext> JobReceiver::InternalTryGetJob() {
     auto request_message = messenger_.ReceiveMessage();
+    if (!request_message) {
+        return std::nullopt;
+    }
+
     std::vector<unsigned char> message_bytes(request_message->getBodyLength());
     request_message->readBytes(message_bytes);
     auto detection_request = ProtobufRequestUtil::ParseRequest(message_bytes);

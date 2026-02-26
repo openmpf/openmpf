@@ -56,6 +56,11 @@ std::string get_app_dir(const char * const argv0);
 std::string get_component_name_and_set_env_var();
 std::string get_log_level_and_set_env_var();
 bool is_python(int argc, const char * argv[]);
+void handle_sig_term(int signum);
+
+
+volatile std::sig_atomic_t g_signal_status;
+
 
 template <typename ComponentHandle>
 int run_jobs(LoggerWrapper& logger, Messenger messenger,
@@ -93,6 +98,11 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
+    if (std::signal(SIGTERM, handle_sig_term) == SIG_ERR) {
+        logger->Error("Error installing SIGTERM signal handler.");
+        return 1;
+    }
+
     try {
         Messenger messenger{*logger, broker_uri, request_queue};
         RegisterComponent(*logger, messenger);
@@ -121,6 +131,11 @@ int main(int argc, const char* argv[]) {
         logger->Fatal("A fatal error occurred: ", e.what());
         return 1;
     }
+}
+
+
+void handle_sig_term(int signum) {
+    g_signal_status = signum;
 }
 
 
@@ -244,7 +259,17 @@ int run_jobs(LoggerWrapper& logger, Messenger messenger,
 
     while (true) {
         logger.Info("Waiting for next job.");
-        auto job_context = job_receiver.GetJob();
+        auto job_context = job_receiver.TryGetJob();
+
+        if (g_signal_status != 0) {
+            logger.Info("Termination signal " << g_signal_status << " received. Stopping job processing.");
+            return 0;
+        }
+
+        if (!job_context) {
+            continue; // message receiver timed out, try again
+        }
+
         if (!component.Supports(job_context.job_type)) {
             job_receiver.ReportUnsupportedDataType(job_context);
             continue;

@@ -61,19 +61,24 @@ Messenger::Messenger(
 
 
 std::unique_ptr<cms::BytesMessage> Messenger::ReceiveMessage() {
-    while (true) {
-        auto message = AsUniquePtr(request_consumer_->receive());
-        if (auto bytes_message = dynamic_cast<cms::BytesMessage*>(message.get())) {
-            // The cast was successful, so message and bytes_message point to the same object.
-            // message.release() is called so that message's destructor does not delete the
-            // message object.
-            (void) message.release();
-            return AsUniquePtr(bytes_message);
-        }
-        logger_.Error(
-            "Error: Expected an ActiveMQ BytesMessage, but a different message type was received.");
-        Rollback();
+    logger_.Debug("Waiting to receive message from ActiveMQ broker...");
+    auto message = AsUniquePtr(request_consumer_->receive(1000));
+    if (!message) {
+        logger_.Debug("No message received from ActiveMQ broker after waiting.");
+        return nullptr;
     }
+    logger_.Debug("Received message from ActiveMQ broker.");
+    if (auto bytes_message = dynamic_cast<cms::BytesMessage*>(message.get())) {
+        // The cast was successful, so message and bytes_message point to the same object.
+        // message.release() is called so that message's destructor does not delete the
+        // message object.
+        (void) message.release();
+        return AsUniquePtr(bytes_message);
+    }
+    logger_.Error(
+        "Error: Expected an ActiveMQ BytesMessage, but a different message type was received.");
+    Rollback();
+    return nullptr
 }
 
 

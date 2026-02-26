@@ -62,46 +62,42 @@ JobReceiver::JobReceiver(
     , messenger_{std::move(messenger)} {
 }
 
-std::optional<JobContext> JobReceiver::TryGetJob() {
+
+JobContext JobReceiver::TryGetJob() {
     try {
-        return InternalTryGetJob();
+        auto request_message = messenger_.ReceiveMessage();
+        if (!request_message) {
+            throw std::runtime_error("Failed to receive job request message from ActiveMQ broker."); 
+        }
+
+        std::vector<unsigned char> message_bytes(request_message->getBodyLength());
+        request_message->readBytes(message_bytes);
+        auto detection_request = ProtobufRequestUtil::ParseRequest(message_bytes);
+
+        long job_id = request_message->getLongProperty("JobId");
+        auto job_name = ProtobufRequestUtil::GetJobName(job_id, detection_request);
+        auto component_job = ProtobufRequestUtil::CreateComponentJob(
+                job_name, environment_job_properties_, detection_request);
+        auto [job_type, type_name] = std::visit([](const auto& job) {
+            return job_type_info<std::decay_t<decltype(job)>>;
+        }, component_job);
+        return {
+            job_id,
+            job_name,
+            std::move(component_job),
+            job_type,
+            type_name,
+            {},
+            logger_.GetJobContext(job_name),
+            Messenger::GetAmqMetadata(*request_message),
+            ProtobufRequestUtil::GetMetadata(detection_request)
+        };
     }
     catch (const std::exception& e) {
         logger_.Error(
             "An error occurred while trying to get job from ActiveMQ: ", e.what());
         messenger_.Rollback();
     }
-}
-
-
-std::optional<JobContext> JobReceiver::InternalTryGetJob() {
-    auto request_message = messenger_.ReceiveMessage();
-    if (!request_message) {
-        return std::nullopt;
-    }
-
-    std::vector<unsigned char> message_bytes(request_message->getBodyLength());
-    request_message->readBytes(message_bytes);
-    auto detection_request = ProtobufRequestUtil::ParseRequest(message_bytes);
-
-    long job_id = request_message->getLongProperty("JobId");
-    auto job_name = ProtobufRequestUtil::GetJobName(job_id, detection_request);
-    auto component_job = ProtobufRequestUtil::CreateComponentJob(
-            job_name, environment_job_properties_, detection_request);
-    auto [job_type, type_name] = std::visit([](const auto& job) {
-        return job_type_info<std::decay_t<decltype(job)>>;
-    }, component_job);
-    return {
-        job_id,
-        job_name,
-        std::move(component_job),
-        job_type,
-        type_name,
-        {},
-        logger_.GetJobContext(job_name),
-        Messenger::GetAmqMetadata(*request_message),
-        ProtobufRequestUtil::GetMetadata(detection_request)
-    };
 }
 
 

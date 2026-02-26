@@ -31,6 +31,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <signal.h>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -59,7 +60,7 @@ bool is_python(int argc, const char * argv[]);
 void handle_sig_term(int signum);
 
 
-volatile std::sig_atomic_t g_signal_status;
+volatile sig_atomic_t g_signal_status;
 
 
 template <typename ComponentHandle>
@@ -98,7 +99,7 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    if (std::signal(SIGTERM, handle_sig_term) == SIG_ERR) {
+    if (signal(SIGTERM, handle_sig_term) == SIG_ERR) {
         logger->Error("Error installing SIGTERM signal handler.");
         return 1;
     }
@@ -258,43 +259,43 @@ int run_jobs(LoggerWrapper& logger, Messenger messenger,
     logger.Info("Completed initialization of ", service_name, '.');
 
     while (true) {
-        logger.Info("Waiting for next job.");
-        auto job_context = job_receiver.TryGetJob();
-
         if (g_signal_status != 0) {
-            logger.Info("Termination signal " << g_signal_status << " received. Stopping job processing.");
+            logger.Info("Termination signal ", g_signal_status, " received. Stopping job processing.");
             return 0;
         }
 
-        if (!job_context) {
-            continue; // message receiver timed out, try again
-        }
-
-        if (!component.Supports(job_context.job_type)) {
-            job_receiver.ReportUnsupportedDataType(job_context);
-            continue;
-        }
-
-        bool can_process_job = health_check.Check(
-            component, [&job_receiver] { job_receiver.RejectJob(); });
-        if (!can_process_job) {
-            continue;
-        }
-
-        job_context.OnJobStarted();
         try {
-            logger.Info("Processing ", job_context.job_type_name, " job on ", service_name);
-            std::visit([&component, &logger, &job_context, &job_receiver](const auto& job) {
-                auto results = component.GetDetections(job);
-                logger.Info("Component found ", results.size(), " results.");
-                job_receiver.CompleteJob(job_context, results);
-            }, job_context.job);
-        }
-        catch (const MPFDetectionException& e) {
-            job_receiver.ReportJobError(job_context, e.error_code, e.what());
+            auto job_context = job_receiver.TryGetJob();
+
+            if (!component.Supports(job_context.job_type)) {
+                job_receiver.ReportUnsupportedDataType(job_context);
+                continue;
+            }
+
+            bool can_process_job = health_check.Check(
+                component, [&job_receiver] { job_receiver.RejectJob(); });
+            if (!can_process_job) {
+                continue;
+            }
+
+            job_context.OnJobStarted();
+            try {
+                logger.Info("Processing ", job_context.job_type_name, " job on ", service_name);
+                std::visit([&component, &logger, &job_context, &job_receiver](const auto& job) {
+                    auto results = component.GetDetections(job);
+                    logger.Info("Component found ", results.size(), " results.");
+                    job_receiver.CompleteJob(job_context, results);
+                }, job_context.job);
+            }
+            catch (const MPFDetectionException& e) {
+                job_receiver.ReportJobError(job_context, e.error_code, e.what());
+            }
+            catch (const std::exception& e) {
+                job_receiver.ReportJobError(job_context, MPF_OTHER_DETECTION_ERROR_TYPE, e.what());
+            }
         }
         catch (const std::exception& e) {
-            job_receiver.ReportJobError(job_context, MPF_OTHER_DETECTION_ERROR_TYPE, e.what());
+            logger.Error("An error was caught in the main job processing loop: ", e.what());
         }
     }
 }

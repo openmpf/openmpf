@@ -78,7 +78,7 @@ std::unique_ptr<cms::BytesMessage> Messenger::ReceiveMessage() {
     logger_.Error(
         "Error: Expected an ActiveMQ BytesMessage, but a different message type was received.");
     Rollback();
-    return nullptr
+    return nullptr;
 }
 
 

@@ -301,12 +301,12 @@ public class MarkupController {
                 return ForwardHttpResponseUtil.createResponseEntity(s3Stream);
             }
             catch (StorageException e) {
-                log.error("Markup with id " + id + " download failed: " + e.getMessage(), e);
+                log.error("Markup file '" + markupResult.getMarkupUri() + "' download failed: " + e.getMessage(), e);
                 _auditEventLogger.readEvent()
                     .withSecurityTag()
                     .withEventId(eventId.fail)
                     .withUri(requestUri)
-                    .error("%s failed: Markup with id %d failed to download: %s", eventId.message, id, e.getMessage());
+                    .error("%s failed: Markup file '%s' failed to download: %s", eventId.message, markupResult.getMarkupUri(), e.getMessage());
                 return ResponseEntity.internalServerError().build();
             }
         }

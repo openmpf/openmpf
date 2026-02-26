@@ -64,12 +64,12 @@ JobReceiver::JobReceiver(
 
 
 JobContext JobReceiver::TryGetJob() {
-    try {
-        auto request_message = messenger_.ReceiveMessage();
-        if (!request_message) {
-            throw std::runtime_error("Failed to receive job request message from ActiveMQ broker."); 
-        }
+    auto request_message = messenger_.ReceiveMessage();
+    if (!request_message) {
+        throw std::runtime_error("Failed to receive job request message from ActiveMQ broker."); 
+    }
 
+    try {
         std::vector<unsigned char> message_bytes(request_message->getBodyLength());
         request_message->readBytes(message_bytes);
         auto detection_request = ProtobufRequestUtil::ParseRequest(message_bytes);

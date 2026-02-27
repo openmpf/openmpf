@@ -697,7 +697,7 @@ namespace MPF::COMPONENT {
                 py::object py_audio_job = component_api_.to_python(job);
 
                 py::iterable py_results
-                        = (*component_.get_detections_from_audio_method)(py_audio_job);
+                        = (*component_.get_detections_from_all_audio_tracks_method)(py_audio_job);
 
                 return ToAudioTracks(py_results);
             }

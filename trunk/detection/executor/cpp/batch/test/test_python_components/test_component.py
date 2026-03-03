@@ -160,7 +160,7 @@ class TestComponent(object):
     def get_echo_audio_track2(audio_job):
         echo_job, echo_media = TestComponent.get_echo_msgs(audio_job)
         return mpf.AudioTrack(
-            0, 10, .75,
+            10, 20, 1,
             dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
 
 # The component executor looks for a module level variable named EXPORT_MPF_COMPONENT and calls it to create a

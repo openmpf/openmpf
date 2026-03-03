@@ -146,7 +146,10 @@ class TestComponent(object):
 
     @staticmethod
     def get_echo_audio_track1(audio_job):
-        track = mpf.AudioTrack(0, 10, .75)
+        echo_job, echo_media = TestComponent.get_echo_msgs(audio_job)
+
+        track = mpf.AudioTrack(0, 10, .75,
+            dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
 
         track.detection_properties.update(audio_job.job_properties)
         track.detection_properties.update(audio_job.media_properties)

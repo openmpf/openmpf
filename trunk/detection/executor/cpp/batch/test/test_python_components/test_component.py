@@ -154,7 +154,7 @@ class TestComponent(object):
         return track
 
     @staticmethod
-    def get_echo_audio_track2(video_job):
+    def get_echo_audio_track2(audio_job):
         echo_job, echo_media = TestComponent.get_echo_msgs(audio_job)
         return mpf.AudioTrack(
             0, 10, .75,

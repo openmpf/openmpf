@@ -137,7 +137,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                 for (Detection detection : track.getDetections()) {
                     for (String p : propNameList) {
                         if (detection.getDetectionProperties().containsKey(p)) {
-                            log.debug("Will feed forward detection in frame {} with property {}", detection.getMediaOffsetFrame(), p);
+                            log.debug("Will feed forward detection at time {} with property {}", detection.getMediaOffsetTime(), p);
                             includedDetections.add(detection);
                             break;
                         }
@@ -145,7 +145,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                 }
             }
             var frameSummaryStats = includedDetections.stream()
-                .mapToInt(Detection::getMediaOffsetFrame)
+                .mapToInt(Detection::getMediaOffsetTime)
                 .summaryStatistics();
             startTime = frameSummaryStats.getMin();
             stopTime = frameSummaryStats.getMax();

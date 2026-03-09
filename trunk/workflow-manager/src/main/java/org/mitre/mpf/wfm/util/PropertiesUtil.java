@@ -690,6 +690,10 @@ public class PropertiesUtil {
         return _mpfPropertiesConfig.getString("amq.amqp.bind.address");
     }
 
+    public int getAmqMaxPageSize() {
+        return _mpfPropertiesConfig.getInt("amq.max.page.size", 1000);
+    }
+
     //
     // Streaming job properties
     //

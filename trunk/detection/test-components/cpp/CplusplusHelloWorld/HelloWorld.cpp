@@ -202,7 +202,7 @@ std::vector<MPFGenericTrack> HelloWorld::GetDetections(const MPFGenericJob &job)
 
     std::vector<MPFGenericTrack> tracks { generic_track };
     LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Processing complete. Generated " << tracks.size()
-                                 << " dummy tracks.")
+                                 << " dummy tracks.");
     return tracks;
 }
 

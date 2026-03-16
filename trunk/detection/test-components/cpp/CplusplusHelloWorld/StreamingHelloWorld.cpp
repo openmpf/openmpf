@@ -38,12 +38,12 @@ StreamingHelloWorld::StreamingHelloWorld(const MPFStreamingVideoJob &job)
         , job_name_(job.job_name)
         , confidence_threshold_(DetectionComponentUtils::GetProperty(job.job_properties, "QUALITY_SELECTION_THRESHOLD", -1.0))
 {
-    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Initialized StreamingHelloWorld component.")
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Initialized StreamingHelloWorld component.");
 }
 
 
 void StreamingHelloWorld::BeginSegment(const VideoSegmentInfo &segment_info) {
-    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Preparing to process segment " << segment_info.segment_number)
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Preparing to process segment " << segment_info.segment_number);
 }
 
 

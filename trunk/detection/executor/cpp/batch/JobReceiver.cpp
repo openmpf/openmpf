@@ -24,14 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include "JobReceiver.h"
+
 #include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
 
-#include "ProtobufRequestUtil.h"
+#include <MPFBreaker.h>
 
-#include "JobReceiver.h"
+#include "ProtobufRequestUtil.h"
 
 namespace MPF::COMPONENT {
 
@@ -68,6 +70,7 @@ JobContext JobReceiver::GetJob() {
             return TryGetJob();
         }
         catch (const std::exception& e) {
+            MPFBreaker::check();
             logger_.Error(
                     "An error occurred while trying to get job from ActiveMQ: ", e.what());
             messenger_.Rollback();

@@ -37,6 +37,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "BatchExecutorUtil.h"
+#include "MPFBreaker.h"
 
 #include "Messenger.h"
 
@@ -45,10 +46,21 @@ namespace MPF::COMPONENT {
 
 using BatchExecutorUtil::AsUniquePtr;
 
+MessengerInterrupter::MessengerInterrupter(std::weak_ptr<cms::Connection> conn)
+    : weak_conn_{std::move(conn)} {
+}
+
+void MessengerInterrupter::Interrupt() {
+    if (auto conn = weak_conn_.lock()) {
+        conn->close();
+    }
+}
+
+
 Messenger::Messenger(
         LoggerWrapper logger, std::string_view broker_uri, std::string_view request_queue)
     try
-    : logger_(std::move(logger))
+    : logger_{std::move(logger)}
     , connection_{CreateConnection(logger_, broker_uri)}
     , session_{connection_->createSession(cms::Session::SESSION_TRANSACTED)}
     , request_consumer_{CreateRequestConsumer(logger_, *session_, request_queue)}
@@ -56,14 +68,19 @@ Messenger::Messenger(
         connection_->start();
     }
     catch (const std::exception& e) {
-        throw AmqConnectionInitializationException(e.what());
+        throw AmqConnectionException{std::string{
+                "Failed to connect to ActiveMQ broker due to: "} + e.what()};
     }
 
 
 std::unique_ptr<cms::BytesMessage> Messenger::ReceiveMessage() {
     while (true) {
         auto message = AsUniquePtr(request_consumer_->receive());
-        if (auto bytes_message = dynamic_cast<cms::BytesMessage*>(message.get())) {
+        MPFBreaker::check();
+        if (message == nullptr) {
+            throw AmqConnectionException{"Received a null message from ActiveMQ broker."};
+        }
+        if (auto* bytes_message = dynamic_cast<cms::BytesMessage*>(message.get())) {
             // The cast was successful, so message and bytes_message point to the same object.
             // message.release() is called so that message's destructor does not delete the
             // message object.
@@ -164,7 +181,7 @@ std::optional<std::string> Messenger::GetMediaTypeSelector() {
 }
 
 
-std::unique_ptr<cms::Connection> Messenger::CreateConnection(
+std::shared_ptr<cms::Connection> Messenger::CreateConnection(
         const LoggerWrapper& logger, std::string_view broker_uri)  {
     activemq::library::ActiveMQCPP::initializeLibrary();
     logger.Info("Connecting to ActiveMQ broker at: ", broker_uri);
@@ -185,7 +202,7 @@ std::unique_ptr<cms::Connection> Messenger::CreateConnection(
         policy->setTopicPrefetch(0);
         connection_factory.setPrefetchPolicy(policy.release());
     }
-    return AsUniquePtr(connection_factory.createConnection());
+    return std::shared_ptr<cms::Connection>{connection_factory.createConnection()};
 }
 
 
@@ -221,6 +238,11 @@ std::unique_ptr<cms::Message> Messenger::SendTextRequestResponse(
     auto response = AsUniquePtr(response_consumer->receive());
     session_->commit();
     return response;
+}
+
+
+MessengerInterrupter Messenger::GetInterrupter() const {
+    return MessengerInterrupter{connection_};
 }
 
 } // end namespace MPF::COMPONENT

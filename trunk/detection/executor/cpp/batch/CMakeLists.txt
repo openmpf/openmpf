@@ -52,6 +52,7 @@ endif()
 list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
+find_package(mpfInternal REQUIRED)
 
 include_directories(${MSG_UTILS_DIR})
 
@@ -68,13 +69,14 @@ set(batch_executor_lib_files
 	PythonComponentHandle.cpp PythonComponentHandle.h
 	LoggerWrapper.h LoggerWrapper.cpp
 	HealthCheck.h HealthCheck.cpp
-	ComponentRegistration.h ComponentRegistration.cpp)
+	ComponentRegistration.h ComponentRegistration.cpp
+	SignalWatcher.h SignalWatcher.cpp)
 
 add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})
 target_include_directories(batch_executor_lib PUBLIC
 	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
 
-target_link_libraries(batch_executor_lib PUBLIC mpfProtobufs $<TARGET_OBJECTS:mpfProtobufs>
+target_link_libraries(batch_executor_lib PUBLIC mpfInternal mpfProtobufs $<TARGET_OBJECTS:mpfProtobufs>
 	pybind11::embed ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES})
 
 
@@ -95,3 +97,10 @@ else()
 endif()
 
 add_subdirectory(test)
+
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_custom_command(TARGET amq_detection_component POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:amq_detection_component>"
+        -D DEP_LIBS_INSTALL_LOCATION="${CMAKE_INSTALL_PREFIX}/lib"
+        -P ${CopySharedLibDependencies_LOCATION})
+endif()

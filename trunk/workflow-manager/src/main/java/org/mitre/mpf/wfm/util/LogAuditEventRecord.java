@@ -47,6 +47,8 @@ public record LogAuditEventRecord(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String uri,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    String uriQueryString,
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String bucket,
@@ -59,13 +61,12 @@ public record LogAuditEventRecord(
 
  
     public enum EventId {
-        ACCESS_HOMEPAGE(100, 4100, "homepage access"),
         LOGIN_PAGE_ACCESS(101, 4101, "login page access"),
         USER_LOGIN(102, 4102, "user login"),
         USER_LOGOUT(103, 4103, "user logout"),
         AUTHENTICATED_WEB_REQUEST(104, 4104, "authenticated web request"),
         ACCESS_DENIED(105, 4105, "access denied"),
-        SSO_ACCESS(106,4106, "SSO access"),
+        SSO_REDIRECT(106,4106, "SSO redirect"),
         GET_USER_CREDENTIALS(107, 4107, "get user credentials"),
         CREATE_JOB(200, 4200, "create job"),
         RESUBMIT_JOB(201, 4201, "resubmit job"),
@@ -87,11 +88,8 @@ public record LogAuditEventRecord(
         DOWNLOAD_MEDIA(502, 4502, "download media"),
         VIEW_MARKUP(503,4503, "view markup"),
         DOWNLOAD_MARKUP(504,4504, "download markup"),
-        UPLOAD_FILE(505, 4505, "upload file"),
-        DOWNLOAD_FILE(506, 4506, "download file"),
-        CREATE_FILE(507, 4507, "create file"),
-        CREATE_DIRECTORY(508, 4508, "create directory"),
-        VIEW_FILES(509, 4509, "view files"),
+        CREATE_DIRECTORY(505, 4505, "create directory"),
+        GET_DIRECTORY_LISTING(506, 4506, "get directory listing"),
         TIES_DB_GET(600, 4600, "TiesDB get"),
         TIES_DB_POST(601, 4601, "TiesDB post"),
         TIES_DB_REPOST(602, 4602, "TiesDB repost"),

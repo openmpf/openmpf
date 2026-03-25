@@ -133,7 +133,7 @@ This repository is divided into various maven modules, including the node manage
 ## Where Am I?
 
 - [Parent OpenMPF Project](https://github.com/openmpf/openmpf-projects)
-- [OpenMPF Core](../../openmpf) ( **You are here** )
+- [OpenMPF Core](../openmpf) ( **You are here** )
 - Components
     * [OpenMPF Standard Components](https://github.com/openmpf/openmpf-components)
     * [OpenMPF Contributed Components](https://github.com/openmpf/openmpf-contrib-components)

@@ -74,6 +74,14 @@ public class ActiveMQConfiguration {
         policy.setQueue(">");
         policy.setQueuePrefetch(0);
         policy.setPrioritizedMessages(true);
+
+        // When an ActiveMQ consumer has a message selector set, only the first <maxPageSize>
+        // messages are considered. When there are consumers that only process certain types of
+        // media, those consumers can be blocked behind messages for the other media types. For
+        // example, if there is an images only consumer and the queue has more than <maxPageSize>
+        // video messages, the image only consumer will not receive messages until some of the
+        // video messages are processed.
+        policy.setMaxPageSize(propertiesUtil.getAmqMaxPageSize());
         enablePurgeInactiveQueues(broker, policy);
 
         var policyMap = new PolicyMap();

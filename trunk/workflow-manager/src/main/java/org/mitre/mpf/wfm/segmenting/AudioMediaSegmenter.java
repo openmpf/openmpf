@@ -115,41 +115,9 @@ public class AudioMediaSegmenter implements MediaSegmenter {
             context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST));
     }
 
-    private static DetectionProtobuf.AudioTrack.Builder createFeedForwardTrackBuilder(
-        Track track, int topQualityCount, String topQualitySelectionProp, Media media, DetectionContext context) {
-
-        Set<Detection> includedDetections;
-        int startTime;
-        int stopTime;
-        if (topQualityCount <= 0) {
-            includedDetections = track.getDetections();
-            startTime = track.getStartOffsetTimeInclusive();
-            stopTime = track.getEndOffsetTimeInclusive();
-        }
-        else {
-            includedDetections = new TreeSet<>(TopQualitySelectionUtil.getTopQualityDetections(
-                              track.getDetections(), topQualityCount, topQualitySelectionProp));
-
-            var bestDetectionPropertyNamesList = getBestDetectionPropertyList(context);
-            if (bestDetectionPropertyNamesList.isPresent()) {
-                List<String> propNameList = TextUtils.parseListFromString(bestDetectionPropertyNamesList.get());
-                propNameList = TextUtils.trimAndUpper(propNameList, Collectors.toList());
-                for (Detection detection : track.getDetections()) {
-                    for (String p : propNameList) {
-                        if (detection.getDetectionProperties().containsKey(p)) {
-                            log.debug("Will feed forward detection at time {} with property {}", detection.getMediaOffsetTime(), p);
-                            includedDetections.add(detection);
-                            break;
-                        }
-                    }
-                }
-            }
-            var frameSummaryStats = includedDetections.stream()
-                .mapToInt(Detection::getMediaOffsetTime)
-                .summaryStatistics();
-            startTime = frameSummaryStats.getMin();
-            stopTime = frameSummaryStats.getMax();
-        }
+    private static DetectionProtobuf.AudioTrack.Builder createFeedForwardTrackBuilder(Track track) {
+        int startTime = track.getStartOffsetTimeInclusive();
+        int stopTime = track.getEndOffsetTimeInclusive();
 
         var protobufTrackBuilder = DetectionProtobuf.AudioTrack.newBuilder()
                 .setStartTime(startTime)
@@ -161,8 +129,6 @@ public class AudioMediaSegmenter implements MediaSegmenter {
     }
 
     private Optional<DetectionRequest> createFeedForwardAllTracksRequest(Media media, DetectionContext context) {
-        int topQualityCount = getTopQualityCount(context);
-        String topQualitySelectionProp = context.getQualitySelectionProperty();
         var tracks = _triggerProcessor.getTriggeredTracks(media, context)
                 .filter(t -> {
                     if (t.getDetections().isEmpty()) {
@@ -180,8 +146,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
         var allAudioTracksRequestBuilder = AllAudioTracksRequest.newBuilder();
         for (Track track : tracks) {
-            var protobufTrackBuilder = 
-                createFeedForwardTrackBuilder(track, topQualityCount, topQualitySelectionProp, media, context);
+            var protobufTrackBuilder = createFeedForwardTrackBuilder(track);
             allAudioTracksRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
         }
 

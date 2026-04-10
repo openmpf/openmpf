@@ -150,6 +150,34 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		assertTrue(detectionRequests.isEmpty());
 	}
 
+	@Test
+	public void canCreateFeedForwardAllTracksMessage() {
+		Media media = createTestMedia();
+
+		Set<Track> tracks = createTestTracks();
+
+		DetectionContext context = createTestDetectionContext(
+				1, Collections.singletonMap("FEED_FORWARD_TYPE", "REGION"), tracks, "CONFIDENCE");
+
+		when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+				.thenReturn(tracks.stream());
+
+		var detectionRequests = _audioMediaSegmenter.createDetectionRequests(media, context);
+
+		assertEquals(2, detectionRequests.size());
+		assertContainsExpectedMediaMetadata(detectionRequests);
+
+		assertTrue(detectionRequests.stream()
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 3));
+		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
+		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "REGION", detectionRequests);
+
+		assertContainsExpectedTrack(5, 5, 10, detectionRequests);
+		assertContainsExpectedTrack(15, 15, 30, detectionRequests);
+		assertAllHaveFeedForwardTrack(detectionRequests);
+	}
+
 
 	private static void assertContainsExpectedTrack(
             float confidence, int startTime, int stopTime,

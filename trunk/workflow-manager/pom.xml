@@ -48,7 +48,7 @@
         <spring.boot.version>2.7.18</spring.boot.version>
         <spring.security.version>5.7.13</spring.security.version>
         <querydsl.version>5.1.0</querydsl.version>
-        <tomcat.embed.version>9.0.113</tomcat.embed.version>
+        <tomcat.embed.version>9.0.117</tomcat.embed.version>
         <!--
             extraArgLine is required so that the JaCoCo code coverage plugin can be used.
             To get the code coverage information for a unit test class the following command

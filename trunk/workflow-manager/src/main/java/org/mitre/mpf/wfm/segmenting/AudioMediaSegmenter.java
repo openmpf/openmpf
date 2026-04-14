@@ -103,18 +103,6 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                 .build();
     }
 
-    private static int getTopQualityCount(DetectionContext context) {
-        return Optional.ofNullable(
-                    context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_TOP_QUALITY_COUNT))
-                .map(Integer::parseInt)
-                .orElse(0);
-    }
-
-    private static Optional<String> getBestDetectionPropertyList(DetectionContext context) {
-        return Optional.ofNullable(
-            context.getAlgorithmProperties().get(MediaSegmenter.FEED_FORWARD_BEST_DETECTION_PROPERTY_LIST));
-    }
-
     private static DetectionProtobuf.AudioTrack.Builder createFeedForwardTrackBuilder(Track track) {
         int startTime = track.getStartOffsetTimeInclusive();
         int stopTime = track.getEndOffsetTimeInclusive();

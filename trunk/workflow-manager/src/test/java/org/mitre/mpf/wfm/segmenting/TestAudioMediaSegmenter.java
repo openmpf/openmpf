@@ -157,24 +157,47 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		Set<Track> tracks = createTestTracks();
 
 		DetectionContext context = createTestDetectionContext(
-				1, Collections.singletonMap("FEED_FORWARD_TYPE", "REGION"), tracks, "CONFIDENCE");
+				1, Map.of("FEED_FORWARD_TYPE", "REGION", "FEED_FORWARD_ALL_TRACKS", "true"), tracks, "CONFIDENCE");
 
 		when(_mockTriggerProcessor.getTriggeredTracks(media, context))
 				.thenReturn(tracks.stream());
 
 		var detectionRequests = _audioMediaSegmenter.createDetectionRequests(media, context);
 
-		assertEquals(2, detectionRequests.size());
+		assertEquals(1, detectionRequests.size());
 		assertContainsExpectedMediaMetadata(detectionRequests);
 
 		assertTrue(detectionRequests.stream()
-				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 3));
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 4));
 		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "REGION", detectionRequests);
+		assertContainsAlgoProperty("FEED_FORWARD_ALL_TRACKS", "true", detectionRequests);
 
-		assertContainsExpectedTrack(5, 5, 10, detectionRequests);
-		assertContainsExpectedTrack(15, 15, 30, detectionRequests);
+		var allAudioRequest = detectionRequests.get(0).protobuf().getAllAudioTracksRequest();
+		var ffTracks = allAudioRequest.getFeedForwardTracksList();
+		var ffTrack1 = ffTracks.get(0);
+        var ffTrack2 = ffTracks.get(1);
+        DetectionProtobuf.AudioTrack shortTrack;
+        DetectionProtobuf.AudioTrack longTrack;
+        // The protobuf should contain both tracks, but we don't know what order they will be in.
+        if (ffTrack1.getStartTime() == 5) {
+            shortTrack = ffTrack1;
+            longTrack = ffTrack2;
+        }
+        else {
+            shortTrack = ffTrack2;
+            longTrack = ffTrack1;
+        }
+
+		assertEquals(5, shortTrack.getConfidence(), 0.01);
+		assertEquals(5, shortTrack.getStartTime());
+		assertEquals(10, shortTrack.getStopTime());
+
+		assertEquals(15, longTrack.getConfidence(), 0.01);
+		assertEquals(15, longTrack.getStartTime());
+		assertEquals(30, longTrack.getStopTime());
+
 		assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 

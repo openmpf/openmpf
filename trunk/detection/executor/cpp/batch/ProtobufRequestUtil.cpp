@@ -81,6 +81,16 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
             return track;
         }
 
+        MPFAudioTrack ConvertFeedForwardTrack(
+                const mpf_buffers::AudioTrack& ff_track) {
+            MPFAudioTrack track {
+                ff_track.start_time(),
+                ff_track.stop_time(),
+                ff_track.confidence(),
+                GetProperties(ff_track.detection_properties())
+            };
+            return track;
+        }
 
         MPFVideoJob CreateVideoJob(
                 const mpf_buffers::DetectionRequest& detection_request,
@@ -164,19 +174,12 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                 const Properties& environment_properties) {
             const auto& audio_request = detection_request.audio_request();
             if (audio_request.has_feed_forward_track()) {
-                const auto& pb_ff_track = audio_request.feed_forward_track();
-                MPFAudioTrack ff_track {
-                    pb_ff_track.start_time(),
-                    pb_ff_track.stop_time(),
-                    pb_ff_track.confidence(),
-                    GetProperties(pb_ff_track.detection_properties())
-                };
                 return {
                     std::string{job_name},
                     detection_request.media_path(),
                     audio_request.start_time(),
                     audio_request.stop_time(),
-                    std::move(ff_track),
+                    ConvertFeedForwardTrack(audio_request.feed_forward_track()),
                     GetJobProperties(detection_request, environment_properties),
                     GetMediaProperties(detection_request)
                 };
@@ -191,6 +194,28 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
                     GetMediaProperties(detection_request)
                 };
             }
+        }
+
+
+        MPFAllAudioTracksJob CreateAllAudioTracksJob(
+                const mpf_buffers::DetectionRequest& detection_request,
+                std::string_view job_name,
+                const Properties& environment_properties) {
+            const auto& audio_request = detection_request.all_audio_tracks_request();
+            const auto& pb_ff_tracks = audio_request.feed_forward_tracks();
+            std::vector<MPFAudioTrack> ff_tracks;
+            for (const auto& pb_ff_track : pb_ff_tracks) {
+                ff_tracks.push_back(ConvertFeedForwardTrack(pb_ff_track));
+            }
+            return {
+                std::string{job_name},
+                detection_request.media_path(),
+                audio_request.start_time(),
+                audio_request.stop_time(),
+                std::move(ff_tracks),
+                GetJobProperties(detection_request, environment_properties),
+                GetMediaProperties(detection_request)
+            };
         }
 
 
@@ -272,6 +297,9 @@ namespace MPF::COMPONENT::ProtobufRequestUtil {
         }
         else if (detection_request.has_audio_request()) {
             return CreateAudioJob(detection_request, job_name, environment_job_properties);
+        }
+        else if (detection_request.has_all_audio_tracks_request()) {
+            return CreateAllAudioTracksJob(detection_request, job_name, environment_job_properties);
         }
         else if (detection_request.has_generic_request()) {
             return CreateGenericJob(detection_request, job_name, environment_job_properties);

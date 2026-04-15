@@ -52,6 +52,9 @@ namespace {
 
     template <>
     constexpr job_type_info_t job_type_info<MPFAudioJob>{MPFDetectionDataType::AUDIO, "AUDIO"};
+
+    template <>
+    constexpr job_type_info_t job_type_info<MPFAllAudioTracksJob>{MPFDetectionDataType::AUDIO, "AUDIO"};
 } // End anonymous namespace
 
 

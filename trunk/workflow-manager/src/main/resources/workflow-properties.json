@@ -1,17 +1,17 @@
 [
     {
         "name": "FEED_FORWARD_TYPE",
-        "description": "The type of feed-forward behavior. Controls how this algorithm will make use of the tracks generated in the previous pipeline stage. If this algorithm is used in the first pipeline stage then this property has no effect. Instead, the default segmenting behavior is used, where tracks from the previous stage are used to generate segments based on the TARGET_SEGMENT_LENGTH and MIN_SEGMENT_LENGTH properties. Can be set to “NONE”, “FRAME”, or “SUPERSET_REGION”. If set to “NONE”, the default segmenting behavior is used. If set to “FRAME” or “SUPERSET_REGION”, then the segment length properties are ignored and instead this algorithm will process one segment per track generated in the previous stage. If set to “FRAME”, then this algorithm will ignore the regions associated with previous detections and instead process the entire frame associated with each of those detections. If set to “SUPERSET_REGION”, then this algorithm will generate a superset region for each of the previous tracks – a bounding box of constant size and position that encloses all of the track’s detection regions. This algorithm will only process the data within the superset region.",
+        "description": "Can be set to “NONE”, “FRAME”, “REGION”, or “SUPERSET_REGION”. If set to “NONE” then default segmenting behavior is used. If set to “FRAME”, “REGION”, or “SUPERSET_REGION” then the segment length properties are ignored and instead this algorithm will process one segment per track generated in the previous stage. For “AUDIO” and “UNKNOWN” data types use “NONE” or “REGION”. For “IMAGE” and “VIDEO” types use “NONE”, “FRAME”, “REGION”, or “SUPERSET_REGION”. If set to “FRAME” then this algorithm will ignore the regions (bounding boxes) associated with previous detections and instead process the entire frame associated with each of those detections. If set to “REGION” then this algorithm will use the region associated with each detection. If set to “SUPERSET_REGION” then this algorithm will use a superset region for each of the previous tracks – a bounding box of constant size and position that encloses all of the track’s detection regions.",
         "type": "STRING",
         "defaultValue": "NONE",
-        "mediaTypes": ["VIDEO", "IMAGE"]
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
         "name": "FEED_FORWARD_ALL_TRACKS",
         "description": "When true all feed-forward tracks will be passed to this algorithm in one sub-job. When false each feed-forward track will be passed in a separate sub-job.",
         "type": "BOOLEAN",
         "defaultValue": "false",
-        "mediaTypes": ["VIDEO"]
+        "mediaTypes": ["AUDIO", "VIDEO"]
     },
     {
         "name": "FEED_FORWARD_TOP_QUALITY_COUNT",

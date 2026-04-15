@@ -103,19 +103,6 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                 .build();
     }
 
-    private static DetectionProtobuf.AudioTrack.Builder createFeedForwardTrackBuilder(Track track) {
-        int startTime = track.getStartOffsetTimeInclusive();
-        int stopTime = track.getEndOffsetTimeInclusive();
-
-        var protobufTrackBuilder = DetectionProtobuf.AudioTrack.newBuilder()
-                .setStartTime(startTime)
-                .setStopTime(stopTime)
-                .setConfidence(track.getConfidence())
-                .putAllDetectionProperties(track.getTrackProperties());
-
-        return protobufTrackBuilder;
-    }
-
     private Optional<DetectionRequest> createFeedForwardAllTracksRequest(Media media, DetectionContext context) {
         var tracks = _triggerProcessor.getTriggeredTracks(media, context)
                 .filter(t -> {
@@ -134,7 +121,15 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
         var allAudioTracksRequestBuilder = AllAudioTracksRequest.newBuilder();
         for (Track track : tracks) {
-            var protobufTrackBuilder = createFeedForwardTrackBuilder(track);
+            int startTime = track.getStartOffsetTimeInclusive();
+            int stopTime = track.getEndOffsetTimeInclusive();
+
+            var protobufTrackBuilder = DetectionProtobuf.AudioTrack.newBuilder()
+                    .setStartTime(startTime)
+                    .setStopTime(stopTime)
+                    .setConfidence(track.getConfidence())
+                    .putAllDetectionProperties(track.getTrackProperties());
+
             allAudioTracksRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
         }
 

@@ -44,7 +44,7 @@ namespace MPF::COMPONENT {
 
     class PythonComponentHandle {
     public:
-        PythonComponentHandle(const LoggerWrapper &logger,
+        PythonComponentHandle(LoggerWrapper logger,
                               const std::string &lib_path);
 
         ~PythonComponentHandle();
@@ -69,6 +69,8 @@ namespace MPF::COMPONENT {
 
         bool Close();
 
+        static void Interrupt();
+
     private:
         // The pybind11 library declares everything with hidden visibility, so the pybind11 types cannot be
         // referenced in a header file. To avoid referencing any pybind11 types the
@@ -81,7 +83,7 @@ namespace MPF::COMPONENT {
 
     class PythonLogger : public ILogger {
     public:
-        PythonLogger(const std::string &log_level, const std::string &component_name);
+        PythonLogger(std::string_view log_level, std::string_view component_name);
 
         ~PythonLogger() override;
 
@@ -98,16 +100,8 @@ namespace MPF::COMPONENT {
         void SetJobName(std::string_view job_name) override;
 
     private:
-        std::shared_ptr<std::string> job_name_log_prefix_ptr_ = std::make_shared<std::string>();
-
         class logger_impl;
         std::unique_ptr<logger_impl> impl_;
-
-        static void ConfigureLogging(const std::string &log_level,
-                                     const std::string &component_name,
-                                     std::shared_ptr<std::string> job_name_log_prefix_ptr);
-
-        static std::string GetLogFilePath(const std::string &component_name);
     };
 }
 

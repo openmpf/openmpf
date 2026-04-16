@@ -30,13 +30,14 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 
 #include <MPFDetectionException.h>
 #include <MPFDetectionObjects.h>
+#include <MPFBreaker.h>
 
 #include "BatchExecutorUtil.h"
 #include "ComponentLoadError.h"
@@ -47,82 +48,135 @@
 #include "LoggerWrapper.h"
 #include "Messenger.h"
 #include "PythonComponentHandle.h"
+#include "SignalWatcher.h"
 
 namespace fs = std::filesystem;
 using namespace MPF::COMPONENT;
 
+int main_internal(int argc, const char* argv[]);
+
+int main(int argc, const char* argv[]) {
+    try {
+        return main_internal(argc, argv);
+    }
+    catch (const LoggingException& e) {
+        std::cerr << "Exiting because of logging exception: " << e.what() << '\n';
+        return 40;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Exiting due to uncaught exception: " << e.what() << '\n';
+        return 3;
+    }
+    catch (...) {
+        std::cerr << "Exiting due to uncaught non-exception object.\n";
+        return 4;
+    }
+}
+
+
+bool is_python(int argc, const char * argv[]);
 
 std::string get_app_dir(const char * const argv0);
+
+LoggerWrapper get_logger(bool is_python_component, std::string_view app_dir);
+
 std::string get_component_name_and_set_env_var();
+
 std::string get_log_level_and_set_env_var();
-bool is_python(int argc, const char * argv[]);
 
 template <typename ComponentHandle>
 int run_jobs(LoggerWrapper& logger, Messenger messenger,
              std::string_view app_dir, ComponentHandle& component);
 
 
-int main(int argc, const char* argv[]) {
+int main_internal(int argc, const char* argv[]) {
     if (argc < 4) {
         std::cerr << "ERROR: Too few arguments.\nUsage: " << argv[0]
                   << " <broker-uri> <library-path> <request-queue> <language>\n";
         return 1;
     }
-
+    bool is_python_component = is_python(argc, argv);
+    SignalWatcher signal_watcher{is_python_component};
     auto app_dir = get_app_dir(argv[0]);
-    auto broker_uri = argv[1];
-    auto lib_path = argv[2];
-    auto request_queue = argv[3];
-
-    std::optional<LoggerWrapper> logger;
-    bool is_python_component = false;
-    try {
-        auto component_name = get_component_name_and_set_env_var();
-        auto log_level = get_log_level_and_set_env_var();
-        is_python_component = is_python(argc, argv);
-        if (is_python_component) {
-            logger.emplace(log_level, std::make_unique<PythonLogger>(log_level, component_name));
-        }
-        else {
-            logger.emplace(log_level, std::make_unique<CppLogger>(app_dir));
-        }
-    }
-    catch (const std::exception& e) {
-        std::cerr << "An exception occurred before logging could be configured: "
-                  << e.what() << '\n';
-        return 1;
-    }
+    auto logger = get_logger(is_python_component, app_dir);
 
     try {
-        Messenger messenger{*logger, broker_uri, request_queue};
-        RegisterComponent(*logger, messenger);
+        const auto* broker_uri = argv[1];
+        const auto* lib_path = argv[2];
+        const auto* request_queue = argv[3];
+
+        Messenger messenger{logger, broker_uri, request_queue};
+        signal_watcher.SetInterrupter(messenger.GetInterrupter());
+
+        RegisterComponent(logger, messenger);
+        MPFBreaker::check();
         if (is_python_component) {
-            PythonComponentHandle component_handle{*logger, lib_path};
-            return run_jobs(*logger, std::move(messenger), app_dir, component_handle);
+            PythonComponentHandle component_handle{logger, lib_path};
+            return run_jobs(logger, std::move(messenger), app_dir, component_handle);
         }
         else {
             CppComponentHandle component_handle{lib_path};
-            return run_jobs(*logger, std::move(messenger), app_dir, component_handle);
+            return run_jobs(logger, std::move(messenger), app_dir, component_handle);
         }
     }
-    catch (const AmqConnectionInitializationException& e) {
-        logger->Fatal("Failed to connect to ActiveMQ broker due to: ", e.what());
+    catch (const StopRequestedException& e) {
+        logger.Info("Exiting due to: ", e.what());
+        return 0;
+    }
+    catch (const LoggingException& e) {
+        throw;
+    }
+    catch (const AmqConnectionException& e) {
+        logger.Fatal("Exiting due to: ", e.what());
         return 37;
     }
     catch (const ComponentLoadError& e) {
-        logger->Fatal("An error occurred while trying to load component: ", e.what());
+        logger.Fatal("An error occurred while trying to load component: ", e.what());
         return 38;
     }
     catch (const FailedHealthCheck& e) {
-        logger->Fatal("Exiting because the component failed too many health checks. ", e.what());
+        logger.Fatal("Exiting because the component failed too many health checks. ", e.what());
         return 39;
     }
     catch (const std::exception& e) {
-        logger->Fatal("A fatal error occurred: ", e.what());
+        logger.Fatal("A fatal error occurred: ", e.what());
         return 1;
+    }
+    catch (...) {
+        logger.Fatal("Exiting due to uncaught non-exception object.");
+        return 4;
     }
 }
 
+bool is_python(int argc, const char * argv[]) {
+    if (argc > 4) {
+        const auto* provided_language = argv[4];
+        if (BatchExecutorUtil::EqualsIgnoreCase("python", provided_language)) {
+            return true;
+        }
+        if (BatchExecutorUtil::EqualsIgnoreCase("c++", provided_language)) {
+            return false;
+        }
+        std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", but ")"
+                  << provided_language << "\" was provided.\n";
+    }
+    else {
+        std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", )"
+                     "but no value was provided.\n";
+    }
+
+    std::string lib_extension = fs::path(argv[2]).extension();
+    if (BatchExecutorUtil::EqualsIgnoreCase(".so", lib_extension)) {
+        std::cerr << "Assuming \"" << argv[2]
+                  << "\" is a C++ component because it has the .so extension.\n";
+        return false;
+    }
+    else {
+        std::cerr << "Assuming \"" << argv[2]
+                  << "\" is a Python component because it does not have the .so extension.\n";
+        return true;
+    }
+}
 
 std::string get_app_dir(const char * const argv0) {
     try {
@@ -141,6 +195,19 @@ std::string get_app_dir(const char * const argv0) {
         return ".";
     }
 }
+
+
+LoggerWrapper get_logger(bool is_python_component, std::string_view app_dir) {
+    auto component_name = get_component_name_and_set_env_var();
+    auto log_level = get_log_level_and_set_env_var();
+    if (is_python_component) {
+        return {log_level, std::make_unique<PythonLogger>(log_level, component_name)};
+    }
+    else {
+        return {log_level, std::make_unique<CppLogger>(app_dir)};
+    }
+}
+
 
 std::string get_component_name_and_set_env_var() {
     if (auto component_name = BatchExecutorUtil::GetEnv("COMPONENT_NAME")) {
@@ -191,35 +258,6 @@ std::string get_log_level_and_set_env_var() {
     }
 }
 
-bool is_python(int argc, const char * argv[]) {
-    if (argc > 4) {
-        auto provided_language = argv[4];
-        if (BatchExecutorUtil::EqualsIgnoreCase("python", provided_language)) {
-            return true;
-        }
-        if (BatchExecutorUtil::EqualsIgnoreCase("c++", provided_language)) {
-            return false;
-        }
-        std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", but ")"
-                  << provided_language << "\" was provided.\n";
-    }
-    else {
-        std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", )"
-                     "but no value was provided.\n";
-    }
-
-    std::string lib_extension = fs::path(argv[2]).extension();
-    if (BatchExecutorUtil::EqualsIgnoreCase(".so", lib_extension)) {
-        std::cerr << "Assuming \"" << argv[2]
-                  << "\" is a C++ component because it has the .so extension.\n";
-        return false;
-    }
-    else {
-        std::cerr << "Assuming \"" << argv[2]
-                  << "\" is a Python component because it does not have the .so extension.\n";
-        return true;
-    }
-}
 
 std::string get_service_name() {
     return BatchExecutorUtil::GetEnv("SERVICE_NAME")
@@ -243,6 +281,7 @@ int run_jobs(LoggerWrapper& logger, Messenger messenger,
     logger.Info("Completed initialization of ", service_name, '.');
 
     while (true) {
+        MPFBreaker::check();
         logger.Info("Waiting for next job.");
         auto job_context = job_receiver.GetJob();
         if (!component.Supports(job_context.job_type)) {
@@ -256,6 +295,7 @@ int run_jobs(LoggerWrapper& logger, Messenger messenger,
             continue;
         }
 
+        MPFBreaker::check();
         job_context.OnJobStarted();
         try {
             logger.Info("Processing ", job_context.job_type_name, " job on ", service_name);
@@ -266,9 +306,14 @@ int run_jobs(LoggerWrapper& logger, Messenger messenger,
             }, job_context.job);
         }
         catch (const MPFDetectionException& e) {
+            MPFBreaker::check();
             job_receiver.ReportJobError(job_context, e.error_code, e.what());
         }
+        catch (const LoggingException& e) {
+            throw;
+        }
         catch (const std::exception& e) {
+            MPFBreaker::check();
             job_receiver.ReportJobError(job_context, MPF_OTHER_DETECTION_ERROR_TYPE, e.what());
         }
     }

@@ -5,6 +5,7 @@
 *.user
 *.iml
 .vscode
+.devcontainer
 
 # Temporary Files
 *~

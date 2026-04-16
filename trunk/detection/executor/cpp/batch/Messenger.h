@@ -47,8 +47,19 @@
 
 namespace MPF::COMPONENT {
 
-class AmqConnectionInitializationException : public std::runtime_error {
+class AmqConnectionException : public std::runtime_error {
     using std::runtime_error::runtime_error;
+};
+
+
+class MessengerInterrupter {
+public:
+    explicit MessengerInterrupter(std::weak_ptr<cms::Connection> conn);
+
+    void Interrupt();
+
+private:
+    std::weak_ptr<cms::Connection> weak_conn_;
 };
 
 
@@ -77,6 +88,7 @@ public:
     */
     void Rollback();
 
+    MessengerInterrupter GetInterrupter() const;
 
     static constexpr const char* RESTRICT_MEDIA_TYPES_ENV_NAME = "RESTRICT_MEDIA_TYPES";
 
@@ -84,12 +96,12 @@ public:
 
 private:
     LoggerWrapper logger_;
-    std::unique_ptr<cms::Connection> connection_;
+    std::shared_ptr<cms::Connection> connection_;
     std::unique_ptr<cms::Session> session_;
     std::unique_ptr<cms::MessageConsumer> request_consumer_;
     std::unique_ptr<cms::MessageProducer> response_producer_;
 
-    static std::unique_ptr<cms::Connection> CreateConnection(
+    static std::shared_ptr<cms::Connection> CreateConnection(
             const LoggerWrapper& logger, std::string_view broker_uri);
 
 

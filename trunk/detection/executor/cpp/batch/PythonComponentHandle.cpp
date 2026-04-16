@@ -24,15 +24,17 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include "PythonComponentHandle.h"
+
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
 #include <MPFDetectionException.h>
+#include <MPFBreaker.h>
 
 #include "BatchExecutorUtil.h"
 #include "ComponentLoadError.h"
 
-#include "PythonComponentHandle.h"
 
 namespace py = pybind11;
 
@@ -85,14 +87,6 @@ namespace MPF::COMPONENT {
             return module_path.substr(final_slash_pos, final_dot_pos - final_slash_pos);
         }
 
-
-        void initialize_python() {
-            static bool initialized = false;
-            if (!initialized) {
-                py::initialize_interpreter();
-                initialized = true;
-            }
-        }
 
 
         void add_module_dir_to_python_path(const std::string &module_path) {
@@ -541,10 +535,32 @@ namespace MPF::COMPONENT {
             py::str unknown_file_str_ = "(unknown file)";
             std::shared_ptr<std::string> job_name_log_prefix_ptr_;
         };
+
+
+
+        // Ensures that only one Python interpreter is active at a time, that all PythonRoot objects
+        // use that same interpreter, and that the interpreter is finalized when the last PythonRoot
+        // is destructed. PythonComponentHandle::impl and PythonLogger::logger_impl are
+        // "Python roots" because all classes that have pybind member variables are transitively
+        // members of either of the Python roots.
+        class PythonRoot {
+        private:
+            std::shared_ptr<py::scoped_interpreter> current_interpreter_{GetInterpreter()};
+
+            static std::shared_ptr<py::scoped_interpreter> GetInterpreter() {
+                static std::weak_ptr<py::scoped_interpreter> existing_interpreter{};
+                if (auto existing = existing_interpreter.lock()) {
+                    return existing;
+                }
+                auto new_interp = std::make_shared<py::scoped_interpreter>(false);
+                existing_interpreter = new_interp;
+                return new_interp;
+            }
+        };
     } // end anonymous namespace
 
 
-    class PythonComponentHandle::impl {
+    class PythonComponentHandle::impl : private PythonRoot {
     private:
         LoggerWrapper logger_;
 
@@ -724,6 +740,7 @@ namespace MPF::COMPONENT {
         [[noreturn]] void HandleComponentException(const std::string &component_method) {
             std::string base_message = "An error occurred while invoking the \"" + component_method
                     + "\" method on the Python component";
+            MPFBreaker::check();
             try {
                 throw;
             }
@@ -753,10 +770,9 @@ namespace MPF::COMPONENT {
         }
     }; //  class PythonComponentHandle::impl
 
-    PythonComponentHandle::PythonComponentHandle(const LoggerWrapper &logger,
-                                                 const std::string &lib_path) {
-        initialize_python();
-        impl_ = std::make_unique<impl>(logger, lib_path);
+    PythonComponentHandle::PythonComponentHandle(
+            LoggerWrapper logger, const std::string &lib_path)
+        : impl_{std::make_unique<impl>(std::move(logger), lib_path)}  {
     }
 
     // Can't be defaulted in header because in the header PythonComponentHandle::impl is still an incomplete type.
@@ -805,120 +821,206 @@ namespace MPF::COMPONENT {
         return true;
     }
 
+    void PythonComponentHandle::Interrupt() {
+        PyErr_SetInterrupt();
+    }
 
-    class PythonLogger::logger_impl {
+
+    class PythonLogger::logger_impl : private PythonRoot {
     public:
-        LoggerAttrs loggerAttrs {
-            py::module_::import("logging").attr("getLogger")("org.mitre.mpf.detection") };
+        logger_impl(std::string_view log_level, std::string_view component_name)
+            : logger_attrs_{Init(log_level, component_name, job_name_log_prefix_ptr_)} {
+        }
+
+
+        void SetJobName(std::string_view job_name) {
+            *job_name_log_prefix_ptr_ = job_name;
+        }
+
+        void Debug(std::string_view message) {
+            LogMessage(logger_attrs_.debug, message);
+        }
+
+        void Info(std::string_view message) {
+            LogMessage(logger_attrs_.info, message);
+        }
+
+        void Warn(std::string_view message) {
+            LogMessage(logger_attrs_.warn, message);
+        }
+
+        void Error(std::string_view message) {
+            LogMessage(logger_attrs_.error, message);
+        }
+
+        void Fatal(std::string_view message) {
+            LogMessage(logger_attrs_.fatal, message);
+        }
+
+
+    private:
+        std::shared_ptr<std::string> job_name_log_prefix_ptr_ = std::make_shared<std::string>();
+
+        LoggerAttrs logger_attrs_;
+
+        bool has_suppressed_keyboard_interrupt_{false};
+
+        static LoggerAttrs Init(
+                std::string_view log_level,
+                std::string_view component_name,
+                std::shared_ptr<std::string> job_name_log_prefix_ptr) {
+            ConfigureLogging(
+                log_level, component_name, std::move(job_name_log_prefix_ptr));
+            return LoggerAttrs{
+                    py::module_::import("logging").attr("getLogger")("org.mitre.mpf.detection")};
+        }
+
+        static void ConfigureLogging(
+                std::string_view log_level_name,
+                std::string_view component_name,
+                std::shared_ptr<std::string> job_name_log_prefix_ptr) {
+            static bool initialized = false;
+            if (initialized) {
+                return;
+            }
+            initialized = true;
+
+            auto logging_module = py::module_::import("logging");
+            // Change default level names to match what WFM expects
+            // Change default level name for logger.warn and logger.warning from 'WARNING' to 'WARN'
+            logging_module.attr("addLevelName")(logging_module.attr("WARN"), "WARN");
+            //Change default level name for logger.fatal and logger.critical from 'CRITICAL' to 'FATAL'
+            logging_module.attr("addLevelName")(logging_module.attr("FATAL"), "FATAL");
+
+            py::list handlers;
+
+            py::object sys_stderr = py::module_::import("sys").attr("stderr");
+            py::object stream_handler = logging_module.attr("StreamHandler")(sys_stderr);
+            handlers.append(stream_handler);
+
+            std::string log_file_path = GetLogFilePath(component_name);
+            if (!log_file_path.empty()) {
+                py::object timed_rotating_file_handler_cls
+                        = py::module_::import("logging.handlers").attr("TimedRotatingFileHandler");
+
+                py::object file_handler = timed_rotating_file_handler_cls(
+                        log_file_path, py::arg("when")="midnight", py::arg("delay")=true);
+                handlers.append(file_handler);
+            }
+
+            py::str py_log_level = log_level_name == "TRACE"
+                    ? "NOTSET"  // Python doesn't use TRACE so we just log everything when TRACE is provided
+                    : log_level_name;
+
+            logging_module.attr("basicConfig")(
+                py::arg("format")="%(asctime)s %(levelname)-5s [%(filename)s:%(lineno)d] - %(message)s",
+                py::arg("level")=py_log_level,
+                py::arg("handlers")=handlers);
+
+            if (log_file_path.empty()) {
+                py::object logger = logging_module.attr("getLogger")("org.mitre.mpf.detection");
+                logger.attr("error")(
+                        "Unable to determine full path to log file because the $MPF_LOG_PATH and/or "
+                        "$THIS_MPF_NODE environment variables were not set. Log messages will only be "
+                        "sent to standard error.");
+            }
+
+            logging_module.attr("setLogRecordFactory")(py::cpp_function(
+                    LogRecordFactory(std::move(job_name_log_prefix_ptr))));
+        }
+
+        static std::string GetLogFilePath(std::string_view component_name) {
+            auto log_path_env_val = BatchExecutorUtil::GetEnv("MPF_LOG_PATH");
+            if (!log_path_env_val) {
+                return "";
+            }
+
+            auto this_node_env_val = BatchExecutorUtil::GetEnv("THIS_MPF_NODE");
+            if (!this_node_env_val) {
+                return "";
+            }
+
+            std::string log_path = *log_path_env_val;
+            if (log_path.back() != '/') {
+                log_path += '/';
+            }
+
+            std::string log_dir = log_path + *this_node_env_val + "/log";
+            py::module_::import("os").attr("makedirs")(log_dir, py::arg("exist_ok")=true);
+
+            return log_dir + '/' + std::string{component_name} + ".log";
+        }
+
+
+        void LogMessage(const py::function& log_func, std::string_view message) {
+            try {
+                log_func(message);
+                return;
+            }
+            catch (const py::error_already_set& e) {
+                // After a stop has been requested, the next call in to Python will raise
+                // KeyboardInterrupt. If component code is executing when the stop is requested,
+                // the call to get_detections_from_* will raise the KeyboardInterrupt. If component
+                // code is not executing when a stop is requested, the KeyboardInterrupt will be
+                // raised by a logging method.
+                if (!MPFBreaker::stopHasBeenRequested()
+                        || has_suppressed_keyboard_interrupt_
+                        || !e.matches(PyExc_KeyboardInterrupt)) {
+                    throw ConvertLoggingException(e, message);
+                }
+            }
+
+            // Set flag to ensure that we only ever retry once in order to avoid hiding exceptions.
+            has_suppressed_keyboard_interrupt_ = true;
+            try {
+                log_func(message);
+            }
+            catch (const py::error_already_set& e) {
+                throw ConvertLoggingException(e, message);
+            }
+        }
+
+
+        static LoggingException ConvertLoggingException(
+                const py::error_already_set& py_error, std::string_view original_message) {
+            return LoggingException{
+                "An error occurred while trying to log: "
+                + std::string{original_message}
+                + '\n'
+                + py_error.what()
+            };
+        }
     };
 
 
-    PythonLogger::PythonLogger(const std::string &log_level, const std::string &component_name) {
-        initialize_python();
-        ConfigureLogging(log_level, component_name, job_name_log_prefix_ptr_);
-        impl_ = std::make_unique<logger_impl>();
+    PythonLogger::PythonLogger(
+            std::string_view log_level, std::string_view component_name)
+        : impl_{std::make_unique<logger_impl>(log_level, component_name)} {
     }
 
     PythonLogger::~PythonLogger() = default;
 
-
     void PythonLogger::Debug(std::string_view message) {
-        impl_->loggerAttrs.debug(message);
+        impl_->Debug(message);
     }
 
     void PythonLogger::Info(std::string_view message) {
-        impl_->loggerAttrs.info(message);
+        impl_->Info(message);
     }
 
     void PythonLogger::Warn(std::string_view message) {
-        impl_->loggerAttrs.warn(message);
+        impl_->Warn(message);
     }
 
     void PythonLogger::Error(std::string_view message) {
-        impl_->loggerAttrs.error(message);
+        impl_->Error(message);
     }
 
     void PythonLogger::Fatal(std::string_view message) {
-        impl_->loggerAttrs.fatal(message);
+        impl_->Fatal(message);
     }
 
     void PythonLogger::SetJobName(std::string_view job_name) {
-        *job_name_log_prefix_ptr_ = job_name;
+        impl_->SetJobName(job_name);
     }
-
-    void PythonLogger::ConfigureLogging(const std::string &log_level_name,
-                                        const std::string &component_name,
-                                        std::shared_ptr<std::string> job_name_log_prefix_ptr) {
-        static bool initialized = false;
-        if (initialized) {
-            return;
-        }
-        initialized = true;
-
-        auto logging_module = py::module_::import("logging");
-        // Change default level names to match what WFM expects
-        // Change default level name for logger.warn and logger.warning from 'WARNING' to 'WARN'
-        logging_module.attr("addLevelName")(logging_module.attr("WARN"), "WARN");
-        //Change default level name for logger.fatal and logger.critical from 'CRITICAL' to 'FATAL'
-        logging_module.attr("addLevelName")(logging_module.attr("FATAL"), "FATAL");
-
-        py::list handlers;
-
-        py::object sys_stderr = py::module_::import("sys").attr("stderr");
-        py::object stream_handler = logging_module.attr("StreamHandler")(sys_stderr);
-        handlers.append(stream_handler);
-
-        std::string log_file_path = GetLogFilePath(component_name);
-        if (!log_file_path.empty()) {
-            py::object timed_rotating_file_handler_cls
-                    = py::module_::import("logging.handlers").attr("TimedRotatingFileHandler");
-
-            py::object file_handler = timed_rotating_file_handler_cls(
-                    log_file_path, py::arg("when")="midnight", py::arg("delay")=true);
-            handlers.append(file_handler);
-        }
-
-        py::str py_log_level = log_level_name == "TRACE"
-                ? "NOTSET"  // Python doesn't use TRACE so we just log everything when TRACE is provided
-                : log_level_name;
-
-        logging_module.attr("basicConfig")(
-            py::arg("format")="%(asctime)s %(levelname)-5s [%(filename)s:%(lineno)d] - %(message)s",
-            py::arg("level")=py_log_level,
-            py::arg("handlers")=handlers);
-
-        if (log_file_path.empty()) {
-            py::object logger = logging_module.attr("getLogger")("org.mitre.mpf.detection");
-            logger.attr("error")(
-                    "Unable to determine full path to log file because the $MPF_LOG_PATH and/or "
-                    "$THIS_MPF_NODE environment variables were not set. Log messages will only be "
-                    "sent to standard error.");
-        }
-
-        logging_module.attr("setLogRecordFactory")(py::cpp_function(
-                LogRecordFactory(std::move(job_name_log_prefix_ptr))));
-    }
-
-
-    std::string PythonLogger::GetLogFilePath(const std::string &component_name) {
-        auto log_path_env_val = BatchExecutorUtil::GetEnv("MPF_LOG_PATH");
-        if (!log_path_env_val) {
-            return "";
-        }
-
-        auto this_node_env_val = BatchExecutorUtil::GetEnv("THIS_MPF_NODE");
-        if (!this_node_env_val) {
-            return "";
-        }
-
-        std::string log_path = *log_path_env_val;
-        if (log_path.back() != '/') {
-            log_path += '/';
-        }
-
-        std::string log_dir = log_path + *this_node_env_val + "/log";
-        py::module_::import("os").attr("makedirs")(log_dir, py::arg("exist_ok")=true);
-
-        return log_dir + '/' + component_name + ".log";
-    }
-}
+} // namespace MPF::COMPONENT

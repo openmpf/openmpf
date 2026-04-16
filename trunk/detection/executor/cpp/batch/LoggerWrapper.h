@@ -33,6 +33,10 @@
 #include <type_traits>
 #include <utility>
 
+class LoggingException : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
 
 class ILogger {
 public:
@@ -72,7 +76,7 @@ private:
 
 class LoggerWrapper {
 public:
-    explicit LoggerWrapper(std::string_view log_level, std::unique_ptr<ILogger> base_logger)
+    LoggerWrapper(std::string_view log_level, std::unique_ptr<ILogger> base_logger)
             : base_logger_(std::move(base_logger))
             , debug_enabled_(log_level == "DEBUG" || log_level == "TRACE")
             , info_enabled_(debug_enabled_ || log_level == "INFO")

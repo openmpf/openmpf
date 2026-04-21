@@ -52,16 +52,21 @@ public class TestSubjectJobToProtobufConverter {
     public void testCreateJob() {
         var videoOutputFuture = ThreadUtil.<JsonOutputObject>newFuture();
         var imageOutputFuture = ThreadUtil.<JsonOutputObject>newFuture();
+        var audioOutputFuture = ThreadUtil.<JsonOutputObject>newFuture();
+        var genericOutputFuture = ThreadUtil.<JsonOutputObject>newFuture();
 
         var pbJobFuture = new SubjectJobToProtobufConverter().createJob(
                 140,
-                List.of(videoOutputFuture, imageOutputFuture),
+                List.of(videoOutputFuture, imageOutputFuture,
+                        audioOutputFuture, genericOutputFuture),
                 Map.of("JOB_PROP", "JOB_VALUE"));
 
         videoOutputFuture.complete(createVideoOutputObject());
+        imageOutputFuture.complete(createImageOutputObject());
+        audioOutputFuture.complete(createAudioOutputObject());
         TestUtil.assertNotDone(pbJobFuture);
 
-        imageOutputFuture.complete(createImageOutputObject());
+        genericOutputFuture.complete(createGenericOutputObject());
         assertThat(pbJobFuture).succeedsWithin(TestUtil.FUTURE_DURATION)
                 .isEqualTo(createExpectedProtobuf());
     }
@@ -224,6 +229,121 @@ public class TestSubjectJobToProtobufConverter {
         return imageJobOutput;
     }
 
+    private static JsonOutputObject createAudioOutputObject() {
+        var mediaOutput = new JsonMediaOutputObject(
+                303,
+                -1,
+                "media3-path",
+                "tiesDbSourceMediaPath",
+                "AUDIO",
+                "audio/mp3",
+                1,
+                "SHA3",
+                "status",
+                null);
+        mediaOutput.getMediaProperties().put("MEDIA_PROP3", "MEDIA_VALUE3");
+
+        var actionOutput = new JsonActionOutputObject("ACTION4", "ALGO4");
+        var detection = new JsonDetectionOutputObject(
+                801,
+                802,
+                803,
+                804,
+                0.7f,
+                ImmutableSortedMap.of("DETECTION4_PROP", "DETECTION4_VALUE"),
+                0,
+                0L,
+                "artifactExtractionStatus",
+                "artifactPath");
+
+        var track = new JsonTrackOutputObject(
+                1,
+                "id4",
+                0,
+                1,
+                200,
+                300,
+                "TRACK_TYPE4",
+                0.7f,
+                Map.of("TRACK4_PROP", "TRACK4_VALUE"),
+                detection,
+                List.of(detection));
+        actionOutput.getTracks().add(track);
+        mediaOutput.getTrackTypes().put("TRACK_TYPE4", ImmutableSortedSet.of(actionOutput));
+        var jobOutput = new JsonOutputObject(
+                "host-203", "objectId",
+                null,
+                4,
+                "siteId",
+                "openmpfVersion",
+                "externalJobId",
+                Instant.now(),
+                Instant.now(),
+                "status",
+                null);
+        jobOutput.getMedia().add(mediaOutput);
+        jobOutput.getJobProperties().put("JOB3_PROP", "JOB3_VALUE");
+        return jobOutput;
+    }
+
+
+    private static JsonOutputObject createGenericOutputObject() {
+        var mediaOutput = new JsonMediaOutputObject(
+                304,
+                -1,
+                "media4-path",
+                "tiesDbSourceMediaPath",
+                "UNKNOWN",
+                "text/plain",
+                1,
+                "SHA3",
+                "status",
+                null);
+        mediaOutput.getMediaProperties().put("MEDIA_PROP4", "MEDIA_VALUE4");
+
+        var actionOutput = new JsonActionOutputObject("ACTION5", "ALGO5");
+        var detection = new JsonDetectionOutputObject(
+                901,
+                902,
+                903,
+                904,
+                0.9f,
+                ImmutableSortedMap.of("DETECTION5_PROP", "DETECTION5_VALUE"),
+                0,
+                0L,
+                "artifactExtractionStatus",
+                "artifactPath");
+
+        var track = new JsonTrackOutputObject(
+                1,
+                "id5",
+                0,
+                1,
+                0,
+                10L,
+                "TRACK_TYPE5",
+                0.9f,
+                Map.of("TRACK5_PROP", "TRACK5_VALUE"),
+                detection,
+                List.of(detection));
+        actionOutput.getTracks().add(track);
+        mediaOutput.getTrackTypes().put("TRACK_TYPE5", ImmutableSortedSet.of(actionOutput));
+        var jobOutput = new JsonOutputObject(
+                "host-204", "objectId",
+                null,
+                4,
+                "siteId",
+                "openmpfVersion",
+                "externalJobId",
+                Instant.now(),
+                Instant.now(),
+                "status",
+                null);
+        jobOutput.getMedia().add(mediaOutput);
+        jobOutput.getJobProperties().put("JOB4_PROP", "JOB4_VALUE");
+        return jobOutput;
+    }
+
 
     private static SubjectProtobuf.SubjectTrackingJob createExpectedProtobuf() {
         var jobBuilder = SubjectProtobuf.SubjectTrackingJob.newBuilder()
@@ -231,7 +351,9 @@ public class TestSubjectJobToProtobufConverter {
             .setJobName("Job 140")
             .putJobProperties("JOB_PROP", "JOB_VALUE")
             .addAllVideoJobResults(createExpectedVideoResults())
-            .addImageJobResults(createExpectedImageResult());
+            .addImageJobResults(createExpectedImageResult())
+            .addAudioJobResults(createExpectedAudioResult())
+            .addGenericJobResults(createExpectedGenericResult());
         return jobBuilder.build();
     }
 
@@ -327,6 +449,47 @@ public class TestSubjectJobToProtobufConverter {
                 .putDetectionProperties("DETECTION3_PROP", "DETECTION3_VALUE")
                 .build();
         builder.putResults("id3", detection);
+        return builder.build();
+    }
+
+
+    private static SubjectProtobuf.AudioDetectionJobResults createExpectedAudioResult() {
+        var builder = SubjectProtobuf.AudioDetectionJobResults.newBuilder();
+        builder.getDetectionJobBuilder()
+                .setDataUri("media3-path")
+                .setMediaId("media3-path")
+                .setAlgorithm("ALGO4")
+                .setTrackType("TRACK_TYPE4")
+                .putJobProperties("JOB3_PROP", "JOB3_VALUE")
+                .putMediaProperties("MEDIA_PROP3", "MEDIA_VALUE3");
+
+        var track = DetectionProtobuf.AudioTrack.newBuilder()
+                .setStartTime(200)
+                .setStopTime(300)
+                .setConfidence(0.7f)
+                .putDetectionProperties("TRACK4_PROP", "TRACK4_VALUE")
+                .build();
+        builder.putResults("id4", track);
+        return builder.build();
+    }
+
+
+    private static SubjectProtobuf.GenericDetectionJobResults createExpectedGenericResult() {
+        var builder = SubjectProtobuf.GenericDetectionJobResults.newBuilder();
+        builder.getDetectionJobBuilder()
+                .setDataUri("media4-path")
+                .setMediaId("media4-path")
+                .setAlgorithm("ALGO5")
+                .setTrackType("TRACK_TYPE5")
+                .putJobProperties("JOB4_PROP", "JOB4_VALUE")
+                .putMediaProperties("MEDIA_PROP4", "MEDIA_VALUE4");
+
+        var track = DetectionProtobuf.GenericTrack.newBuilder()
+                .setConfidence(0.9f)
+                .putDetectionProperties("TRACK5_PROP", "TRACK5_VALUE")
+                .build();
+
+        builder.putResults("id5", track);
         return builder.build();
     }
 }

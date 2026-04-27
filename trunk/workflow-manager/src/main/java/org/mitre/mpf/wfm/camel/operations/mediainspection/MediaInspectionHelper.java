@@ -299,7 +299,9 @@ public class MediaInspectionHelper {
         String mimeType = mediaMetadata.get("MIME_TYPE");
 
         Path mediaPath;
-        if (mimeType.equalsIgnoreCase("image/heic") || mimeType.equalsIgnoreCase("image/avif")) {
+        if (mimeType.equalsIgnoreCase("image/heic") 
+                || mimeType.equalsIgnoreCase("image/heif") 
+                || mimeType.equalsIgnoreCase("image/avif")) {
             var tempDir = _propertiesUtil.getTemporaryMediaDirectory().toPath();
             mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
             LOG.info("{} is HEIF image. It will be converted to PNG.", media.getLocalPath());

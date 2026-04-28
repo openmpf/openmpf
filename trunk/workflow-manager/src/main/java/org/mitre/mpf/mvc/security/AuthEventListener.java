@@ -51,8 +51,8 @@ public class AuthEventListener {
         _auditEventLogger.loginEvent()
             .withSecurityTag()
             .withAuth(success.getAuthentication())
-            .withEventId(LogAuditEventRecord.EventId.AUTHENTICATED_WEB_REQUEST.success)
-            .allowed(LogAuditEventRecord.EventId.AUTHENTICATED_WEB_REQUEST.message + " succeeded");
+            .withEventId(LogAuditEventRecord.EventId.USER_LOGIN.success)
+            .allowed(LogAuditEventRecord.EventId.USER_LOGIN.message + " succeeded");
     }
 
 

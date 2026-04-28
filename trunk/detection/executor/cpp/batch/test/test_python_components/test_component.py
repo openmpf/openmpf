@@ -101,6 +101,15 @@ class TestComponent(object):
         # Make sure multiple return values are accepted
         return track1, mpf.AudioTrack(10, 20, 1, detection_properties)
 
+    def get_detections_from_all_audio_tracks(self, audio_job):
+        logger.info('[%s] Received all audio tracks job: %s', audio_job.job_name, audio_job)
+
+        # Passed-in feed-forward tracks will never be empty
+        tracks = list(audio_job.feed_forward_tracks)
+        tracks.append(self.get_echo_audio_track1(audio_job))
+        tracks.append(self.get_echo_audio_track2(audio_job))
+
+        return tracks
 
     @staticmethod
     def get_echo_msgs(job):
@@ -117,16 +126,15 @@ class TestComponent(object):
         track.frame_locations[0] = mpf.ImageLocation(1, 2, 3, 4, -1,
                                                       {'METADATA': 'test', 'ECHO_JOB': echo_job,
                                                        'ECHO_MEDIA': echo_media})
-        
+
         track.frame_locations[1] = mpf.ImageLocation(5, 6, 7, 8, -1)
         track.frame_locations[1].detection_properties['ECHO_JOB'] = echo_job
         track.frame_locations[1].detection_properties['ECHO_MEDIA'] = echo_media
-        
+
         track.detection_properties.update(video_job.job_properties)
         track.detection_properties.update(video_job.media_properties)
 
         return track
-    
 
     @staticmethod
     def get_echo_video_track2(video_job):
@@ -136,6 +144,24 @@ class TestComponent(object):
             {3: mpf.ImageLocation(9, 10, 11, 12, -1, dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))},
             dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
 
+    @staticmethod
+    def get_echo_audio_track1(audio_job):
+        echo_job, echo_media = TestComponent.get_echo_msgs(audio_job)
+
+        track = mpf.AudioTrack(0, 10, .75,
+            dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
+
+        track.detection_properties.update(audio_job.job_properties)
+        track.detection_properties.update(audio_job.media_properties)
+
+        return track
+
+    @staticmethod
+    def get_echo_audio_track2(audio_job):
+        echo_job, echo_media = TestComponent.get_echo_msgs(audio_job)
+        return mpf.AudioTrack(
+            10, 20, 1,
+            dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
 
 # The component executor looks for a module level variable named EXPORT_MPF_COMPONENT and calls it to create a
 # instance of the component that will be executed. EXPORT_MPF_COMPONENT will normally be assigned to a class as below,

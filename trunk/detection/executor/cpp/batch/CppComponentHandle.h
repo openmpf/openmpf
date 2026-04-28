@@ -59,6 +59,8 @@ namespace MPF::COMPONENT {
 
         std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
 
+        std::vector<MPFAudioTrack> GetDetections(const MPFAllAudioTracksJob &job);
+
         std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
 
         bool Close();

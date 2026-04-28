@@ -196,6 +196,12 @@ PYBIND11_MODULE(mpf_cpp_sdk, m) {
                     "job"_a,
                     call_guard_t())
             .def("GetDetections",
+                    [](CppComponent& c, const MPFAllAudioTracksJob &job) {
+                        throw std::runtime_error{"MPFAllAudioTracksJob is not currently supported."};
+                    },
+                    "job"_a,
+                    call_guard_t())
+            .def("GetDetections",
                     [](CppComponent& c, const MPFGenericJob &job) { return c->GetDetections(job); },
                     "job"_a,
                     call_guard_t());

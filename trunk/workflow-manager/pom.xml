@@ -46,7 +46,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
         <spring.boot.version>2.7.18</spring.boot.version>
-        <spring.security.version>5.7.13</spring.security.version>
+        <spring.security.version>6.2.8</spring.security.version>
         <querydsl.version>5.1.0</querydsl.version>
         <tomcat.embed.version>9.0.113</tomcat.embed.version>
         <!--

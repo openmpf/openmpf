@@ -66,7 +66,7 @@ OpenMPF includes open-source algorithms for the following:
 - Face Detection and Tracking - LBP-Based OpenCV
 - Motion Detection and Tracking - MOG, SuBSENSE
 - Object Detection and Classification - OpenCV DNN, OpenCV Yolo
-- Classification - Clip, TensorRT
+- Classification - CLIP, TensorRT
 - Scene Change Detection - OpenCV
 - License Plate Detection and Tracking - OpenALPR
 - Speech Detection - Sphinx, Azure Cognitive Services Batch Transcription API
@@ -78,8 +78,10 @@ OpenMPF includes open-source algorithms for the following:
 - Keyword Detection - Keyword Tagging using Boost Regular Expressions
 - Language Identification - FastText
 - Language Translation - Argos, Whisper, NLLB, Azure Cognitive Services Translate API
-- Video Summarization - LLAMA Video 3
 - Known Phrase Tagging - Transformer Tagging
+- Image Captioning - LLaVA
+- Video Summarization - VideoLLaMA
+- Speech Summarization - Qwen and Azure OpenAI
 - And more
 
 ### Tailored Framework for Media Analytics

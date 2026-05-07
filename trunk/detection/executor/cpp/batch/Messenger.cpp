@@ -24,6 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <iostream>
 #include <utility>
 
 #include <activemq/library/ActiveMQCPP.h>
@@ -33,6 +34,7 @@
 #pragma GCC diagnostic pop
 #include <activemq/core/PrefetchPolicy.h>
 #include <activemq/core/policies/DefaultPrefetchPolicy.h>
+#include <cms/CMSException.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -52,7 +54,13 @@ MessengerInterrupter::MessengerInterrupter(std::weak_ptr<cms::Connection> conn)
 
 void MessengerInterrupter::Interrupt() {
     if (auto conn = weak_conn_.lock()) {
-        conn->close();
+        try {
+            conn->close();
+        }
+        catch (const cms::CMSException& e) {
+            std::cerr << "Ignoring CMSException because the connection is already closed: "
+                << e.what() << '\n';
+        }
     }
 }
 

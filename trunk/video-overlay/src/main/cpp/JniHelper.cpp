@@ -27,6 +27,9 @@
 #include "JniHelper.h"
 
 #include <limits>
+#include <stdexcept>
+#include <utility>
+
 
 namespace {
     jint toJavaArraySize(std::size_t size) {

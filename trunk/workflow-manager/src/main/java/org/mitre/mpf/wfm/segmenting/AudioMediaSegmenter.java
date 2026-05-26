@@ -26,14 +26,8 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import static java.util.stream.Collectors.toList;
-
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -45,8 +39,6 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.util.TextUtils;
-import org.mitre.mpf.wfm.util.TopQualitySelectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -87,9 +79,10 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
 
     private static DetectionProtobuf.DetectionRequest createProtobuf(
-            Media media, DetectionContext context, AudioRequest audioRequest) {
-        return MediaSegmenter
-                .initializeRequest(media, context)
+            Media media,
+            DetectionContext context,
+            AudioRequest audioRequest) {
+        return MediaSegmenter.initializeRequest(media, context)
                 .setAudioRequest(audioRequest)
                 .build();
     }

@@ -44,6 +44,9 @@ namespace {
     constexpr job_type_info_t job_type_info{MPFDetectionDataType::UNKNOWN, "GENERIC"};
 
     template <>
+    constexpr job_type_info_t job_type_info<MPFAllGenericTracksJob>{MPFDetectionDataType::UNKNOWN, "GENERIC"};
+
+    template <>
     constexpr job_type_info_t job_type_info<MPFVideoJob>{MPFDetectionDataType::VIDEO, "VIDEO"};
 
     template <>
@@ -51,6 +54,9 @@ namespace {
 
     template <>
     constexpr job_type_info_t job_type_info<MPFImageJob>{MPFDetectionDataType::IMAGE, "IMAGE"};
+
+    template <>
+    constexpr job_type_info_t job_type_info<MPFAllImageLocationsJob>{MPFDetectionDataType::IMAGE, "IMAGE"};
 
     template <>
     constexpr job_type_info_t job_type_info<MPFAudioJob>{MPFDetectionDataType::AUDIO, "AUDIO"};

@@ -134,9 +134,9 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     private static DetectionProtobuf.DetectionRequest createProtobuf(
             Media media,
             DetectionContext context,
-            AllVideoTracksRequest AllVideoTracksRequest) {
+            AllVideoTracksRequest allVideoTracksRequest) {
         return MediaSegmenter.initializeRequest(media, context)
-                .setAllVideoTracksRequest(AllVideoTracksRequest)
+                .setAllVideoTracksRequest(allVideoTracksRequest)
                 .build();
     }
 

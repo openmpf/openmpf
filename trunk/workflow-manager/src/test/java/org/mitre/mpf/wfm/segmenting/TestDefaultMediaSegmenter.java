@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -134,7 +135,7 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		DetectionContext context = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks, "CONFIDENCE");
 
-        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+		when(_mockTriggerProcessor.getTriggeredTracks(media, context))
                 .thenReturn(tracks.stream());
 
 		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
@@ -148,10 +149,9 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
-
-		assertContainsExpectedTrack(0.00f, detectionRequests);
-		assertContainsExpectedTrack(0.10f, detectionRequests);
-        assertAllHaveFeedForwardTrack(detectionRequests);
+		assertRequestContainsExpectedTrack(0.00f, detectionRequests);
+		assertRequestContainsExpectedTrack(0.10f, detectionRequests);
+		assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -161,6 +161,40 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		DetectionContext feedForwardContext = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet(), "CONFIDENCE");
 		assertTrue(_defaultMediaSegmenter.createDetectionRequests(media, feedForwardContext).isEmpty());
+	}
+
+
+	@Test
+	public void canCreateFeedForwardAllTrackMessage() {
+		Media media = createTestMedia();
+
+		Set<Track> tracks = createTestTracks();
+
+		DetectionContext context = createTestDetectionContext(
+				1, Map.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_ALL_TRACKS", "true"), tracks, "CONFIDENCE");
+
+        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+                .thenReturn(tracks.stream());
+
+		var detectionRequests = _defaultMediaSegmenter.createDetectionRequests(media, context);
+
+		assertEquals(1, detectionRequests.size());
+		assertContainsExpectedMediaMetadata(detectionRequests);
+
+		assertTrue(detectionRequests.stream()
+				           .allMatch(dr -> dr.protobuf().getAlgorithmPropertiesCount() == 4));
+		assertContainsAlgoProperty("algoKey1", "algoValue1", detectionRequests);
+		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
+		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
+		assertContainsAlgoProperty("FEED_FORWARD_ALL_TRACKS", "true", detectionRequests);
+
+        var allGenericTracksRequest = detectionRequests.get(0).protobuf().getAllGenericTracksRequest();
+		var ffTracks = allGenericTracksRequest.getFeedForwardTracksList();
+
+		assertContainsExpectedTrack(0.00f, ffTracks);
+		assertContainsExpectedTrack(0.10f, ffTracks);
+
+		assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 
 
@@ -257,14 +291,21 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
     }
 
 
-	private static void assertContainsExpectedTrack(float confidence, Collection<DetectionRequest> requests) {
-		DetectionProtobuf.GenericTrack genericTrack = requests.stream()
+	private static void assertRequestContainsExpectedTrack(float confidence, Collection<DetectionRequest> requests) {
+		var tracks = requests.stream()
 				.map(dr -> dr.protobuf().getGenericRequest().getFeedForwardTrack())
+				.collect(Collectors.toList());
+
+		assertContainsExpectedTrack(confidence, tracks);
+	}
+
+	private static void assertContainsExpectedTrack(float confidence, Collection<DetectionProtobuf.GenericTrack> tracks) {
+		DetectionProtobuf.GenericTrack track = tracks.stream()
 				.filter(gt -> gt.getConfidence() == confidence)
 				.findAny()
 				.get();
 
-		assertTrue(containsExpectedDetectionProperties((int)(confidence * 10), genericTrack.getDetectionPropertiesMap()));
+		assertTrue(containsExpectedDetectionProperties((int)(confidence * 10), track.getDetectionPropertiesMap()));
 	}
 
 
@@ -287,14 +328,14 @@ public class TestDefaultMediaSegmenter extends MockitoTest.Strict {
 		Track track1 = new Track(
                 1, 1, 0, 0, 0, -1, 0, 0,
                 List.of(), 0,
-                ImmutableSortedSet.of(detection1), Collections.emptyMap(),
+                ImmutableSortedSet.of(detection1), detection1.getDetectionProperties(),
                 "", "", null, null);
 
 		Detection detection2 = createDetection(0.10f);
 		Track track2 = new Track(
                 1, 1, 0, 0, 0, -1, 0, 0,
                 List.of(), 0.10f,
-                ImmutableSortedSet.of(detection2), Collections.emptyMap(),
+                ImmutableSortedSet.of(detection2), detection2.getDetectionProperties(),
                 "", "", null, null);
 
 		return ImmutableSet.of(track1, track2);

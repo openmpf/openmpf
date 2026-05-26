@@ -57,11 +57,15 @@ namespace MPF::COMPONENT {
 
         std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
 
+        std::vector<MPFImageLocation> GetDetections(const MPFAllImageLocationsJob &job);
+
         std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
 
         std::vector<MPFAudioTrack> GetDetections(const MPFAllAudioTracksJob &job);
 
         std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
+
+        std::vector<MPFGenericTrack> GetDetections(const MPFAllGenericTracksJob &job);
 
         bool Close();
 

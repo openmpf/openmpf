@@ -182,6 +182,12 @@ PYBIND11_MODULE(mpf_cpp_sdk, m) {
                     "job"_a,
                     call_guard_t())
             .def("GetDetections",
+                    [](CppComponent& c, const MPFAllImageLocationsJob &job) {
+                        throw std::runtime_error{"MPFAllImageLocationsJob is not currently supported."}; 
+                    },
+                    "job"_a,
+                    call_guard_t())
+            .def("GetDetections",
                     [](CppComponent& c, const MPFVideoJob &job) { return c->GetDetections(job); },
                     "job"_a,
                     call_guard_t())
@@ -203,6 +209,12 @@ PYBIND11_MODULE(mpf_cpp_sdk, m) {
                     call_guard_t())
             .def("GetDetections",
                     [](CppComponent& c, const MPFGenericJob &job) { return c->GetDetections(job); },
+                    "job"_a,
+                    call_guard_t())
+            .def("GetDetections",
+                    [](CppComponent& c, const MPFAllGenericTracksJob &job) {
+                        throw std::runtime_error{"MPFAllGenericTracksJob is not currently supported."};
+                    },
                     "job"_a,
                     call_guard_t());
 

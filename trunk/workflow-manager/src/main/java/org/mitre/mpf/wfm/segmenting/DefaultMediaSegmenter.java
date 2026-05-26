@@ -27,9 +27,13 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AllGenericTracksRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -71,6 +75,10 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
             return _mediaSelectorsSegmenter.segmentMedia(media, context);
         }
         else if (shouldUseFeedForward(context)) {
+            if (MediaSegmenter.feedForwardAllTracksIsEnabled(context)) {
+                var feedForwardAllTracksRequest = createFeedForwardAllTracksRequest(media, context);
+                return feedForwardAllTracksRequest.isPresent() ? List.of(feedForwardAllTracksRequest.get()) : List.of();
+            }
             return _triggerProcessor.getTriggeredTracks(media, context)
                     .map(t -> createFeedForwardRequest(t, media, context))
                     .toList();
@@ -90,6 +98,49 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
         return !context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context);
     }
 
+
+    private static DetectionProtobuf.DetectionRequest createProtobuf(
+            Media media,
+            DetectionContext context,
+            AllGenericTracksRequest allGenericTracksRequest) {
+        return MediaSegmenter.initializeRequest(media, context)
+                .setAllGenericTracksRequest(allGenericTracksRequest)
+                .build();
+    }
+
+    private Optional<DetectionRequest> createFeedForwardAllTracksRequest(Media media, DetectionContext context) {
+        var tracks = _triggerProcessor.getTriggeredTracks(media, context)
+                .filter(t -> {
+                    if (t.getDetections().isEmpty()) {
+                        log.warn("Found track with no detections. "
+                                    + "No feed forward request will be created for: {}", t);
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        if (tracks.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var allGenericTracksRequestBuilder = AllGenericTracksRequest.newBuilder();
+        for (Track track : tracks) {
+            var protobufTrackBuilder = DetectionProtobuf.GenericTrack.newBuilder()
+                    .setConfidence(track.getConfidence())
+                    .putAllDetectionProperties(track.getTrackProperties());
+
+            allGenericTracksRequestBuilder.addFeedForwardTracks(protobufTrackBuilder);
+        }
+
+        AllGenericTracksRequest allGenericTracksRequest = allGenericTracksRequestBuilder
+                .build();
+
+        var protobuf = createProtobuf(media, context, allGenericTracksRequest);
+
+        return Optional.of(new DetectionRequest(protobuf, tracks));
+    }
+    
 
     private static DetectionRequest createFeedForwardRequest(
             Track track, Media media, DetectionContext ctx) {

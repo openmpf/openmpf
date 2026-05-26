@@ -44,12 +44,33 @@ class GenericTestComponent(object):
         return mpf.GenericTrack(1, properties), mpf.GenericTrack(2, properties)
 
 
+    @staticmethod
+    def get_detections_from_all_generic_tracks(generic_job):
+        logger.info('[%s] Received all generic tracks job: %s', generic_job.job_name, generic_job)
+
+        # Passed-in feed-forward tracks will never be empty
+        tracks = list(generic_job.feed_forward_tracks)
+        tracks.append(GenericTestComponent.get_echo_generic_track1(generic_job))
+        tracks.append(GenericTestComponent.get_echo_generic_track2(generic_job))
+
+        return tracks
+
 
     @staticmethod
     def get_echo_msgs(job):
         #  Make sure properties get converted between C++ and Python properly
         return (job.job_properties.get('ECHO_JOB', 'echo_job not present'),
                 job.media_properties.get('ECHO_MEDIA', 'echo_media not present'))
+
+    @staticmethod
+    def get_echo_generic_track1(generic_job):
+        echo_job, echo_media = GenericTestComponent.get_echo_msgs(generic_job)
+        return mpf.GenericTrack(1, dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
+
+    @staticmethod
+    def get_echo_generic_track2(generic_job):
+        echo_job, echo_media = GenericTestComponent.get_echo_msgs(generic_job)
+        return mpf.GenericTrack(2, dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
 
 
 EXPORT_MPF_COMPONENT = GenericTestComponent

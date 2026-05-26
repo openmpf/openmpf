@@ -41,7 +41,16 @@
 
 namespace MPF::COMPONENT {
 
-using job_variant_t = std::variant<MPFVideoJob, MPFAllVideoTracksJob, MPFImageJob, MPFAudioJob, MPFAllAudioTracksJob, MPFGenericJob>;
+using job_variant_t = std::variant<
+    MPFVideoJob,
+    MPFAllVideoTracksJob,
+    MPFImageJob,
+    MPFAllImageLocationsJob,
+    MPFAudioJob,
+    MPFAllAudioTracksJob,
+    MPFGenericJob,
+    MPFAllGenericTracksJob
+>;
 
 
 struct ProtobufMetadata {

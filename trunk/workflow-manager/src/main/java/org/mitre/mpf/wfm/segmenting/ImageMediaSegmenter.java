@@ -27,10 +27,14 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.ImageLocation;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AllImageLocationsRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -55,6 +59,10 @@ public class ImageMediaSegmenter implements MediaSegmenter {
             return createSingleRequest(media, context);
 		}
 		else if (MediaSegmenter.feedForwardIsEnabled(context)) {
+            if (MediaSegmenter.feedForwardAllTracksIsEnabled(context)) {
+                var feedForwardAllTracksRequest = createFeedForwardAllImageLocationsRequest(media, context);
+                return feedForwardAllTracksRequest.isPresent() ? List.of(feedForwardAllTracksRequest.get()) : List.of();
+            }            
             return _triggerProcessor.getTriggeredTracks(media, context)
                     .map(t -> createFeedForwardRequest(t, media, context))
                     .toList();
@@ -76,11 +84,60 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 
 
 	private static DetectionProtobuf.DetectionRequest createProtobuf(
-            Media media, DetectionContext context, ImageRequest imageRequest) {
+            Media media,
+            DetectionContext context,
+            ImageRequest imageRequest) {
 		return MediaSegmenter.initializeRequest(media, context)
 				.setImageRequest(imageRequest)
 				.build();
 	}
+    
+    private static DetectionProtobuf.DetectionRequest createProtobuf(
+            Media media,
+            DetectionContext context,
+            AllImageLocationsRequest allImageLocationsRequest) {
+        return MediaSegmenter.initializeRequest(media, context)
+                .setAllImageLocationsRequest(allImageLocationsRequest)
+                .build();
+    }
+
+    private Optional<DetectionRequest> createFeedForwardAllImageLocationsRequest(Media media, DetectionContext context) {
+        var tracks = _triggerProcessor.getTriggeredTracks(media, context)
+                .filter(t -> {
+                    if (t.getDetections().isEmpty()) {
+                        log.warn("Found track with no detections. "
+                                    + "No feed forward request will be created for: {}", t);
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        if (tracks.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var allImageLocationsRequestBuilder = AllImageLocationsRequest.newBuilder();
+        for (Track track : tracks) {
+            var imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());
+            var protobufLocationBuilder = DetectionProtobuf.ImageLocation.newBuilder()
+                    .setXLeftUpper(imageLocation.getXLeftUpper())
+                    .setYLeftUpper(imageLocation.getYLeftUpper())
+                    .setWidth(imageLocation.getWidth())
+                    .setHeight(imageLocation.getHeight())
+                    .setConfidence(imageLocation.getConfidence())
+                    .putAllDetectionProperties(imageLocation.getDetectionPropertiesMap());
+
+            allImageLocationsRequestBuilder.addFeedForwardLocations(protobufLocationBuilder);
+        }
+
+        AllImageLocationsRequest allImageLocationsRequest = allImageLocationsRequestBuilder
+                .build();
+
+        var protobuf = createProtobuf(media, context, allImageLocationsRequest);
+
+        return Optional.of(new DetectionRequest(protobuf, tracks));
+    }    
 
 
     private static DetectionRequest createFeedForwardRequest(

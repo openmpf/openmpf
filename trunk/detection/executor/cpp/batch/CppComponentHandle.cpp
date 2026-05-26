@@ -67,6 +67,10 @@ namespace MPF::COMPONENT {
         return component_->GetDetections(job);
     }
 
+    std::vector<MPFImageLocation> CppComponentHandle::GetDetections(const MPFAllImageLocationsJob &job) {
+        throw std::runtime_error{"MPFAllImageLocationsJob is not currently supported."};
+    }
+
     std::vector<MPFAudioTrack> CppComponentHandle::GetDetections(const MPFAudioJob &job) {
         return component_->GetDetections(job);
     }
@@ -77,6 +81,10 @@ namespace MPF::COMPONENT {
 
     std::vector<MPFGenericTrack> CppComponentHandle::GetDetections(const MPFGenericJob &job) {
         return component_->GetDetections(job);
+    }
+
+    std::vector<MPFGenericTrack> CppComponentHandle::GetDetections(const MPFAllGenericTracksJob &job) {
+        throw std::runtime_error{"MPFAllGenericTracksJob is not currently supported."};
     }
 
     bool CppComponentHandle::Close() {

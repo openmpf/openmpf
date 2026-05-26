@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 import org.mitre.mpf.rest.api.MediaUri;
@@ -134,8 +135,8 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
 
-		assertContainsExpectedTrack(5, 5, 10, detectionRequests);
-		assertContainsExpectedTrack(15, 15, 30, detectionRequests);
+		assertRequestContainsExpectedTrack(5, 5, 10, detectionRequests);
+		assertRequestContainsExpectedTrack(15, 15, 30, detectionRequests);
         assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 
@@ -174,46 +175,41 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "REGION", detectionRequests);
 		assertContainsAlgoProperty("FEED_FORWARD_ALL_TRACKS", "true", detectionRequests);
 
-		var allAudioRequest = detectionRequests.get(0).protobuf().getAllAudioTracksRequest();
-		var ffTracks = allAudioRequest.getFeedForwardTracksList();
-		var ffTrack1 = ffTracks.get(0);
-        var ffTrack2 = ffTracks.get(1);
-        DetectionProtobuf.AudioTrack shortTrack;
-        DetectionProtobuf.AudioTrack longTrack;
-        // The protobuf should contain both tracks, but we don't know what order they will be in.
-        if (ffTrack1.getStartTime() == 5) {
-            shortTrack = ffTrack1;
-            longTrack = ffTrack2;
-        }
-        else {
-            shortTrack = ffTrack2;
-            longTrack = ffTrack1;
-        }
+		var allAudioTracksRequest = detectionRequests.get(0).protobuf().getAllAudioTracksRequest();
+		assertEquals(5, allAudioTracksRequest.getStartTime());
+		assertEquals(30, allAudioTracksRequest.getStopTime());
 
-		assertEquals(5, shortTrack.getConfidence(), 0.01);
-		assertEquals(5, shortTrack.getStartTime());
-		assertEquals(10, shortTrack.getStopTime());
-
-		assertEquals(15, longTrack.getConfidence(), 0.01);
-		assertEquals(15, longTrack.getStartTime());
-		assertEquals(30, longTrack.getStopTime());
+		var ffTracks = allAudioTracksRequest.getFeedForwardTracksList();
+		
+		assertContainsExpectedTrack(5, 5, 10, ffTracks);
+		assertContainsExpectedTrack(15, 15, 30, ffTracks);
 
 		assertAllHaveFeedForwardTrack(detectionRequests);
 	}
 
 
-	private static void assertContainsExpectedTrack(
-            float confidence, int startTime, int stopTime,
+	private static void assertRequestContainsExpectedTrack(
+            float confidence,
+			int startTime,
+			int stopTime,
             Collection<DetectionRequest> requests) {
-        var audioRequest = requests.stream()
-				.map(r -> r.protobuf().getAudioRequest())
-				.filter(ar -> ar.getStartTime() == startTime)
+		var tracks = requests.stream()
+				.map(dr -> dr.protobuf().getAudioRequest().getFeedForwardTrack())
+				.collect(Collectors.toList());
+
+		assertContainsExpectedTrack(confidence, startTime, stopTime, tracks);
+	}
+
+	private static void assertContainsExpectedTrack(
+			float confidence, 
+			int startTime,
+			int stopTime,
+			Collection<DetectionProtobuf.AudioTrack> tracks) {
+		DetectionProtobuf.AudioTrack track = tracks.stream()
+				.filter(gt -> gt.getConfidence() == confidence)
 				.findAny()
 				.get();
 
-		assertEquals(stopTime, audioRequest.getStopTime());
-
-		DetectionProtobuf.AudioTrack track = audioRequest.getFeedForwardTrack();
 		assertEquals(confidence, track.getConfidence(), 0.01);
 		assertEquals(startTime, track.getStartTime());
 		assertEquals(stopTime, track.getStopTime());
@@ -238,14 +234,14 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 		Track track1 = new Track(
                 1, 1, 0, 0, 0, -1, 5, 10,
                 List.of(), 5,
-                ImmutableSortedSet.of(detection1), Collections.emptyMap(),
+                ImmutableSortedSet.of(detection1), detection1.getDetectionProperties(),
                 "", "", null, null);
 
 		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(
                 1, 1, 0, 0, 0, -1, 15, 30,
                 List.of(), 15,
-                ImmutableSortedSet.of(detection2), Collections.emptyMap(),
+                ImmutableSortedSet.of(detection2), detection2.getDetectionProperties(),
                 "", "", null, null);
 
 		return ImmutableSet.of(track1, track2);

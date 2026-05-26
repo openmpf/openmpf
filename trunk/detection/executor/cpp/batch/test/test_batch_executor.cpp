@@ -138,6 +138,19 @@ void assert_has_echo_properties(const Properties &properties) {
 }
 
 
+void assert_echo_image_locations(const std::vector<MPFImageLocation> &locations) {
+    ASSERT_EQ(locations.size(), 2);
+
+    const auto &location1 = locations.at(0);
+    ASSERT_FLOAT_EQ(location1.confidence, .5);
+    assert_has_echo_properties(location1.detection_properties);
+
+    const auto &location2 = locations.at(1);
+    ASSERT_FLOAT_EQ(location2.confidence, .7);
+    assert_has_echo_properties(location2.detection_properties);
+}
+
+
 void assert_echo_video_tracks(const std::vector<MPFVideoTrack> &tracks) {
     ASSERT_EQ(tracks.size(), 2);
 
@@ -166,6 +179,19 @@ void assert_echo_audio_tracks(const std::vector<MPFAudioTrack> &tracks) {
     ASSERT_FLOAT_EQ(track2.confidence, 1);
     ASSERT_EQ(track2.start_time, 10);
     ASSERT_EQ(track2.stop_time, 20);
+}
+
+
+void assert_echo_generic_tracks(const std::vector<MPFGenericTrack> &tracks) {
+    ASSERT_EQ(tracks.size(), 2);
+
+    const auto& track1 = tracks.at(0);
+    ASSERT_FLOAT_EQ(track1.confidence, 1);
+    assert_has_echo_properties(track1.detection_properties);
+
+    const auto& track2 = tracks.at(1);
+    ASSERT_FLOAT_EQ(track2.confidence, 2);
+    assert_has_echo_properties(track2.detection_properties);
 }
 
 
@@ -215,17 +241,96 @@ TEST(PythonComponentHandleTest, TestGenericJob) {
                       { job_echo_pair }, { media_echo_pair });
 
     std::vector<MPFGenericTrack> results = py_component.GetDetections(job);
-
-    ASSERT_EQ(results.size(), 2);
-
-    const auto& track1 = results.at(0);
-    ASSERT_FLOAT_EQ(track1.confidence, 1);
-    assert_has_echo_properties(track1.detection_properties);
-
-    const auto& track2 = results.at(1);
-    ASSERT_FLOAT_EQ(track2.confidence, 2);
-    assert_has_echo_properties(track2.detection_properties);
+    assert_echo_generic_tracks(results);
 }
+
+
+void assert_image_locations_equal(const MPFImageLocation &loc1, const MPFImageLocation &loc2) {
+    ASSERT_EQ(loc1.x_left_upper, loc2.x_left_upper);
+    ASSERT_EQ(loc1.y_left_upper, loc2.y_left_upper);
+    ASSERT_EQ(loc1.width, loc2.width);
+    ASSERT_EQ(loc1.height, loc2.height);
+    ASSERT_FLOAT_EQ(loc1.confidence, loc2.confidence);
+    ASSERT_EQ(loc1.detection_properties, loc2.detection_properties);
+}
+
+TEST(PythonComponentHandleTest, TestImageFeedForward) {
+    PythonComponentHandle py_component = get_test_component();
+
+    MPFImageLocation ff_location(1, 2, 3, 4, .5, { {"prop1", "val1"}, {"prop2", "val2"} });
+    MPFImageJob job("Test Job", "path/to/media", ff_location, {}, {});
+
+    std::vector<MPFImageLocation> results = py_component.GetDetections(job);
+    ASSERT_EQ(results.size(), 1);
+
+    assert_image_locations_equal(ff_location, results.at(0));
+}
+
+TEST(PythonComponentHandleTest, TestAllImageLocationsFeedForward) {
+    PythonComponentHandle py_component = get_test_component();
+
+    MPFImageLocation ff_location1(1, 2, 3, 4, .5, { {"prop1", "val1"}, {"prop2", "val2"} });
+    MPFImageLocation ff_location2(5, 6, 7, 8, .7, { {"prop1", "val1"}, {"prop2", "val2"} });
+    MPFAllImageLocationsJob job("Test Job", "path/to/media", {ff_location1, ff_location2}, 
+                               { { "job prop 1" , "job val 1" }, job_echo_pair },
+                               { { "media prop 1" , "media val 1" }, media_echo_pair });
+    std::vector<MPFImageLocation> results = py_component.GetDetections(job);
+
+    ASSERT_EQ(results.size(), 4);
+    assert_image_locations_equal(ff_location1, results.at(0));
+    assert_image_locations_equal(ff_location2, results.at(1));
+    assert_echo_image_locations({results.at(2), results.at(3)});
+}
+
+
+void assert_video_tracks_equal(const MPFVideoTrack &track1, const MPFVideoTrack &track2) {
+    ASSERT_EQ(track1.start_frame, track2.start_frame);
+    ASSERT_EQ(track1.stop_frame, track2.stop_frame);
+    ASSERT_FLOAT_EQ(track1.confidence, track2.confidence);
+    ASSERT_EQ(track1.detection_properties, track2.detection_properties);
+    ASSERT_EQ(track1.frame_locations.size(), track2.frame_locations.size());
+
+    for (const auto &pair : track2.frame_locations) {
+        assert_image_locations_equal(track1.frame_locations.at(pair.first), pair.second);
+    }
+}
+
+TEST(PythonComponentHandleTest, TestVideoFeedForward) {
+    PythonComponentHandle py_component = get_test_component();
+
+    MPFVideoTrack ff_track(0, 10, .2, { {"prop1", "val1"}, {"prop2", "val2"} });
+    ff_track.frame_locations.emplace(0, MPFImageLocation(1, 2, 3, 4, .5));
+    ff_track.frame_locations.emplace(5, MPFImageLocation(6, 7, 8, 9, .1, { {"hello", "world"} }));
+
+    MPFVideoJob job("Test Job", "path/to/media", 0, 20, ff_track, {}, {});
+
+    std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
+    ASSERT_EQ(results.size(), 1);
+    assert_video_tracks_equal(ff_track, results.at(0));
+}
+
+TEST(PythonComponentHandleTest, TestAllVideoTracksFeedForward) {
+    PythonComponentHandle py_component = get_test_component();
+ 
+    MPFVideoTrack ff_track1(0, 10, .2, { {"prop1_1", "val1_1"}, {"prop1_2", "val1_2"} });
+    ff_track1.frame_locations.emplace(0, MPFImageLocation(1, 2, 3, 4, .5));
+    ff_track1.frame_locations.emplace(5, MPFImageLocation(6, 7, 8, 9, .1, { {"hello", "world"} }));
+
+    MPFVideoTrack ff_track2(100, 200, .9, { {"prop2_1", "val2_1"}, {"prop2_2", "val2_2"} });
+    ff_track2.frame_locations.emplace(10, MPFImageLocation(10, 20, 30, 40, .7));
+    ff_track2.frame_locations.emplace(50, MPFImageLocation(60, 70, 80, 90, .3, { {"foo", "bar"} }));
+
+    MPFAllVideoTracksJob job("Test Job", "path/to/media", 0, 200, {ff_track1, ff_track2},
+                            { { "job prop 1" , "job val 1" }, job_echo_pair },
+                            { { "media prop 1" , "media val 1" }, media_echo_pair });
+
+    std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
+    ASSERT_EQ(results.size(), 4);
+    assert_video_tracks_equal(ff_track1, results.at(0));
+    assert_video_tracks_equal(ff_track2, results.at(1));
+    assert_echo_video_tracks({results.at(2), results.at(3)});
+}
+
 
 void assert_audio_tracks_equal(const MPFAudioTrack &track1, const MPFAudioTrack &track2) {
     ASSERT_EQ(track1.start_time, track2.start_time);
@@ -266,79 +371,11 @@ TEST(PythonComponentHandleTest, TestAllAudioTracksFeedForward) {
     assert_echo_audio_tracks({results.at(2), results.at(3)});
 }
 
-void assert_image_locations_equal(const MPFImageLocation &loc1, const MPFImageLocation &loc2) {
-    ASSERT_EQ(loc1.x_left_upper, loc2.x_left_upper);
-    ASSERT_EQ(loc1.y_left_upper, loc2.y_left_upper);
-    ASSERT_EQ(loc1.width, loc2.width);
-    ASSERT_EQ(loc1.height, loc2.height);
-    ASSERT_FLOAT_EQ(loc1.confidence, loc2.confidence);
-    ASSERT_EQ(loc1.detection_properties, loc2.detection_properties);
-}
 
-
-TEST(PythonComponentHandleTest, TestImageFeedForward) {
-    PythonComponentHandle py_component = get_test_component();
-
-    MPFImageLocation ff_location(1, 2, 3, 4, .5, { {"prop1", "val1"}, {"prop2", "val2"} });
-    MPFImageJob job("Test Job", "path/to/media", ff_location, {}, {});
-
-    std::vector<MPFImageLocation> results = py_component.GetDetections(job);
-    ASSERT_EQ(results.size(), 1);
-
-    assert_image_locations_equal(ff_location, results.at(0));
-}
-
-
-void assert_video_tracks_equal(const MPFVideoTrack &track1, const MPFVideoTrack &track2) {
-    ASSERT_EQ(track1.start_frame, track2.start_frame);
-    ASSERT_EQ(track1.stop_frame, track2.stop_frame);
+void assert_generic_tracks_equal(const MPFGenericTrack &track1, const MPFGenericTrack &track2) {
     ASSERT_FLOAT_EQ(track1.confidence, track2.confidence);
     ASSERT_EQ(track1.detection_properties, track2.detection_properties);
-    ASSERT_EQ(track1.frame_locations.size(), track2.frame_locations.size());
-
-    for (const auto &pair : track2.frame_locations) {
-        assert_image_locations_equal(track1.frame_locations.at(pair.first), pair.second);
-    }
 }
-
-
-TEST(PythonComponentHandleTest, TestVideoFeedForward) {
-    PythonComponentHandle py_component = get_test_component();
-
-    MPFVideoTrack ff_track(0, 10, .2, { {"prop1", "val1"}, {"prop2", "val2"} });
-    ff_track.frame_locations.emplace(0, MPFImageLocation(1, 2, 3, 4, .5));
-    ff_track.frame_locations.emplace(5, MPFImageLocation(6, 7, 8, 9, .1, { {"hello", "world"} }));
-
-    MPFVideoJob job("Test Job", "path/to/media", 0, 20, ff_track, {}, {});
-
-    std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
-    ASSERT_EQ(results.size(), 1);
-    assert_video_tracks_equal(ff_track, results.at(0));
-}
-
-
-TEST(PythonComponentHandleTest, TestAllVideoTracksFeedForward) {
-    PythonComponentHandle py_component = get_test_component();
- 
-    MPFVideoTrack ff_track1(0, 10, .2, { {"prop1_1", "val1_1"}, {"prop1_2", "val1_2"} });
-    ff_track1.frame_locations.emplace(0, MPFImageLocation(1, 2, 3, 4, .5));
-    ff_track1.frame_locations.emplace(5, MPFImageLocation(6, 7, 8, 9, .1, { {"hello", "world"} }));
-
-    MPFVideoTrack ff_track2(100, 200, .9, { {"prop2_1", "val2_1"}, {"prop2_2", "val2_2"} });
-    ff_track2.frame_locations.emplace(10, MPFImageLocation(10, 20, 30, 40, .7));
-    ff_track2.frame_locations.emplace(50, MPFImageLocation(60, 70, 80, 90, .3, { {"foo", "bar"} }));
-
-    MPFAllVideoTracksJob job("Test Job", "path/to/media", 0, 200, {ff_track1, ff_track2},
-                            { { "job prop 1" , "job val 1" }, job_echo_pair },
-                            { { "media prop 1" , "media val 1" }, media_echo_pair });
-
-    std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
-    ASSERT_EQ(results.size(), 4);
-    assert_video_tracks_equal(ff_track1, results.at(0));
-    assert_video_tracks_equal(ff_track2, results.at(1));
-    assert_echo_video_tracks({results.at(2), results.at(3)});
-}
-
 
 TEST(PythonComponentHandleTest, TestGenericFeedForward) {
     PythonComponentHandle py_component = get_generic_only_component();
@@ -351,8 +388,24 @@ TEST(PythonComponentHandleTest, TestGenericFeedForward) {
 
     const auto &returned_track = results.at(0);
 
-    ASSERT_FLOAT_EQ(ff_track.confidence, returned_track.confidence);
-    ASSERT_EQ(ff_track.detection_properties, returned_track.detection_properties);
+    assert_generic_tracks_equal(ff_track, returned_track);
+}
+
+TEST(PythonComponentHandleTest, TestAllGenericTracksFeedForward) {
+    PythonComponentHandle py_component = get_generic_only_component();
+
+    MPFGenericTrack ff_track1(1, { {"prop1_1", "val1_1"}, {"prop2_1", "val2_1"} });
+    MPFGenericTrack ff_track2(1, { {"prop1_2", "val1_2"}, {"prop2_2", "val2_2"} });
+    MPFAllGenericTracksJob job("Test Job", "path/to/media", {ff_track1, ff_track2}, 
+                              { { "job prop 1" , "job val 1" }, job_echo_pair },
+                              { { "media prop 1" , "media val 1" }, media_echo_pair });
+
+    std::vector<MPFGenericTrack> results = py_component.GetDetections(job);
+
+    ASSERT_EQ(results.size(), 4);
+    assert_generic_tracks_equal(ff_track1, results.at(0));
+    assert_generic_tracks_equal(ff_track2, results.at(1));
+    assert_echo_generic_tracks({results.at(2), results.at(3)});
 }
 
 

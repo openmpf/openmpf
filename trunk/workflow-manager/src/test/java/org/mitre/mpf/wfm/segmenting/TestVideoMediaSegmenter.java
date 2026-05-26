@@ -411,9 +411,9 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
 
         assertEquals(1, detectionRequests.size());
 
-        var request = detectionRequests.get(0).protobuf().getAllVideoTracksRequest();
-        assertEquals(2, request.getStartFrame());
-        assertEquals(50, request.getStopFrame());
+        var allVideoTracksRequest = detectionRequests.get(0).protobuf().getAllVideoTracksRequest();
+        assertEquals(2, allVideoTracksRequest.getStartFrame());
+        assertEquals(50, allVideoTracksRequest.getStopFrame());
 
         assertContainsExpectedMediaMetadata(detectionRequests);
 
@@ -424,7 +424,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
         assertContainsAlgoProperty("FEED_FORWARD_ALL_TRACKS", "true", detectionRequests);
 
-        var ffTracks = request.getFeedForwardTracksList();
+        var ffTracks = allVideoTracksRequest.getFeedForwardTracksList();
 
         var ffTrack1 = ffTracks.get(0);
         var ffTrack2 = ffTracks.get(1);
@@ -451,6 +451,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
         assertContainsFrameLocation(5, shortTrack);
         assertEquals(5, shortTrack.getStartFrame());
         assertEquals(5, shortTrack.getStopFrame());
+
         assertAllHaveFeedForwardTrack(detectionRequests);
     }
 

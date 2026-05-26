@@ -65,6 +65,17 @@ class TestComponent(object):
 
 
     # Doesn't need to be a instance method, just making sure executor can call instance methods
+    def get_detections_from_all_image_locations(self, image_job):
+        logger.info('[%s] Received all image locations job: %s', image_job.job_name, image_job)
+
+        # Passed-in feed-forward locations will never be empty
+        locations = list(image_job.feed_forward_locations)
+        locations.append(self.get_echo_image_location1(image_job))
+        locations.append(self.get_echo_image_location2(image_job))
+
+        return locations
+
+
     def get_detections_from_video(self, video_job):
         logger.info('[%s] Received video job: %s', video_job.job_name, video_job)
         if video_job.feed_forward_track is not None:
@@ -77,7 +88,6 @@ class TestComponent(object):
         return [track1, track2]
 
 
-    # Doesn't need to be a instance method, just making sure executor can call instance methods
     def get_detections_from_all_video_tracks(self, video_job):
         logger.info('[%s] Received all video tracks job: %s', video_job.job_name, video_job)
 
@@ -101,6 +111,7 @@ class TestComponent(object):
         # Make sure multiple return values are accepted
         return track1, mpf.AudioTrack(10, 20, 1, detection_properties)
 
+
     def get_detections_from_all_audio_tracks(self, audio_job):
         logger.info('[%s] Received all audio tracks job: %s', audio_job.job_name, audio_job)
 
@@ -111,12 +122,28 @@ class TestComponent(object):
 
         return tracks
 
+
     @staticmethod
     def get_echo_msgs(job):
         #  Make sure properties get converted between C++ and Python properly
         return (job.job_properties.get('ECHO_JOB', 'echo_job not present'),
                 job.media_properties.get('ECHO_MEDIA', 'echo_media not present'))
 
+    @staticmethod
+    def get_echo_image_location1(image_job):
+        echo_job, echo_media = TestComponent.get_echo_msgs(image_job)
+
+        return mpf.ImageLocation(1, 2, 3, 4, .5,
+                                 {'METADATA': 'test', 'ECHO_JOB': echo_job,
+                                  'ECHO_MEDIA': echo_media})
+
+    @staticmethod
+    def get_echo_image_location2(image_job):
+        echo_job, echo_media = TestComponent.get_echo_msgs(image_job)
+
+        return mpf.ImageLocation(5, 6, 7, 8, .7,
+                                 {'METADATA': 'test', 'ECHO_JOB': echo_job,
+                                  'ECHO_MEDIA': echo_media})
 
     @staticmethod
     def get_echo_video_track1(video_job):
@@ -124,8 +151,8 @@ class TestComponent(object):
 
         track = mpf.VideoTrack(0, 1)
         track.frame_locations[0] = mpf.ImageLocation(1, 2, 3, 4, -1,
-                                                      {'METADATA': 'test', 'ECHO_JOB': echo_job,
-                                                       'ECHO_MEDIA': echo_media})
+                                                     {'METADATA': 'test', 'ECHO_JOB': echo_job,
+                                                      'ECHO_MEDIA': echo_media})
 
         track.frame_locations[1] = mpf.ImageLocation(5, 6, 7, 8, -1)
         track.frame_locations[1].detection_properties['ECHO_JOB'] = echo_job

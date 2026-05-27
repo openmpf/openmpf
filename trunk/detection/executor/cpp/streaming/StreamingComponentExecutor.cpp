@@ -149,7 +149,7 @@ namespace MPF { namespace COMPONENT {
         bool begin_segment_called = false;
 
         try {
-            LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
+            LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri);
             sender_.SendInProgressNotification(GetTimestampMillis());
 
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
@@ -182,7 +182,7 @@ namespace MPF { namespace COMPONENT {
                 if (frame_number % frame_interval == 0) {
                     bool activity_found = component_.ProcessFrame(frame, frame_number);
                     if (activity_found && !segment_activity_alert_sent) {
-                        LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_number)
+                        LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_number);
                         sender_.SendActivityAlert(frame_number, frame_timestamps.at(frame_number));
                         segment_activity_alert_sent = true;
                     }
@@ -191,7 +191,7 @@ namespace MPF { namespace COMPONENT {
                 if (frame_number == segment_info.end_frame) {
                     std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                     FixTracks(segment_info, tracks);
-                    LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
+                    LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.");
                     sender_.SendSummaryReport(frame_number, tracks, frame_timestamps);
                     frame_timestamps.clear();
                 }
@@ -199,7 +199,7 @@ namespace MPF { namespace COMPONENT {
             if (frame_number != segment_info.end_frame && begin_segment_called) {
                 // send the summary report if we've started, but have not completed, the next segment
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-                LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
+                LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.");
                 FixTracks(segment_info, tracks);
                 sender_.SendSummaryReport(frame_number, tracks, frame_timestamps);
             }
@@ -323,7 +323,7 @@ namespace MPF { namespace COMPONENT {
         if (log4cxx::Logger::getRootLogger()->getAllAppenders().empty()) {
             log4cxx::BasicConfigurator::configure();
             LOG4CXX_WARN(logger, "Unable to load log configuration file at " << log_config_file
-                    << ". Logging to standard out instead.")
+                    << ". Logging to standard out instead.");
         }
         return logger;
     }

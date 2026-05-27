@@ -41,11 +41,10 @@ set(OCV_JNI_SRC ${JNI_SRC_DIR}/BoundingBoxImageHandle.h ${JNI_SRC_DIR}/BoundingB
                 ${JNI_SRC_DIR}/PtsExtractor.cpp
                 ${JNI_SRC_DIR}/PtsUtil.cpp
                 ${JNI_SRC_DIR}/PtsUtil.h)
-find_package(OpenCV 4.9.0 EXACT REQUIRED PATHS /opt/opencv-4.9.0 COMPONENTS opencv_core opencv_freetype)
+find_package(OpenCV 4.13.0 EXACT REQUIRED PATHS /opt/opencv-4.13.0 COMPONENTS opencv_core opencv_freetype)
 
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
-find_library(mpfProtobufs REQUIRED)
 
 include_directories(${JAVA_INCLUDE_PATH} ${JAVA_INCLUDE_PATH2} ${OpenCV_INCLUDE_DIRS})
 

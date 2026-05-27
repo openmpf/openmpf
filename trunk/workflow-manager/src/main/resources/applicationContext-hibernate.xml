@@ -62,23 +62,9 @@
                 <prop key="hibernate.jdbc.batch_size">50000</prop>
                 <prop key="hibernate.show_sql">${hibernate.show.sql:false}</prop>
                 <prop key="hibernate.hbm2ddl.auto">${hibernate.update.mode:update}</prop>
-                <prop key="hibernate.cache.use_second_level_cache">true</prop>
-                <prop key="hibernate.cache.use_query_cache">true</prop>
-                <prop key="hibernate.cache.region.factory_class">
-                    org.infinispan.hibernate.cache.v53.InfinispanRegionFactory
-                </prop>
-
-                <prop key="hibernate.cache.infinispan.cfg">infinispan.xml</prop>
-                <prop key="hibernate.cache.infinispan.query.cfg">mpfCache</prop>
-                <prop key="hibernate.cache.infinispan.entity.cfg">mpfCache</prop>
-                <prop key="hibernate.cache.infinispan.collection.cfg">mpfCache</prop>
 
                 <prop key="hibernate.transaction.jta.platform">
                     org.hibernate.engine.transaction.jta.platform.internal.JBossStandAloneJtaPlatform
-                </prop>
-
-                <prop key="hibernate.transaction.manager_lookup_class">
-                    org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup
                 </prop>
             </props>
         </property>

@@ -51,11 +51,6 @@ import java.util.stream.Stream;
 public class IoUtils {
     private static final Logger LOG = LoggerFactory.getLogger(IoUtils.class);
 
-    public static final String LINUX_MAGIC_PATH = "/usr/share/misc/magic.mgc";
-
-    private static final String CUSTOM_MAGIC_PATH
-            = IoUtils.class.getResource("/magic/custom-magic.mgc").getPath();
-
     @Autowired
     private PropertiesUtil _propertiesUtil;
 
@@ -87,8 +82,7 @@ public class IoUtils {
 
     public String getMimeTypeUsingFile(Path filePath) throws IOException, InterruptedException {
         var process = new ProcessBuilder(
-                    "file", "--magic-file", LINUX_MAGIC_PATH + ':' + CUSTOM_MAGIC_PATH,
-                    "--mime-type", "--brief", filePath.toString())
+                    "file", "--mime-type", "--brief", filePath.toString())
                 .start();
 
         // Need to read both stdout and stderr at the same time to prevent either of them

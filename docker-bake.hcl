@@ -32,6 +32,11 @@ variable "REGISTRY" {
     default = ""
 }
 
+variable "USER_UID" {
+    default = 1000
+    description = "This should be set to your Linux user ID number. Check with `id -u`."
+}
+
 group "default" {
     targets = [
         "openmpf_build",
@@ -47,6 +52,17 @@ target "openmpf_build" {
     context = ".."
     dockerfile = "openmpf-docker/openmpf_build/Dockerfile"
     tags = image_name("openmpf_build")
+}
+
+
+target "openmpf_dev" {
+    context = ".."
+    dockerfile = "openmpf-docker/openmpf_build/Dockerfile"
+    tags = image_name("openmpf_dev")
+    target = "devcontainer"
+    args = {
+        USER_UID = USER_UID
+    }
 }
 
 

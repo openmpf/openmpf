@@ -1,6 +1,7 @@
 # IDE
 *.idea*
 *.iml
+.vscode
 
 # docker image archives
 *.tar.gz
@@ -17,3 +18,6 @@ openmpf-docker-images*
 test-reports
 __pycache__
 
+
+# local overrides
+docker-bake.override.hcl

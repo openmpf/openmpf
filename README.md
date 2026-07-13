@@ -169,6 +169,19 @@ Run the following command to create the OpenMPF Python component executor single
 - `DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target ssb -t openmpf_python_executor_ssb`
 
 
+#### Build the OpenMPF Subject Tracking Component Executor Docker Images
+
+Run the commands in this section from within the `openmpf-docker/subject-components` directory.
+
+Run the following command to create the OpenMPF Python subject tracking component build image:
+
+- `DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target build -t openmpf_python_subject_build`
+
+Run the following command to create the OpenMPF Python subject tracking component executor image:
+
+- `DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target executor -t openmpf_python_subject_executor`
+
+
 <span id="generate-compose-file"></span>
 
 #### Generate docker-compose.yml

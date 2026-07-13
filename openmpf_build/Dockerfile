@@ -126,7 +126,7 @@ eot
 
 
 
-FROM apt_install
+FROM apt_install AS install_dependencies
 
 RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir /tmp/abseil
@@ -200,8 +200,11 @@ RUN --mount=type=tmpfs,target=/tmp \
 
 COPY --from=ocv_install /opt/opencv-4.9.0 /opt/opencv-4.9.0
 
-RUN ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
-
+RUN <<eot
+    ln --symbolic /opt/opencv-4.9.0/include/opencv4/opencv2 /usr/local/include/opencv2
+    echo /opt/opencv-4.9.0/lib > /etc/ld.so.conf.d/opencv.conf
+    ldconfig
+eot
 
 COPY --from=python_install \
     /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
@@ -223,6 +226,69 @@ RUN <<eot
     ln --symbolic libpython3.12.so.1.0 libpython3.12.so
     ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
 eot
+
+
+
+FROM install_dependencies AS devcontainer
+
+ARG USERNAME=mpf
+# Run `id -u` to check your user id. If it is not equal to 1000, pass in the USER_UID build arg.
+# Example with bake:
+# USER_UID=$(id -u) docker bake --allow=fs.read=.. -f docker-bake.hcl openmpf_dev
+# Example with build:
+# docker build -f openmpf_build/Dockerfile .. --target devcontainer -t openmpf_dev --build-arg USER_UID=$(id -u)
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN <<eot
+    groupadd --gid $USER_GID "$USERNAME"
+    useradd --uid $USER_UID --gid $USER_GID --create-home --shell /bin/bash --no-log-init "$USERNAME"
+    mkdir -p /home/mpf/openmpf-projects/openmpf
+    chown -R "$USERNAME:$USERNAME" /home/mpf/openmpf-projects
+eot
+
+WORKDIR /home/mpf/openmpf-projects/openmpf
+
+RUN --mount=target=/home/mpf/openmpf-projects,readwrite \
+    --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private <<eot
+    export PIP_NO_CACHE_DIR=1
+    mvn \
+        install \
+        -DskipTests \
+        -Dmaven.test.skip=true \
+        -DskipITs \
+        -Dcomponents.build.components='' \
+        -Dstartup.auto.registration.skip=false \
+        -Dcomponents.build.parallel.builds="$(nproc)" \
+        -Dcomponents.build.make.jobs="$(nproc)";
+
+    cp --recursive /root/.m2 "/home/$USERNAME/"
+    cp --recursive /root/mpf-sdk-install "/home/$USERNAME/"
+    cp --recursive /home/mpf/openmpf-projects/openmpf/trunk/install/. /opt/mpf/
+    mkdir /opt/mpf/share
+    chown --recursive "$USERNAME:$USERNAME" \
+        "/home/$USERNAME/.m2" "/home/$USERNAME/mpf-sdk-install" /opt/mpf
+eot
+
+COPY openmpf-docker/openmpf_build/dev/devcontainer-entrypoint.sh /scripts/
+RUN chmod a+rx /scripts/devcontainer-entrypoint.sh
+
+USER $USERNAME
+
+ENV MPF_HOME=/opt/mpf
+ENV REDIS_HOST=redis
+ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
+ENV THIS_MPF_NODE=workflow-manager
+ENV MPF_LOG_PATH=/opt/mpf/logs
+ENV spring_profiles_active=docker
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+ENTRYPOINT [ "/scripts/devcontainer-entrypoint.sh" ]
+
+LABEL devcontainer.metadata='[{ "overrideCommand": false }]'
+
+
+FROM install_dependencies
 
 COPY . /home/mpf/openmpf-projects
 

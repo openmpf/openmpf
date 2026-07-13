@@ -163,7 +163,9 @@ services:
       dockerfile: Dockerfile.vllm
     ipc: host
     volumes:
-      - ${GEMINI_HF_CACHE:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
+      - type: bind
+        source: ${GEMINI_HF_CACHE:-${HOME}/.cache/huggingface}
+        target: /root/.cache/huggingface
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "5", "http://localhost:8000/health"]
       interval: 10s
